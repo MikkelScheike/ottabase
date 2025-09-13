@@ -42,11 +42,12 @@ export default function HomePage() {
     };
 
     const updateSelectionColor = () => {
+        const isDark = appState.theme === 'dark';
         setAppState((prev) => ({
             ...prev,
             selectionColor: {
                 foreground: '#fa4529',
-                background: '#fff'
+                background: isDark ? '#2c2e33' : '#fff'
             }
         }));
     };
