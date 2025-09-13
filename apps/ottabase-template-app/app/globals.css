@@ -1,0 +1,59 @@
+/* Global styles for the Ottabase Template App */
+
+/* Import Mantine styles - these are handled by ProviderUI but good to have as backup */
+@import '@mantine/core/styles.css';
+@import '@mantine/notifications/styles.css';
+@import '@mantine/carousel/styles.css';
+
+/* Custom global styles */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Font family utilities - these are also injected by ProviderFont */
+.font-family-primary {
+    font-family: var(--font-family-primary, 'Inter', sans-serif);
+}
+
+.font-family-heading {
+    font-family: var(--font-family-heading, 'Work Sans', sans-serif);
+}
+
+.font-family-mono,
+.font-family-monospace {
+    font-family: var(--font-family-monospace, 'JetBrains Mono', monospace);
+}
+
+.font-family-handwriting {
+    font-family: var(--font-family-handwriting, 'Patrick Hand', cursive);
+}
+
+/* Custom utilities */
+.text-balance {
+    text-wrap: balance;
+}
+
+.text-pretty {
+    text-wrap: pretty;
+}
+
+/* Dark mode utilities */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --background-color: #1a1a1a;
+        --text-color: #ffffff;
+    }
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --background-color: #ffffff;
+        --text-color: #000000;
+    }
+}

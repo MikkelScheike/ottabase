@@ -1,0 +1,60 @@
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "target": "es5",
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "es6"
+        ],
+        "allowJs": true,
+        "skipLibCheck": true,
+        "strict": true,
+        "noEmit": true,
+        "esModuleInterop": true,
+        "module": "esnext",
+        "moduleResolution": "bundler",
+        "resolveJsonModule": true,
+        "isolatedModules": true,
+        "jsx": "preserve",
+        "incremental": true,
+        "plugins": [
+            {
+                "name": "next"
+            }
+        ],
+        "baseUrl": ".",
+        "paths": {
+            "@/*": [
+                "./src/*"
+            ],
+            "@ottabase/ui": [
+                "../../packages/ui/src"
+            ],
+            "@ottabase/ui/*": [
+                "../../packages/ui/src/*"
+            ],
+            "@ottabase/config": [
+                "../../packages/config/src"
+            ],
+            "@ottabase/config/*": [
+                "../../packages/config/src/*"
+            ],
+            "@ottabase/state": [
+                "../../packages/state/src"
+            ],
+            "@ottabase/state/*": [
+                "../../packages/state/src/*"
+            ]
+        }
+    },
+    "include": [
+        "next-env.d.ts",
+        "**/*.ts",
+        "**/*.tsx",
+        ".next/types/**/*.ts"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}

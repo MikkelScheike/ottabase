@@ -1,0 +1,3 @@
+Ottabase Template App
+=======================
+This app would be copied as the starting base for other apps

@@ -1,0 +1,46 @@
+{
+    "name": "@ottabase/state",
+    "version": "1.0.0",
+    "description": "Shared state management utilities for Ottabase applications",
+    "main": "dist/index.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.esm.js",
+            "require": "./dist/index.js"
+        }
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+        "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+        "clean": "rimraf dist",
+        "lint": "eslint src --ext .ts,.tsx",
+        "type-check": "tsc --noEmit"
+    },
+    "keywords": [
+        "state",
+        "jotai",
+        "atoms",
+        "state-management",
+        "monorepo"
+    ],
+    "author": "",
+    "license": "MIT",
+    "peerDependencies": {
+        "jotai": "^2.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "catalog:",
+        "typescript": "catalog:",
+        "tsup": "catalog:",
+        "rimraf": "catalog:",
+        "eslint": "catalog:",
+        "jotai": "catalog:"
+    }
+}

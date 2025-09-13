@@ -1,0 +1,64 @@
+{
+    "name": "@ottabase/ui",
+    "version": "1.0.0",
+    "description": "UI components and providers for Ottabase applications",
+    "main": "dist/index.js",
+    "module": "dist/index.esm.js",
+    "types": "dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.esm.js",
+            "require": "./dist/index.js"
+        },
+        "./provider": {
+            "types": "./dist/provider/index.d.ts",
+            "import": "./dist/provider/index.esm.js",
+            "require": "./dist/provider/index.js"
+        },
+        "./styles": "./dist/styles.css"
+    },
+    "files": [
+        "dist",
+        "README.md"
+    ],
+    "scripts": {
+        "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+        "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+        "clean": "rimraf dist",
+        "lint": "eslint src --ext .ts,.tsx",
+        "type-check": "tsc --noEmit"
+    },
+    "keywords": [
+        "react",
+        "ui",
+        "components",
+        "providers",
+        "mantine",
+        "next-themes"
+    ],
+    "author": "",
+    "license": "MIT",
+    "peerDependencies": {
+        "react": ">=18.0.0",
+        "react-dom": ">=18.0.0",
+        "next": ">=15.0.0",
+        "@mantine/core": "^8.0.0",
+        "@mantine/notifications": "^8.0.0",
+        "@mantine/modals": "^8.0.0",
+        "@mantine/carousel": "^8.0.0",
+        "@mantine/hooks": "^8.0.0",
+        "next-themes": "^0.4.0"
+    },
+    "devDependencies": {
+        "@types/react": "catalog:",
+        "@types/react-dom": "catalog:",
+        "@types/node": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:",
+        "typescript": "catalog:",
+        "tsup": "catalog:",
+        "rimraf": "catalog:",
+        "eslint": "catalog:"
+    }
+}

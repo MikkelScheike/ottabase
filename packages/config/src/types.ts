@@ -1,0 +1,106 @@
+export type SupportedUIFramework = "mantine" | "shadcn" | "chakra" | "mui" | "tremor";
+
+export interface AppMeta {
+    appName: string;
+    logoUrl: string;
+    title: string;
+    author: string;
+    description: string;
+    keywords: string;
+    robots: string;
+    copyrightText: string;
+    companyName: string;
+}
+
+export type ThemeColors = Record<string, [string, string, string, string, string, string, string, string, string, string]>;
+
+export interface SpotlightConfig {
+    enabled: boolean;
+    shortcuts: string[];
+}
+
+export interface UILayout {
+    minWidth: number;
+    maxWidth: number;
+}
+
+export interface CrudHubConfig {
+    apiBaseUrl: string;
+    urlBase: string;
+    urlBaseListing: 'list' | 'browse';
+}
+
+export interface AuthConfig {
+    signInUrl: string;
+    signOutUrl: string;
+    preLaunchOptIn: boolean;
+}
+
+export interface PaginationConfig {
+    defaultPageSize: number;
+    maxPageSize: number;
+    sizeOptions: number[];
+}
+
+export interface AppConfig {
+    meta: AppMeta;
+    uiFramework: SupportedUIFramework;
+
+    // UI Configuration
+    ui: {
+        preventFOUC: boolean;
+        preventFOUCInsideIframe: boolean;
+        debounceMs: number;
+        layout: UILayout;
+        enforceGoogleFonts: boolean;
+    };
+
+    // Theme Configuration
+    theme: {
+        colorDefault: string;
+        colors: ThemeColors;
+    };
+
+    // Storage Configuration
+    storage: {
+        prefix: string;
+    };
+
+    // API Configuration
+    api: {
+        serverErrorHttpCode: number;
+    };
+
+    // Feature Configuration
+    features: {
+        spotlight: SpotlightConfig;
+        crudHub: CrudHubConfig;
+        auth: AuthConfig;
+        pagination: PaginationConfig;
+    };
+
+    // Model Configuration
+    model: {
+        defaultRelKey: string;
+    };
+}
+
+export interface ConfigOptions {
+    appName?: string;
+    defaults?: {
+        meta?: Partial<AppMeta>;
+        uiFramework?: SupportedUIFramework;
+        ui?: Partial<AppConfig['ui']>;
+        theme?: Partial<AppConfig['theme']>;
+        storage?: Partial<AppConfig['storage']>;
+        api?: Partial<AppConfig['api']>;
+        features?: {
+            spotlight?: Partial<SpotlightConfig>;
+            crudHub?: Partial<CrudHubConfig>;
+            auth?: Partial<AuthConfig>;
+            pagination?: Partial<PaginationConfig>;
+        };
+        model?: Partial<AppConfig['model']>;
+    };
+    envPrefix?: string;
+}
