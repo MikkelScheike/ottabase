@@ -4,6 +4,11 @@ import React, { ReactNode } from 'react';
 
 // Google Fonts
 import { Inter, Work_Sans, JetBrains_Mono, Patrick_Hand } from 'next/font/google';
+// Good fonts:
+// Heading: Work Sans, Palanquin Dark
+// Handwriting: Patrick Hand, Mali
+// Mono: JetBrains Mono, Reddit Mono
+
 
 export const primaryFontFamily = Inter({
     subsets: ['latin'],
@@ -47,31 +52,24 @@ const ProviderFont = ({ children, enforceGoogleFonts = true }: ProviderFontProps
       styleElement.id = styleId;
       document.head.appendChild(styleElement);
     }
-    
+
+    // Inject Custom CSS Font-Family Styles
     styleElement.textContent = `
-      h1, h2, h3, h4, h5, h6 {
+      h1, h2, h3, h4, h5, h6, .font-family-heading {
         font-family: ${headingFontFamily.style.fontFamily}${cssAppend};
-        font-weight: bold;
-      }
-      code, pre, kbd {
-        font-family: ${monospaceFontFamily.style.fontFamily}${cssAppend};
       }
       .font-family-primary {
         font-family: ${primaryFontFamily.style.fontFamily}${cssAppend};
       }
-      .font-family-heading {
-        font-family: ${headingFontFamily.style.fontFamily}${cssAppend};
-      }
-      .font-family-mono, .font-family-monospace {
+      code, pre, kbd, .font-family-mono, .font-family-monospace {
         font-family: ${monospaceFontFamily.style.fontFamily}${cssAppend};
       }
-      .font-family-handwriting {
+      .font-family-handwriting, .font-family-cursive {
         font-family: ${handwritingFontFamily.style.fontFamily}${cssAppend};
       }
     `;
     
     return () => {
-      // Cleanup on unmount
       const element = document.getElementById(styleId);
       if (element) {
         element.remove();

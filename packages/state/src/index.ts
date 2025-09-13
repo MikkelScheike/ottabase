@@ -30,6 +30,9 @@ export const DEFAULT_SELECTION_COLOR: TextSelectionColor = {
 export const DEFAULT_LAYOUT_PROVIDER: LayoutProvider = 'mantine';
 export const DEFAULT_LAYOUT_PRESET: LayoutPresetType = 'app';
 
+// Export ProviderState
+export { default as ProviderState } from './ProviderState';
+
 // Common state utilities
 export const STATE_DEFAULTS = {
     theme: 'light' as const,

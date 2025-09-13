@@ -2,7 +2,7 @@
 
 import React, { ReactNode, useEffect } from 'react';
 // NextThemes Wrapper
-import NextThemesWrapper from './NextThemesWrapper';
+import ProviderNextThemes from './ProviderNextThemes';
 // Font Provider
 import ProviderFont, { headingFontFamily, monospaceFontFamily, primaryFontFamily } from './ProviderFont';
 // Mantine
@@ -124,9 +124,9 @@ const ProviderUI = ({
 										   transitionProps={{duration: 128}} actions={[]}
 										   actionsWrapperComponent={ActionsWrapper}
 						>*/}
-					<NextThemesWrapper storagePrefix={storagePrefix}>
+					<ProviderNextThemes storagePrefix={storagePrefix}>
 						{children}
-					</NextThemesWrapper>
+					</ProviderNextThemes>
 					{/*</SpotlightProvider>*/}
 				</ModalsProvider>
 				{/* Notifications system */}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ProviderUI } from '@ottabase/ui';
+import { ProviderState } from '@ottabase/state';
 import { appConfig, APP_META, THEME_COLORS } from '@/config/app.config';
 import './globals.css';
 
@@ -27,7 +28,9 @@ export default function RootLayout({
                     primaryColor={appConfig.theme.colorDefault}
                     enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}
                 >
-                    {children}
+                    <ProviderState>
+                        {children}
+                    </ProviderState>
                 </ProviderUI>
             </body>
         </html>

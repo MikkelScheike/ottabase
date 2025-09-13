@@ -67,7 +67,7 @@ UI components and providers for Ottabase applications.
 **Features:**
 
 - ProviderUI: Main UI provider combining Mantine and Next.js themes
-- NextThemesWrapper: Standalone Next.js themes provider
+- ProviderNextThemes: Standalone Next.js themes provider
 - Theme management with dark/light mode support
 - FOUC (Flash of Unstyled Content) prevention
 
