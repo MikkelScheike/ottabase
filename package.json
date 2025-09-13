@@ -16,7 +16,9 @@
   },
   "devDependencies": {
     "pnpm": "^10.16.0",
-    "turbo": "^2.5.6"
+    "turbo": "^2.5.6",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:"
   },
   "packageManager": "pnpm@10.15.1",
   "engines": {

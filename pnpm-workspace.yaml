@@ -1,42 +1,29 @@
 packages:
-  - "apps/*"
-  - "packages/*"
+  - apps/*
+  - packages/*
 
-# Catalog for shared dependency versions
 catalog:
-  typescript: ^5.4.0
-
-  # Core React & Next.js
+  '@mantine/carousel': ^8.3.0
+  '@mantine/code-highlight': ^8.3.0
+  '@mantine/core': ^8.3.1
+  '@mantine/form': ^8.3.0
+  '@mantine/hooks': ^8.3.1
+  '@mantine/modals': ^8.3.0
+  '@mantine/notifications': ^8.3.0
+  '@mantine/spotlight': ^8.3.0,
+  '@types/node': ^20.19.14
+  '@types/react': ^18.3.24
+  '@types/react-dom': ^18.3.7
+  '@typescript-eslint/eslint-plugin': ^8.43.0
+  '@typescript-eslint/parser': ^8.43.0
+  eslint: ^9.35.0
+  eslint-config-next: ^15.5.3
+  jotai: ^2.14.0
+  next: ^15.5.3
+  next-themes: ^0.4.6
+  prettier: ^3.0.0
   react: ^18.3.1
   react-dom: ^18.3.1
-  next: ^15.0.0
-
-  # Types
-  "@types/react": ^18.3.1
-  "@types/react-dom": ^18.3.1
-  "@types/node": ^20.0.0
-
-  # Mantine UI Components
-  "@mantine/carousel": ^8.3.0
-  "@mantine/code-highlight": ^8.3.0
-  "@mantine/core": ^8.3.0
-  "@mantine/form": ^8.3.0
-  "@mantine/hooks": ^8.3.0
-  "@mantine/modals": ^8.3.0
-  "@mantine/notifications": ^8.3.0
-  "@mantine/spotlight": ^8.3.0,
-
-  # State & Theming
-  "next-themes": ^0.4.6
-  "jotai": ^2.14.0
-
-  # Build Tools
-  "tsup": ^8.0.0
-  "rimraf": ^5.0.0
-
-  # Linting & Formatting
-  "eslint": ^9.35.0
-  "@typescript-eslint/eslint-plugin": ^7.0.0
-  "@typescript-eslint/parser": ^7.0.0
-  "eslint-config-next": ^15.0.0
-  "prettier": ^3.0.0
+  rimraf: ^5.0.0
+  tsup: ^8.0.0
+  typescript: ^5.9.2

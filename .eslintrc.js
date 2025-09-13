@@ -2,7 +2,7 @@ module.exports = {
     root: true,
     extends: [
         'eslint:recommended',
-        '@typescript-eslint/recommended',
+        'plugin:@typescript-eslint/recommended',
         'next/core-web-vitals'
     ],
     parser: '@typescript-eslint/parser',
@@ -30,7 +30,8 @@ module.exports = {
         '@typescript-eslint/explicit-module-boundary-types': 'off',
         '@typescript-eslint/no-explicit-any': 'warn',
         'react/react-in-jsx-scope': 'off',
-        'react/prop-types': 'off'
+        'react/prop-types': 'off',
+        'react/no-unescaped-entities': 'off'
     },
     ignorePatterns: [
         'node_modules/',

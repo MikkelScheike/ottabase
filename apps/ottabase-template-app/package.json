@@ -1,5 +1,5 @@
 {
-    "name": "@ottabase/example-app",
+    "name": "@ottabase/ottabase-template-app",
     "version": "0.1.0",
     "private": true,
     "scripts": {
