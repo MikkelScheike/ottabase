@@ -6,16 +6,19 @@ import ProviderNextThemes from './ProviderNextThemes';
 // Font Provider
 import ProviderFont, { headingFontFamily, monospaceFontFamily, primaryFontFamily } from './ProviderFont';
 // Mantine
-import { MantineProvider, createTheme, MantineColorsTuple, localStorageColorSchemeManager } from '@mantine/core';
+import { MantineProvider, createTheme, MantineThemeOverride, MantineColorsTuple, localStorageColorSchemeManager } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { ModalsProvider } from '@mantine/modals';
 //import {SpotlightProvider} from '@mantine/spotlight';
 import { Group, Text, Anchor, rem } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
-/* Provider CSS */
+/* Import Mantine CSS */
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
+
+import { mantineShadcn } from '../themes/mantine-shadcn';
+import { mantineVercel } from '../themes/mantine-vercel';
 
 interface ProvidersProps {
 	children: ReactNode;
@@ -84,7 +87,7 @@ const ProviderUI = ({
 	const toggleColorScheme = (value?: ColorSchemeType) =>
 		setColorScheme(value || (colorScheme === 'dark' ? 'light' : 'dark'));
 
-	const mantineTheme = createTheme({
+	const mantineDefaultTheme: MantineThemeOverride = {
 		defaultRadius: 'sm',
 		colors: themeColors,
 		primaryColor: primaryColor,
@@ -106,7 +109,9 @@ const ProviderUI = ({
 			xl: rem(20),
 			xxl: rem(28),
 		},
-	});
+	};
+
+	const mantineTheme = createTheme(mantineDefaultTheme);
 
 	return (
 		<ProviderFont enforceGoogleFonts={enforceGoogleFonts}>
@@ -138,6 +143,7 @@ const ProviderUI = ({
 	);
 }
 
+// Spotlight actions wrapper
 function ActionsWrapper({ children }: { children: React.ReactNode }) {
 	return (
 		<div>
