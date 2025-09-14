@@ -12,10 +12,15 @@ import { ModalsProvider } from '@mantine/modals';
 //import {SpotlightProvider} from '@mantine/spotlight';
 import { Group, Text, Anchor, rem } from '@mantine/core';
 import { useLocalStorage } from '@mantine/hooks';
+
+/* CSS Reset & Ottabase UI Core global styles */
+import '../styles/index.css';
+
 /* Import Mantine CSS */
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/carousel/styles.css';
+
 
 import { mantineShadcn } from '../themes/mantine-shadcn';
 import { mantineVercel } from '../themes/mantine-vercel';

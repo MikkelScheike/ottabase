@@ -17,11 +17,18 @@ a {
     text-decoration: none;
 }
 
-.text-balance {
+/* Dark mode native support */
+@media (prefers-color-scheme: dark) {
+    html {
+        color-scheme: dark;
+    }
+}
+
+.text-wrap-balance {
     text-wrap: balance;
 }
 
-.text-pretty {
+.text-wrap-pretty {
     text-wrap: pretty;
 }
 
@@ -33,18 +40,11 @@ a {
     margin: 0 auto;
 }
 
-
 /* Tremor chart legend fix */
 .tremor-Legend-legendItem p {
     pointer-events: none;
 }
 
-/* Dark mode native support */
-@media (prefers-color-scheme: dark) {
-    html {
-        color-scheme: dark;
-    }
-}
 
 /* Responsive support for small screens */
 @media (max-width: 380px) {

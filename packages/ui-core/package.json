@@ -16,10 +16,12 @@
             "import": "./dist/provider/index.esm.js",
             "require": "./dist/provider/index.js"
         },
-        "./styles": "./dist/styles.css"
+        "./styles": "./styles/index.css",
+        "./styles/*": "./styles/*"
     },
     "files": [
         "dist",
+        "styles",
         "README.md"
     ],
     "scripts": {
