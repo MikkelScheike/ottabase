@@ -27,30 +27,6 @@
         "paths": {
             "@/*": [
                 "./src/*"
-            ],
-            "@ottabase/ui-core": [
-                "../../packages/ui-core/src"
-            ],
-            "@ottabase/ui-core/*": [
-                "../../packages/ui-core/src/*"
-            ],
-            "@ottabase/config": [
-                "../../packages/config/src"
-            ],
-            "@ottabase/config/*": [
-                "../../packages/config/src/*"
-            ],
-            "@ottabase/state": [
-                "../../packages/state/src"
-            ],
-            "@ottabase/state/*": [
-                "../../packages/state/src/*"
-            ],
-            "@ui-tailwind": [
-                "../../packages/ui-tailwind/src"
-            ],
-            "@ui-tailwind/*": [
-                "../../packages/ui-tailwind/src/*"
             ]
         }
     },
