@@ -13,13 +13,13 @@
         "next": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
+        "jotai": "catalog:",
+        "@mantine/core": "catalog:",
+        "@mantine/hooks": "catalog:",
         "@ottabase/ui-core": "workspace:*",
         "@ottabase/ui-code-highlight": "workspace:*",
         "@ottabase/config": "workspace:*",
-        "@ottabase/state": "workspace:*",
-        "jotai": "catalog:",
-        "@mantine/core": "catalog:",
-        "@mantine/hooks": "catalog:"
+        "@ottabase/state": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "catalog:",
@@ -27,6 +27,13 @@
         "@types/react-dom": "catalog:",
         "typescript": "catalog:",
         "eslint": "catalog:",
-        "eslint-config-next": "catalog:"
+        "eslint-config-next": "catalog:",
+        "tailwindcss": "3.4.17",
+        "postcss": "8.4.27",
+        "autoprefixer": "10.4.14",
+        "postcss-preset-mantine": "1.18.0",
+        "@tailwindcss/forms": "0.5.10",
+        "@tailwindcss/typography": "0.5.16",
+        "postcss-preset-env": "9.5.0"
     }
 }

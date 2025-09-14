@@ -54,7 +54,9 @@ export default function HomePage() {
 
     return (
         <Container size="md" py="xl">
-            <div className="bg-red-500 text-white p-4">Tailwind is working!</div>
+            <div className="bg-red-500 text-white p-4 my-4 rounded-sm">
+                Tailwind is working!
+            </div>
             <Stack gap="xl">
                 {/* Header */}
                 <div>

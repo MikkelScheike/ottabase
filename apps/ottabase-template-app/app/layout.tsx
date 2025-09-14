@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import '@ottabase/ui-tailwind/styles/tailwind.base.css';
 import { APP_META } from '@/config/app.config';
 import { Providers } from './providers';
 
