@@ -20,18 +20,18 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body>
-                <ProviderUI
-                    storagePrefix={appConfig.storage.prefix}
-                    preventFOUC={appConfig.ui.preventFOUC}
-                    preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
-                    themeColors={THEME_COLORS}
-                    primaryColor={appConfig.theme.colorDefault}
-                    enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}
-                >
-                    <ProviderState>
+                <ProviderState>
+                    <ProviderUI
+                        storagePrefix={appConfig.storage.prefix}
+                        preventFOUC={appConfig.ui.preventFOUC}
+                        preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
+                        themeColors={THEME_COLORS}
+                        primaryColor={appConfig.theme.colorDefault}
+                        enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}
+                    >
                         {children}
-                    </ProviderState>
-                </ProviderUI>
+                    </ProviderUI>
+                </ProviderState>
             </body>
         </html>
     );
