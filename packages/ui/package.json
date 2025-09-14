@@ -39,6 +39,15 @@
     ],
     "author": "",
     "license": "MIT",
+    "dependencies": {
+        "@mantine/carousel": "catalog:",
+        "@mantine/core": "catalog:",
+        "@mantine/hooks": "catalog:",
+        "@mantine/modals": "catalog:",
+        "@mantine/notifications": "catalog:",
+        "next": "catalog:",
+        "next-themes": "catalog:"
+    },
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
