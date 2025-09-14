@@ -1,1 +1,1 @@
-export * as ProviderCodeHighlight from "./ProviderCodeHighlight";
+export { default as ProviderCodeHighlight } from "./ProviderCodeHighlight";
