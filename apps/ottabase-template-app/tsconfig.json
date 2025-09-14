@@ -28,11 +28,11 @@
             "@/*": [
                 "./src/*"
             ],
-            "@ottabase/ui": [
-                "../../packages/ui/src"
+            "@ottabase/ui-core": [
+                "../../packages/ui-core/src"
             ],
-            "@ottabase/ui/*": [
-                "../../packages/ui/src/*"
+            "@ottabase/ui-core/*": [
+                "../../packages/ui-core/src/*"
             ],
             "@ottabase/config": [
                 "../../packages/config/src"

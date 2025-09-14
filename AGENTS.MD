@@ -24,7 +24,7 @@ Reusable code shared across applications:
 
 - **`@ottabase/config`** - Application configuration utilities
 - **`@ottabase/state`** - State management with providers
-- **`@ottabase/ui`** - UI components and theming system
+- **`@ottabase/ui-core`** - UI components and theming system
 - **`@ottabase/hello-world`** - Example component package
 
 ### Package Details
@@ -73,7 +73,7 @@ All shared dependencies are managed through **PNPM's catalog feature** defined i
 Internal packages use [`workspace:*`](apps/ottabase-template-app/package.json:16) protocol:
 
 ```json
-"@ottabase/ui": "workspace:*",
+"@ottabase/ui-core": "workspace:*",
 "@ottabase/config": "workspace:*",
 "@ottabase/state": "workspace:*"
 ```
@@ -86,7 +86,7 @@ Shared packages declare external dependencies as **peerDependencies** to avoid d
 
 - [`@ottabase/hello-world`](packages/hello-world/package.json:27): Declares `react` and `react-dom` as peers
 - [`@ottabase/state`](packages/state/package.json:35): Declares `jotai` as peer dependency
-- [`@ottabase/ui`](packages/ui/package.json:42): Declares all UI framework dependencies as peers
+- [`@ottabase/ui-core`](packages/ui-core/package.json:42): Declares all UI framework dependencies as peers
 
 ### 📦 Package-Specific Lock Files
 

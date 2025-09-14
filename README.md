@@ -45,7 +45,7 @@ pnpm dev --filter=example-app  # Start specific app
 
 # Building
 pnpm build                  # Build all packages and apps
-pnpm build --filter=@ottabase/ui  # Build specific package
+pnpm build --filter=@ottabase/ui-core  # Build specific package
 
 # Linting & Type Checking
 pnpm lint                   # Lint all packages
@@ -60,7 +60,7 @@ pnpm clean                  # Clean all build artifacts
 
 ## 📦 Packages
 
-### @ottabase/ui
+### @ottabase/ui-core
 
 UI components and providers for Ottabase applications.
 
@@ -74,7 +74,7 @@ UI components and providers for Ottabase applications.
 **Usage:**
 
 ```tsx
-import { ProviderUI } from '@ottabase/ui';
+import { ProviderUI } from '@ottabase/ui-core';
 
 function App({ children }) {
   return (
@@ -110,7 +110,7 @@ cp -r ../example-app/* .
     "next": "^15.0.0",
     "react": "workspace:*",
     "react-dom": "workspace:*",
-    "@ottabase/ui": "workspace:*"
+    "@ottabase/ui-core": "workspace:*"
   },
   "devDependencies": {
     "typescript": "workspace:*",
@@ -161,7 +161,7 @@ cd packages/my-package
 pnpm add -w some-package
 
 # Add to specific package
-pnpm add --filter @ottabase/ui some-package
+pnpm add --filter @ottabase/ui-core some-package
 
 # Add dev dependency to root
 pnpm add -wD some-dev-package
@@ -174,7 +174,7 @@ Use `workspace:*` to reference internal packages:
 ```json
 {
   "dependencies": {
-    "@ottabase/ui": "workspace:*",
+    "@ottabase/ui-core": "workspace:*",
     "react": "workspace:*"
   }
 }

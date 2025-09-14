@@ -1,5 +1,5 @@
 {
-    "name": "@ottabase/ui",
+    "name": "@ottabase/ui-core",
     "version": "1.0.0",
     "description": "UI components and providers for Ottabase applications",
     "main": "dist/index.js",

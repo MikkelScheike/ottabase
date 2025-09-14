@@ -1,4 +1,4 @@
-# @ottabase/ui
+# @ottabase/ui-core
 
 UI components and providers for Ottabase applications.
 
@@ -13,9 +13,9 @@ UI components and providers for Ottabase applications.
 ## Installation
 
 ```bash
-npm install @ottabase/ui
+npm install @ottabase/ui-core
 # or
-pnpm add @ottabase/ui
+pnpm add @ottabase/ui-core
 ```
 
 ## Usage
@@ -23,7 +23,7 @@ pnpm add @ottabase/ui
 ### Basic Setup
 
 ```tsx
-import { ProviderUI } from '@ottabase/ui';
+import { ProviderUI } from '@ottabase/ui-core';
 
 function App({ children }) {
   return (
@@ -37,7 +37,7 @@ function App({ children }) {
 ### Using ProviderNextThemes Separately
 
 ```tsx
-import { ProviderNextThemes } from '@ottabase/ui';
+import { ProviderNextThemes } from '@ottabase/ui-core';
 
 function App({ children }) {
   return (

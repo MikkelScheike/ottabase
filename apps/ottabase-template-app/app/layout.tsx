@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { ProviderUI } from '@ottabase/ui';
+import { ProviderUI } from '@ottabase/ui-core';
 import { ProviderState } from '@ottabase/state';
 import { appConfig, APP_META, THEME_COLORS } from '@/config/app.config';
 import './globals.css';

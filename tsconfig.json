@@ -19,11 +19,11 @@
         "jsx": "preserve",
         "baseUrl": ".",
         "paths": {
-            "@ottabase/ui": [
-                "./packages/ui/src"
+            "@ottabase/ui-core": [
+                "./packages/ui-core/src"
             ],
-            "@ottabase/ui/*": [
-                "./packages/ui/src/*"
+            "@ottabase/ui-core/*": [
+                "./packages/ui-core/src/*"
             ]
         }
     },
@@ -33,7 +33,7 @@
     ],
     "references": [
         {
-            "path": "./packages/ui"
+            "path": "./packages/ui-core"
         },
         {
             "path": "./packages/config"
