@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
-import { ProviderUI } from '@ottabase/ui-core';
-import { ProviderState } from '@ottabase/state';
-import { appConfig, APP_META, THEME_COLORS } from '@/config/app.config';
 import './globals.css';
+import { APP_META } from '@/config/app.config';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
     title: APP_META.title,
@@ -20,18 +19,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body>
-                <ProviderState>
-                    <ProviderUI
-                        storagePrefix={appConfig.storage.prefix}
-                        preventFOUC={appConfig.ui.preventFOUC}
-                        preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
-                        themeColors={THEME_COLORS}
-                        primaryColor={appConfig.theme.colorDefault}
-                        enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}
-                    >
-                        {children}
-                    </ProviderUI>
-                </ProviderState>
+                <Providers>{children}</Providers>
             </body>
         </html>
     );

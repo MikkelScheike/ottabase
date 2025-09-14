@@ -49,25 +49,25 @@ hljs.registerLanguage('text', plaintext);
 const highlightJsAdapter = createHighlightJsAdapter(hljs);
 
 interface ProviderCodeHighlightProps {
-    children: ReactNode;
+	children: ReactNode;
 }
 
 const ProviderCodeHighlight = ({ children }: ProviderCodeHighlightProps) => {
-    const { colorScheme } = useMantineColorScheme();
+	const { colorScheme } = useMantineColorScheme();
 
-    useEffect(() => {
-        // Add CSS to control which theme is active
-        const styleId = 'hljs-theme-controller';
-        let style = document.getElementById(styleId) as HTMLStyleElement;
+	useEffect(() => {
+		// Add CSS to control which theme is active
+		const styleId = 'hljs-theme-controller';
+		let style = document.getElementById(styleId) as HTMLStyleElement;
 
-        if (!style) {
-            style = document.createElement('style');
-            style.id = styleId;
-            document.head.appendChild(style);
-        }
+		if (!style) {
+			style = document.createElement('style');
+			style.id = styleId;
+			document.head.appendChild(style);
+		}
 
-        // CSS to control theme visibility based on color scheme
-        const controllerCSS = `
+		// CSS to control theme visibility based on color scheme
+		const controllerCSS = `
 			/* Base styles - hide both themes by default */
 			.hljs {
 				background: transparent !important;
@@ -124,15 +124,15 @@ const ProviderCodeHighlight = ({ children }: ProviderCodeHighlightProps) => {
 			}
 		`;
 
-        style.textContent = controllerCSS;
-        console.log(`Applied highlight.js theme: ${colorScheme === 'dark' ? 'github-dark' : 'github'}`);
-    }, [colorScheme]);
+		style.textContent = controllerCSS;
+		console.log(`Applied highlight.js theme: ${colorScheme === 'dark' ? 'github-dark' : 'github'}`);
+	}, [colorScheme]);
 
-    return (
-        <CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
-            {children}
-        </CodeHighlightAdapterProvider>
-    );
+	return (
+		<CodeHighlightAdapterProvider adapter={highlightJsAdapter}>
+			{children}
+		</CodeHighlightAdapterProvider>
+	);
 };
 
-export default ProviderCodeHighlight; 
+export default ProviderCodeHighlight;

@@ -1,0 +1,41 @@
+{
+    "name": "@ottabase/ui-code-highlight",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Core UI components, theming and providers",
+    "author": "Ottabase",
+    "license": "MIT",
+    "type": "module",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js",
+            "require": "./dist/index.cjs"
+        }
+    },
+    "scripts": {
+        "build": "tsup src/index.ts --format cjs,esm --dts",
+        "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+        "clean": "rimraf .turbo dist",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "highlight.js": "^11.11.1"
+    },
+    "peerDependencies": {
+        "@mantine/code-highlight": "catalog:",
+        "@mantine/core": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:"
+    },
+    "devDependencies": {
+        "eslint": "catalog:",
+        "react": "catalog:",
+        "rimraf": "catalog:",
+        "tsup": "catalog:",
+        "typescript": "catalog:"
+    }
+}

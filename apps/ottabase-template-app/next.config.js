@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
+
 const nextConfig = {
     // Enable transpilation of packages
-    transpilePackages: ['@ottabase/ui-core', '@ottabase/config', '@ottabase/state'],
+    transpilePackages: [
+        '@ottabase/config',
+        '@ottabase/state',
+        '@ottabase/ui-core',
+        '@ottabase/ui-code-highlight',
+    ],
 
     // Enable React strict mode
     reactStrictMode: true,
