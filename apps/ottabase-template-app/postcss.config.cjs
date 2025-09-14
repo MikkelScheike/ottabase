@@ -1,8 +1,13 @@
 module.exports = {
     plugins: {
-        'tailwindcss': {},
-        'postcss-preset-env': {},
+        'tailwindcss/nesting': {},
+        tailwindcss: {},
         autoprefixer: {},
+        'postcss-preset-env': {
+            features: {
+                'nesting-rules': false // Disable nesting as we're using tailwindcss/nesting
+            }
+        },
         'postcss-preset-mantine': {
             autoRem: true,
             // extend: https://mantine.dev/styles/postcss-preset/#custom-mixins
