@@ -17,6 +17,7 @@ import {
 } from '@mantine/core';
 import { appGlobalStateAtom, createAppGlobalStateAtom } from '@/state/appGlobalState';
 import { APP_META, THEME_COLORS, UI_LAYOUT } from '@/config/app.config';
+import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
 
 export default function HomePage() {
     const [appState, setAppState] = useAtom(appGlobalStateAtom);
@@ -60,15 +61,20 @@ export default function HomePage() {
             <Stack gap="xl">
                 {/* Header */}
                 <div>
-                    <Title order={1} mb="md">
-                        {APP_META.appName}
-                    </Title>
-                    <Text size="lg" c="dimmed">
-                        {APP_META.description}
-                    </Text>
-                    <Text size="sm" c="dimmed" mt="xs">
-                        {APP_META.copyrightText}
-                    </Text>
+                    <Group justify="space-between" align="flex-start" mb="md">
+                        <div>
+                            <Title order={1} mb="md">
+                                {APP_META.appName}
+                            </Title>
+                            <Text size="lg" c="dimmed">
+                                {APP_META.description}
+                            </Text>
+                            <Text size="sm" c="dimmed" mt="xs">
+                                {APP_META.copyrightText}
+                            </Text>
+                        </div>
+                        <DarkModeToggle type="button" title="Toggle dark/light mode" />
+                    </Group>
                 </div>
 
                 {/* App State Demo */}
@@ -169,6 +175,25 @@ export default function HomePage() {
                             </Button>
                         </Group>
                     </Group>
+                </Card>
+
+                {/* UI Components Demo */}
+                <Card shadow="sm" padding="lg" radius="md" withBorder>
+                    <Title order={2} size="h3" mb="md">
+                        UI Components Demo
+                    </Title>
+
+                    <Stack gap="md">
+                        <Group justify="space-between">
+                            <Text>Dark Mode Toggle (Button):</Text>
+                            <DarkModeToggle type="button" />
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text>Dark Mode Toggle (Switch):</Text>
+                            <DarkModeToggle type="toggle-switch" />
+                        </Group>
+                    </Stack>
                 </Card>
 
                 {/* Configuration Demo */}
