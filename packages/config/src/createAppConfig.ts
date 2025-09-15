@@ -44,11 +44,11 @@ export function createAppConfig(options: ConfigOptions = {}): AppConfig {
         appName: getEnv('APP_NAME', defaults.meta?.appName ?? appName),
         logoUrl: getEnv('APP_LOGO_URL', defaults.meta?.logoUrl ?? '/logo.png'),
         title: getEnv('APP_TITLE', defaults.meta?.title ?? getEnv('APP_NAME', appName)),
-        author: getEnv('APP_AUTHOR', defaults.meta?.author ?? 'Ottabase Team'),
+        author: getEnv('APP_AUTHOR', defaults.meta?.author ?? '@thinkdj'),
         description: getEnv('APP_DESCRIPTION', defaults.meta?.description ?? `A modern web application built with ${appName}`),
         keywords: getEnv('APP_KEYWORDS', defaults.meta?.keywords ?? 'React, Next.js, TypeScript, Mantine, Tailwind'),
         robots: getEnv('APP_ROBOTS', defaults.meta?.robots ?? 'index, follow'),
-        copyrightText: getEnv('APP_COPYRIGHT_TEXT', defaults.meta?.copyrightText ?? `© 2020-${new Date().getFullYear()} Ottabase Team`),
+        copyrightText: getEnv('APP_COPYRIGHT_TEXT', defaults.meta?.copyrightText ?? `© 2020-${new Date().getFullYear()} @thinkdj`),
         companyName: getEnv('APP_COMPANY_NAME', defaults.meta?.companyName ?? ''),
     };
 

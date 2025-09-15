@@ -5,7 +5,7 @@ export const appConfig = createAppConfig({
     appName: 'Ottabase Template App',
     defaults: {
         meta: {
-            author: 'Ottabase Team',
+            author: '@thinkdj',
             description: 'A template application built with Ottabase monorepo - CDC Starter Kit equivalent',
             keywords: 'Ottabase, Next.js Starter Kit, Tailwind, Mantine, Shadcn, Tremor, HTML, React, Next.js, TypeScript, JavaScript, Node.js, MongoDB',
             companyName: 'Ottabase',
