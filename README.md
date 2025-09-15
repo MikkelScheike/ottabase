@@ -193,3 +193,7 @@ Use `workspace:*` to reference internal packages:
 - `pnpm-workspace.yaml`: pnpm workspace and catalog configuration
 - `tsconfig.json`: Root TypeScript configuration
 - `.eslintrc.js`: ESLint configuration for all packages
+
+-------------------
+
+[![Built on Cloudflare](https://workers.cloudflare.com/built-with-cloudflare.svg)](https://cloudflare.com)
