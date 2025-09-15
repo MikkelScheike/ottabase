@@ -1,9 +1,9 @@
 "use client";
 
-import {IconMoonStars, IconSun} from "@tabler/icons-react";
-import {ActionIcon, rem, Switch, useMantineColorScheme, useMantineTheme} from "@mantine/core";
-import {useEffect} from "react";
-import {useTheme} from "next-themes";
+import { IconMoonStars, IconSun } from "@tabler/icons-react";
+import { ActionIcon, rem, Switch, useMantineColorScheme, useMantineTheme } from "@mantine/core";
+import { useEffect } from "react";
+import { useTheme } from "next-themes";
 
 type DarkModeToggleProps = {
     type: 'toggle-switch' | 'button';
@@ -12,19 +12,19 @@ type DarkModeToggleProps = {
 
 const DarkModeToggle = (props: DarkModeToggleProps) => {
 
-    const {colorScheme, toggleColorScheme} = useMantineColorScheme({
+    const { colorScheme, toggleColorScheme } = useMantineColorScheme({
         keepTransitions: false,
     });
 
     const isDarkMode = colorScheme === 'dark';
     const mantineTheme = useMantineTheme();
 
-    const {type, title="Toggle color scheme"} = props;
+    const { type, title = "Toggle color scheme" } = props;
 
     // Tailwind Dark Mode
-    const {setTheme: setTailwindTheme} = useTheme();
+    const { setTheme: setTailwindTheme } = useTheme();
     useEffect(() => {
-        if(!colorScheme) return;
+        if (!colorScheme) return;
         setTailwindTheme((colorScheme === 'dark') ? 'dark' : 'light')
     }, [colorScheme, setTailwindTheme]);
 
@@ -45,7 +45,7 @@ const DarkModeToggle = (props: DarkModeToggleProps) => {
                 onClick={toggleColorScheme}
                 title={title}
             >
-                {isDarkMode ? <IconSun size={rem('16px')}/> : <IconMoonStars size={rem('16px')} />}
+                {isDarkMode ? <IconSun size={rem('16px')} /> : <IconMoonStars size={rem('16px')} />}
             </ActionIcon>
     )
 }

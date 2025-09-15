@@ -18,6 +18,7 @@ import {
 import { appGlobalStateAtom, createAppGlobalStateAtom } from '@/state/appGlobalState';
 import { APP_META, THEME_COLORS, UI_LAYOUT } from '@/config/app.config';
 import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
+import { BlogPagination } from '@ottabase/ui-components';
 
 export default function HomePage() {
     const [appState, setAppState] = useAtom(appGlobalStateAtom);
@@ -182,6 +183,8 @@ export default function HomePage() {
                     <Title order={2} size="h3" mb="md">
                         UI Components Demo
                     </Title>
+
+                    <BlogPagination onPageChange={(page) => console.log('Page changed to:', page)} page={1} lastPage={10} perPage={10} />
 
                     <Stack gap="md">
                         <Group justify="space-between">
