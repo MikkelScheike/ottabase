@@ -26,8 +26,8 @@
         "highlight.js": "^11.11.1"
     },
     "peerDependencies": {
-        "@mantine/code-highlight": "^8.0.0",
-        "@mantine/core": "^8.0.0",
+        "@mantine/code-highlight": "^8.3.1",
+        "@mantine/core": "^8.3.1",
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0"
     },
