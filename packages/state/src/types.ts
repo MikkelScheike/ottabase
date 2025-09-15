@@ -7,7 +7,7 @@ export interface TextSelectionColor {
 }
 
 export type SupportedLayout = 'app' | 'dashboard' | 'landing' | 'auth' | 'minimal';
-export type LayoutProvider = 'mantine' | 'shadcn' | 'chakra' | 'mui';
+export type LayoutProvider = 'mantine' | 'tailwind';
 export type LayoutPresetType = 'app' | 'dashboard' | 'admin' | 'blog' | 'ecommerce';
 
 // Base user interface - apps can extend this

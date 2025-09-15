@@ -86,7 +86,7 @@ Shared packages declare external dependencies as **peerDependencies** to avoid d
 
 - [`@ottabase/hello-world`](packages/hello-world/package.json:27): Declares `react` and `react-dom` as peers
 - [`@ottabase/state`](packages/state/package.json:35): Declares `jotai` as peer dependency
-- [`@ottabase/ui-core`](packages/ui-core/package.json:42): Declares all UI framework dependencies as peers
+- [`@ottabase/ui-core`](packages/ui-core/package.json:44): Declares `mantine` dependencies as peers
 
 ### 📦 Package-Specific Lock Files
 
@@ -99,6 +99,7 @@ Shared packages declare external dependencies as **peerDependencies** to avoid d
 3. **Peer dependencies**: Declare framework dependencies as peers in shared packages
 4. **Single lock file**: Maintain only the root [`pnpm-lock.yaml`](pnpm-lock.yaml:1) - remove package-specific lock files
 5. **Version updates**: Update versions only in [`pnpm-workspace.yaml`](pnpm-workspace.yaml:5) catalog section
+6. Ensure the dependency needs to be added to root `pnpm-workspace.yaml` before adding it to catalog. Sometimes it could be better to add it in the package alone as it might not be used by apps directly.
 
 This strategy ensures:
 
