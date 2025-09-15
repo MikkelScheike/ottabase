@@ -9,6 +9,7 @@ module.exports = {
         // include specific package sources for UI components
         '../../packages/ui-core/src/**/*.{js,ts,jsx,tsx}',
         '../../packages/ui-code-highlight/src/**/*.{js,ts,jsx,tsx}',
+        '../../packages/ui-components/src/**/*.{js,ts,jsx,tsx}',
         '../../packages/ui-tailwind/src/**/*.{js,ts,jsx,tsx}'
     ],
     theme: {
