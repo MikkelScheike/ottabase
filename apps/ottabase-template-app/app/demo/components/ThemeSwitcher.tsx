@@ -16,6 +16,10 @@ export function ThemeSwitcher() {
                 return 'Clean, minimal design inspired by ShadCN UI with neutral greys and subtle rounded corners';
             case 'mantine-vercel':
                 return 'High-contrast black/white aesthetic inspired by Vercel with sharp, modern elements';
+            case 'mantine-ant':
+                return 'Professional enterprise design system with Ant Design\'s signature blue palette and structured layouts';
+            case 'mantine-stripe':
+                return 'Sophisticated fintech aesthetic with purple gradients, premium feel, and payment-optimized forms';
             case 'app-override':
                 return 'Custom theme with brand colors, glass morphism effects, and app-specific component styling';
             default:
@@ -29,8 +33,12 @@ export function ThemeSwitcher() {
                 return 'gray';
             case 'mantine-vercel':
                 return 'dark';
-            case 'app-override':
+            case 'mantine-ant':
                 return 'blue';
+            case 'mantine-stripe':
+                return 'violet';
+            case 'app-override':
+                return 'cyan';
             default:
                 return 'gray';
         }

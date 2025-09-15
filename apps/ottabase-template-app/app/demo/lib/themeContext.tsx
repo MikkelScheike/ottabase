@@ -3,11 +3,11 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { MantineThemeOverride } from '@mantine/core';
 import { createMantineTheme } from '@ottabase/ui-core';
-import { mantineShadcn, mantineVercel } from '@ottabase/ui-core';
+import { mantineShadcn, mantineVercel, mantineAnt, mantineStripe } from '@ottabase/ui-core';
 import { mantineThemeConfig } from '@/configs/theme.mantine';
 
 // Available theme options
-export type ThemeOption = 'mantine-shadcn' | 'mantine-vercel' | 'app-override';
+export type ThemeOption = 'mantine-shadcn' | 'mantine-vercel' | 'mantine-ant' | 'mantine-stripe' | 'app-override';
 
 export interface ThemeContextValue {
     currentTheme: ThemeOption;
@@ -22,12 +22,16 @@ const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 const BASE_THEMES = {
     'mantine-shadcn': mantineShadcn,
     'mantine-vercel': mantineVercel,
+    'mantine-ant': mantineAnt,
+    'mantine-stripe': mantineStripe,
 } as const;
 
 // Available theme options for dropdown
 const THEME_OPTIONS = [
     { value: 'mantine-shadcn' as ThemeOption, label: 'Mantine ShadCN' },
     { value: 'mantine-vercel' as ThemeOption, label: 'Mantine Vercel' },
+    { value: 'mantine-ant' as ThemeOption, label: 'Mantine Ant Design' },
+    { value: 'mantine-stripe' as ThemeOption, label: 'Mantine Stripe' },
     { value: 'app-override' as ThemeOption, label: 'App Override (Custom)' },
 ];
 
@@ -53,6 +57,10 @@ function getMantineTheme(themeOption: ThemeOption): MantineThemeOverride {
             return mantineShadcn;
         case 'mantine-vercel':
             return mantineVercel;
+        case 'mantine-ant':
+            return mantineAnt;
+        case 'mantine-stripe':
+            return mantineStripe;
         case 'app-override':
             return createMantineTheme(
                 mantineThemeConfig,
