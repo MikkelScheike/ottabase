@@ -15,6 +15,11 @@
             "types": "./dist/dark-mode-toggle.d.ts",
             "import": "./dist/dark-mode-toggle.esm.js",
             "require": "./dist/dark-mode-toggle.js"
+        },
+        "./logo": {
+            "types": "./dist/logo.d.ts",
+            "import": "./dist/logo.esm.js",
+            "require": "./dist/logo.js"
         }
     },
     "files": [
@@ -22,8 +27,8 @@
         "README.md"
     ],
     "scripts": {
-        "build": "tsup src/index.ts src/dark-mode-toggle.ts --format cjs,esm --dts --clean",
-        "dev": "tsup src/index.ts src/dark-mode-toggle.ts --format cjs,esm --dts --watch",
+        "build": "tsup src/index.ts src/dark-mode-toggle.ts src/logo.ts --format cjs,esm --dts --clean",
+        "dev": "tsup src/index.ts src/dark-mode-toggle.ts src/logo.ts --format cjs,esm --dts --watch",
         "clean": "rimraf dist",
         "lint": "eslint src --ext .ts,.tsx",
         "type-check": "tsc --noEmit"
@@ -40,12 +45,14 @@
     "license": "MIT",
     "dependencies": {
         "@mantine/core": "catalog:",
+        "@ottabase/config": "workspace:*",
         "@tabler/icons-react": "^3.26.0",
         "next-themes": "catalog:"
     },
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
+        "next": ">=15.0.0",
         "@mantine/core": "^8.3.1",
         "next-themes": "^0.4.6",
         "@tabler/icons-react": "^3.26.0"
@@ -54,6 +61,7 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@types/node": "catalog:",
+        "next": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
         "typescript": "catalog:",

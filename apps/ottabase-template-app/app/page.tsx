@@ -18,6 +18,7 @@ import {
 import { appGlobalStateAtom, createAppGlobalStateAtom } from '@/state/appGlobalState';
 import { APP_META, THEME_COLORS, UI_LAYOUT } from '@/config/app.config';
 import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
+import { Logo } from '@ottabase/ui-components/logo';
 import { BlogPagination } from '@ottabase/ui-components';
 
 export default function HomePage() {
@@ -195,6 +196,16 @@ export default function HomePage() {
                         <Group justify="space-between">
                             <Text>Dark Mode Toggle (Switch):</Text>
                             <DarkModeToggle type="toggle-switch" />
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text>Logo Component:</Text>
+                            <Logo appName={APP_META.appName} logoUrl={APP_META.logoUrl} />
+                        </Group>
+
+                        <Group justify="space-between">
+                            <Text>Logo with Dark Mode Toggle:</Text>
+                            <Logo appName={APP_META.appName} darkModeSwitcher={true} />
                         </Group>
                     </Stack>
                 </Card>
