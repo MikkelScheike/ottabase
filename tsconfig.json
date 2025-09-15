@@ -48,6 +48,12 @@
             ],
             "@ottabase/ui-tailwind/*": [
                 "./packages/ui-tailwind/src/*"
+            ],
+            "@ottabase/ui-components": [
+                "./packages/ui-components/src"
+            ],
+            "@ottabase/ui-components/*": [
+                "./packages/ui-components/src/*"
             ]
         }
     },
@@ -70,6 +76,9 @@
         },
         {
             "path": "./packages/ui-tailwind"
+        },
+        {
+            "path": "./packages/ui-components"
         }
     ]
 }

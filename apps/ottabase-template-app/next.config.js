@@ -3,9 +3,9 @@
 const nextConfig = {
     // Enable transpilation of packages
     transpilePackages: [
+        '@ottabase/ui-core',
         '@ottabase/config',
         '@ottabase/state',
-        '@ottabase/ui-core',
         '@ottabase/ui-code-highlight',
     ],
 
