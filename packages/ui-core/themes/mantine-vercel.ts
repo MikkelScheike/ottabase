@@ -149,12 +149,12 @@ export const mantineVercel: MantineThemeOverride = {
             } as { radius: string; padding: string },
             styles: (theme: any) => ({
                 root: {
-                    backgroundColor: '#ffffff',
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    backgroundColor: 'var(--mantine-color-body)',
+                    border: `1px solid var(--mantine-color-default-border)`,
                     boxShadow: 'none',
                     transition: 'all 0.2s ease',
                     '&:hover': {
-                        borderColor: theme.colors.gray?.[3] ?? '#e5e5e5',
+                        borderColor: 'var(--mantine-color-default-border)',
                         transform: 'translateY(-2px)',
                         boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
                     },
@@ -165,8 +165,8 @@ export const mantineVercel: MantineThemeOverride = {
         Paper: {
             styles: (theme: any) => ({
                 root: {
-                    backgroundColor: '#ffffff',
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    backgroundColor: 'var(--mantine-color-body)',
+                    border: `1px solid var(--mantine-color-default-border)`,
                     boxShadow: 'none',
                     borderRadius: theme.radius.lg,
                 },
@@ -181,16 +181,16 @@ export const mantineVercel: MantineThemeOverride = {
                 input: {
                     height: 40,
                     borderRadius: theme.radius.md,
-                    border: `1px solid ${theme.colors.gray?.[3] ?? '#e5e5e5'}`,
-                    backgroundColor: '#ffffff',
+                    border: `1px solid var(--mantine-color-default-border)`,
+                    backgroundColor: 'var(--mantine-color-body)',
                     fontSize: '14px',
                     transition: 'all 0.2s ease',
                     '&:focus': {
-                        borderColor: '#000000',
-                        boxShadow: `0 0 0 1px #000000`,
+                        borderColor: 'var(--mantine-color-text)',
+                        boxShadow: `0 0 0 1px var(--mantine-color-text)`,
                     },
                     '&::placeholder': {
-                        color: theme.colors.gray?.[5] ?? '#a3a3a3',
+                        color: 'var(--mantine-color-dimmed)',
                     },
                 },
             }) as Record<string, React.CSSProperties>,
@@ -200,12 +200,12 @@ export const mantineVercel: MantineThemeOverride = {
             styles: (theme: any) => ({
                 input: {
                     borderRadius: theme.radius.md,
-                    border: `1px solid ${theme.colors.gray?.[3] ?? '#e5e5e5'}`,
-                    backgroundColor: '#ffffff',
+                    border: `1px solid var(--mantine-color-default-border)`,
+                    backgroundColor: 'var(--mantine-color-body)',
                     transition: 'all 0.2s ease',
                     '&:focus': {
-                        borderColor: '#000000',
-                        boxShadow: `0 0 0 1px #000000`,
+                        borderColor: 'var(--mantine-color-text)',
+                        boxShadow: `0 0 0 1px var(--mantine-color-text)`,
                     },
                 },
             }) as Record<string, React.CSSProperties>,
@@ -217,8 +217,8 @@ export const mantineVercel: MantineThemeOverride = {
             } as { radius: string },
             styles: (theme: any) => ({
                 root: {
-                    backgroundColor: '#000000',
-                    color: '#ffffff',
+                    backgroundColor: 'var(--mantine-color-text)',
+                    color: 'var(--mantine-color-body)',
                     border: 'none',
                     fontWeight: 500,
                     fontSize: '12px',
@@ -236,12 +236,12 @@ export const mantineVercel: MantineThemeOverride = {
             styles: (theme: any) => ({
                 content: {
                     borderRadius: theme.radius.lg,
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
-                    backgroundColor: '#ffffff',
+                    border: `1px solid var(--mantine-color-default-border)`,
+                    backgroundColor: 'var(--mantine-color-body)',
                     boxShadow: '0 25px 50px rgba(0, 0, 0, 0.15)',
                 },
                 header: {
-                    borderBottom: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    borderBottom: `1px solid var(--mantine-color-default-border)`,
                     paddingBottom: theme.spacing.md,
                 },
             }) as Record<string, React.CSSProperties>,
@@ -250,9 +250,10 @@ export const mantineVercel: MantineThemeOverride = {
         Navbar: {
             styles: (theme: any) => ({
                 root: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    backgroundColor: 'var(--mantine-color-body)',
                     backdropFilter: 'blur(12px)',
-                    borderRight: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    borderRight: `1px solid var(--mantine-color-default-border)`,
+                    opacity: 0.95,
                 },
             }) as Record<string, React.CSSProperties>,
         },
@@ -260,9 +261,10 @@ export const mantineVercel: MantineThemeOverride = {
         Header: {
             styles: (theme: any) => ({
                 root: {
-                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    backgroundColor: 'var(--mantine-color-body)',
                     backdropFilter: 'blur(12px)',
-                    borderBottom: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    borderBottom: `1px solid var(--mantine-color-default-border)`,
+                    opacity: 0.95,
                 },
             }) as Record<string, React.CSSProperties>,
         },
@@ -270,8 +272,8 @@ export const mantineVercel: MantineThemeOverride = {
         Tooltip: {
             styles: (theme: any) => ({
                 tooltip: {
-                    backgroundColor: '#000000',
-                    color: '#ffffff',
+                    backgroundColor: 'var(--mantine-color-text)',
+                    color: 'var(--mantine-color-body)',
                     borderRadius: 6,
                     fontSize: 12,
                     fontWeight: 500,
@@ -282,7 +284,7 @@ export const mantineVercel: MantineThemeOverride = {
         Anchor: {
             styles: (theme: any) => ({
                 root: {
-                    color: '#000000',
+                    color: 'var(--mantine-color-text)',
                     textDecoration: 'none',
                     fontWeight: 500,
                     transition: 'all 0.2s ease',
@@ -298,9 +300,9 @@ export const mantineVercel: MantineThemeOverride = {
         Code: {
             styles: (theme: any) => ({
                 root: {
-                    backgroundColor: '#fafafa',
-                    color: '#000000',
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    backgroundColor: 'var(--mantine-color-default)',
+                    color: 'var(--mantine-color-text)',
+                    border: `1px solid var(--mantine-color-default-border)`,
                     borderRadius: theme.radius.sm,
                     fontFamily: 'Menlo, Monaco, "Lucida Console", monospace',
                     fontSize: '13px',
@@ -314,20 +316,20 @@ export const mantineVercel: MantineThemeOverride = {
             styles: (theme: any) => ({
                 tab: {
                     fontWeight: 500,
-                    color: theme.colors.gray?.[6] ?? '#737373',
+                    color: 'var(--mantine-color-dimmed)',
                     border: 'none',
                     borderBottom: '2px solid transparent',
                     '&[data-active]': {
-                        color: '#000000',
-                        borderBottomColor: '#000000',
+                        color: 'var(--mantine-color-text)',
+                        borderBottomColor: 'var(--mantine-color-text)',
                     },
                     '&:hover': {
                         backgroundColor: 'transparent',
-                        color: '#000000',
+                        color: 'var(--mantine-color-text)',
                     },
                 },
                 tabsList: {
-                    borderBottom: `1px solid ${theme.colors.gray?.[2] ?? '#f5f5f5'}`,
+                    borderBottom: `1px solid var(--mantine-color-default-border)`,
                 },
             }) as Record<string, React.CSSProperties>,
         },

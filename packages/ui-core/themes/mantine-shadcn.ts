@@ -128,8 +128,8 @@ export const mantineShadcn: MantineThemeOverride = {
             } as { radius: string; padding: string },
             styles: (theme: MantineTheme) => ({
                 root: {
-                    backgroundColor: theme.white,
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#e5e7eb'}`,
+                    backgroundColor: 'var(--mantine-color-body)',
+                    border: `1px solid var(--mantine-color-default-border)`,
                     boxShadow: 'none',
                 },
             }) as Record<string, React.CSSProperties>,
@@ -138,8 +138,8 @@ export const mantineShadcn: MantineThemeOverride = {
         Paper: {
             styles: (theme: MantineTheme) => ({
                 root: {
-                    backgroundColor: theme.white,
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#e5e7eb'}`,
+                    backgroundColor: 'var(--mantine-color-body)',
+                    border: `1px solid var(--mantine-color-default-border)`,
                     boxShadow: 'none',
                     borderRadius: theme.radius.md,
                 },
@@ -154,8 +154,8 @@ export const mantineShadcn: MantineThemeOverride = {
                 input: {
                     height: 44,
                     borderRadius: theme.radius.md,
-                    border: `1px solid ${theme.colors.gray?.[3] ?? '#d1d5db'}`,
-                    backgroundColor: theme.white,
+                    border: `1px solid var(--mantine-color-default-border)`,
+                    backgroundColor: 'var(--mantine-color-body)',
                     '&:focus': {
                         borderColor: theme.colors.blue[6],
                         boxShadow: `0 0 0 1px ${rgba(theme.colors.blue[6], 0.1)}`,
@@ -168,7 +168,8 @@ export const mantineShadcn: MantineThemeOverride = {
             styles: (theme: MantineTheme) => ({
                 input: {
                     borderRadius: theme.radius.md,
-                    border: `1px solid ${theme.colors.gray?.[3] ?? '#d1d5db'}`,
+                    border: `1px solid var(--mantine-color-default-border)`,
+                    backgroundColor: 'var(--mantine-color-body)',
                 },
             }) as Record<string, React.CSSProperties>,
         },
@@ -179,9 +180,9 @@ export const mantineShadcn: MantineThemeOverride = {
             } as { radius: string },
             styles: (theme: MantineTheme) => ({
                 root: {
-                    backgroundColor: theme.colors.gray?.[1] ?? '#f9fafb',
-                    color: theme.black,
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#e5e7eb'}`,
+                    backgroundColor: 'var(--mantine-color-default)',
+                    color: 'var(--mantine-color-text)',
+                    border: `1px solid var(--mantine-color-default-border)`,
                     fontWeight: 600,
                     padding: '4px 8px',
                 },
@@ -196,8 +197,8 @@ export const mantineShadcn: MantineThemeOverride = {
             styles: (theme: MantineTheme) => ({
                 content: {
                     borderRadius: theme.radius.md,
-                    border: `1px solid ${theme.colors.gray?.[2] ?? '#e5e7eb'}`,
-                    backgroundColor: theme.white,
+                    border: `1px solid var(--mantine-color-default-border)`,
+                    backgroundColor: 'var(--mantine-color-body)',
                     boxShadow: theme.shadows.md,
                 },
             }) as Record<string, React.CSSProperties>,
@@ -207,7 +208,7 @@ export const mantineShadcn: MantineThemeOverride = {
             styles: (theme: MantineTheme) => ({
                 root: {
                     backgroundColor: 'transparent',
-                    borderRight: `1px solid ${theme.colors.gray?.[1] ?? '#f1f5f9'}`,
+                    borderRight: `1px solid var(--mantine-color-default-border)`,
                 },
             }) as Record<string, React.CSSProperties>,
         },
@@ -215,8 +216,8 @@ export const mantineShadcn: MantineThemeOverride = {
         Tooltip: {
             styles: (theme: MantineTheme) => ({
                 tooltip: {
-                    backgroundColor: theme.black,
-                    color: theme.white,
+                    backgroundColor: 'var(--mantine-color-text)',
+                    color: 'var(--mantine-color-body)',
                     borderRadius: 8,
                     fontSize: 13,
                 },

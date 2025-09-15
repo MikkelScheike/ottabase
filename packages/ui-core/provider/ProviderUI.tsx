@@ -35,6 +35,8 @@ interface ProvidersProps {
 	primaryColor?: string;
 	enforceGoogleFonts?: boolean;
 	scale?: number;
+	// Theme override - allows apps to provide their own complete theme
+	themeOverride?: MantineThemeOverride;
 }
 
 export type ThemeColors = Record<string, MantineColorsTuple>;
@@ -47,7 +49,8 @@ const ProviderUI = ({
 	themeColors = {},
 	primaryColor = 'blue',
 	enforceGoogleFonts = true,
-	scale = 1.0
+	scale = 1.0,
+	themeOverride
 }: ProvidersProps) => {
 
 	const storageKeyTheme = `${storagePrefix}.color-scheme`;
@@ -116,7 +119,9 @@ const ProviderUI = ({
 		},
 	};
 
-	const mantineTheme = createTheme(mantineDefaultTheme);
+	// Use theme override if provided, otherwise use the default theme
+	const finalTheme = themeOverride ? themeOverride : mantineDefaultTheme;
+	const mantineTheme = createTheme(finalTheme);
 
 	return (
 		<ProviderFont enforceGoogleFonts={enforceGoogleFonts}>

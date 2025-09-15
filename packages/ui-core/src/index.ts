@@ -13,3 +13,11 @@ export {
 
 // Re-export types
 export type { ThemeColors } from '../provider/ProviderUI';
+
+// Export themes
+export { default as mantineShadcn } from '../themes/mantine-shadcn';
+export { default as mantineVercel } from '../themes/mantine-vercel';
+
+// Export theme configuration utilities
+export type { MantineThemeConfig } from './themeConfig';
+export { createMantineTheme, validateMantineThemeConfig } from './themeConfig';

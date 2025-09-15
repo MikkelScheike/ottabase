@@ -1,280 +1,86 @@
-'use client';
-
-import { useState } from 'react';
-import { useAtom, useSetAtom } from 'jotai';
-import {
-    Container,
-    Title,
-    Text,
-    Button,
-    Group,
-    Stack,
-    Card,
-    Badge,
-    Switch,
-    Slider,
-    Code
-} from '@mantine/core';
-import { appGlobalStateAtom, createAppGlobalStateAtom } from '@/state/appGlobalState';
-import { APP_META, THEME_COLORS, UI_LAYOUT } from '@/config/app.config';
+import { Box, Title, Text, Button, Stack, Group } from '@mantine/core';
 import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
-import { Logo } from '@ottabase/ui-components/logo';
-import { BlogPagination } from '@ottabase/ui-components';
+import { APP_META } from '@/config/app.config';
+import Link from 'next/link';
 
 export default function HomePage() {
-    const [appState, setAppState] = useAtom(appGlobalStateAtom);
-    const setScale = useSetAtom(createAppGlobalStateAtom('scale'));
-    const setTheme = useSetAtom(createAppGlobalStateAtom('theme'));
-    const setCursorTheme = useSetAtom(createAppGlobalStateAtom('cursorTheme'));
-
-    const [localCounter, setLocalCounter] = useState(0);
-
-    const handleScaleChange = (value: number) => {
-        setScale(value);
-    };
-
-    const toggleTheme = () => {
-        setTheme(appState.theme === 'light' ? 'dark' : 'light');
-    };
-
-    const updateCursorTheme = () => {
-        const themes = ['default', 'retro', 'modern', 'minimal'] as const;
-        const currentIndex = themes.indexOf(appState.cursorTheme);
-        const nextTheme = themes[(currentIndex + 1) % themes.length];
-        setCursorTheme(nextTheme);
-    };
-
-    const updateSelectionColor = () => {
-        const isDark = appState.theme === 'dark';
-        setAppState((prev) => ({
-            ...prev,
-            selectionColor: {
-                foreground: '#fa4529',
-                background: isDark ? '#2c2e33' : '#fff'
-            }
-        }));
-    };
-
     return (
-        <Container size="md" py="xl">
-            <div className="bg-red-500 text-white p-4 my-4 rounded-sm">
-                Tailwind is working!
-            </div>
-            <Stack gap="xl">
-                {/* Header */}
-                <div>
-                    <Group justify="space-between" align="flex-start" mb="md">
-                        <div>
-                            <Title order={1} mb="md">
-                                {APP_META.appName}
-                            </Title>
-                            <Text size="lg" c="dimmed">
-                                {APP_META.description}
-                            </Text>
-                            <Text size="sm" c="dimmed" mt="xs">
-                                {APP_META.copyrightText}
-                            </Text>
-                        </div>
-                        <DarkModeToggle type="button" title="Toggle dark/light mode" />
-                    </Group>
-                </div>
+        <Box
+            style={{
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--mantine-color-body)',
+            }}
+        >
+            <Stack align="center" gap="xl" style={{ textAlign: 'center', maxWidth: 600 }}>
+                {/* Dark Mode Toggle in corner */}
+                <Group justify="flex-end" style={{ position: 'absolute', top: 20, right: 20 }}>
+                    <DarkModeToggle type="button" title="Toggle dark/light mode" />
+                </Group>
 
-                {/* App State Demo */}
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Title order={2} size="h3" mb="md">
-                        Global State Demo
-                    </Title>
+                {/* Main Heading */}
+                <Title
+                    order={1}
+                    size={64}
+                    fw={700}
+                    style={{
+                        background: 'linear-gradient(135deg, #0ea5e9 0%, #d946ef 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                        marginBottom: 16
+                    }}
+                >
+                    {APP_META.appName}
+                </Title>
 
-                    <Stack gap="md">
-                        <Group justify="space-between">
-                            <Text>Current Theme:</Text>
-                            <Badge color={appState.theme === 'dark' ? 'dark' : 'blue'}>
-                                {appState.theme}
-                            </Badge>
-                            <Button size="xs" onClick={toggleTheme}>
-                                Toggle Theme
-                            </Button>
-                        </Group>
+                {/* Description */}
+                <Text size="xl" c="dimmed" style={{ lineHeight: 1.6, marginBottom: 32 }}>
+                    {APP_META.description}
+                </Text>
 
-                        <Group justify="space-between">
-                            <Text>UI Scale:</Text>
-                            <Text size="sm" c="dimmed">
-                                {appState.scale}x
-                            </Text>
-                        </Group>
-                        <Slider
-                            value={appState.scale}
-                            onChange={handleScaleChange}
-                            min={0.5}
-                            max={2.0}
-                            step={0.1}
-                            marks={[
-                                { value: 0.5, label: '0.5x' },
-                                { value: 1.0, label: '1x' },
-                                { value: 1.5, label: '1.5x' },
-                                { value: 2.0, label: '2x' },
-                            ]}
-                        />
+                <Text size="lg" c="dimmed" style={{ lineHeight: 1.5 }}>
+                    A modern React app template built with <strong>Next.js</strong>, <strong>Mantine</strong>, <strong>TypeScript</strong>, and <strong>Tailwind CSS</strong>.
+                    Features theme switching, state management, and a scalable monorepo architecture.
+                </Text>
 
-                        <Group justify="space-between">
-                            <Text>Cursor Theme:</Text>
-                            <Badge variant="light">
-                                {appState.cursorTheme}
-                            </Badge>
-                            <Button size="xs" onClick={updateCursorTheme}>
-                                Change Cursor
-                            </Button>
-                        </Group>
+                {/* Action Buttons */}
+                <Group gap="md" style={{ marginTop: 32 }}>
+                    <Button
+                        component={Link}
+                        href="/demo"
+                        size="lg"
+                        style={{
+                            background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                            border: 'none',
+                        }}
+                    >
+                        Kitchensink
+                    </Button>
 
-                        <Group justify="space-between">
-                            <Text>Selection Color:</Text>
-                            <div
-                                style={{
-                                    width: 20,
-                                    height: 20,
-                                    backgroundColor: appState.selectionColor.background,
-                                    border: `2px solid ${appState.selectionColor.foreground}`,
-                                    borderRadius: 4
-                                }}
-                            />
-                            <Button size="xs" onClick={updateSelectionColor}>
-                                Update Colors
-                            </Button>
-                        </Group>
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        component="a"
+                        href="https://github.com/thinkdj/"
+                        target="_blank"
+                    >
+                        Homepage
+                    </Button>
+                </Group>
 
-                        <Group justify="space-between">
-                            <Text>Desktop Sidebar:</Text>
-                            <Switch
-                                checked={appState.isDesktopSidebarOpen}
-                                onChange={(event) =>
-                                    setAppState(prev => ({
-                                        ...prev,
-                                        isDesktopSidebarOpen: event.currentTarget.checked
-                                    }))
-                                }
-                            />
-                        </Group>
-                    </Stack>
-                </Card>
+                {/* Footer */}
+                <Text size="sm" c="dimmed" style={{ marginTop: 64 }}>
+                    {APP_META.copyrightText}
+                </Text>
 
-                {/* Local State Demo */}
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Title order={2} size="h3" mb="md">
-                        Local State Demo
-                    </Title>
-
-                    <Group justify="space-between">
-                        <Text>Local Counter: {localCounter}</Text>
-                        <Group>
-                            <Button size="xs" onClick={() => setLocalCounter(c => c - 1)}>
-                                -1
-                            </Button>
-                            <Button size="xs" onClick={() => setLocalCounter(c => c + 1)}>
-                                +1
-                            </Button>
-                            <Button size="xs" variant="light" onClick={() => setLocalCounter(0)}>
-                                Reset
-                            </Button>
-                        </Group>
-                    </Group>
-                </Card>
-
-                {/* UI Components Demo */}
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Title order={2} size="h3" mb="md">
-                        UI Components Demo
-                    </Title>
-
-                    <BlogPagination onPageChange={(page) => console.log('Page changed to:', page)} page={1} lastPage={10} perPage={10} />
-
-                    <Stack gap="md">
-                        <Group justify="space-between">
-                            <Text>Dark Mode Toggle (Button):</Text>
-                            <DarkModeToggle type="button" />
-                        </Group>
-
-                        <Group justify="space-between">
-                            <Text>Dark Mode Toggle (Switch):</Text>
-                            <DarkModeToggle type="toggle-switch" />
-                        </Group>
-
-                        <Group justify="space-between">
-                            <Text>Logo Component:</Text>
-                            <Logo appName={APP_META.appName} logoUrl={APP_META.logoUrl} />
-                        </Group>
-
-                        <Group justify="space-between">
-                            <Text>Logo with Dark Mode Toggle:</Text>
-                            <Logo appName={APP_META.appName} darkModeSwitcher={true} />
-                        </Group>
-                    </Stack>
-                </Card>
-
-                {/* Configuration Demo */}
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Title order={2} size="h3" mb="md">
-                        Configuration Demo
-                    </Title>
-
-                    <Stack gap="sm">
-                        <Group justify="space-between">
-                            <Text size="sm">UI Layout Min Width:</Text>
-                            <Code>{UI_LAYOUT.minWidth}px</Code>
-                        </Group>
-                        <Group justify="space-between">
-                            <Text size="sm">UI Layout Max Width:</Text>
-                            <Code>{UI_LAYOUT.maxWidth}px</Code>
-                        </Group>
-                        <Group justify="space-between">
-                            <Text size="sm">Available Theme Colors:</Text>
-                            <Group gap="xs">
-                                {Object.keys(THEME_COLORS).map((colorName) => (
-                                    <Badge key={colorName} variant="light" size="sm">
-                                        {colorName}
-                                    </Badge>
-                                ))}
-                            </Group>
-                        </Group>
-                    </Stack>
-                </Card>
-
-                {/* Font Demo */}
-                <Card shadow="sm" padding="lg" radius="md" withBorder>
-                    <Title order={2} size="h3" mb="md">
-                        Font Demo
-                    </Title>
-
-                    <Stack gap="md">
-                        <div>
-                            <Text size="sm" c="dimmed" mb="xs">Primary Font (Inter):</Text>
-                            <Text className="font-family-primary">
-                                The quick brown fox jumps over the lazy dog. 1234567890
-                            </Text>
-                        </div>
-
-                        <div>
-                            <Text size="sm" c="dimmed" mb="xs">Heading Font (Work Sans):</Text>
-                            <Text className="font-family-heading" size="lg" fw={600}>
-                                The quick brown fox jumps over the lazy dog. 1234567890
-                            </Text>
-                        </div>
-
-                        <div>
-                            <Text size="sm" c="dimmed" mb="xs">Monospace Font (JetBrains Mono):</Text>
-                            <Code className="font-family-monospace">
-                                const example = "Hello World"; // Code example
-                            </Code>
-                        </div>
-
-                        <div>
-                            <Text size="sm" c="dimmed" mb="xs">Handwriting Font (Patrick Hand):</Text>
-                            <Text className="font-family-handwriting" size="lg">
-                                The quick brown fox jumps over the lazy dog.
-                            </Text>
-                        </div>
-                    </Stack>
-                </Card>
+                <Text size="xs" c="dimmed" style={{ marginTop: 8 }}>
+                    To create a new app from this template, simply delete the <code>/demo</code> directory
+                    and customize this landing page to match your project needs.
+                </Text>
             </Stack>
-        </Container>
+        </Box>
     );
 }
