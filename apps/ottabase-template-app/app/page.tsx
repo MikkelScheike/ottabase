@@ -1,6 +1,6 @@
 import { Box, Title, Text, Button, Stack, Group } from '@mantine/core';
 import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
-import { APP_META } from '@/config/app.config';
+import { APP_META } from '@/ottabase/config/app.config';
 import Link from 'next/link';
 
 export default function HomePage() {

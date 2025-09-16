@@ -2,7 +2,7 @@
 
 import { ProviderUI } from "@ottabase/ui-core";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
-import { appConfig, THEME_COLORS } from "@/config/app.config";
+import { appConfig, THEME_COLORS } from "@/ottabase/config/app.config";
 import { useTheme } from '../lib/themeContext';
 
 export function DemoProviders({ children }: { children: React.ReactNode }) {

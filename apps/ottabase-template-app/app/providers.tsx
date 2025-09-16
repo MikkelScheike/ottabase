@@ -3,7 +3,7 @@
 import { ProviderUI } from "@ottabase/ui-core";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
 import { ProviderState } from "@ottabase/state";
-import { appConfig, THEME_COLORS } from "@/config/app.config";
+import { appConfig, THEME_COLORS } from "@/ottabase/config/app.config";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     return (

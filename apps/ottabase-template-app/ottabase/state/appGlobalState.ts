@@ -1,5 +1,5 @@
 import { createDefaultAppState } from '@ottabase/state';
-import { appConfig } from '../config/app.config';
+import { appConfig } from '@/ottabase/config/app.config';
 
 // Create app state using the shared state package
 const appState = createDefaultAppState(appConfig.features.crudHub.urlBase);
@@ -42,7 +42,7 @@ export default appState;
     // SET - entire object in a component
     ----------------------------------------------------------------
     import { useSetAtom } from 'jotai';
-    import { appGlobalStateAtom } from '@/state/appGlobalState';
+    import { appGlobalStateAtom } from '@/src/state/appGlobalState';
     //and inside the client component:
     const setAppState = useSetAtom(appGlobalStateAtom);
     useEffect(() => {

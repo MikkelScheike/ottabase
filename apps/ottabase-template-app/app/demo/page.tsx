@@ -15,8 +15,8 @@ import {
     Slider,
     Code
 } from '@mantine/core';
-import { appGlobalStateAtom, createAppGlobalStateAtom } from '@/state/appGlobalState';
-import { APP_META, THEME_COLORS, UI_LAYOUT } from '@/config/app.config';
+import { appGlobalStateAtom, createAppGlobalStateAtom } from '@/ottabase/state/appGlobalState';
+import { APP_META, THEME_COLORS, UI_LAYOUT } from '@/ottabase/config/app.config';
 import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
 import { Logo } from '@ottabase/ui-components/logo';
 import { BlogPagination } from '@ottabase/ui-components';
