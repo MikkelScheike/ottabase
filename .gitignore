@@ -1,3 +1,26 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# Cloudflare && OpenNext
+cloudflare-env.d.ts
+/wrangler.toml.backup
+/wrangler.jsonc.backup
+.open-next
+.dev.vars
+
+# Force-ignore .gitignore files
+# Add this to your local files that need not be committed (Eg: google-oauth.gitignore.json)
+*.gitignore.*
+# Ignore directories ending with .gitignore
+*.gitignore/
+
+# Temporary files and folders
+tmp/
+.tmp/
+*.tmp
+temp/
+.temp/
+
+# ============================================================================= 
 # Dependencies
 node_modules/
 .pnp
@@ -78,9 +101,6 @@ jspm_packages/
 .storybook-out
 storybook-static/
 
-# Temporary folders
-tmp/
-temp/
 
 # Editor directories and files
 .vscode/
@@ -146,7 +166,3 @@ typings/
 # OS
 .DS_Store
 Thumbs.db
-
-# Temporary
-.tmp/
-.temp/
