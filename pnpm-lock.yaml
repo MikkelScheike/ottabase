@@ -141,6 +141,9 @@ importers:
         specifier: 'catalog:'
         version: 18.3.1(react@18.3.1)
     devDependencies:
+      '@ottabase/ui-tailwind':
+        specifier: workspace:*
+        version: link:../../packages/ui-tailwind
       '@tailwindcss/forms':
         specifier: 'catalog:'
         version: 0.5.10(tailwindcss@3.4.17)

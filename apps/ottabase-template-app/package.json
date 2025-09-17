@@ -34,6 +34,7 @@
         "postcss-preset-mantine": "catalog:",
         "@tailwindcss/forms": "catalog:",
         "@tailwindcss/typography": "catalog:",
-        "postcss-preset-env": "catalog:"
+        "postcss-preset-env": "catalog:",
+        "@ottabase/ui-tailwind": "workspace:*"
     }
 }
