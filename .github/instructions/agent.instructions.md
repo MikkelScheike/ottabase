@@ -7,6 +7,22 @@ Ottabase is a **pnpm monorepo** with **Turborepo** for build orchestration, feat
 - **Shared packages** in `packages/` (React components, utilities, configuration)
 - **Template-driven development** with `ottabase-template-app` as the reference implementation
 
+## ⚙️ Environment & Tooling
+
+- **Node.js**: `>=24.0.0` (enforced via root `package.json`)
+- **pnpm**: `>=10.0.0` (commands must use pnpm; npm/yarn are not supported)
+- **Turbo CLI**: invoked through `pnpm` scripts (`pnpm dev`, `pnpm build`, etc.)
+- Local development assumes **Ubuntu (WSL or otherwise)** as the base; keep file paths linux-compatible
+- Keep the workspace clean: do not add per-package lockfiles, always rely on the root `pnpm-lock.yaml`
+
+## ✅ Agent Workflow Checklist
+
+1. Review this file (`.github\instructions\agent.instructions.md`) and `AGENTS.MD` before making changes to confirm architecture and dependency rules.
+2. Install dependencies with `pnpm install` if needed; never use other package managers.
+3. For code changes, run `pnpm lint`, `pnpm type-check`, and any relevant `pnpm test` or `pnpm storybook` tasks (use `--filter` to scope when appropriate. E.g Build only ui-components package: `pnpm --filter @ottabase/ui-components build`).
+4. When adding dependencies, update `pnpm-workspace.yaml`'s catalog first, then reference them as `"catalog:"` or `"workspace:*"`.
+5. Validate that shared changes do not break `apps/ottabase-template-app`; use targeted build/dev commands when touching shared packages.
+
 ## 🎯 Core Patterns
 
 ### Dependency Management Strategy
@@ -54,9 +70,18 @@ pnpm dev
 # Build everything (respects Turbo dependency graph)
 pnpm build
 
+# Linting, type checking, testing
+pnpm lint
+pnpm type-check
+pnpm test
+
+# Storybook for UI validation
+pnpm storybook
+
 # Work with specific packages
 pnpm dev --filter=@ottabase/ui-core
 pnpm build --filter=ottabase-template-app
+pnpm lint --filter=@ottabase/ui-components
 ```
 
 ### Adding Dependencies
@@ -83,7 +108,7 @@ pnpm add --filter @ottabase/ui-core some-package
 3. Export via `src/index.ts` with proper TypeScript types
 4. Add to root tsconfig.json paths for development
 
-## � Package System & Catalog Management
+## 📦 Package System & Catalog Management
 
 ### Package Structure Standards
 All packages in `/packages` follow a consistent structure:
@@ -153,11 +178,13 @@ catalog:
 ### Existing Package Types
 - **`@ottabase/config`** - App configuration utilities with `createAppConfig()`
 - **`@ottabase/state`** - Jotai-based state management with providers
-- **`@ottabase/ui-core`** - Core UI components and Mantine providers
-- **`@ottabase/ui-components`** - Reusable UI components (buttons, forms)
-- **`@ottabase/ui-code-highlight`** - Code syntax highlighting
-- **`@ottabase/ui-tailwind`** - Shared Tailwind configuration and styles
-- **`@ottabase/hello-world`** - Example/template package
+- **`@ottabase/ui-core`** - Core UI shell, Mantine provider, theme management
+- **`@ottabase/ui-components`** - Reusable UI components (buttons, forms, layout helpers)
+- **`@ottabase/ui-code-highlight`** - Code syntax highlighting providers and styles
+- **`@ottabase/ui-tailwind`** - Tailwind preset and shared CSS (`tailwind.base.cjs`)
+- **`@ottabase/core-auth`** - NextAuth utilities, providers, and route protection helpers
+- **`@ottabase/core-prisma`** - Prisma client helpers, adapters, and schema integration
+- **`@ottabase/hello-world`** - Example/template package for quick scaffolding
 
 ## 🔧 Framework Integration Patterns
 
