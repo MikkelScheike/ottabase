@@ -20,6 +20,11 @@
             "types": "./dist/logo.d.ts",
             "import": "./dist/logo.esm.js",
             "require": "./dist/logo.js"
+        },
+        "./message-box": {
+            "types": "./dist/message-box.d.ts",
+            "import": "./dist/message-box.esm.js",
+            "require": "./dist/message-box.js"
         }
     },
     "files": [
@@ -27,8 +32,8 @@
         "README.md"
     ],
     "scripts": {
-        "build": "tsup src/index.ts src/dark-mode-toggle.ts src/logo.ts --format cjs,esm --dts --clean",
-        "dev": "tsup src/index.ts src/dark-mode-toggle.ts src/logo.ts --format cjs,esm --dts --watch",
+        "build": "tsup src/index.ts src/dark-mode-toggle.ts src/logo.ts src/message-box.ts --format cjs,esm --dts --clean",
+        "dev": "tsup src/index.ts src/dark-mode-toggle.ts src/logo.ts src/message-box.ts --format cjs,esm --dts --watch",
         "clean": "rimraf dist",
         "lint": "eslint src --ext .ts,.tsx",
         "type-check": "tsc --noEmit"
