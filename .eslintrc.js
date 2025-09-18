@@ -3,7 +3,8 @@ module.exports = {
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/recommended',
-        'next/core-web-vitals'
+        'next/core-web-vitals',
+        'plugin:storybook/recommended',
     ],
     parser: '@typescript-eslint/parser',
     plugins: ['@typescript-eslint'],
@@ -11,17 +12,17 @@ module.exports = {
         ecmaVersion: 2020,
         sourceType: 'module',
         ecmaFeatures: {
-            jsx: true
+            jsx: true,
         }
     },
     env: {
         browser: true,
         node: true,
-        es6: true
+        es6: true,
     },
     settings: {
         react: {
-            version: 'detect'
+            version: 'detect',
         }
     },
     rules: {
@@ -31,13 +32,13 @@ module.exports = {
         '@typescript-eslint/no-explicit-any': 'warn',
         'react/react-in-jsx-scope': 'off',
         'react/prop-types': 'off',
-        'react/no-unescaped-entities': 'off'
+        'react/no-unescaped-entities': 'off',
     },
     ignorePatterns: [
         'node_modules/',
         'dist/',
         '.next/',
         'coverage/',
-        '*.config.js'
-    ]
+        '*.config.js',
+    ],
 };
