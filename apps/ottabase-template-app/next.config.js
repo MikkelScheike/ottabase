@@ -7,6 +7,8 @@ const nextConfig = {
         '@ottabase/config',
         '@ottabase/state',
         '@ottabase/ui-code-highlight',
+        '@ottabase/ui-tailwind',
+        '@ottabase/ui-components',
     ],
 
     // Enable React strict mode

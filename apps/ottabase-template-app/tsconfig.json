@@ -28,41 +28,9 @@
             "@/*": [
                 "./*"
             ],
-            "@ottabase/ui-core": [
-                "../../packages/ui-core/src"
-            ],
-            "@ottabase/ui-core/*": [
-                "../../packages/ui-core/src/*"
-            ],
-            "@ottabase/config": [
-                "../../packages/config/src"
-            ],
-            "@ottabase/config/*": [
-                "../../packages/config/src/*"
-            ],
-            "@ottabase/state": [
-                "../../packages/state/src"
-            ],
-            "@ottabase/state/*": [
-                "../../packages/state/src/*"
-            ],
-            "@ottabase/ui-code-highlight": [
-                "../../packages/ui-code-highlight/src"
-            ],
-            "@ottabase/ui-code-highlight/*": [
-                "../../packages/ui-code-highlight/src/*"
-            ],
-            "@ottabase/ui-tailwind": [
-                "../../packages/ui-tailwind/src"
-            ],
-            "@ottabase/ui-tailwind/*": [
-                "../../packages/ui-tailwind/src/*"
-            ],
-            "@ottabase/ui-components": [
-                "../../packages/ui-components/src/"
-            ],
-            "@ottabase/ui-components/*": [
-                "../../packages/ui-components/src/*"
+            /* Pattern-based path mapping for all packages */
+            "@ottabase/*": [
+                "../../packages/*/src"
             ]
         }
     },
