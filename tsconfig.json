@@ -75,7 +75,6 @@
         },
         {
             "path": "./packages/ui-components"
-        }
         },
         {
             "path": "./packages/utils"
