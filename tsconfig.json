@@ -45,6 +45,9 @@
             "@ottabase/ui-components/*": [
                 "./packages/ui-components/src/*"
             ]
+            "@ottabase/utils": [
+                "./packages/utils/src"
+            ],
         }
     },
     "include": [
@@ -73,5 +76,9 @@
         {
             "path": "./packages/ui-components"
         }
+        },
+        {
+            "path": "./packages/utils"
+        },
     ]
 }
