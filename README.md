@@ -194,6 +194,18 @@ Use `workspace:*` to reference internal packages:
 - `tsconfig.json`: Root TypeScript configuration
 - `.eslintrc.js`: ESLint configuration for all packages
 
+## Storybook
+
+```bash
+pnpm storybook
+```
+
+- Stories appear under `packages/` and `apps/` hierarchies based on their source folder
+- Set `STORYBOOK_PACKAGES=ui-components,hello-world` to include specific package directories (defaults to all)
+- Set `STORYBOOK_APPS=ottabase-template-app` to filter stories to selected apps (defaults to all)
+- Set `STORYBOOK_PRIMARY_APP=ottabase-template-app` to choose which app drives the `@/` alias
+- Add `.stories.tsx` or `.stories.mdx` files inside package `src/` or app `app/` folders to populate the catalog
+
 -------------------
 
 [![Built on Cloudflare](https://workers.cloudflare.com/built-with-cloudflare.svg)](https://cloudflare.com)
