@@ -8,22 +8,22 @@
     "exports": {
         ".": {
             "types": "./dist/index.d.ts",
-            "import": "./dist/index.esm.js",
+            "import": "./dist/index.mjs",
             "require": "./dist/index.js"
         },
         "./dark-mode-toggle": {
             "types": "./dist/dark-mode-toggle.d.ts",
-            "import": "./dist/dark-mode-toggle.esm.js",
+            "import": "./dist/dark-mode-toggle.mjs",
             "require": "./dist/dark-mode-toggle.js"
         },
         "./logo": {
             "types": "./dist/logo.d.ts",
-            "import": "./dist/logo.esm.js",
+            "import": "./dist/logo.mjs",
             "require": "./dist/logo.js"
         },
         "./message-box": {
             "types": "./dist/message-box.d.ts",
-            "import": "./dist/message-box.esm.js",
+            "import": "./dist/message-box.mjs",
             "require": "./dist/message-box.js"
         }
     },
@@ -57,7 +57,6 @@
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
-        "next": ">=15.0.0",
         "@mantine/core": "^8.3.1",
         "next-themes": "^0.4.6",
         "@tabler/icons-react": "^3.26.0"
@@ -66,7 +65,6 @@
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "@types/node": "catalog:",
-        "next": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
         "typescript": "catalog:",
