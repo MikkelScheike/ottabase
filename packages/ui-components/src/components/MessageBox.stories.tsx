@@ -1,8 +1,8 @@
-import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react-webpack5';
 import MessageBox from './MessageBox';
 
 const meta: Meta<typeof MessageBox> = {
-  title: 'UI Components/MessageBox',
+  title: 'MessageBox',
   component: MessageBox,
   args: {
     message: "Here's something you should know.",
