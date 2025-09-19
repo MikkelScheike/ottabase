@@ -3,11 +3,13 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "next dev",
+        "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "type-check": "tsc --noEmit"
+        "type-check": "tsc --noEmit",
+        "storybook": "storybook dev -p 6007",
+        "storybook:build": "storybook build"
     },
     "dependencies": {
         "next": "catalog:",
@@ -35,6 +37,15 @@
         "@tailwindcss/forms": "catalog:",
         "@tailwindcss/typography": "catalog:",
         "postcss-preset-env": "catalog:",
-        "@ottabase/ui-tailwind": "workspace:*"
+        "@ottabase/ui-tailwind": "workspace:*",
+        "storybook": "catalog:",
+        "@storybook/react-webpack5": "catalog:",
+        "@storybook/addon-links": "catalog:",
+        "@storybook/addon-docs": "catalog:",
+        "@babel/core": "catalog:",
+        "@babel/preset-env": "catalog:",
+        "@babel/preset-react": "catalog:",
+        "@babel/preset-typescript": "catalog:",
+        "babel-loader": "catalog:"
     }
 }

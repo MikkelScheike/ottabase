@@ -16,6 +16,7 @@ export const parameters: Preview['parameters'] = {
     source: {
       state: 'open',
     },
+    // Keep the "Show code" section open by default
     canvas: {
       sourceState: 'shown',
     },

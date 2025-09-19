@@ -1,6 +1,10 @@
 import type { StorybookConfig } from '@storybook/react-webpack5';
 import { dirname, join } from 'path';
 
+// Resolve root Storybook folder for shared mocks and aliases
+const projectRoot = join(__dirname, '../../..');
+const rootStorybook = join(projectRoot, '.storybook');
+
 const config: StorybookConfig = {
     stories: [
         '../**/*.stories.@(js|jsx|ts|tsx|mdx)',
@@ -24,9 +28,6 @@ const config: StorybookConfig = {
     },
 
     async webpackFinal(config) {
-        const projectRoot = join(__dirname, '../../..');
-        const rootStorybook = join(projectRoot, '.storybook');
-
         config.resolve = config.resolve || {};
         config.resolve.alias = {
             ...(config.resolve.alias ?? {}),
@@ -44,7 +45,7 @@ const config: StorybookConfig = {
             '@ottabase/core-prisma': join(projectRoot, 'packages/core-prisma/src'),
         };
 
-        // Add Babel loader for TypeScript files
+        // Ensure TypeScript/TSX are transpiled (minimal Babel setup)
         config.module = config.module || {};
         config.module.rules = config.module.rules || [];
 

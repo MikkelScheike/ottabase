@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Preview } from '@storybook/react';
+import type { Preview } from '@storybook/react-webpack5';
 import '@ottabase/ui-tailwind/styles/tailwind.base.css';
 import '../app/globals.css';
 
