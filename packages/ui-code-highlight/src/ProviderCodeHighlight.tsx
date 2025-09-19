@@ -53,7 +53,18 @@ interface ProviderCodeHighlightProps {
 }
 
 const ProviderCodeHighlight = ({ children }: ProviderCodeHighlightProps) => {
-	const { colorScheme } = useMantineColorScheme();
+
+	// Safely get color scheme, fallback to 'light' if Mantine context is not available
+	let colorScheme = 'light';
+	try {
+		const mantineColorScheme = useMantineColorScheme();
+		colorScheme = mantineColorScheme.colorScheme;
+	} catch (error) {
+		// Fallback to detecting from document class or default to light
+		if (typeof document !== 'undefined') {
+			colorScheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+		}
+	}
 
 	useEffect(() => {
 		// Add CSS to control which theme is active
