@@ -22,6 +22,8 @@
         "@ottabase/ui-code-highlight": "workspace:*",
         "@ottabase/config": "workspace:*",
         "@ottabase/state": "workspace:*"
+        "@ottabase/state": "workspace:*",
+        "@ottabase/utils": "workspace:*"
     },
     "devDependencies": {
         "@types/node": "catalog:",
