@@ -51,15 +51,16 @@
     "dependencies": {
         "@mantine/core": "catalog:",
         "@ottabase/config": "workspace:*",
-        "@tabler/icons-react": "^3.26.0",
+        "@tabler/icons-react": "catalog:",
         "next-themes": "catalog:"
     },
     "peerDependencies": {
         "react": ">=18.0.0",
         "react-dom": ">=18.0.0",
+        "next": ">=14.0.0",
         "@mantine/core": "^8.3.1",
         "next-themes": "^0.4.6",
-        "@tabler/icons-react": "^3.26.0"
+        "@tabler/icons-react": "^3.35.0"
     },
     "devDependencies": {
         "@types/react": "catalog:",

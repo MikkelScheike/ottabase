@@ -6,7 +6,6 @@
     "declarationMap": true,
     "sourceMap": true,
     "skipLibCheck": true,
-    "composite": true,
     "noEmit": false
   },
   "include": [

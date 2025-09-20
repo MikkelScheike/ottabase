@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 /**
  * Check if running in a browser environment.
