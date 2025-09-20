@@ -30,13 +30,13 @@ catalog:
   "@typescript-eslint/parser": ^8.44.0
   autoprefixer: ^10.4.21
   babel-loader: ^9.2.1
+  critters: ^0.0.22
   css-loader: ^7.1.2
   eslint: ^9.35.0
   eslint-config-next: ^15.5.3
   eslint-plugin-storybook: ^0.11.6
   jotai: ^2.14.0
   next: ^15.5.3
-  critters: ^0.0.22
   next-themes: ^0.4.6
   postcss: ^8.5.6
   postcss-loader: ^7.3.4
