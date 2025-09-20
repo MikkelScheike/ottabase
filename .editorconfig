@@ -1,0 +1,17 @@
+# EditorConfig helps maintain consistent coding styles
+
+root = true
+
+[*.{json,md,yml,yaml,html,css,scss,ts,tsx,js,jsx,cjs,mjs}]
+charset = utf-8
+max_line_length = 100
+indent_size = 2
+indent_style = space
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = true
+quote_type = double
+
+[*.{md,mdx,yml,yaml,html}]
+trim_trailing_whitespace = false
+max_line_length = 0

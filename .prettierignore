@@ -119,11 +119,12 @@ tmp/
 temp/
 .temp/
 
-# Lock files (optional - uncomment if you don't want these formatted)
-# pnpm-lock.yaml
-# yarn.lock
-# package-lock.json
+# Lock files
+pnpm-lock.yaml
+yarn.lock
+package-lock.json
 
 # Generated types (if any)
 types/generated/
 
+packages/utils/*
