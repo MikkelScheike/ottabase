@@ -44,7 +44,7 @@
             ],
             "@ottabase/ui-components/*": [
                 "./packages/ui-components/src/*"
-            ]
+            ],
             "@ottabase/utils": [
                 "./packages/utils/src"
             ],
