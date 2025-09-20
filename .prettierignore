@@ -1,0 +1,129 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+.pnp
+.pnp.js
+.yarn/
+
+# Build outputs
+dist/
+build/
+out/
+.next/
+.nuxt/
+.output/
+.vercel/
+
+# Package-specific directories
+packages/*/.turbo
+packages/*/node_modules
+packages/*/dist
+packages/*/build
+packages/*/out
+packages/*/.next
+
+# App specific directories
+apps/*/.turbo
+apps/*/node_modules
+apps/*/dist
+apps/*/build
+apps/*/out
+apps/*/.next
+
+# Cache directories
+.turbo/
+.cache/
+.parcel-cache/
+.vite/
+
+# Cloudflare && OpenNext
+cloudflare-env.d.ts
+/wrangler.toml.backup
+/wrangler.jsonc.backup
+.open-next
+.dev.vars
+
+# Force-ignore .gitignore files
+# Add this to your local files that need not be committed (Eg: google-oauth.gitignore.json)
+*.gitignore.*
+# Ignore directories ending with .gitignore
+*.gitignore/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+
+# Generated files
+*.min.js
+*.min.css
+coverage/
+.nyc_output/
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# Storybook build outputs
+.storybook-out/
+storybook-static/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Package manager files
+.pnpm-debug.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files and folders
+tmp/
+.tmp/
+*.tmp
+temp/
+.temp/
+
+# Lock files (optional - uncomment if you don't want these formatted)
+# pnpm-lock.yaml
+# yarn.lock
+# package-lock.json
+
+# Generated types (if any)
+types/generated/
+

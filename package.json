@@ -13,6 +13,7 @@
     "type-check": "turbo type-check",
     "clean": "turbo clean",
     "test": "turbo test",
+    "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build"
   },
