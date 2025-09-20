@@ -3,30 +3,31 @@ packages:
   - packages/*
 
 catalog:
-  '@babel/core': ^7.28.4
-  '@babel/preset-env': ^7.28.3
-  '@babel/preset-react': ^7.27.1
-  '@babel/preset-typescript': ^7.27.1
-  '@mantine/carousel': ^8.3.1
-  '@mantine/code-highlight': ^8.3.1
-  '@mantine/core': ^8.3.1
-  '@mantine/form': ^8.3.1
-  '@mantine/hooks': ^8.3.1
-  '@mantine/modals': ^8.3.1
-  '@mantine/notifications': ^8.3.1
-  '@mantine/spotlight': ^8.3.1
-  '@storybook/addon-docs': ^9.1.7
-  '@storybook/addon-links': ^9.1.7
-  '@storybook/addon-styling-webpack': ^2.0.0
-  '@storybook/react-webpack5': ^9.1.7
-  '@storybook/test': ^9.1.7
-  '@tailwindcss/forms': ^0.5.10
-  '@tailwindcss/typography': ^0.5.16
-  '@types/node': ^20.19.14
-  '@types/react': ^18.3.24
-  '@types/react-dom': ^18.3.7
-  '@typescript-eslint/eslint-plugin': ^8.44.0
-  '@typescript-eslint/parser': ^8.44.0
+  "@babel/core": ^7.28.4
+  "@babel/preset-env": ^7.28.3
+  "@babel/preset-react": ^7.27.1
+  "@babel/preset-typescript": ^7.27.1
+  "@mantine/carousel": ^8.3.1
+  "@mantine/code-highlight": ^8.3.1
+  "@mantine/core": ^8.3.1
+  "@mantine/form": ^8.3.1
+  "@mantine/hooks": ^8.3.1
+  "@mantine/modals": ^8.3.1
+  "@mantine/notifications": ^8.3.1
+  "@mantine/spotlight": ^8.3.1
+  "@storybook/addon-docs": ^9.1.7
+  "@storybook/addon-links": ^9.1.7
+  "@storybook/addon-styling-webpack": ^2.0.0
+  "@storybook/react-webpack5": ^9.1.7
+  "@storybook/test": ^9.1.7
+  "@tabler/icons-react": ^3.35.0
+  "@tailwindcss/forms": ^0.5.10
+  "@tailwindcss/typography": ^0.5.16
+  "@types/node": ^20.19.14
+  "@types/react": ^18.3.24
+  "@types/react-dom": ^18.3.7
+  "@typescript-eslint/eslint-plugin": ^8.44.0
+  "@typescript-eslint/parser": ^8.44.0
   autoprefixer: ^10.4.21
   babel-loader: ^9.2.1
   css-loader: ^7.1.2
