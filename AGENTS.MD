@@ -29,12 +29,12 @@ Reusable code shared across applications:
 
 ### Package Details
 
-| Package | Purpose | Key Features |
-|---------|---------|--------------|
-| `config` | App configuration | Type-safe config creation |
-| `state` | State management | Global state with React providers |
-| `ui` | UI components | Tailwind CSS, themes, providers |
-| `hello-world` | Example package | Sample React component |
+| Package       | Purpose           | Key Features                      |
+| ------------- | ----------------- | --------------------------------- |
+| `config`      | App configuration | Type-safe config creation         |
+| `state`       | State management  | Global state with React providers |
+| `ui`          | UI components     | Tailwind CSS, themes, providers   |
+| `hello-world` | Example package   | Sample React component            |
 
 ## 🛠 Build System
 
@@ -110,7 +110,7 @@ This strategy ensures:
 - **Efficient installs** with PNPM's content-addressable storage
 - **Type safety** with shared TypeScript configurations
 
-------------------------------
+---
 
 #### Local Development Environment
 
@@ -124,3 +124,9 @@ This strategy ensures:
 - Code Quality: ESLint, Prettier
 - Build System: Turbo
 - Documentation: Storybook
+
+##### DEV NOTES
+
+- To keep formatting on save consistent with Prettier, for VS Code, ensure to add the recommended plugins (under `.vscode\extensions.json`)
+
+🕊️
