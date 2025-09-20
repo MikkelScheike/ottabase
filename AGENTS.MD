@@ -2,15 +2,15 @@
 
 This is a monorepo which uses **Turbo** for efficient build orchestration and contains shared packages and standalone applications.
 
-## 📁 Structure
+## 📁 Core Structure
 
-```
+```text
 ottabase/
-├── apps/           # Standalone independent applications
+├── apps/           # Standalone, independent applications
 └── packages/       # Shared code and utilities
 ```
 
-## 🚀 Applications (`/apps`)
+## 💻 Applications (`/apps`)
 
 Independent Next.js 15 applications that can be deployed separately:
 
@@ -55,12 +55,14 @@ Each package in `/packages` provides:
 - Reusable functionality
 - Type definitions
 - Consistent APIs across apps
+- README.MD that describes more about the package and usage
+- As far as possible, does not have React/NextJs as dependencies
 
 ## 📋 Dependency Management
 
 This monorepo uses a sophisticated dependency management strategy for maximum deduplication and efficiency:
 
-### 🎯 PNPM Catalog System
+### 🎯 pnpm Catalog System
 
 All shared dependencies are managed through **PNPM's catalog feature** defined in [`pnpm-workspace.yaml`](pnpm-workspace.yaml:5):
 
@@ -107,3 +109,18 @@ This strategy ensures:
 - **Consistent versions** throughout the monorepo
 - **Efficient installs** with PNPM's content-addressable storage
 - **Type safety** with shared TypeScript configurations
+
+------------------------------
+
+#### Local Development Environment
+
+- OS: Windows 11
+- Default Terminal: Command Prompt (cmd)
+- Disk: Dev Drive (ReFS)
+- Runtime: Nodejs 24
+- Package Manager: pnpm (workspace-enabled)
+- Language: TypeScript
+- Styling: Tailwind, Mantine, shadcn, Tremor
+- Code Quality: ESLint, Prettier
+- Build System: Turbo
+- Documentation: Storybook
