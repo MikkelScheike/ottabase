@@ -27,7 +27,6 @@ const nextConfig = {
         // Add any Next.js 15 experimental features here
         cssChunking: true, // default true
         optimizeCss: true, // default true
-        optimizeFonts: true, // default true
         optimizePackageImports: ['@mantine/core', '@mantine/hooks', '@mantine/carousel'],
     },
     compiler: {

@@ -3,7 +3,7 @@
     "version": "0.1.0",
     "private": true,
     "scripts": {
-        "dev": "NEXT_TELEMETRY_DISABLED=1 next dev",
+        "dev": "next dev",
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
@@ -19,9 +19,9 @@
         "@mantine/core": "catalog:",
         "@mantine/hooks": "catalog:",
         "@ottabase/ui-core": "workspace:*",
+        "@ottabase/ui-components": "workspace:*",
         "@ottabase/ui-code-highlight": "workspace:*",
         "@ottabase/config": "workspace:*",
-        "@ottabase/state": "workspace:*"
         "@ottabase/state": "workspace:*",
         "@ottabase/utils": "workspace:*"
     },
