@@ -1,6 +1,5 @@
-# PNPM Configuration for Ottabase Monorepo
+# PNPM Configuration for Ottabase Monorepo: optimization
 
-# Monorepo optimization settings
 auto-install-peers=true
 dedupe-peer-dependents=true
 prefer-workspace-packages=true

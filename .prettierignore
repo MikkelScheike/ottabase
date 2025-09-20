@@ -127,4 +127,5 @@ package-lock.json
 # Generated types (if any)
 types/generated/
 
+# custom
 packages/utils/*
