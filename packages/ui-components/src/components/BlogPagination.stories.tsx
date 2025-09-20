@@ -1,9 +1,9 @@
-import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { fn } from 'storybook/test';
-import BlogPagination from './BlogPagination';
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
+import { fn } from "storybook/test";
+import BlogPagination from "./BlogPagination";
 
 const meta: Meta<typeof BlogPagination> = {
-  title: 'BlogPagination',
+  title: "BlogPagination",
   component: BlogPagination,
   args: {
     page: 3,
@@ -14,19 +14,19 @@ const meta: Meta<typeof BlogPagination> = {
     onPageChange: fn(),
   },
   parameters: {
-    layout: 'centered',
+    layout: "centered",
     viewport: {
-      defaultViewport: 'responsive',
+      defaultViewport: "responsive",
     },
   },
   decorators: [
     (Story) => (
-      <div style={{ width: '600px', margin: '0 auto' }}>
+      <div style={{ width: "600px", margin: "0 auto" }}>
         <Story />
       </div>
     ),
   ],
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 };
 
 export default meta;

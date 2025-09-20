@@ -1,18 +1,18 @@
-'use client';
+"use client";
 
-import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import DarkModeToggle from './DarkModeToggle';
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
+import DarkModeToggle from "./DarkModeToggle";
 
 const meta: Meta<typeof DarkModeToggle> = {
-  title: 'DarkModeToggle',
+  title: "DarkModeToggle",
   component: DarkModeToggle,
   args: {
-    type: 'toggle-switch',
+    type: "toggle-switch",
   },
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 };
 
 export default meta;
@@ -23,13 +23,13 @@ export const ToggleSwitch: Story = {};
 
 export const IconButton: Story = {
   args: {
-    type: 'button',
+    type: "button",
   },
 };
 
 export const IconButtonWithTitle: Story = {
   args: {
-    type: 'button',
-    title: 'Switch between light and dark',
+    type: "button",
+    title: "Switch between light and dark",
   },
 };

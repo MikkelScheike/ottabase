@@ -1,25 +1,34 @@
-import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import MessageBox from './MessageBox';
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
+import MessageBox from "./MessageBox";
 
 const meta: Meta<typeof MessageBox> = {
-  title: 'MessageBox',
+  title: "MessageBox",
   component: MessageBox,
   args: {
     message: "Here's something you should know.",
-    messageType: 'info',
+    messageType: "info",
   },
   argTypes: {
     messageType: {
-      options: ['info', 'error', 'warning', 'success', 'help', 'loginRequired', 'disconnected', 'loading'],
-      control: { type: 'select' },
+      options: [
+        "info",
+        "error",
+        "warning",
+        "success",
+        "help",
+        "loginRequired",
+        "disconnected",
+        "loading",
+      ],
+      control: { type: "select" },
     },
     loadingType: {
-      options: ['spinner', 'skeleton'],
-      control: { type: 'inline-radio' },
+      options: ["spinner", "skeleton"],
+      control: { type: "inline-radio" },
     },
   },
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
   decorators: [
     (Story) => (
@@ -28,7 +37,7 @@ const meta: Meta<typeof MessageBox> = {
       </div>
     ),
   ],
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 };
 
 export default meta;
@@ -39,15 +48,15 @@ export const Info: Story = {};
 
 export const Success: Story = {
   args: {
-    message: 'All operations completed successfully.',
-    messageType: 'success',
+    message: "All operations completed successfully.",
+    messageType: "success",
   },
 };
 
 export const Warning: Story = {
   args: {
-    message: 'Heads up! Some configuration might need attention.',
-    messageType: 'warning',
+    message: "Heads up! Some configuration might need attention.",
+    messageType: "warning",
   },
 };
 
@@ -63,10 +72,10 @@ export const ErrorState: Story = {
 
 export const Help: Story = {
   args: {
-    messageType: 'help',
+    messageType: "help",
     message: {
-      title: 'Need a hand?',
-      body: 'Reach out to support@ottabase.dev or check the documentation.',
+      title: "Need a hand?",
+      body: "Reach out to support@ottabase.dev or check the documentation.",
     },
   },
 };
@@ -74,20 +83,20 @@ export const Help: Story = {
 export const LoadingSpinner: Story = {
   args: {
     isLoading: true,
-    loadingType: 'spinner',
+    loadingType: "spinner",
   },
 };
 
 export const LoadingSkeleton: Story = {
   args: {
     isLoading: true,
-    loadingType: 'skeleton',
+    loadingType: "skeleton",
   },
 };
 
 export const LoginRequired: Story = {
   args: {
-    messageType: 'loginRequired',
-    message: 'Please sign in to continue.',
+    messageType: "loginRequired",
+    message: "Please sign in to continue.",
   },
 };

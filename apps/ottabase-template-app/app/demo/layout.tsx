@@ -1,18 +1,16 @@
-'use client';
+"use client";
 
-import { ThemeProvider } from './lib/themeContext';
-import { DemoProviders } from './components/DemoProviders';
+import { ThemeProvider } from "./lib/themeContext";
+import { DemoProviders } from "./components/DemoProviders";
 
 export default function DemoLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <ThemeProvider>
-            <DemoProviders>
-                {children}
-            </DemoProviders>
-        </ThemeProvider>
-    );
+  return (
+    <ThemeProvider>
+      <DemoProviders>{children}</DemoProviders>
+    </ThemeProvider>
+  );
 }

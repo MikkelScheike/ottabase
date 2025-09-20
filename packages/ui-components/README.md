@@ -32,6 +32,7 @@ import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
 #### Dependencies
 
 This component requires:
+
 - `@mantine/core` - For UI components and color scheme management
 - `@tabler/icons-react` - For sun and moon icons
 - `next-themes` - For Tailwind CSS theme synchronization
@@ -88,6 +89,7 @@ const config = createAppConfig({
 #### Dependencies
 
 This component requires:
+
 - `@mantine/core` - For UI components and layout
 - `@ottabase/config` - For configuration management
 - `next/link` - For optional link functionality

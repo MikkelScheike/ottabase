@@ -1,7 +1,16 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 
-const ACRONYM_SEGMENTS = new Set(['ui', 'api', 'db', 'qa', 'ux', 'ssr', 'csr', 'cli']);
+const ACRONYM_SEGMENTS = new Set([
+  "ui",
+  "api",
+  "db",
+  "qa",
+  "ux",
+  "ssr",
+  "csr",
+  "cli",
+]);
 
 function humanizeSegment(segment) {
   const lower = segment.toLowerCase();
@@ -22,16 +31,16 @@ function humanize(value) {
         .split(/[-_\s]+/)
         .filter(Boolean)
         .map(humanizeSegment)
-        .join(' ')
+        .join(" "),
     )
     .filter(Boolean)
-    .join(' / ');
+    .join(" / ");
 }
 
 function readJsonIfExists(filePath) {
   try {
     if (fs.existsSync(filePath)) {
-      return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+      return JSON.parse(fs.readFileSync(filePath, "utf8"));
     }
   } catch (error) {
     // eslint-disable-next-line no-console
@@ -44,7 +53,7 @@ function listChildDirectories(rootDir) {
   try {
     return fs
       .readdirSync(rootDir, { withFileTypes: true })
-      .filter((entry) => entry.isDirectory() && !entry.name.startsWith('.'))
+      .filter((entry) => entry.isDirectory() && !entry.name.startsWith("."))
       .map((entry) => ({
         dirName: entry.name,
         root: path.join(rootDir, entry.name),
@@ -56,7 +65,7 @@ function listChildDirectories(rootDir) {
 
 function buildRecords(rootDir, kind) {
   return listChildDirectories(rootDir).map((entry) => {
-    const packageJsonPath = path.join(entry.root, 'package.json');
+    const packageJsonPath = path.join(entry.root, "package.json");
     const packageJson = readJsonIfExists(packageJsonPath);
     return {
       kind,
@@ -77,7 +86,7 @@ function createLookup(records) {
     if (record.packageName) {
       map.set(record.packageName, record);
     }
-    if (record.packageName && record.packageName.startsWith('@')) {
+    if (record.packageName && record.packageName.startsWith("@")) {
       const shortName = record.packageName.slice(1);
       map.set(shortName, record);
     }
@@ -91,7 +100,7 @@ function filterRecords(records, rawValue) {
   }
 
   const tokens = rawValue
-    .split(',')
+    .split(",")
     .map((token) => token.trim())
     .filter(Boolean);
 
@@ -100,17 +109,17 @@ function filterRecords(records, rawValue) {
   }
 
   const lowered = tokens.map((token) => token.toLowerCase());
-  if (lowered.includes('none') || lowered.includes('off')) {
+  if (lowered.includes("none") || lowered.includes("off")) {
     return [];
   }
-  if (lowered.includes('*') || lowered.includes('all')) {
+  if (lowered.includes("*") || lowered.includes("all")) {
     return records;
   }
 
   const lookup = createLookup(records);
-  const includes = tokens.filter((token) => !token.startsWith('-'));
+  const includes = tokens.filter((token) => !token.startsWith("-"));
   const excludes = tokens
-    .filter((token) => token.startsWith('-'))
+    .filter((token) => token.startsWith("-"))
     .map((token) => token.slice(1));
 
   let selected;
@@ -151,18 +160,23 @@ function findRecord(records, token) {
 }
 
 function resolveScope() {
-  const rootDir = path.resolve(__dirname, '..');
-  const packagesRoot = path.join(rootDir, 'packages');
-  const appsRoot = path.join(rootDir, 'apps');
+  const rootDir = path.resolve(__dirname, "..");
+  const packagesRoot = path.join(rootDir, "packages");
+  const appsRoot = path.join(rootDir, "apps");
 
-  const allPackages = buildRecords(packagesRoot, 'package');
-  const allApps = buildRecords(appsRoot, 'app');
+  const allPackages = buildRecords(packagesRoot, "package");
+  const allApps = buildRecords(appsRoot, "app");
 
-  const selectedPackages = filterRecords(allPackages, process.env.STORYBOOK_PACKAGES);
+  const selectedPackages = filterRecords(
+    allPackages,
+    process.env.STORYBOOK_PACKAGES,
+  );
   const selectedApps = filterRecords(allApps, process.env.STORYBOOK_APPS);
 
   const primaryToken = process.env.STORYBOOK_PRIMARY_APP;
-  const primaryApp = primaryToken ? findRecord(allApps, primaryToken) : selectedApps[0] || null;
+  const primaryApp = primaryToken
+    ? findRecord(allApps, primaryToken)
+    : selectedApps[0] || null;
 
   return {
     rootDir,

@@ -1,83 +1,56 @@
 {
-    "compilerOptions": {
-        "target": "ES2020",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "ES6"
-        ],
-        "allowJs": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "forceConsistentCasingInFileNames": true,
-        "noEmit": true,
-        "esModuleInterop": true,
-        "module": "esnext",
-        "moduleResolution": "bundler",
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "jsx": "preserve",
-        "baseUrl": ".",
-        "paths": {
-            /* Pattern-based path mapping for all packages */
-            "@ottabase/*": [
-                "./packages/*/src"
-            ],
-            /* Individual package mappings for direct imports */
-            "@ottabase/ui-core": [
-                "./packages/ui-core/src"
-            ],
-            "@ottabase/config": [
-                "./packages/config/src"
-            ],
-            "@ottabase/state": [
-                "./packages/state/src"
-            ],
-            "@ottabase/ui-code-highlight": [
-                "./packages/ui-code-highlight/src"
-            ],
-            "@ottabase/ui-tailwind": [
-                "./packages/ui-tailwind/src"
-            ],
-            "@ottabase/ui-components": [
-                "./packages/ui-components/src"
-            ],
-            "@ottabase/ui-components/*": [
-                "./packages/ui-components/src/*"
-            ],
-            "@ottabase/utils": [
-                "./packages/utils/src"
-            ],
-        }
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["dom", "dom.iterable", "ES6"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      /* Pattern-based path mapping for all packages */
+      "@ottabase/*": ["./packages/*/src"],
+      /* Individual package mappings for direct imports */
+      "@ottabase/ui-core": ["./packages/ui-core/src"],
+      "@ottabase/config": ["./packages/config/src"],
+      "@ottabase/state": ["./packages/state/src"],
+      "@ottabase/ui-code-highlight": ["./packages/ui-code-highlight/src"],
+      "@ottabase/ui-tailwind": ["./packages/ui-tailwind/src"],
+      "@ottabase/ui-components": ["./packages/ui-components/src"],
+      "@ottabase/ui-components/*": ["./packages/ui-components/src/*"],
+      "@ottabase/utils": ["./packages/utils/src"]
+    }
+  },
+  "include": ["./packages/**/src/**/*.ts", "./packages/**/src/**/*.tsx"],
+  "exclude": ["node_modules"],
+  "references": [
+    {
+      "path": "./packages/ui-core"
     },
-    "include": [
-        "./packages/**/src/**/*.ts",
-        "./packages/**/src/**/*.tsx"
-    ],
-    "exclude": [
-        "node_modules"
-    ],
-    "references": [
-        {
-            "path": "./packages/ui-core"
-        },
-        {
-            "path": "./packages/config"
-        },
-        {
-            "path": "./packages/state"
-        },
-        {
-            "path": "./packages/ui-code-highlight"
-        },
-        {
-            "path": "./packages/ui-tailwind"
-        },
-        {
-            "path": "./packages/ui-components"
-        },
-        {
-            "path": "./packages/utils"
-        },
-    ]
+    {
+      "path": "./packages/config"
+    },
+    {
+      "path": "./packages/state"
+    },
+    {
+      "path": "./packages/ui-code-highlight"
+    },
+    {
+      "path": "./packages/ui-tailwind"
+    },
+    {
+      "path": "./packages/ui-components"
+    },
+    {
+      "path": "./packages/utils"
+    }
+  ]
 }

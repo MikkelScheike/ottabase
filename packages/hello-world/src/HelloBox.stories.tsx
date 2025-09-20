@@ -1,16 +1,16 @@
-import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { HelloBox } from './HelloBox';
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
+import { HelloBox } from "./HelloBox";
 
 const meta: Meta<typeof HelloBox> = {
-  title: 'HelloBox',
+  title: "HelloBox",
   component: HelloBox,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
   args: {
-    name: 'World',
+    name: "World",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 };
 
 export default meta;
@@ -21,17 +21,17 @@ export const Default: Story = {};
 
 export const CustomName: Story = {
   args: {
-    name: 'Ottabase',
+    name: "Ottabase",
   },
 };
 
 export const WithCustomStyle: Story = {
   args: {
-    name: 'Storybook',
+    name: "Storybook",
     style: {
-      backgroundColor: '#0d1117',
-      color: '#f0f6fc',
-      borderColor: '#58a6ff',
+      backgroundColor: "#0d1117",
+      color: "#f0f6fc",
+      borderColor: "#58a6ff",
     },
   },
 };

@@ -1,11 +1,11 @@
-import React from 'react';
-import type { Preview } from '@storybook/react-webpack5';
-import '@ottabase/ui-tailwind/styles/tailwind.base.css';
-import '../packages/ui-core/styles/index.css';
-import { StoryShell } from './StoryShell';
+import React from "react";
+import type { Preview } from "@storybook/react-webpack5";
+import "@ottabase/ui-tailwind/styles/tailwind.base.css";
+import "../packages/ui-core/styles/index.css";
+import { StoryShell } from "./StoryShell";
 
-export const parameters: Preview['parameters'] = {
-  layout: 'centered',
+export const parameters: Preview["parameters"] = {
+  layout: "centered",
   controls: {
     matchers: {
       color: /(background|color)$/i,
@@ -14,29 +14,29 @@ export const parameters: Preview['parameters'] = {
   },
   docs: {
     source: {
-      state: 'open',
+      state: "open",
     },
     // Keep the "Show code" section open by default
     canvas: {
-      sourceState: 'shown',
+      sourceState: "shown",
     },
   },
   options: {
     storySort: {
-      method: 'alphabetical',
-      order: ['Packages', 'Apps'],
+      method: "alphabetical",
+      order: ["Packages", "Apps"],
     },
   },
   backgrounds: {
-    default: 'light',
+    default: "light",
     values: [
       {
-        name: 'light',
-        value: '#ffffff',
+        name: "light",
+        value: "#ffffff",
       },
       {
-        name: 'dark',
-        value: '#111827',
+        name: "dark",
+        value: "#111827",
       },
     ],
   },
@@ -45,23 +45,24 @@ export const parameters: Preview['parameters'] = {
 const withOttabaseShell = (Story: any, context: any) => {
   // Enhanced dark mode detection from Storybook's background controls
   const backgroundValue = context.globals.backgrounds?.value;
-  const isDark = backgroundValue === '#111827' ||
-    backgroundValue === 'dark' ||
-    context.parameters.backgrounds?.default === 'dark';
-  const theme = isDark ? 'dark' : 'light';
+  const isDark =
+    backgroundValue === "#111827" ||
+    backgroundValue === "dark" ||
+    context.parameters.backgrounds?.default === "dark";
+  const theme = isDark ? "dark" : "light";
 
   // Apply theme class to document and body for better dark mode support
   // Use React.useEffect to avoid triggering re-renders
   React.useEffect(() => {
-    if (typeof document !== 'undefined') {
-      document.documentElement.classList.remove('light', 'dark');
+    if (typeof document !== "undefined") {
+      document.documentElement.classList.remove("light", "dark");
       document.documentElement.classList.add(theme);
-      document.body.classList.remove('light', 'dark');
+      document.body.classList.remove("light", "dark");
       document.body.classList.add(theme);
 
       // Also set data attribute for additional CSS targeting
-      document.documentElement.setAttribute('data-theme', theme);
-      document.documentElement.setAttribute('data-mantine-color-scheme', theme);
+      document.documentElement.setAttribute("data-theme", theme);
+      document.documentElement.setAttribute("data-mantine-color-scheme", theme);
     }
   }, [theme]);
 

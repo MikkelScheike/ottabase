@@ -206,6 +206,6 @@ pnpm storybook
 - Set `STORYBOOK_PRIMARY_APP=ottabase-template-app` to choose which app drives the `@/` alias
 - Add `.stories.tsx` or `.stories.mdx` files inside package `src/` or app `app/` folders to populate the catalog
 
--------------------
+---
 
 [![Built on Cloudflare](https://workers.cloudflare.com/built-with-cloudflare.svg)](https://cloudflare.com)

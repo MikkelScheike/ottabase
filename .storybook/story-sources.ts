@@ -1,8 +1,8 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import type { StorybookConfig } from '@storybook/react-webpack5';
+import fs from "node:fs";
+import path from "node:path";
+import type { StorybookConfig } from "@storybook/react-webpack5";
 
-type ScopeKind = 'package' | 'app';
+type ScopeKind = "package" | "app";
 
 type ScopeRecord = {
   kind: ScopeKind;
@@ -25,28 +25,30 @@ type ScopeResult = {
   primaryApp: ScopeRecord | null;
 };
 
-const { resolveScope }: { resolveScope: () => ScopeResult } = require('./scope.js');
+const {
+  resolveScope,
+}: { resolveScope: () => ScopeResult } = require("./scope.js");
 
-const STORY_PATTERN = '**/*.stories.@(js|jsx|ts|tsx|mdx)';
+const STORY_PATTERN = "**/*.stories.@(js|jsx|ts|tsx|mdx)";
 
-const PACKAGE_FOLDERS = ['stories', 'src'];
+const PACKAGE_FOLDERS = ["stories", "src"];
 
 const APP_FOLDERS: Array<{ folder: string; label: string }> = [
-  { folder: 'stories', label: 'Stories' },
-  { folder: 'app', label: 'App' },
-  { folder: 'src', label: 'Src' },
-  { folder: 'components', label: 'Components' },
-  { folder: 'ottabase', label: 'Ottabase' },
+  { folder: "stories", label: "Stories" },
+  { folder: "app", label: "App" },
+  { folder: "src", label: "Src" },
+  { folder: "components", label: "Components" },
+  { folder: "ottabase", label: "Ottabase" },
 ];
 
 interface StoryEntriesResult {
-  stories: StorybookConfig['stories'];
+  stories: StorybookConfig["stories"];
   staticDirs: string[];
   scope: ScopeResult;
 }
 
 function addEntry(
-  entries: StorybookConfig['stories'],
+  entries: StorybookConfig["stories"],
   seen: Set<string>,
   directory: string,
   titlePrefix: string,
@@ -74,7 +76,7 @@ function addEntry(
 
 export function resolveStorybookEntries(): StoryEntriesResult {
   const scope = resolveScope();
-  const stories: StorybookConfig['stories'] = [];
+  const stories: StorybookConfig["stories"] = [];
   const seen = new Set<string>();
   const staticDirs: string[] = [];
   const staticSeen = new Set<string>();
@@ -93,7 +95,7 @@ export function resolveStorybookEntries(): StoryEntriesResult {
       addEntry(stories, seen, directory, `Apps/${app.title}/${label}`);
     });
 
-    const publicDir = path.join(app.root, 'public');
+    const publicDir = path.join(app.root, "public");
     if (fs.existsSync(publicDir) && !staticSeen.has(publicDir)) {
       staticDirs.push(publicDir);
       staticSeen.add(publicDir);

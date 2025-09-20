@@ -5,6 +5,7 @@ This guide documents the learnings and best practices for creating packages in t
 ## Package Structure Standards
 
 ### 1. Directory Structure
+
 ```
 packages/
 ├── package-name/
@@ -89,6 +90,7 @@ packages/
 ```
 
 **Key Points:**
+
 - Remove `rootDir` to avoid cross-package import issues
 - Add `skipLibCheck: true` for workspace dependencies
 - Use `jsx: "react-jsx"` for React 17+ JSX transform
@@ -98,12 +100,14 @@ packages/
 ### Implementation Strategy
 
 1. **Create individual entry files** for each component:
+
 ```typescript
 // src/component-name.ts
 export { default as ComponentName } from './components/ComponentName';
 ```
 
 2. **Update package.json exports** for each atomic import:
+
 ```json
 "./component-name": {
     "types": "./dist/component-name.d.ts",
@@ -113,17 +117,20 @@ export { default as ComponentName } from './components/ComponentName';
 ```
 
 3. **Update build scripts** to include all entry points:
+
 ```json
 "build": "tsup src/index.ts src/component-name.ts --format cjs,esm --dts --clean"
 ```
 
 ### Benefits
+
 - **Better tree shaking**: Only specific components are bundled
 - **Reduced bundle size**: Unused components are excluded
 - **Faster builds**: Less code to process
 - **Automatic chunking**: tsup creates shared chunks for common dependencies
 
 ### Usage Patterns
+
 ```typescript
 // ✅ Atomic import (better tree shaking)
 import { ComponentName } from '@ottabase/package-name/component-name';
@@ -135,6 +142,7 @@ import { ComponentName } from '@ottabase/package-name';
 ## Tailwind Integration
 
 ### Consumer App Configuration
+
 Apps consuming UI components must include the package source in Tailwind config:
 
 ```javascript
@@ -181,6 +189,7 @@ const Component: React.FC<ComponentProps> = ({
 ```
 
 ### Benefits
+
 - **Centralized configuration** via @ottabase/config
 - **Flexible overrides** with direct props
 - **Default fallbacks** from configuration
@@ -189,6 +198,7 @@ const Component: React.FC<ComponentProps> = ({
 ## Dependency Management
 
 ### Workspace Dependencies
+
 ```json
 "dependencies": {
     "@ottabase/config": "workspace:*"
@@ -196,6 +206,7 @@ const Component: React.FC<ComponentProps> = ({
 ```
 
 ### Catalog Dependencies
+
 ```json
 "dependencies": {
     "@mantine/core": "catalog:",
@@ -204,6 +215,7 @@ const Component: React.FC<ComponentProps> = ({
 ```
 
 ### Peer Dependencies
+
 ```json
 "peerDependencies": {
     "react": ">=18.0.0",
@@ -213,6 +225,7 @@ const Component: React.FC<ComponentProps> = ({
 ```
 
 **Key Rules:**
+
 - Use `workspace:*` for internal packages
 - Use `catalog:` for external packages in pnpm-workspace.yaml
 - Declare peer dependencies for framework requirements
@@ -220,12 +233,14 @@ const Component: React.FC<ComponentProps> = ({
 ## Build & Development
 
 ### Build Process
+
 1. **tsup** handles dual CJS/ESM output with TypeScript declarations
 2. **Multiple entry points** for atomic imports
 3. **Automatic chunking** for shared dependencies
 4. **Type definitions** generated for all exports
 
 ### Development Workflow
+
 ```bash
 # Install dependencies
 pnpm install
@@ -243,24 +258,29 @@ pnpm dev
 ## Common Pitfalls & Solutions
 
 ### 1. TypeScript Cross-Package Imports
+
 **Problem**: `rootDir` errors when importing from other workspace packages
 **Solution**: Remove `rootDir` and add `skipLibCheck: true`
 
 ### 2. Tailwind Classes Not Applied
+
 **Problem**: Consumer app doesn't process package Tailwind classes
 **Solution**: Add package source paths to consumer's tailwind.config.cjs
 
 ### 3. Configuration Import Issues
+
 **Problem**: Hardcoded imports break flexibility
 **Solution**: Use @ottabase/config with fallback patterns and optional config props
 
 ### 4. Peer Dependency Issues
+
 **Problem**: Missing framework dependencies in package
 **Solution**: Declare proper peer dependencies and dev dependencies
 
 ## Testing Integration
 
 ### Template App Testing
+
 Add components to the template app for validation:
 
 ```typescript
@@ -272,6 +292,7 @@ import { ComponentName } from '@ottabase/ui-components/component-name';
 ```
 
 ### Verification Checklist
+
 - [ ] Package builds without errors
 - [ ] Type checking passes
 - [ ] Atomic imports work
@@ -282,6 +303,7 @@ import { ComponentName } from '@ottabase/ui-components/component-name';
 ## Documentation Standards
 
 ### README Structure
+
 1. **Component description** and purpose
 2. **Props interface** with types and defaults
 3. **Usage examples** (both atomic and barrel imports)
@@ -290,7 +312,8 @@ import { ComponentName } from '@ottabase/ui-components/component-name';
 6. **Available atomic imports** list
 
 ### Example Component Documentation
-```markdown
+
+````markdown
 ### ComponentName
 
 Brief description of component functionality.
@@ -306,6 +329,6 @@ import { ComponentName } from '@ottabase/ui-components/component-name';
 
 // Basic usage
 <ComponentName prop1="value" />
-```
+````
 
 This guide serves as the definitive reference for creating consistent, well-structured packages in the Ottabase monorepo.

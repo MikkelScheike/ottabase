@@ -1,5 +1,5 @@
-import { createDefaultAppState } from '@ottabase/state';
-import { appConfig } from '@/ottabase/config/app.config';
+import { createDefaultAppState } from "@ottabase/state";
+import { appConfig } from "@/ottabase/config/app.config";
 
 // Create app state using the shared state package
 const appState = createDefaultAppState(appConfig.features.crudHub.urlBase);

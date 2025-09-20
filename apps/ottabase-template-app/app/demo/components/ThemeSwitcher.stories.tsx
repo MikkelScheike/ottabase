@@ -1,10 +1,10 @@
-import type { Meta, StoryObj } from '@storybook/react-webpack5';
-import { userEvent, within } from 'storybook/test';
-import { ThemeProvider } from '../lib/themeContext';
-import { ThemeSwitcher } from './ThemeSwitcher';
+import type { Meta, StoryObj } from "@storybook/react-webpack5";
+import { userEvent, within } from "storybook/test";
+import { ThemeProvider } from "../lib/themeContext";
+import { ThemeSwitcher } from "./ThemeSwitcher";
 
 const meta: Meta<typeof ThemeSwitcher> = {
-  title: 'ThemeSwitcher',
+  title: "ThemeSwitcher",
   component: ThemeSwitcher,
   decorators: [
     (Story) => (
@@ -13,7 +13,7 @@ const meta: Meta<typeof ThemeSwitcher> = {
       </ThemeProvider>
     ),
   ],
-  tags: ['autodocs'],
+  tags: ["autodocs"],
 };
 
 export default meta;
@@ -25,7 +25,7 @@ export const Default: Story = {};
 export const StripePreview: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const stripeOption = await canvas.findByLabelText('Mantine Stripe');
+    const stripeOption = await canvas.findByLabelText("Mantine Stripe");
     await userEvent.click(stripeOption);
   },
 };

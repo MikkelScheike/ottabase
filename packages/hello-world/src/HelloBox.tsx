@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 export interface HelloBoxProps {
   /**
@@ -19,21 +19,21 @@ export interface HelloBoxProps {
  * A simple HelloBox component that displays a greeting message
  */
 export const HelloBox: React.FC<HelloBoxProps> = ({
-  name = 'World',
-  className = '',
-  style = {}
+  name = "World",
+  className = "",
+  style = {},
 }) => {
   const defaultStyle: React.CSSProperties = {
-    padding: '16px',
-    border: '2px solid #007bff',
-    borderRadius: '8px',
-    backgroundColor: '#f8f9fa',
-    textAlign: 'center',
-    fontFamily: 'Arial, sans-serif',
-    fontSize: '18px',
-    color: '#333',
-    display: 'inline-block',
-    ...style
+    padding: "16px",
+    border: "2px solid #007bff",
+    borderRadius: "8px",
+    backgroundColor: "#f8f9fa",
+    textAlign: "center",
+    fontFamily: "Arial, sans-serif",
+    fontSize: "18px",
+    color: "#333",
+    display: "inline-block",
+    ...style,
   };
 
   return (
