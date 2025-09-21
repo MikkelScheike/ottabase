@@ -29,7 +29,8 @@
       "@ottabase/ui-components/*": ["./packages/ui-components/src/*"],
       "@ottabase/utils": ["./packages/utils/src"],
       "@ottabase/ui-shadcn": ["./packages/ui-shadcn/src"],
-      "@ottabase/ui-shadcn/*": ["./packages/ui-shadcn/src/*"]
+      "@ottabase/ui-shadcn/*": ["./packages/ui-shadcn/src/*"],
+      "@ottabase/auth/next": ["./packages/auth/next"]
     }
   },
   "include": ["./packages/**/src/**/*.ts", "./packages/**/src/**/*.tsx"],
@@ -64,6 +65,9 @@
     },
     {
       "path": "./packages/ui-shadcn"
+    },
+    {
+      "path": "./packages/auth"
     }
   ]
 }

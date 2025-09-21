@@ -193,6 +193,7 @@ catalog:
 
 ### Existing Package Types
 
+- **`@ottabase/auth/next`** - NextAuth v5 authentication with Prisma adapter integration
 - **`@ottabase/config`** - App configuration utilities with `createAppConfig()`
 - **`@ottabase/state`** - Jotai-based state management with providers
 - **`@ottabase/ui-core`** - Core UI shell, Mantine provider, theme management
@@ -207,13 +208,15 @@ catalog:
 ### UI Provider Hierarchy (apps/\*/app/providers.tsx)
 
 ```tsx
-<ProviderState>           // @ottabase/state - global state
-  <ProviderUI>            // @ottabase/ui-core - Mantine + themes
-    <ProviderCodeHighlight> // @ottabase/ui-code-highlight
-      {children}
-    </ProviderCodeHighlight>
-  </ProviderUI>
-</ProviderState>
+<AuthProvider>            // @ottabase/auth/next - NextAuth session
+  <ProviderState>         // @ottabase/state - global state
+    <ProviderUI>          // @ottabase/ui-core - Mantine + themes
+      <ProviderCodeHighlight> // @ottabase/ui-code-highlight
+        {children}
+      </ProviderCodeHighlight>
+    </ProviderUI>
+  </ProviderState>
+</AuthProvider>
 ```
 
 ### Configuration Pattern (ottabase/config.ts)
@@ -309,6 +312,59 @@ export default definePrismaConfig({
 - **Timestamp tracking**: Generated schemas include creation timestamp
 - **TypeScript support**: Config files can be `.ts` or `.js`
 - **DO NOT edit generated schemas**: They are overwritten on each `pnpm db:generate`
+
+## 🔐 Authentication Integration
+
+### NextAuth v5 Setup
+
+Ottabase includes `@ottabase/auth/next` for NextAuth v5 integration:
+
+```typescript
+// API Route (app/api/auth/[...nextauth]/route.ts)
+import { createAuthConfig, createNextAuth } from "@ottabase/auth/next";
+import { prisma } from "@ottabase/db";
+
+const authConfig = createAuthConfig(prisma);
+const { handlers } = createNextAuth(authConfig);
+export const { GET, POST } = handlers;
+
+// Middleware (middleware.ts)
+import { createAuthConfig, createNextAuth } from "@ottabase/auth/next";
+import { prisma } from "@ottabase/db";
+
+const authConfig = createAuthConfig(prisma);
+const { auth } = createNextAuth(authConfig);
+export default auth;
+```
+
+### Authentication Hooks
+
+```typescript
+import { useAuth, useUser, useIsAuthenticated } from "@ottabase/auth/next";
+
+function MyComponent() {
+  const { user, isAuthenticated, signIn, signOut } = useAuth();
+  const currentUser = useUser();
+  const { isAuthenticated: authStatus, isLoading } = useIsAuthenticated();
+}
+```
+
+### Provider Integration
+
+Include `AuthProvider` in your app's provider hierarchy:
+
+```tsx
+import { AuthProvider } from "@ottabase/auth/next";
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <AuthProvider>
+      {/* Other providers */}
+      {children}
+    </AuthProvider>
+  );
+}
+```
 
 ## 🎯 When Working on This Codebase
 
