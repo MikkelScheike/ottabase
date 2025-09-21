@@ -5,36 +5,27 @@ node_modules/
 .pnp.js
 .yarn/
 
-# Build outputs
-dist/
-build/
-out/
-.next/
-.nuxt/
-.output/
-.vercel/
-
-# Package-specific directories
-packages/*/.turbo
-packages/*/node_modules
-packages/*/dist
-packages/*/build
-packages/*/out
-packages/*/.next
-
-# App specific directories
-apps/*/.turbo
-apps/*/node_modules
-apps/*/dist
-apps/*/build
-apps/*/out
-apps/*/.next
+# Build outputs for packages and apps in monorepos
+**/.turbo/
+**/node_modules/
+**/dist/
+**/build/
+**/out/
+**/.next/
+**/.swc/
+**/.nuxt/
+**/.output/
+**/.vercel/
+**/.netlify/
 
 # Cache directories
 .turbo/
-.cache/
-.parcel-cache/
-.vite/
+**/.cache/
+**/.parcel-cache/
+**/.vite/
+**/.webpack/
+**/.rollup.cache/
+**/.rpt2_cache/
 
 # Cloudflare && OpenNext
 cloudflare-env.d.ts
@@ -74,12 +65,14 @@ pids/
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage/
+**/coverage/
 *.lcov
 
 # Storybook build outputs
 .storybook-out/
-storybook-static/
+**/storybook-static/
+**/.storybook/build/
+**/chromatic-build/
 
 # IDE and editor files
 .vscode/
@@ -99,6 +92,9 @@ Thumbs.db
 
 # Package manager files
 .pnpm-debug.log*
+.npm-debug.log*
+.yarn-debug.log*
+.yarn-error.log*
 
 # Environment files
 .env
@@ -113,19 +109,58 @@ Thumbs.db
 *.sqlite3
 
 # Temporary files and folders
-tmp/
-.tmp/
+**/tmp/
+**/.tmp/
 *.tmp
-temp/
-.temp/
+**/temp/
+**/.temp/
 
 # Lock files
 pnpm-lock.yaml
 yarn.lock
 package-lock.json
 
-# Generated types (if any)
+# Generated types and documentation
 types/generated/
+**/types/generated/
+docs/build/
+**/docs/build/
+**/.docusaurus/
+**/api-docs/
+**/typedoc/
+
+# Testing
+**/coverage/
+**/.nyc_output/
+**/test-results/
+**/playwright-report/
+**/test-results.xml
+**/.jest/
+**/junit.xml
+
+# Linting and formatting
+**/.eslintcache
+**/.stylelintcache
+**/.prettiercache
+
+# Next.js specific
+**/.next/
+**/.swc/
+**/next-env.d.ts
+
+# Turbo specific
+**/.turbo/
+turbo.log
+
+# TypeScript
+**/*.tsbuildinfo
+**/tsconfig.tsbuildinfo
+
+# Miscellaneous build artifacts
+**/*.map
+**/*.min.*
+**/bundle-analyzer/
+**/size-limit/
 
 # custom
 packages/utils/*
