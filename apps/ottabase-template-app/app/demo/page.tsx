@@ -92,6 +92,16 @@ export default function DemoPage() {
           <Text size="sm" c="dimmed" mt="xs">
             {APP_META.copyrightText}
           </Text>
+          <Group mt="lg">
+            <Button
+              component={Link}
+              href="/demo/shadcn"
+              variant="outline"
+              leftSection={<span aria-hidden="true">✨</span>}
+            >
+              Explore shadcn/ui demo
+            </Button>
+          </Group>
         </div>
 
         {/* Theme Switcher Demo */}

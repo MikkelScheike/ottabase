@@ -25,7 +25,9 @@
       "@ottabase/ui-tailwind": ["./packages/ui-tailwind/src"],
       "@ottabase/ui-components": ["./packages/ui-components/src"],
       "@ottabase/ui-components/*": ["./packages/ui-components/src/*"],
-      "@ottabase/utils": ["./packages/utils/src"]
+      "@ottabase/utils": ["./packages/utils/src"],
+      "@ottabase/ui-shadcn": ["./packages/ui-shadcn/src"],
+      "@ottabase/ui-shadcn/*": ["./packages/ui-shadcn/src/*"]
     }
   },
   "include": ["./packages/**/src/**/*.ts", "./packages/**/src/**/*.tsx"],
@@ -51,6 +53,9 @@
     },
     {
       "path": "./packages/utils"
+    },
+    {
+      "path": "./packages/ui-shadcn"
     }
   ]
 }

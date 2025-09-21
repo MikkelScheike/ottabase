@@ -24,7 +24,9 @@
     "@ottabase/ui-code-highlight": "workspace:*",
     "@ottabase/config": "workspace:*",
     "@ottabase/state": "workspace:*",
-    "@ottabase/utils": "workspace:*"
+    "@ottabase/utils": "workspace:*",
+    "@ottabase/ui-shadcn": "workspace:*",
+    "lucide-react": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
@@ -41,6 +43,7 @@
     "@tailwindcss/typography": "catalog:",
     "postcss-preset-env": "catalog:",
     "@ottabase/ui-tailwind": "workspace:*",
+    "tailwindcss-animate": "catalog:",
     "storybook": "catalog:",
     "@storybook/react-webpack5": "catalog:",
     "@storybook/addon-links": "catalog:",

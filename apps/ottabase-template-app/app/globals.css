@@ -1,1 +1,3 @@
-/* Styles for App */
+@import "@ottabase/ui-shadcn/styles.css";
+
+/* App-specific styles */

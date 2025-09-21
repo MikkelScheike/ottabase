@@ -1,0 +1,70 @@
+{
+  "name": "@ottabase/ui-shadcn",
+  "version": "0.1.0",
+  "description": "Shared shadcn/ui components and providers for Ottabase apps",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./providers": {
+      "types": "./dist/providers.d.ts",
+      "import": "./dist/providers.mjs",
+      "require": "./dist/providers.js"
+    },
+    "./styles.css": "./styles/shadcn.css"
+  },
+  "files": [
+    "dist",
+    "components",
+    "providers",
+    "styles",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/providers.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/providers.ts --format cjs,esm --dts --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint 'src/**/*.{ts,tsx}' 'components/**/*.{ts,tsx}' 'providers/**/*.{ts,tsx}'",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "shadcn",
+    "react",
+    "tailwind",
+    "components",
+    "ui"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@radix-ui/react-slot": "catalog:",
+    "@radix-ui/react-switch": "catalog:",
+    "@radix-ui/react-tabs": "catalog:",
+    "@radix-ui/react-tooltip": "catalog:",
+    "class-variance-authority": "catalog:",
+    "clsx": "catalog:",
+    "sonner": "catalog:",
+    "tailwind-merge": "catalog:"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0",
+    "next": ">=14.0.0",
+    "next-themes": ">=0.4.0"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@types/node": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:",
+    "rimraf": "catalog:",
+    "eslint": "catalog:"
+  }
+}

@@ -4,6 +4,7 @@ import { ProviderUI } from "@ottabase/ui-core";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
 import { ProviderState } from "@ottabase/state";
 import { appConfig, THEME_COLORS } from "@/ottabase/config/app.config";
+import { ShadcnProviders } from "@ottabase/ui-shadcn/providers";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +17,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
         primaryColor={appConfig.theme.colorDefault}
         enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}
       >
-        <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
+        <ShadcnProviders enableThemeProvider={false} enableToaster>
+          <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
+        </ShadcnProviders>
       </ProviderUI>
     </ProviderState>
   );
