@@ -26,6 +26,7 @@
     "@ottabase/state": "workspace:*",
     "@ottabase/utils": "workspace:*",
     "@ottabase/ui-shadcn": "workspace:*",
+    "next-themes": "catalog:",
     "lucide-react": "catalog:"
   },
   "devDependencies": {

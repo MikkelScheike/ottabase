@@ -1,14 +1,6 @@
 "use client";
 
 import React, { ReactNode, useEffect } from "react";
-// NextThemes Wrapper
-import ProviderNextThemes from "./ProviderNextThemes";
-// Font Provider
-import ProviderFont, {
-  headingFontFamily,
-  monospaceFontFamily,
-  primaryFontFamily,
-} from "./ProviderFont";
 // Mantine
 import {
   MantineProvider,
@@ -31,8 +23,20 @@ import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "@mantine/carousel/styles.css";
 
-import { mantineShadcn } from "../themes/mantine-shadcn";
-import { mantineVercel } from "../themes/mantine-vercel";
+export type ProviderUIFontFamilies = {
+  primary?: string;
+  heading?: string;
+  monospace?: string;
+};
+
+const DEFAULT_FONT_FAMILIES: Required<ProviderUIFontFamilies> = {
+  primary:
+    "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  heading:
+    "Work Sans, 'Palanquin Dark', 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+  monospace:
+    "JetBrains Mono, 'Fira Code', 'Reddit Mono', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'Courier New', monospace",
+};
 
 interface ProvidersProps {
   children: ReactNode;
@@ -42,10 +46,10 @@ interface ProvidersProps {
   preventFOUCInsideIframe?: boolean;
   themeColors?: Record<string, MantineColorsTuple>;
   primaryColor?: string;
-  enforceGoogleFonts?: boolean;
   scale?: number;
   // Theme override - allows apps to provide their own complete theme
   themeOverride?: MantineThemeOverride;
+  fontFamilies?: ProviderUIFontFamilies;
 }
 
 export type ThemeColors = Record<string, MantineColorsTuple>;
@@ -57,14 +61,19 @@ const ProviderUI = ({
   preventFOUCInsideIframe = false,
   themeColors = {},
   primaryColor = "blue",
-  enforceGoogleFonts = true,
   scale = 1.0,
   themeOverride,
+  fontFamilies,
 }: ProvidersProps) => {
   const storageKeyTheme = `${storagePrefix}.color-scheme`;
   const colorSchemeManager = localStorageColorSchemeManager({
     key: storageKeyTheme,
   });
+
+  const mergedFontFamilies = {
+    ...DEFAULT_FONT_FAMILIES,
+    ...fontFamilies,
+  } satisfies Required<ProviderUIFontFamilies>;
 
   const [isInsideIFRAME, setIsInsideIFRAME] = React.useState(false);
 
@@ -116,9 +125,9 @@ const ProviderUI = ({
     autoContrast: true,
     luminanceThreshold: 0.35, // https://mantine.dev/theming/theme-object/#luminancethreshold
     cursorType: "pointer", // For interactive elements
-    fontFamily: primaryFontFamily.style.fontFamily,
-    fontFamilyMonospace: monospaceFontFamily.style.fontFamily,
-    headings: { fontFamily: headingFontFamily.style.fontFamily },
+    fontFamily: mergedFontFamilies.primary,
+    fontFamilyMonospace: mergedFontFamilies.monospace,
+    headings: { fontFamily: mergedFontFamilies.heading },
     fontSizes: {
       xs: rem(12),
       sm: rem(14),
@@ -134,52 +143,48 @@ const ProviderUI = ({
   const mantineTheme = createTheme(finalTheme);
 
   return (
-    <ProviderFont enforceGoogleFonts={enforceGoogleFonts}>
-      <MantineProvider
-        colorSchemeManager={colorSchemeManager}
-        withCssVariables={true}
-        deduplicateCssVariables={true}
-        classNamesPrefix="cdc-mt"
-        withStaticClasses={false} // Static class = cdc-mtn-Button-inner | Dynamic class = m-a25b86ee
-        theme={mantineTheme}
-      >
-        {/* Modals manager */}
-        <ModalsProvider>
-          {/*<SpotlightProvider shortcut={['mod + K', '/']}
-										   transitionProps={{duration: 128}} actions={[]}
-										   actionsWrapperComponent={ActionsWrapper}
+    <MantineProvider
+      colorSchemeManager={colorSchemeManager}
+      withCssVariables={true}
+      deduplicateCssVariables={true}
+      classNamesPrefix="cdc-mt"
+      withStaticClasses={false} // Static class = cdc-mtn-Button-inner | Dynamic class = m-a25b86ee
+      theme={mantineTheme}
+    >
+      {/* Modals manager */}
+      <ModalsProvider>
+        {/*<SpotlightProvider shortcut={['mod + K', '/']}
+								   transitionProps={{duration: 128}} actions={[]}
+								   actionsWrapperComponent={ActionsWrapper}
 						>*/}
-          <ProviderNextThemes storagePrefix={storagePrefix}>
-            {children}
-          </ProviderNextThemes>
-          {/*</SpotlightProvider>*/}
-        </ModalsProvider>
-        {/* Notifications system */}
-        <Notifications position="top-right" limit={5} zIndex={10010} />
-        {/* Blocking overlay */}
-        {preventFOUC || preventFOUCInsideIframe ? (
-          <div
-            id="cdc-blocking-overlay"
-            style={{
-              position: "fixed",
-              width: "100vw",
-              height: "100vh",
-              top: 0,
-              left: 0,
-              backgroundColor: "rgba(255,255,255,0.98)",
-              zIndex: 10000,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            Loading ...
-          </div>
-        ) : (
-          <></>
-        )}
-      </MantineProvider>
-    </ProviderFont>
+        {children}
+        {/*</SpotlightProvider>*/}
+      </ModalsProvider>
+      {/* Notifications system */}
+      <Notifications position="top-right" limit={5} zIndex={10010} />
+      {/* Blocking overlay */}
+      {preventFOUC || preventFOUCInsideIframe ? (
+        <div
+          id="cdc-blocking-overlay"
+          style={{
+            position: "fixed",
+            width: "100vw",
+            height: "100vh",
+            top: 0,
+            left: 0,
+            backgroundColor: "rgba(255,255,255,0.98)",
+            zIndex: 10000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          Loading ...
+        </div>
+      ) : (
+        <></>
+      )}
+    </MantineProvider>
   );
 };
 

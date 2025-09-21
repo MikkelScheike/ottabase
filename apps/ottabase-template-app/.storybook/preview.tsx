@@ -6,6 +6,13 @@ import "../app/globals.css";
 import { ProviderUI } from "@ottabase/ui-core";
 import { ProviderState } from "@ottabase/state";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
+import {
+  ProviderFont,
+  ProviderNextThemes,
+  primaryFontFamily,
+  headingFontFamily,
+  monospaceFontFamily,
+} from "../ottabase/providers";
 import { appConfig, THEME_COLORS } from "../ottabase/config/app.config";
 
 const preview: Preview = {
@@ -22,16 +29,24 @@ const preview: Preview = {
   decorators: [
     (Story: any) => (
       <ProviderState>
-        <ProviderUI
-          storagePrefix={appConfig.storage.prefix}
-          themeColors={THEME_COLORS}
-          primaryColor={appConfig.theme.colorDefault}
-          enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}
-        >
-          <ProviderCodeHighlight>
-            <Story />
-          </ProviderCodeHighlight>
-        </ProviderUI>
+        <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
+          <ProviderUI
+            storagePrefix={appConfig.storage.prefix}
+            themeColors={THEME_COLORS}
+            primaryColor={appConfig.theme.colorDefault}
+            fontFamilies={{
+              primary: primaryFontFamily.style.fontFamily,
+              heading: headingFontFamily.style.fontFamily,
+              monospace: monospaceFontFamily.style.fontFamily,
+            }}
+          >
+            <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
+              <ProviderCodeHighlight>
+                <Story />
+              </ProviderCodeHighlight>
+            </ProviderNextThemes>
+          </ProviderUI>
+        </ProviderFont>
       </ProviderState>
     ),
   ],

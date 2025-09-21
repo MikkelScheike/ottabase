@@ -66,19 +66,28 @@ UI components and providers for Ottabase applications.
 
 **Features:**
 
-- ProviderUI: Main UI provider combining Mantine and Next.js themes
-- ProviderNextThemes: Standalone Next.js themes provider
+- ProviderUI: Mantine-first provider with notifications, modals, and theme helpers
 - Theme management with dark/light mode support
-- FOUC (Flash of Unstyled Content) prevention
+- FOUC (Flash of Unstyled Content) prevention utilities
+
+> ℹ️ Next.js-specific providers (fonts, theme sync) live inside
+> `apps/ottabase-template-app/ottabase/providers` so framework code
+> stays out of reusable packages.
 
 **Usage:**
 
 ```tsx
 import { ProviderUI } from '@ottabase/ui-core';
 
+const fontFamilies = {
+  primary: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+  heading: "Work Sans, 'Segoe UI', sans-serif",
+  monospace: "JetBrains Mono, 'Fira Code', monospace",
+};
+
 function App({ children }) {
   return (
-    <ProviderUI>
+    <ProviderUI fontFamilies={fontFamilies}>
       {children}
     </ProviderUI>
   );

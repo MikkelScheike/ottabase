@@ -36,8 +36,7 @@
     "ui",
     "components",
     "providers",
-    "mantine",
-    "next-themes"
+    "mantine"
   ],
   "author": "",
   "license": "MIT",
@@ -46,19 +45,16 @@
     "@mantine/core": "catalog:",
     "@mantine/hooks": "catalog:",
     "@mantine/modals": "catalog:",
-    "@mantine/notifications": "catalog:",
-    "next-themes": "catalog:"
+    "@mantine/notifications": "catalog:"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
     "react-dom": ">=18.0.0",
-    "next": ">=14.0.0",
     "@mantine/core": "^8.3.1",
     "@mantine/notifications": "^8.3.1",
     "@mantine/modals": "^8.3.1",
     "@mantine/carousel": "^8.3.1",
-    "@mantine/hooks": "^8.3.1",
-    "next-themes": "^0.4.6"
+    "@mantine/hooks": "^8.3.1"
   },
   "devDependencies": {
     "@types/react": "catalog:",
