@@ -51,8 +51,8 @@ catalog:
   postcss-preset-env: ^9.6.0
   postcss-preset-mantine: ^1.18.0
   postcss-simple-vars: ^7.0.1
-  prisma: ^5.22.0
   prettier: ^3.0.0
+  prisma: ^5.22.0
   react: ^18.3.1
   react-dom: ^18.3.1
   rimraf: ^6.0.1
