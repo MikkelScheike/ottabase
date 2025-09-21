@@ -4,6 +4,7 @@ import { ProviderUI } from "@ottabase/ui-core";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
 import { ProviderState } from "@ottabase/state";
 import { ShadcnProviders } from "@ottabase/ui-shadcn/providers";
+import { AuthProvider } from "@ottabase/auth/next";
 import {
   ProviderFont,
   ProviderNextThemes,
@@ -21,23 +22,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ProviderState>
-      <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
-        <ProviderUI
-          storagePrefix={appConfig.storage.prefix}
-          preventFOUC={appConfig.ui.preventFOUC}
-          preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
-          themeColors={THEME_COLORS}
-          primaryColor={appConfig.theme.colorDefault}
-          fontFamilies={fontFamilies}
-        >
-          <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
-            <ShadcnProviders enableThemeProvider={false} enableToaster>
-              <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
-            </ShadcnProviders>
-          </ProviderNextThemes>
-        </ProviderUI>
-      </ProviderFont>
-    </ProviderState>
+    <AuthProvider>
+      <ProviderState>
+        <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
+          <ProviderUI
+            storagePrefix={appConfig.storage.prefix}
+            preventFOUC={appConfig.ui.preventFOUC}
+            preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
+            themeColors={THEME_COLORS}
+            primaryColor={appConfig.theme.colorDefault}
+            fontFamilies={fontFamilies}
+          >
+            <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
+              <ShadcnProviders enableThemeProvider={false} enableToaster>
+                <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
+              </ShadcnProviders>
+            </ProviderNextThemes>
+          </ProviderUI>
+        </ProviderFont>
+      </ProviderState>
+    </AuthProvider>
   );
 }

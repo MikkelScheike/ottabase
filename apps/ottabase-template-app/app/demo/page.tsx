@@ -1,34 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { useAtom, useSetAtom } from "jotai";
-import {
-  Container,
-  Title,
-  Text,
-  Button,
-  Group,
-  Stack,
-  Card,
-  Badge,
-  Switch,
-  Slider,
-  Code,
-} from "@mantine/core";
-import {
-  appGlobalStateAtom,
-  createAppGlobalStateAtom,
-} from "@/ottabase/state/appGlobalState";
 import {
   APP_META,
   THEME_COLORS,
   UI_LAYOUT,
 } from "@/ottabase/config/app.config";
+import {
+  appGlobalStateAtom,
+  createAppGlobalStateAtom,
+} from "@/ottabase/state/appGlobalState";
+import {
+  Badge,
+  Button,
+  Card,
+  Code,
+  Container,
+  Group,
+  Slider,
+  Stack,
+  Switch,
+  Text,
+  Title,
+} from "@mantine/core";
+import { BlogPagination } from "@ottabase/ui-components";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import { Logo } from "@ottabase/ui-components/logo";
-import { BlogPagination } from "@ottabase/ui-components";
-import { ThemeSwitcher } from "./components/ThemeSwitcher";
+import { useAtom, useSetAtom } from "jotai";
 import Link from "next/link";
+import { useState } from "react";
+import { ThemeSwitcher } from "./components/ThemeSwitcher";
 
 export default function DemoPage() {
   const [appState, setAppState] = useAtom(appGlobalStateAtom);
@@ -100,6 +100,14 @@ export default function DemoPage() {
               leftSection={<span aria-hidden="true">✨</span>}
             >
               Explore shadcn/ui demo
+            </Button>
+            <Button
+              component={Link}
+              href="/demo/auth"
+              variant="outline"
+              leftSection={<span aria-hidden="true">🔐</span>}
+            >
+              Explore auth demo
             </Button>
           </Group>
         </div>
