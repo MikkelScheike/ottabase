@@ -4,15 +4,8 @@
     "allowJs": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "types": [
-      "node"
-    ],
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es6",
-      "es2017"
-    ]
+    "types": ["node"],
+    "lib": ["dom", "dom.iterable", "es6", "es2017"]
   },
   "include": [
     "../**/*.stories.*",
