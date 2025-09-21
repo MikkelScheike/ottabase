@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@ottabase/utils",
   "version": "0.1.0",
   "description": "Set of common utility functions for file operations, string manipulation, currency formatting, email parsing, JSON handling, git operations, browser detection, and more.",

@@ -158,7 +158,7 @@ import { getLastCommitMessage, getCurrentBranch, getLatestCommitHash, isGitRepos
 The `changeCase` function supports these case formats:
 
 - `'camel'` - camelCase
-- `'snake'` - snake_case  
+- `'snake'` - snake_case
 - `'kebab'` - kebab-case
 - `'pascal'` - PascalCase
 - `'title'` - Title Case
