@@ -10,8 +10,7 @@ const nextConfig = {
     "@ottabase/ui-tailwind",
     "@ottabase/ui-components",
     "@ottabase/utils",
-    "@ottabase/core-prisma",
-    "@ottabase/core-auth",
+    "@ottabase/db",
   ],
 
   // Enable React strict mode
@@ -31,6 +30,14 @@ const nextConfig = {
       "@mantine/core",
       "@mantine/hooks",
       "@mantine/carousel",
+      "@ottabase/ui-core",
+      "@ottabase/config",
+      "@ottabase/state",
+      "@ottabase/ui-code-highlight",
+      "@ottabase/ui-tailwind",
+      "@ottabase/ui-components",
+      "@ottabase/utils",
+      "@ottabase/db",
     ],
   },
   compiler: {

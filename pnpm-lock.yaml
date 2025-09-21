@@ -34,7 +34,7 @@ catalogs:
       specifier: ^8.3.1
       version: 8.3.1
     '@prisma/client':
-      specifier: ^5.21.1
+      specifier: ^5.22.0
       version: 5.22.0
     '@radix-ui/react-slot':
       specifier: ^1.1.1
@@ -136,7 +136,7 @@ catalogs:
       specifier: ^1.18.0
       version: 1.18.0
     prisma:
-      specifier: ^5.21.1
+      specifier: ^5.22.0
       version: 5.22.0
     react:
       specifier: ^18.3.1
@@ -242,6 +242,9 @@ importers:
       '@ottabase/config':
         specifier: workspace:*
         version: link:../../packages/config
+      '@ottabase/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@ottabase/state':
         specifier: workspace:*
         version: link:../../packages/state
@@ -260,6 +263,9 @@ importers:
       '@ottabase/utils':
         specifier: workspace:*
         version: link:../../packages/utils
+      '@prisma/client':
+        specifier: 'catalog:'
+        version: 5.22.0(prisma@5.22.0)
       critters:
         specifier: 'catalog:'
         version: 0.0.22
@@ -294,6 +300,9 @@ importers:
       '@babel/preset-typescript':
         specifier: 'catalog:'
         version: 7.27.1(@babel/core@7.28.4)
+      '@ottabase/scripts':
+        specifier: workspace:*
+        version: link:../../packages/scripts
       '@ottabase/ui-tailwind':
         specifier: workspace:*
         version: link:../../packages/ui-tailwind
@@ -342,6 +351,9 @@ importers:
       postcss-preset-mantine:
         specifier: 'catalog:'
         version: 1.18.0(postcss@8.5.6)
+      prisma:
+        specifier: 'catalog:'
+        version: 5.22.0
       storybook:
         specifier: 'catalog:'
         version: 9.1.7(@testing-library/dom@10.4.1)(prettier@2.8.8)
@@ -414,6 +426,28 @@ importers:
       react-dom:
         specifier: 'catalog:'
         version: 18.3.1(react@18.3.1)
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.0.1
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(@swc/core@1.13.5)(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.2)(yaml@2.8.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+
+  packages/scripts:
+    dependencies:
+      '@ottabase/db':
+        specifier: workspace:*
+        version: link:../db
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.17
+      eslint:
+        specifier: 'catalog:'
+        version: 9.36.0(jiti@1.21.7)
       rimraf:
         specifier: 'catalog:'
         version: 6.0.1

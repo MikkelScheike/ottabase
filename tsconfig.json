@@ -21,6 +21,7 @@
       "@ottabase/ui-core": ["./packages/ui-core/src"],
       "@ottabase/config": ["./packages/config/src"],
       "@ottabase/state": ["./packages/state/src"],
+      "@ottabase/scripts": ["./packages/scripts/src"],
       "@ottabase/db": ["./packages/db/src"],
       "@ottabase/ui-code-highlight": ["./packages/ui-code-highlight/src"],
       "@ottabase/ui-tailwind": ["./packages/ui-tailwind/src"],
@@ -45,6 +46,9 @@
     },
     {
       "path": "./packages/db"
+    },
+    {
+      "path": "./packages/scripts"
     },
     {
       "path": "./packages/ui-code-highlight"

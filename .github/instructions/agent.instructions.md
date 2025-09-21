@@ -199,8 +199,7 @@ catalog:
 - **`@ottabase/ui-components`** - Reusable UI components (buttons, forms, layout helpers)
 - **`@ottabase/ui-code-highlight`** - Code syntax highlighting providers and styles
 - **`@ottabase/ui-tailwind`** - Tailwind preset and shared CSS (`tailwind.base.cjs`)
-- **`@ottabase/core-auth`** - NextAuth utilities, providers, and route protection helpers
-- **`@ottabase/core-prisma`** - Prisma client helpers, adapters, and schema integration
+- **`@ottabase/scripts`** - Build and development scripts, including Prisma schema concatenation
 - **`@ottabase/hello-world`** - Example/template package for quick scaffolding
 
 ## 🔧 Framework Integration Patterns
@@ -261,6 +260,55 @@ catalog:
 - Demo content in `app/demo/` should be marked for deletion in new apps
 - Framework configuration in `ottabase/` directory is the customization point
 - Reference this app for integration patterns and provider setup
+
+## 🗄️ Database & Prisma Schema Management
+
+### Prisma Schema Architecture
+
+Ottabase uses a **schema concatenation system** via `@ottabase/scripts` that combines:
+
+- **Core Schema** (`packages/db/prisma/ottabase.schema.prisma`) - Base models (User, etc.)
+- **App Schema** (`apps/*/ottabase/prisma/app.schema.prisma`) - App-specific models
+- **Generated Schema** (`apps/*/prisma/schema.prisma`) - Combined output for Prisma Client
+
+### Schema Development Workflow
+
+```bash
+# Generate combined schema and Prisma client
+pnpm db:generate
+
+# The script automatically:
+# 1. Loads configuration from ottabase/prisma/prisma.config.ts
+# 2. Combines core + app schemas
+# 3. Outputs to prisma/schema.prisma (app root)
+# 4. Runs prisma generate
+```
+
+### Configuration (`ottabase/prisma/prisma.config.ts`)
+
+```typescript
+import { definePrismaConfig } from "@ottabase/scripts/prisma";
+
+export default definePrismaConfig({
+  includeOttabaseSchema: true,           // Include core schema
+  appSchemaPath: "app.schema.prisma",    // App-specific schema file
+  outputSchemaPath: "prisma/schema.prisma", // Generated schema location
+});
+```
+
+### Key Paths (defined in `@ottabase/scripts`)
+
+- **OTTABASE_CORE_SCHEMA_PATH**: `"packages/db/prisma/ottabase.schema.prisma"`
+- **DEFAULT_APP_SCHEMA_PATH**: `"ottabase/prisma/app.schema.prisma"`
+- **DEFAULT_OUTPUT_SCHEMA_PATH**: `"prisma/schema.prisma"`
+- **PRISMA_CONFIG_PATH**: `"ottabase/prisma/prisma.config.js"` (supports `.ts`)
+
+### Important Notes
+
+- **Generated files are auto-ignored**: Apps include `prisma/schema.prisma` in `.gitignore`
+- **Timestamp tracking**: Generated schemas include creation timestamp
+- **TypeScript support**: Config files can be `.ts` or `.js`
+- **DO NOT edit generated schemas**: They are overwritten on each `pnpm db:generate`
 
 ## 🎯 When Working on This Codebase
 
