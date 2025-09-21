@@ -91,6 +91,29 @@ const config: StorybookConfig = {
     config.resolve = config.resolve || {};
     config.resolve.alias = { ...(config.resolve.alias ?? {}) };
 
+    /// ================ TEMPORARY WORKAROUND ================
+    // Force single React version to prevent ReactSharedInternals conflicts
+    const reactPath = path.resolve(
+      projectRoot,
+      "node_modules/.pnpm/react@18.3.1/node_modules/react",
+    );
+    const reactDomPath = path.resolve(
+      projectRoot,
+      "node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom",
+    );
+
+    config.resolve.alias["react"] = reactPath;
+    config.resolve.alias["react-dom"] = reactDomPath;
+    config.resolve.alias["react/jsx-runtime"] = path.resolve(
+      reactPath,
+      "jsx-runtime.js",
+    );
+    config.resolve.alias["react/jsx-dev-runtime"] = path.resolve(
+      reactPath,
+      "jsx-dev-runtime.js",
+    );
+    /// ================ /TEMPORARY WORKAROUND ================
+
     // Add fallbacks for Node.js modules
     config.resolve.fallback = {
       ...config.resolve.fallback,

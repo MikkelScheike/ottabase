@@ -27,8 +27,14 @@ const config: StorybookConfig = {
 
   async webpackFinal(config) {
     config.resolve = config.resolve || {};
-    config.resolve.alias = {
-      ...(config.resolve.alias ?? {}),
+    config.resolve.alias = { ...(config.resolve.alias ?? {}) };
+
+    // Ensure alias is an object, not an array
+    if (Array.isArray(config.resolve.alias)) {
+      config.resolve.alias = {};
+    }
+
+    Object.assign(config.resolve.alias, {
       "@": join(__dirname, ".."), // App root
       // Mock Next.js font loaders to match root Storybook behavior
       "next/font/google": join(rootStorybook, "next-font-mock.js"),
@@ -47,7 +53,26 @@ const config: StorybookConfig = {
       ),
       "@ottabase/core-auth": join(projectRoot, "packages/core-auth/src"),
       "@ottabase/core-prisma": join(projectRoot, "packages/core-prisma/src"),
-    };
+    });
+
+    /// ================ TEMPORARY WORKAROUND ================
+    // Force single React version to prevent ReactSharedInternals conflicts
+    const reactPath = join(
+      projectRoot,
+      "node_modules/.pnpm/react@18.3.1/node_modules/react",
+    );
+    const reactDomPath = join(
+      projectRoot,
+      "node_modules/.pnpm/react-dom@18.3.1_react@18.3.1/node_modules/react-dom",
+    );
+
+    Object.assign(config.resolve.alias, {
+      react: reactPath,
+      "react-dom": reactDomPath,
+      "react/jsx-runtime": join(reactPath, "jsx-runtime.js"),
+      "react/jsx-dev-runtime": join(reactPath, "jsx-dev-runtime.js"),
+    });
+    /// ================ /TEMPORARY WORKAROUND ================
 
     // Ensure TypeScript/TSX are transpiled (minimal Babel setup)
     config.module = config.module || {};
