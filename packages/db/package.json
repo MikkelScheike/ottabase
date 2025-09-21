@@ -1,0 +1,55 @@
+{
+  "name": "@ottabase/db",
+  "version": "1.0.0",
+  "description": "Shared Prisma database client for Ottabase applications",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+    },
+    "./schema": "./prisma/schema.prisma"
+  },
+  "files": [
+    "dist",
+    "prisma",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts --format cjs,esm --dts --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push",
+    "prisma:migrate:dev": "prisma migrate dev"
+  },
+  "keywords": [
+    "prisma",
+    "database",
+    "postgresql",
+    "orm",
+    "monorepo"
+  ],
+  "author": "",
+  "license": "MIT",
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
+  "peerDependencies": {
+    "@prisma/client": ">=5.21.1"
+  },
+  "devDependencies": {
+    "@prisma/client": "catalog:",
+    "@types/node": "catalog:",
+    "prisma": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:",
+    "rimraf": "catalog:",
+    "eslint": "catalog:"
+  }
+}

@@ -9,6 +9,7 @@ ottabase/
 ├── apps/                       # Next.js applications
 │   └── ottabase-template-app/  # Example Next.js 15 app that uses packages as sample
 ├── packages/                # Shared packages
+│   ├── db/                  # Shared Prisma database client
 │   ├── ui/                  # UI components and providers
 │   └── hello-world/         # Example package
 ├── turbo.json              # Turborepo configuration
@@ -59,6 +60,41 @@ pnpm clean                  # Clean all build artifacts
 ```
 
 ## 📦 Packages
+
+### @ottabase/db
+
+Shared Prisma database client for Ottabase applications.
+
+**Features:**
+
+- Global Prisma client with development-time singleton pattern
+- Shared schema across the monorepo
+- Simple setup and usage
+- Type-safe database operations
+
+**Usage:**
+
+```tsx
+import { prisma } from '@ottabase/db';
+
+// Use the global Prisma client
+const users = await prisma.user.findMany();
+const user = await prisma.user.create({
+  data: {
+    email: 'user@example.com'
+  }
+});
+```
+
+**Setup:**
+
+```bash
+# Generate Prisma client
+pnpm --filter @ottabase/db prisma:generate
+
+# Push schema to database
+pnpm --filter @ottabase/db prisma:push
+```
 
 ### @ottabase/ui-core
 
