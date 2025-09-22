@@ -6,7 +6,7 @@ This guide documents the learnings and best practices for creating packages in t
 
 ### 1. Directory Structure
 
-```
+```text
 packages/
 ├── package-name/
 │   ├── package.json
