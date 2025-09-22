@@ -1,7 +1,6 @@
-import { createRequire } from "node:module";
-import fs from "node:fs";
-import path, { dirname, join } from "node:path";
 import type { StorybookConfig } from "@storybook/react-webpack5";
+import { createRequire } from "node:module";
+import path, { dirname, join } from "node:path";
 import { resolveStorybookEntries } from "./story-sources";
 
 const require = createRequire(import.meta.url);
@@ -147,57 +146,78 @@ const config: StorybookConfig = {
       }
     });
 
-    const workspaceAliases: Record<string, string> = {
-      "@ottabase/ui-core": path.resolve(projectRoot, "packages/ui-core/src"),
-      "@ottabase/ui-core/styles": path.resolve(
-        projectRoot,
-        "packages/ui-core/styles",
-      ),
-      "@ottabase/ui-core/themes": path.resolve(
-        projectRoot,
-        "packages/ui-core/themes",
-      ),
-      "@ottabase/ui-core/provider": path.resolve(
-        projectRoot,
-        "packages/ui-core/provider",
-      ),
-      "@ottabase/ui-components": path.resolve(
-        projectRoot,
-        "packages/ui-components/src",
-      ),
-      "@ottabase/config": path.resolve(projectRoot, "packages/config/src"),
-      "@ottabase/state": path.resolve(projectRoot, "packages/state/src"),
-      "@ottabase/hello-world": path.resolve(
-        projectRoot,
-        "packages/hello-world/src",
-      ),
-      "@ottabase/ui-code-highlight": path.resolve(
-        projectRoot,
-        "packages/ui-code-highlight/src",
-      ),
-      "@ottabase/ui-tailwind": path.resolve(
-        projectRoot,
-        "packages/ui-tailwind/src",
-      ),
-      "@ottabase/ui-tailwind/styles": path.resolve(
-        projectRoot,
-        "packages/ui-tailwind/styles",
-      ),
-      "@ottabase/core-auth": path.resolve(
-        projectRoot,
-        "packages/core-auth/src",
-      ),
-      "@ottabase/core-prisma": path.resolve(
-        projectRoot,
-        "packages/core-prisma/src",
-      ),
-    };
+    // ================ WORKSPACE ALIASES ================
+    //
+    // 📚 DEVELOPER GUIDE - How to maintain workspace aliases:
+    // 1. ADD NEW ALIAS: Simply add an entry to workspacePackageAliases array
+    //    Format: [aliasName, packagePath, subPath (optional)]
+    // 2. EXAMPLES:
+    //    ["@ottabase/my-package", "packages/my-package", "src"]       // → packages/my-package/src
+    //    ["@ottabase/my-package/styles", "packages/my-package", "styles"] // → packages/my-package/styles
+    //    ["@ottabase/my-package", "packages/my-package"]              // → packages/my-package (root)
+    // 3. SPECIAL FILES: Add to specialFileAliases for specific CSS/JS files
+    //    Format: [alias, packagePath, filePath]
+    // 4. The system automatically:
+    //    - Resolves paths relative to project root
+    //    - Converts to webpack alias format
+    //    - Groups by package type for easier maintenance
+    // ================================================================
 
-    config.resolve.alias["@ottabase/ui-tailwind/styles/tailwind.base.css"] =
-      path.resolve(
+    const workspacePackageAliases: Array<[string, string, string?]> = [
+      // ============ CORE PACKAGES ============
+      ["@ottabase/config", "packages/config", "src"],
+      ["@ottabase/state", "packages/state", "src"],
+      ["@ottabase/utils", "packages/utils", "src"],
+      ["@ottabase/scripts", "packages/scripts", "src"],
+      // ============ UI PACKAGES ============
+      // Main UI packages
+      ["@ottabase/ui-core", "packages/ui-core", "src"],
+      ["@ottabase/ui-components", "packages/ui-components", "src"],
+      ["@ottabase/ui-code-highlight", "packages/ui-code-highlight", "src"],
+      ["@ottabase/ui-shadcn", "packages/ui-shadcn", "src"],
+      // UI Core sub-exports
+      ["@ottabase/ui-core/styles", "packages/ui-core", "styles"],
+      ["@ottabase/ui-core/themes", "packages/ui-core", "themes"],
+      ["@ottabase/ui-core/provider", "packages/ui-core", "provider"],
+      // Tailwind UI
+      ["@ottabase/ui-tailwind", "packages/ui-tailwind", "src"],
+      ["@ottabase/ui-tailwind/styles", "packages/ui-tailwind", "styles"],
+      // ============ AUTH PACKAGES ============
+      ["@ottabase/auth", "packages/auth", "src"],
+      ["@ottabase/auth0", "packages/auth0", "src"],
+      // ============ DATABASE PACKAGES ============
+      ["@ottabase/db", "packages/db", "src"],
+      // ============ EXAMPLE PACKAGES ============
+      ["@ottabase/hello-world", "packages/hello-world", "src"],
+    ];
+
+    // Special file aliases (for specific CSS files, etc.)
+    const specialFileAliases: Array<[string, string, string]> = [
+      [
+        "@ottabase/ui-tailwind/styles/tailwind.base.css",
+        "packages/ui-tailwind",
+        "styles/tailwind.base.css",
+      ],
+    ];
+
+    // Convert package aliases to webpack alias format
+    const workspaceAliases: Record<string, string> = {};
+
+    workspacePackageAliases.forEach(([alias, packagePath, subPath]) => {
+      const fullPath = subPath
+        ? path.resolve(projectRoot, packagePath, subPath)
+        : path.resolve(projectRoot, packagePath);
+      workspaceAliases[alias] = fullPath;
+    });
+
+    // Add special file aliases
+    specialFileAliases.forEach(([alias, packagePath, filePath]) => {
+      workspaceAliases[alias] = path.resolve(
         projectRoot,
-        "packages/ui-tailwind/styles/tailwind.base.css",
+        packagePath,
+        filePath,
       );
+    });
     Object.entries(workspaceAliases).forEach(([key, value]) => {
       if (!config.resolve.alias[key]) {
         config.resolve.alias[key] = value;
