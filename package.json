@@ -8,7 +8,10 @@
   ],
   "scripts": {
     "build": "turbo build",
-    "dev": "turbo dev --concurrency 12",
+    "dev": "turbo dev --filter=@ottabase/ottabase-template-app",
+    "dev:all": "turbo dev --concurrency 15",
+    "dev:ui": "turbo dev --filter=@ottabase/ottabase-template-app --filter=@ottabase/ui-*",
+    "dev:packages": "turbo dev --filter=@ottabase/*",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "clean": "turbo clean",
@@ -35,7 +38,7 @@
     "postcss-loader": "catalog:",
     "storybook": "catalog:",
     "style-loader": "catalog:",
-    "turbo": "^2.5.6"
+    "turbo": "^2.5.8"
   },
   "packageManager": "pnpm@10.15.1",
   "engines": {
