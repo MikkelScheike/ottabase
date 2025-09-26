@@ -1,7 +1,8 @@
-import React from "react";
 import type { Preview } from "@storybook/react-webpack5";
-import "@ottabase/ui-tailwind/styles/tailwind.base.css";
+import React from "react";
+/* Import CSS from core/providers here */
 import "../packages/ui-core/styles/index.css";
+import "../packages/ui-tailwind/styles/tailwind.base.css";
 import { StoryShell } from "./StoryShell";
 
 export const parameters: Preview["parameters"] = {

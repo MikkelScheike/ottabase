@@ -152,12 +152,10 @@ const config: StorybookConfig = {
     // 1. ADD NEW ALIAS: Simply add an entry to workspacePackageAliases array
     //    Format: [aliasName, packagePath, subPath (optional)]
     // 2. EXAMPLES:
-    //    ["@ottabase/my-package", "packages/my-package", "src"]       // → packages/my-package/src
-    //    ["@ottabase/my-package/styles", "packages/my-package", "styles"] // → packages/my-package/styles
-    //    ["@ottabase/my-package", "packages/my-package"]              // → packages/my-package (root)
-    // 3. SPECIAL FILES: Add to specialFileAliases for specific CSS/JS files
-    //    Format: [alias, packagePath, filePath]
-    // 4. The system automatically:
+    //    ["@ottabase/my-package", "packages/my-package", "src"]            // → packages/my-package/src
+    //    ["@ottabase/my-package/styles", "packages/my-package", "styles"]  // → packages/my-package/styles
+    //    ["@ottabase/my-package", "packages/my-package"]                   // → packages/my-package (root)
+    // 3. The system automatically:
     //    - Resolves paths relative to project root
     //    - Converts to webpack alias format
     //    - Groups by package type for easier maintenance
@@ -191,15 +189,6 @@ const config: StorybookConfig = {
       ["@ottabase/hello-world", "packages/hello-world", "src"],
     ];
 
-    // Special file aliases (for specific CSS files, etc.)
-    const specialFileAliases: Array<[string, string, string]> = [
-      [
-        "@ottabase/ui-tailwind/styles/tailwind.base.css",
-        "packages/ui-tailwind",
-        "styles/tailwind.base.css",
-      ],
-    ];
-
     // Convert package aliases to webpack alias format
     const workspaceAliases: Record<string, string> = {};
 
@@ -210,17 +199,12 @@ const config: StorybookConfig = {
       workspaceAliases[alias] = fullPath;
     });
 
-    // Add special file aliases
-    specialFileAliases.forEach(([alias, packagePath, filePath]) => {
-      workspaceAliases[alias] = path.resolve(
-        projectRoot,
-        packagePath,
-        filePath,
-      );
-    });
     Object.entries(workspaceAliases).forEach(([key, value]) => {
-      if (!config.resolve.alias[key]) {
-        config.resolve.alias[key] = value;
+      if (!config.resolve?.alias) {
+        config.resolve!.alias = {};
+      }
+      if (!(config.resolve.alias as Record<string, string>)[key]) {
+        (config.resolve.alias as Record<string, string>)[key] = value;
       }
     });
 
