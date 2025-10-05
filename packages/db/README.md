@@ -1,13 +1,14 @@
 # @ottabase/db
 
-Shared Prisma database client for Ottabase applications.
+Shared Prisma database client and schema configuration for Ottabase applications.
 
 ## Features
 
 - Global Prisma client with development-time singleton pattern
-- Shared schema across the monorepo
-- Simple setup and usage
+- Modular core schemas for selective inclusion
+- Prisma configuration utilities for apps
 - Type-safe database operations
+- Schema concatenation system integration
 
 ## Installation
 
@@ -21,14 +22,25 @@ This package is automatically available in the monorepo. No additional installat
    DATABASE_URL="postgresql://username:password@localhost:5432/database"
    ```
 
-2. Generate the Prisma client:
+2. Configure your app's Prisma schema in `ottabase/prisma/prisma.config.js`:
+
+   ```javascript
+   const { definePrismaConfig } = require("@ottabase/db/prisma");
+
+   module.exports = definePrismaConfig({
+     coreSchemas: ["user"],      // Select core schemas
+     provider: "postgresql",     // Database provider
+   });
+   ```
+
+3. Generate the Prisma client:
    ```bash
-   pnpm --filter @ottabase/db prisma:generate
+   pnpm db:generate  # From app directory
    ```
 
 ## Usage
 
-### Basic Usage
+### Basic Database Operations
 
 ```typescript
 import { prisma } from '@ottabase/db';
@@ -37,7 +49,7 @@ import { prisma } from '@ottabase/db';
 const users = await prisma.user.findMany();
 const user = await prisma.user.create({
   data: {
-    email: 'user@example.com'0
+    email: 'user@example.com'
   }
 });
 ```
@@ -51,23 +63,41 @@ import { PrismaClient } from '@ottabase/db';
 type User = Prisma.UserCreateInput;
 ```
 
-## Schema
+### Prisma Configuration
 
-The Prisma schema is located at [`prisma/schema.prisma`](prisma/schema.prisma:1) and can be accessed via:
+```javascript
+import { definePrismaConfig } from '@ottabase/db/prisma';
 
-```typescript
-// Access schema file directly
-import schema from '@ottabase/db/schema';
+export default definePrismaConfig({
+  coreSchemas: ["user", "post"],  // Available: "user", "post"
+  provider: "postgresql",         // postgresql, mysql, sqlite, etc.
+  appSchemaPath: "ottabase/prisma/app.schema.prisma",
+  outputSchemaPath: "prisma/schema.prisma",
+});
 ```
+
+## Core Schemas
+
+Available modular schemas in [`prisma/schemas/`](prisma/schemas/):
+
+- **`user`** - User authentication and management
+- **`post`** - Blog posts and content management
+
+### Adding New Core Schemas
+
+1. Create a new `.schema.prisma` file in `prisma/schemas/`
+2. Add only model definitions (no generator/datasource)
+3. Update `CoreSchemaName` type in `prisma/schemas/index.ts`
+4. Update the README in `prisma/schemas/README.md`
 
 ## Scripts
 
 Run these commands from the monorepo root:
 
-- `pnpm --filter @ottabase/db prisma:generate` – Generate Prisma client
-- `pnpm --filter @ottabase/db prisma:push` – Push schema to database
-- `pnpm --filter @ottabase/db prisma:migrate:dev -- --name <name>` – Create migration
 - `pnpm --filter @ottabase/db build` – Build the package
+- `pnpm --filter @ottabase/db prisma:generate` – Generate Prisma client (for testing)
+
+For app-specific operations, use the app's `pnpm db:generate` command.
 
 ## Environment Variables
 
@@ -78,16 +108,36 @@ Run these commands from the monorepo root:
 ```
 packages/db/
 ├── prisma/
-│   └── schema.prisma    # Database schema
+│   ├── schemas/         # Modular core schemas
+│   │   ├── base.schema.prisma
+│   │   ├── user.schema.prisma
+│   │   ├── post.schema.prisma
+│   │   ├── index.ts     # CoreSchemaName type
+│   │   └── README.md
+│   └── README.md        # Schema documentation
 ├── src/
 │   ├── client.ts        # Global Prisma client
+│   ├── prisma-config.ts # Configuration utilities
 │   └── index.ts         # Main exports
 └── README.md
+```
+
+## Exports
+
+```json
+{
+  ".": "./dist/index.js",           // Main exports (PrismaClient, prisma)
+  "./client": "./dist/client.js",   // Direct client access
+  "./prisma": "./dist/prisma-config.js", // Configuration utilities
+  "./schema": "./prisma/schema.prisma"   // Legacy schema access
+}
 ```
 
 ## Benefits
 
 - **Global singleton**: Prevents multiple Prisma client instances in development
+- **Modular schemas**: Apps include only needed models
 - **Type safety**: Full TypeScript support with generated types
 - **Monorepo ready**: Easily shareable across apps and packages
-- **Simple setup**: Minimal configuration required
+- **Flexible configuration**: Support for multiple database providers
+- **Schema concatenation**: Automatic schema generation via `@ottabase/scripts`

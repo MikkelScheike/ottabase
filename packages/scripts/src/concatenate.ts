@@ -1,11 +1,15 @@
+import {
+  CoreSchemaName,
+  PrismaConfig,
+  PrismaProvider,
+} from "@ottabase/db/prisma";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { PrismaConfig } from "./types";
 
 // Complete path patterns for easy developer reference
-const OTTABASE_CORE_SCHEMA_PATH = "packages/db/prisma/ottabase.schema.prisma";
+const OTTABASE_SCHEMAS_DIR = "packages/db/prisma/schemas";
 const DEFAULT_APP_SCHEMA_PATH = "ottabase/prisma/app.schema.prisma";
 const PRISMA_CONFIG_PATH = "ottabase/prisma/prisma.config.js";
 const DEFAULT_OUTPUT_SCHEMA_PATH = "prisma/schema.prisma";
@@ -19,14 +23,29 @@ const getAppSchemaPath = (cwd: string, customPath?: string) =>
 const getOutputSchemaPath = (cwd: string, customPath?: string) =>
   path.join(cwd, customPath || DEFAULT_OUTPUT_SCHEMA_PATH);
 
-// Core schema fallback paths (relative to different starting points)
-const getCoreSchemaFallbackPaths = (cwd: string) => [
-  // From app directory: ../../packages/db/prisma/ottabase.schema.prisma
-  path.join(cwd, "..", "..", OTTABASE_CORE_SCHEMA_PATH),
-  // From root directory: packages/db/prisma/ottabase.schema.prisma
-  path.join(cwd, OTTABASE_CORE_SCHEMA_PATH),
-  // From packages directory: ../db/prisma/ottabase.schema.prisma
-  path.join(cwd, "..", "db", "prisma", "ottabase.schema.prisma"),
+const generateBaseSchema = (
+  provider: PrismaProvider = "postgresql",
+  dbUrlEnvVar: string = "DATABASE_URL",
+  clientProvider: string = "prisma-client-js",
+): string => {
+  return `generator client {
+  provider = "${clientProvider}"
+}
+
+datasource db {
+  provider = "${provider}"
+  url      = env("${dbUrlEnvVar}")
+}`;
+};
+
+// Modular schemas directory fallback paths
+const getModularSchemasDirPaths = (cwd: string) => [
+  // From app directory: ../../packages/db/prisma/schemas
+  path.join(cwd, "..", "..", OTTABASE_SCHEMAS_DIR),
+  // From root directory: packages/db/prisma/schemas
+  path.join(cwd, OTTABASE_SCHEMAS_DIR),
+  // From packages directory: ../db/prisma/schemas
+  path.join(cwd, "..", "db", "prisma", "schemas"),
 ];
 
 const loadConfig = async (configPath: string): Promise<PrismaConfig> => {
@@ -40,40 +59,64 @@ const loadConfig = async (configPath: string): Promise<PrismaConfig> => {
   } else if (existsSync(tsConfigPath)) {
     actualConfigPath = tsConfigPath;
   } else {
-    return { includeOttabaseSchema: true };
+    console.log("⚠️  No config file found, using defaults");
+    return {};
   }
+
+  console.log(`📄 Loading config from: ${actualConfigPath}`);
 
   // Simple require-based loading for .js/.ts files or default config
   try {
+    // For TypeScript files, we need to use ts-node or similar
+    // For now, try to require and handle errors gracefully
+    delete require.cache[require.resolve(actualConfigPath)];
     const config = require(actualConfigPath);
-    return config.default || config;
-  } catch {
-    return { includeOttabaseSchema: true };
+    const loadedConfig = config.default || config;
+    console.log(`✅ Config loaded:`, JSON.stringify(loadedConfig, null, 2));
+    return loadedConfig;
+  } catch (error) {
+    console.warn(`⚠️  Failed to load config: ${(error as Error).message}`);
+    console.log("Using default configuration");
+    return {};
   }
 };
 
-const getCoreSchemaPath = (): string => {
-  // Find the @ottabase/db package and get its schema
+const getModularSchemasDir = (): string => {
+  // Find the @ottabase/db package and get its schemas directory
   try {
-    // First try to resolve from current working directory
     const dbPackagePath = require.resolve("@ottabase/db/package.json");
     const dbDir = path.dirname(dbPackagePath);
-    return path.join(dbDir, "prisma", "ottabase.schema.prisma");
+    return path.join(dbDir, "prisma", "schemas");
   } catch {
     // Fallback: try to find it in the monorepo structure
     const cwd = process.cwd();
-    const possiblePaths = getCoreSchemaFallbackPaths(cwd);
+    const possiblePaths = getModularSchemasDirPaths(cwd);
 
-    for (const schemaPath of possiblePaths) {
-      if (existsSync(schemaPath)) {
-        return schemaPath;
+    for (const schemasDir of possiblePaths) {
+      if (existsSync(schemasDir)) {
+        return schemasDir;
       }
     }
 
     throw new Error(
-      "Could not find @ottabase/db package. Make sure it is installed.",
+      "Could not find @ottabase/db schemas directory. Make sure @ottabase/db is installed.",
     );
   }
+};
+
+const readModularSchema = async (
+  schemaName: CoreSchemaName,
+): Promise<string> => {
+  const schemasDir = getModularSchemasDir();
+  const schemaPath = path.join(schemasDir, `${schemaName}.schema.prisma`);
+
+  if (!existsSync(schemaPath)) {
+    throw new Error(
+      `Core schema "${schemaName}" not found at ${schemaPath}. Check available schemas in ${schemasDir}.`,
+    );
+  }
+
+  return await readFile(schemaPath, "utf8");
 };
 
 const runPrismaGenerate = async (
@@ -113,18 +156,36 @@ export const concatenatePrismaSchema = async (
 
   const schemas: string[] = [];
 
-  // Add core schema if enabled
-  if (config.includeOttabaseSchema !== false) {
-    try {
-      const coreSchemaPath = getCoreSchemaPath();
-      const coreSchema = await readFile(coreSchemaPath, "utf8");
-      schemas.push(`// ---- Core Schema ----\n${coreSchema.trim()}`);
-    } catch (error) {
-      console.warn(
-        "Warning: Could not load core schema:",
-        (error as Error).message,
-      );
+  // Use modular schemas approach
+  if (config.coreSchemas && config.coreSchemas.length > 0) {
+    console.log("📦 Using modular core schemas:", config.coreSchemas);
+
+    // Add base configuration with configurable provider
+    const provider = config.provider || "postgresql";
+    const baseSchema = generateBaseSchema(provider);
+    schemas.push(`// ---- Base Configuration ----\n${baseSchema.trim()}`);
+
+    // Add selected core schemas
+    for (const schemaName of config.coreSchemas!) {
+      try {
+        const schemaContent = await readModularSchema(schemaName);
+        schemas.push(
+          `// ---- Core Schema: ${schemaName} ----\n${schemaContent.trim()}`,
+        );
+      } catch (error) {
+        console.error(
+          `Error loading core schema "${schemaName}":`,
+          (error as Error).message,
+        );
+        throw error;
+      }
     }
+  } else {
+    // No core schemas - just use base configuration
+    console.log("📦 No core schemas selected, using base configuration only");
+    const provider = config.provider || "postgresql";
+    const baseSchema = generateBaseSchema(provider);
+    schemas.push(`// ---- Base Configuration ----\n${baseSchema.trim()}`);
   }
 
   // Add app schema if it exists

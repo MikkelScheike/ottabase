@@ -1,0 +1,11 @@
+/// Post model - Blog posts and content management
+
+model Post {
+    id        String   @id @default(cuid())
+    title     String
+    content   String?  @db.Text
+    published Boolean  @default(false)
+    authorId  String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}

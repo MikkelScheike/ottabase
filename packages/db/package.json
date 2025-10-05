@@ -16,6 +16,11 @@
       "import": "./dist/client.esm.js",
       "require": "./dist/client.js"
     },
+    "./prisma": {
+      "types": "./dist/prisma-config.d.ts",
+      "import": "./dist/prisma-config.esm.js",
+      "require": "./dist/prisma-config.js"
+    },
     "./schema": "./prisma/schema.prisma"
   },
   "files": [
@@ -24,8 +29,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/client.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/client.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/client.ts src/prisma-config.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/client.ts src/prisma-config.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",

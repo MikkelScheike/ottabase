@@ -1,0 +1,11 @@
+/// Base Prisma configuration - generator and datasource
+/// This file contains the core Prisma setup without any models
+
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}

@@ -4,7 +4,7 @@
 // OTTABASE TEMPLATE APP SCHEMA
 // ======================================================
 
-model TemplateProfile {
+model OttabaseTemplateAppData {
   id        String   @id @default(cuid())
   userId    String   @unique
   bio       String?  @db.Text
