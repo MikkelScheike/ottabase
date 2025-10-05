@@ -1,4 +1,5 @@
-import React from "react";
+// ex-UIMessageDisplay
+
 import {
   IconAlertSquareRounded,
   IconHelpSquareRounded,
@@ -9,6 +10,7 @@ import {
   IconSquareRoundedX,
   IconWifiOff,
 } from "@tabler/icons-react";
+import React from "react";
 
 type SkeletonVariant = "spinner" | "skeleton";
 
@@ -27,6 +29,7 @@ export interface MessageBoxProps {
   loadingType?: SkeletonVariant;
   message?: React.ReactNode | Error | Record<string, unknown> | string;
   messageType?: MessageTypes;
+  width?: string | number;
 }
 
 const messageColorClass: Record<MessageTypes, string> = {
@@ -40,19 +43,68 @@ const messageColorClass: Record<MessageTypes, string> = {
   loading: "text-blue-500 dark:text-blue-400",
 };
 
-const Loading: React.FC<{ skeletonType?: SkeletonVariant }> = ({
-  skeletonType = "spinner",
-}) => {
+const Loading: React.FC<{
+  skeletonType?: SkeletonVariant;
+  width?: string | number;
+}> = ({ skeletonType = "spinner", width }) => {
+  // Helper function to process width - add px if numeric, otherwise use as is
+  // Type guard for processing width values
+  const processWidth = (width?: string | number): string => {
+    if (!width) {
+      return "w-full";
+    }
+
+    // Handle numeric values (convert to arbitrary width)
+    if (typeof width === "number") {
+      return `w-[${width}px]`;
+    }
+
+    // Handle percentage values (convert to arbitrary width)
+    if (width.includes("%")) {
+      return `w-[${width}]`;
+    }
+
+    // Handle pixel values (convert to arbitrary width)
+    if (width.includes("px")) {
+      return `w-[${width}]`;
+    }
+
+    // Return as-is for Tailwind classes
+    return width;
+  };
   if (skeletonType === "skeleton") {
+    const containerWidth = processWidth(width);
+    const isFullWidth = !width;
+
     return (
       <div
-        className="flex w-full flex-col gap-3"
+        className={`flex flex-col items-center gap-4 ${containerWidth}`}
         role="status"
         aria-live="polite"
       >
-        <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-        <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
-        <div className="h-4 w-5/6 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        {/* Icon placeholder */}
+        <div className="h-12 w-12 rounded-lg bg-gray-200 dark:bg-gray-700 animate-pulse flex-shrink-0" />
+
+        {/* Content area skeleton - uses full container width */}
+        <div
+          className={`flex flex-col gap-3 w-full ${
+            isFullWidth ? "max-w-md" : ""
+          }`}
+        >
+          {/* Title/heading line */}
+          <div className="h-5 w-4/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+
+          {/* Main content lines */}
+          <div className="flex flex-col gap-2 w-full">
+            <div className="h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="h-4 w-11/12 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="h-4 w-4/5 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+            <div className="h-4 w-3/4 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+          </div>
+
+          {/* Optional action/button area */}
+          <div className="mt-2 h-8 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse" />
+        </div>
       </div>
     );
   }
@@ -125,11 +177,12 @@ const MessageBox: React.FC<MessageBoxProps> = ({
   loadingType,
   message,
   messageType = "info",
+  width,
 }) => {
   if (isLoading) {
     return (
       <div className="flex h-full min-h-32 w-full flex-col items-center justify-center rounded-md p-8 text-center">
-        <Loading skeletonType={loadingType} />
+        <Loading skeletonType={loadingType} width={width} />
       </div>
     );
   }
@@ -141,7 +194,7 @@ const MessageBox: React.FC<MessageBoxProps> = ({
 
   return (
     <div
-      role={resolvedType === "error" ? "alert" : "status"}
+      role="status"
       className={`flex h-full min-h-32 w-full flex-col items-center justify-center rounded-md p-8 text-center ${
         resolvedType === "error" ? "cursor-not-allowed" : "cursor-default"
       }`}

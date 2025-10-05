@@ -26,13 +26,18 @@ const meta: Meta<typeof MessageBox> = {
       options: ["spinner", "skeleton"],
       control: { type: "inline-radio" },
     },
+    width: {
+      control: { type: "text" },
+      description:
+        "Width for skeleton variant - numeric values use px, strings use as-is",
+    },
   },
   parameters: {
     layout: "centered",
   },
   decorators: [
     (Story) => (
-      <div className="w-full max-w-xl">
+      <div className="w-full max-w-4xl min-h-64 flex justify-center">
         <Story />
       </div>
     ),
@@ -98,5 +103,83 @@ export const LoginRequired: Story = {
   args: {
     messageType: "loginRequired",
     message: "Please sign in to continue.",
+  },
+};
+
+export const LoadingSkeletonWithNumericWidth: Story = {
+  args: {
+    isLoading: true,
+    loadingType: "skeleton",
+    width: 300,
+  },
+};
+
+export const LoadingSkeletonWithTailwindWidth: Story = {
+  args: {
+    isLoading: true,
+    loadingType: "skeleton",
+    width: "w-1/2",
+  },
+};
+
+export const LoadingSkeletonWithPercentageWidth: Story = {
+  args: {
+    isLoading: true,
+    loadingType: "skeleton",
+    width: "75%",
+  },
+};
+
+export const LoadingSkeletonWithCustomWidth: Story = {
+  args: {
+    isLoading: true,
+    loadingType: "skeleton",
+    width: "400px",
+  },
+};
+
+export const SkeletonWidthShowcase: Story = {
+  render: () => (
+    <div className="w-full space-y-8">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Fluid Width (Default)</h3>
+        <div className="border border-dashed border-gray-300 p-4 w-full">
+          <MessageBox isLoading={true} loadingType="skeleton" />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Fixed Pixel Width</h3>
+        <div className="border border-dashed border-gray-300 p-4 w-full">
+          <MessageBox isLoading={true} loadingType="skeleton" width="320px" />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Percentage Width</h3>
+        <div className="border border-dashed border-gray-300 p-4 w-full">
+          <MessageBox isLoading={true} loadingType="skeleton" width="60%" />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">Tailwind Class Width</h3>
+        <div className="border border-dashed border-gray-300 p-4 w-full">
+          <MessageBox isLoading={true} loadingType="skeleton" width="w-2/3" />
+        </div>
+      </div>
+
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold">
+          Numeric Width (converts to px)
+        </h3>
+        <div className="border border-dashed border-gray-300 p-4 w-full">
+          <MessageBox isLoading={true} loadingType="skeleton" width={280} />
+        </div>
+      </div>
+    </div>
+  ),
+  parameters: {
+    layout: "padded",
   },
 };
