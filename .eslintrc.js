@@ -33,6 +33,7 @@ module.exports = {
     "react/react-in-jsx-scope": "off",
     "react/prop-types": "off",
     "react/no-unescaped-entities": "off",
+    "@next/next/no-img-element": "off",
   },
   ignorePatterns: [
     "node_modules/",
