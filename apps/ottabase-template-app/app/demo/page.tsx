@@ -22,6 +22,7 @@ import {
   Text,
   Title,
 } from "@mantine/core";
+import { OttaSelect, OttaSelectItem } from "@ottabase/ottaselect";
 import { BlogPagination } from "@ottabase/ui-components";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import { Logo } from "@ottabase/ui-components/logo";
@@ -30,6 +31,27 @@ import Link from "next/link";
 import { useState } from "react";
 import { ThemeSwitcher } from "./components/ThemeSwitcher";
 
+// Sample data for OttaSelect - flexible input format (any object with id and name/label/title)
+const sampleItems = [
+  { id: "1", name: "Apple", category: "Fruit", color: "Red", price: 2.99 },
+  { id: "2", name: "Banana", category: "Fruit", color: "Yellow", price: 1.99 },
+  {
+    id: "3",
+    name: "Carrot",
+    category: "Vegetable",
+    color: "Orange",
+    price: 0.99,
+  },
+  { id: "4", name: "Durian", category: "Fruit", color: "Green", price: 12.99 },
+  {
+    id: "5",
+    name: "Eggplant",
+    category: "Vegetable",
+    color: "Purple",
+    price: 3.49,
+  },
+];
+
 export default function DemoPage() {
   const [appState, setAppState] = useAtom(appGlobalStateAtom);
   const setScale = useSetAtom(createAppGlobalStateAtom("scale"));
@@ -37,6 +59,11 @@ export default function DemoPage() {
   const setCursorTheme = useSetAtom(createAppGlobalStateAtom("cursorTheme"));
 
   const [localCounter, setLocalCounter] = useState(0);
+  const [singleSelectValue, setSingleSelectValue] =
+    useState<OttaSelectItem | null>(null);
+  const [multiSelectValue, setMultiSelectValue] = useState<
+    OttaSelectItem[] | null
+  >(null);
 
   const handleScaleChange = (value: number) => {
     setScale(value);
@@ -100,14 +127,6 @@ export default function DemoPage() {
               leftSection={<span aria-hidden="true">✨</span>}
             >
               Explore shadcn/ui demo
-            </Button>
-            <Button
-              component={Link}
-              href="/demo/auth"
-              variant="outline"
-              leftSection={<span aria-hidden="true">🔐</span>}
-            >
-              Explore auth demo
             </Button>
           </Group>
         </div>
@@ -259,6 +278,68 @@ export default function DemoPage() {
               <Text>Logo with Dark Mode Toggle:</Text>
               <Logo appName={APP_META.appName} darkModeSwitcher={true} />
             </Group>
+          </Stack>
+        </Card>
+
+        {/* OttaSelect Demo */}
+        <Card shadow="sm" padding="lg" radius="md" withBorder>
+          <Title order={2} size="h3" mb="md">
+            OttaSelect Component
+          </Title>
+          <Text size="sm" c="dimmed" mb="lg">
+            Notion-style select with flexible input (any object format) and
+            standardized output. Accepts objects with id and name/label/title
+            properties.
+          </Text>
+
+          <Stack gap="lg">
+            <div>
+              <Text size="sm" fw={500} mb="xs">
+                Single Select:
+              </Text>
+              <OttaSelect
+                mode="single"
+                items={sampleItems}
+                value={singleSelectValue}
+                onChange={(value) =>
+                  setSingleSelectValue(value as OttaSelectItem | null)
+                }
+                placeholder="Select a fruit or vegetable"
+              />
+              {singleSelectValue && (
+                <Code block mt="xs" style={{ fontSize: "11px" }}>
+                  {JSON.stringify(singleSelectValue, null, 2)}
+                </Code>
+              )}
+            </div>
+
+            <div>
+              <Text size="sm" fw={500} mb="xs">
+                Multi Select:
+              </Text>
+              <OttaSelect
+                mode="multiple"
+                items={sampleItems}
+                value={multiSelectValue}
+                onChange={(value) =>
+                  setMultiSelectValue(value as OttaSelectItem[] | null)
+                }
+                placeholder="Select multiple items"
+              />
+              {multiSelectValue && multiSelectValue.length > 0 && (
+                <Code
+                  block
+                  mt="xs"
+                  style={{
+                    fontSize: "11px",
+                    maxHeight: "150px",
+                    overflow: "auto",
+                  }}
+                >
+                  {JSON.stringify(multiSelectValue, null, 2)}
+                </Code>
+              )}
+            </div>
           </Stack>
         </Card>
 
