@@ -61,13 +61,18 @@ export default function ShadcnDemoPage() {
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-10 px-4 py-10">
       <div className="flex flex-col gap-2">
-        <Button
-          asChild
-          variant="ghost"
-          className="w-fit text-muted-foreground hover:text-foreground"
-        >
-          <Link href="/demo">← Back to Mantine demo</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            asChild
+            variant="ghost"
+            className="w-fit text-muted-foreground hover:text-foreground"
+          >
+            <Link href="/demo">← Back to Mantine demo</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/demo/auth">🔐 Auth Demos</Link>
+          </Button>
+        </div>
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant="secondary" className="uppercase">
             New

@@ -9,10 +9,10 @@ ottabase/
 ├── apps/                       # Next.js applications
 │   └── ottabase-template-app/  # Example Next.js 15 app that uses packages as sample
 ├── packages/                # Shared packages
-│   ├── auth/                # Authentication packages
 │   ├── db/                  # Shared Prisma database client
 │   ├── ui/                  # UI components and providers
 │   └── hello-world/         # Example package
+```
 ├── turbo.json              # Turborepo configuration
 ├── pnpm-workspace.yaml     # pnpm workspace configuration
 └── package.json            # Root package.json
@@ -129,68 +129,6 @@ function App({ children }) {
     </ProviderUI>
   );
 }
-```
-
-### @ottabase/auth/next
-
-NextAuth v5 authentication package for Next.js 15+ applications with Prisma adapter integration.
-
-**Features:**
-
-- NextAuth v5 (beta.25) with latest features for Next.js 15+
-- Prisma adapter integration with `@ottabase/db`
-- React hooks for authentication state management
-- TypeScript support with proper type definitions
-- Pre-configured authentication pages and callbacks
-
-**Usage:**
-
-```tsx
-// API Route (app/api/auth/[...nextauth]/route.ts)
-import { createAuthConfig, createNextAuth } from "@ottabase/auth/next";
-import { prisma } from "@ottabase/db";
-
-const authConfig = createAuthConfig(prisma);
-const { handlers } = createNextAuth(authConfig);
-export const { GET, POST } = handlers;
-
-// Provider Setup (app/providers.tsx)
-import { AuthProvider } from "@ottabase/auth/next";
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      {children}
-    </AuthProvider>
-  );
-}
-
-// Using Auth Hooks
-import { useAuth } from "@ottabase/auth/next";
-
-function MyComponent() {
-  const { user, isAuthenticated, signIn, signOut } = useAuth();
-
-  if (!isAuthenticated) {
-    return <button onClick={() => signIn()}>Sign In</button>;
-  }
-
-  return (
-    <div>
-      <p>Welcome, {user?.name}!</p>
-      <button onClick={() => signOut()}>Sign Out</button>
-    </div>
-  );
-}
-```
-
-**Setup:**
-
-```bash
-# The package is automatically available after pnpm install
-# Configure your environment variables:
-# NEXTAUTH_SECRET=your-secret-key
-# NEXTAUTH_URL=http://localhost:3000
 ```
 
 ## 🏗️ Creating New Apps

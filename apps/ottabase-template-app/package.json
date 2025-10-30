@@ -15,7 +15,6 @@
   "dependencies": {
     "@mantine/core": "catalog:",
     "@mantine/hooks": "catalog:",
-    "@ottabase/auth": "workspace:*",
     "@ottabase/config": "workspace:*",
     "@ottabase/state": "workspace:*",
     "@ottabase/ui-code-highlight": "workspace:*",

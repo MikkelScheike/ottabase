@@ -51,8 +51,6 @@ const config: StorybookConfig = {
         projectRoot,
         "packages/ui-code-highlight/src",
       ),
-      "@ottabase/core-auth": join(projectRoot, "packages/core-auth/src"),
-      "@ottabase/core-prisma": join(projectRoot, "packages/core-prisma/src"),
     });
 
     /// ================ TEMPORARY WORKAROUND ================

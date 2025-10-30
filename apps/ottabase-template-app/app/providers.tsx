@@ -1,18 +1,17 @@
 "use client";
 
-import { ProviderUI } from "@ottabase/ui-core";
-import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
-import { ProviderState } from "@ottabase/state";
-import { ShadcnProviders } from "@ottabase/ui-shadcn/providers";
-import { AuthProvider } from "@ottabase/auth/next";
+import { appConfig, THEME_COLORS } from "@/ottabase/config/app.config";
 import {
-  ProviderFont,
-  ProviderNextThemes,
-  primaryFontFamily,
   headingFontFamily,
   monospaceFontFamily,
+  primaryFontFamily,
+  ProviderFont,
+  ProviderNextThemes,
 } from "@/ottabase/providers";
-import { appConfig, THEME_COLORS } from "@/ottabase/config/app.config";
+import { ProviderState } from "@ottabase/state";
+import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
+import { ProviderUI } from "@ottabase/ui-core";
+import { ShadcnProviders } from "@ottabase/ui-shadcn/providers";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const fontFamilies = {
@@ -22,25 +21,23 @@ export function Providers({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthProvider>
-      <ProviderState>
-        <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
-          <ProviderUI
-            storagePrefix={appConfig.storage.prefix}
-            preventFOUC={appConfig.ui.preventFOUC}
-            preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
-            themeColors={THEME_COLORS}
-            primaryColor={appConfig.theme.colorDefault}
-            fontFamilies={fontFamilies}
-          >
-            <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
-              <ShadcnProviders enableThemeProvider={false} enableToaster>
-                <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
-              </ShadcnProviders>
-            </ProviderNextThemes>
-          </ProviderUI>
-        </ProviderFont>
-      </ProviderState>
-    </AuthProvider>
+    <ProviderState>
+      <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
+        <ProviderUI
+          storagePrefix={appConfig.storage.prefix}
+          preventFOUC={appConfig.ui.preventFOUC}
+          preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
+          themeColors={THEME_COLORS}
+          primaryColor={appConfig.theme.colorDefault}
+          fontFamilies={fontFamilies}
+        >
+          <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
+            <ShadcnProviders enableThemeProvider={false} enableToaster>
+              <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
+            </ShadcnProviders>
+          </ProviderNextThemes>
+        </ProviderUI>
+      </ProviderFont>
+    </ProviderState>
   );
 }
