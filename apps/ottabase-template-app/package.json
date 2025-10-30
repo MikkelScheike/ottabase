@@ -24,6 +24,7 @@
     "@ottabase/ui-shadcn": "workspace:*",
     "@ottabase/utils": "workspace:*",
     "@ottabase/db": "workspace:*",
+    "@prisma/adapter-d1": "catalog:",
     "@prisma/client": "catalog:",
     "critters": "catalog:",
     "jotai": "catalog:",

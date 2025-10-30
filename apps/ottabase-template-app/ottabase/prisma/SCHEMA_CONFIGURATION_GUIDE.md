@@ -47,9 +47,10 @@ coreSchemas: []                // Custom models only
 datasource: "d1"  // Default
 ```
 
-1. Install adapter: `npm install @prisma/adapter-d1`
-2. Generate: `pnpm db:generate`
-3. Initialize in Worker:
+`@prisma/adapter-d1` is included by default.
+
+1. Generate schema: `pnpm db:generate`
+2. Initialize in Worker:
 ```typescript
 import { PrismaClient } from '@prisma/client';
 import { PrismaD1 } from '@prisma/adapter-d1';
@@ -64,7 +65,8 @@ export default {
 };
 ```
 
-**D1 Notes:**
+**Notes:**
+- Adapter included by default
 - Automatic schema transformations (removes `@db.Text`)
 - No transaction support
 - [D1 Docs](https://www.prisma.io/docs/orm/overview/databases/cloudflare-d1)
