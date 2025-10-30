@@ -19,13 +19,13 @@ const preview: Preview = {
   parameters: {
     layout: "centered",
     backgrounds: {
-      default: "light",
-      values: [
-        { name: "light", value: "#ffffff" },
-        { name: "dark", value: "#111827" },
-      ],
+      options: {
+        light: { name: "light", value: "#ffffff" },
+        dark: { name: "dark", value: "#111827" }
+      }
     },
   },
+
   decorators: [
     (Story: any) => (
       <ProviderState>
@@ -50,6 +50,12 @@ const preview: Preview = {
       </ProviderState>
     ),
   ],
+
+  initialGlobals: {
+    backgrounds: {
+      value: "light"
+    }
+  }
 };
 
 export default preview;
