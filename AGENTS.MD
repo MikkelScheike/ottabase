@@ -12,11 +12,14 @@ ottabase/
 
 ## 💻 Applications (`/apps`)
 
-Independent Next.js 15 applications that can be deployed separately:
+Independent applications that can be deployed separately:
 
-- **`ottabase-template-app`** - Template Next.js application with shared package integration
+- **`ottabase-template-app`** - Template Next.js 15+ Application with shared package integration (Default App Template)
 
 ## 📦 Shared Packages (`/packages`)
+
+IMPORTANT NOTE: Packages need to be generic, reuseable, optimized, and well-documented. They should not have direct dependencies on React/NextJs unless absolutely necessary.
+For NextJs specific functionality, consider adding them to the Template App.
 
 Reusable code shared across applications:
 
@@ -64,7 +67,7 @@ This monorepo uses a sophisticated dependency management strategy for maximum de
 
 ### 🎯 pnpm Catalog System
 
-All shared dependencies are managed through **PNPM's catalog feature** defined in [`pnpm-workspace.yaml`](pnpm-workspace.yaml:5):
+All shared dependencies are managed through **pnpm's catalog feature** defined in [`pnpm-workspace.yaml`](pnpm-workspace.yaml:5):
 
 - **Centralized versions**: Common dependencies like [`react`](pnpm-workspace.yaml:25), [`typescript`](pnpm-workspace.yaml:29), [`@mantine/core`](pnpm-workspace.yaml:8) are defined once in the catalog
 - **Catalog references**: Packages use `"catalog:"` specifier instead of version numbers (e.g., [`"react": "catalog:"`](apps/ottabase-template-app/package.json:14))
