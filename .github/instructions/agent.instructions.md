@@ -26,6 +26,13 @@ Ottabase is a **pnpm monorepo** with **Turborepo** for build orchestration, feat
 
 ## 🎯 Core Patterns
 
+### Package Philosophy
+
+- **Generic & Reusable**: Packages should be framework-agnostic where possible
+- **React Dependencies Allowed**: Use React/React DOM as peer dependencies when needed
+- **No Next.js in Packages**: Next.js-specific code belongs in `apps/ottabase-template-app`
+- **Single Responsibility**: Each package solves one problem well
+
 ### Dependency Management Strategy
 
 - **PNPM Catalog System**: All shared dependencies are defined in `pnpm-workspace.yaml` catalog section
@@ -114,9 +121,13 @@ pnpm add --filter @ottabase/ui-core some-package
 ### Creating New Packages
 
 1. Follow naming: `@ottabase/package-name`
-2. Use standard package.json with tsup build script
-3. Export via `src/index.ts` with proper TypeScript types
-4. Add to root tsconfig.json paths for development
+2. Keep packages **generic and reusable** across apps
+3. Use React/React DOM as peer dependencies (allowed)
+4. **Avoid Next.js dependencies** - Next.js code goes in template app
+5. Use standard package.json with tsup build script
+6. Export via `src/index.ts` with proper TypeScript types
+7. Add to root tsconfig.json paths for development
+8. Refer to [PACKAGE_CREATION_GUIDE.md](../../PACKAGE_CREATION_GUIDE.md) for details
 
 ## 📦 Package System & Catalog Management
 
@@ -327,9 +338,12 @@ module.exports = definePrismaConfig({
 ## 🎯 When Working on This Codebase
 
 1. **Always use pnpm** - never npm or yarn
-2. **Check turbo.json** for task dependencies before adding new build steps
-3. **Update pnpm-workspace.yaml catalog** when adding shared dependencies
-4. **Follow the 3-directory pattern** for new applications
-5. **Use workspace protocol** for internal package references
-6. **Export styles properly** from UI packages for Tailwind content scanning
-7. **Test template app** after making changes to shared packages
+2. **Keep packages generic** - framework-agnostic where possible, React allowed as peer dep
+3. **Next.js code in template app** - not in packages
+4. **Check turbo.json** for task dependencies before adding new build steps
+5. **Update pnpm-workspace.yaml catalog** when adding shared dependencies
+6. **Follow the 3-directory pattern** for new applications (`app/`, `ottabase/`, `src/`)
+7. **Use workspace protocol** for internal package references (`workspace:*`)
+8. **Export styles properly** from UI packages for Tailwind content scanning
+9. **Test template app** after making changes to shared packages
+10. **Review AGENTS.MD** for architecture overview and best practices
