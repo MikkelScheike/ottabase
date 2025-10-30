@@ -5,7 +5,16 @@
       "Bash(pnpm type-check:*)",
       "Bash(pnpm build:*)",
       "Bash(mkdir:*)",
-      "Bash(pnpm dev)"
+      "Bash(cat:*)",
+      "Bash(test:*)",
+      "Bash(pnpm dev)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm start)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm db:generate)",
+      "Bash(pnpm storybook)",
+      "Bash(pnpm storybook:build)",
+      "Bash(pnpm db:generate:*)"
     ],
     "deny": [],
     "ask": []
