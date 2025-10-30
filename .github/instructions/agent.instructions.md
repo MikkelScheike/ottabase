@@ -36,7 +36,7 @@ Ottabase is a **pnpm monorepo** with **Turborepo** for build orchestration, feat
 ### Dependency Management Strategy
 
 - **PNPM Catalog System**: All shared dependencies are defined in `pnpm-workspace.yaml` catalog section
-- **Workspace Protocol**: Internal packages use `"workspace:*"` (e.g., `"@ottabase/ui-core": "workspace:*"`)
+- **Workspace Protocol**: Internal packages use `"workspace:*"` (e.g., `"@ottabase/ui-mantine": "workspace:*"`)
 - **Catalog References**: External deps use `"catalog:"` (e.g., `"react": "catalog:"`)
 - **Peer Dependencies**: Shared packages declare framework deps as peerDependencies to avoid duplication
 
@@ -93,7 +93,7 @@ pnpm test
 pnpm storybook
 
 # Work with specific packages
-pnpm dev --filter=@ottabase/ui-core
+pnpm dev --filter=@ottabase/ui-mantine
 pnpm build --filter=ottabase-template-app
 pnpm lint --filter=@ottabase/ui-components
 ```
@@ -105,7 +105,7 @@ pnpm lint --filter=@ottabase/ui-components
 # First add to pnpm-workspace.yaml catalog, then reference as "catalog:"
 
 # Add to specific package
-pnpm add --filter @ottabase/ui-core some-package
+pnpm add --filter @ottabase/ui-mantine some-package
 
 # Add workspace dependency
 # Use "workspace:*" in package.json dependencies
@@ -206,7 +206,8 @@ catalog:
 
 - **`@ottabase/config`** - App configuration utilities with `createAppConfig()`
 - **`@ottabase/state`** - Jotai-based state management with providers
-- **`@ottabase/ui-core`** - Core UI shell, Mantine provider, theme management
+- **`@ottabase/ui-base`** - Base UI styles and CSS utilities (framework-agnostic)
+- **`@ottabase/ui-mantine`** - Mantine provider, theme management, and pre-built themes
 - **`@ottabase/ui-components`** - Reusable UI components (buttons, forms, layout helpers)
 - **`@ottabase/ui-code-highlight`** - Code syntax highlighting providers and styles
 - **`@ottabase/ui-tailwind`** - Tailwind preset and shared CSS (`tailwind.base.cjs`)
@@ -219,7 +220,7 @@ catalog:
 
 ```tsx
 <ProviderState>         // @ottabase/state - global state
-  <ProviderUI>          // @ottabase/ui-core - Mantine + themes
+  <ProviderUI>          // @ottabase/ui-mantine - Mantine + themes
     <ProviderCodeHighlight> // @ottabase/ui-code-highlight
       {children}
     </ProviderCodeHighlight>

@@ -47,7 +47,7 @@ pnpm dev --filter=example-app  # Start specific app
 
 # Building
 pnpm build                  # Build all packages and apps
-pnpm build --filter=@ottabase/ui-core  # Build specific package
+pnpm build --filter=@ottabase/ui-mantine  # Build specific package
 
 # Linting & Type Checking
 pnpm lint                   # Lint all packages
@@ -97,15 +97,26 @@ pnpm --filter @ottabase/db prisma:generate
 pnpm --filter @ottabase/db prisma:push
 ```
 
-### @ottabase/ui-core
+### @ottabase/ui-base
 
-UI components and providers for Ottabase applications.
+Base UI styles and utilities for Ottabase applications.
 
 **Features:**
 
-- ProviderUI: Mantine-first provider with notifications, modals, and theme helpers
+- Generic CSS reset and base styles
+- Animation utilities
+- Framework-agnostic design system foundation
+
+### @ottabase/ui-mantine
+
+Mantine UI components and providers for Ottabase applications.
+
+**Features:**
+
+- ProviderUIMantine: Mantine-first provider with notifications, modals, and theme helpers
 - Theme management with dark/light mode support
 - FOUC (Flash of Unstyled Content) prevention utilities
+- Pre-built themes (ShadCN, Vercel, Ant Design, Stripe)
 
 > ℹ️ Next.js-specific providers (fonts, theme sync) live inside
 > `apps/ottabase-template-app/ottabase/providers` so framework code
@@ -114,7 +125,7 @@ UI components and providers for Ottabase applications.
 **Usage:**
 
 ```tsx
-import { ProviderUI } from '@ottabase/ui-core';
+import { ProviderUIMantine } from '@ottabase/ui-mantine';
 
 const fontFamilies = {
   primary: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -124,9 +135,9 @@ const fontFamilies = {
 
 function App({ children }) {
   return (
-    <ProviderUI fontFamilies={fontFamilies}>
+    <ProviderUIMantine fontFamilies={fontFamilies}>
       {children}
-    </ProviderUI>
+    </ProviderUIMantine>
   );
 }
 ```
@@ -156,7 +167,8 @@ cp -r ../example-app/* .
     "next": "^15.0.0",
     "react": "workspace:*",
     "react-dom": "workspace:*",
-    "@ottabase/ui-core": "workspace:*"
+    "@ottabase/ui-base": "workspace:*",
+    "@ottabase/ui-mantine": "workspace:*"
   },
   "devDependencies": {
     "typescript": "workspace:*",
@@ -207,7 +219,7 @@ cd packages/my-package
 pnpm add -w some-package
 
 # Add to specific package
-pnpm add --filter @ottabase/ui-core some-package
+pnpm add --filter @ottabase/ui-mantine some-package
 
 # Add dev dependency to root
 pnpm add -wD some-dev-package
@@ -220,7 +232,8 @@ Use `workspace:*` to reference internal packages:
 ```json
 {
   "dependencies": {
-    "@ottabase/ui-core": "workspace:*",
+    "@ottabase/ui-base": "workspace:*",
+    "@ottabase/ui-mantine": "workspace:*",
     "react": "workspace:*"
   }
 }

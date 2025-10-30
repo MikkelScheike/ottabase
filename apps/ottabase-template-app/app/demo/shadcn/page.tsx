@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import {
   Badge,
   Button,
@@ -28,6 +26,8 @@ import {
   toast,
 } from "@ottabase/ui-shadcn";
 import { Info, Mail, Palette } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 
 const notificationExamples = [
   {
@@ -68,9 +68,6 @@ export default function ShadcnDemoPage() {
             className="w-fit text-muted-foreground hover:text-foreground"
           >
             <Link href="/demo">← Back to Mantine demo</Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/demo/auth">🔐 Auth Demos</Link>
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3">

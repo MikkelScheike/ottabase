@@ -2,13 +2,13 @@
 
 import React, { createContext, useContext, useState, ReactNode } from "react";
 import { MantineThemeOverride } from "@mantine/core";
-import { createMantineTheme } from "@ottabase/ui-core";
 import {
+  createMantineTheme,
   mantineShadcn,
   mantineVercel,
   mantineAnt,
   mantineStripe,
-} from "@ottabase/ui-core";
+} from "@ottabase/ui-mantine";
 import { mantineThemeConfig } from "@/ottabase/config/theme.mantine";
 
 // Available theme options

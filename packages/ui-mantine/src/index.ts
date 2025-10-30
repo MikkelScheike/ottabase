@@ -1,10 +1,9 @@
-// Main exports for the UI package
-export { default as ProviderUI } from "../provider/ProviderUI";
+// Main exports for the Mantine UI package
+export { default as ProviderUIMantine } from "../provider/ProviderUI";
 
 // Re-export types
 export type {
   ThemeColors,
-  ProviderUIFontFamilies,
 } from "../provider/ProviderUI";
 
 // Export themes

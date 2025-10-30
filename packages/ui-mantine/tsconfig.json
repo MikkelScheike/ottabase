@@ -13,17 +13,11 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@core/*": ["../../apps/ottabase/src/core/*"]
+      "@/*": ["./src/*"]
     }
   },
-  "include": ["src/**/*", "provider/**/*"],
+  "include": ["src/**/*", "provider/**/*", "themes/**/*"],
   "exclude": ["node_modules", "dist"]
 }

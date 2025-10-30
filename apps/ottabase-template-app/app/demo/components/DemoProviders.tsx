@@ -1,6 +1,7 @@
 "use client";
 
-import { ProviderUI } from "@ottabase/ui-core";
+import { ProviderUIBase } from "@ottabase/ui-base";
+import { ProviderUIMantine } from "@ottabase/ui-mantine";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
 import {
   ProviderFont,
@@ -21,20 +22,23 @@ export function DemoProviders({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
-      <ProviderUI
-        storagePrefix={appConfig.storage.prefix}
-        preventFOUC={appConfig.ui.preventFOUC}
-        preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
-        themeColors={THEME_COLORS}
-        primaryColor={appConfig.theme.colorDefault}
-        themeOverride={currentMantineTheme}
-        fontFamilies={fontFamilies}
-      >
-        <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
-          <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
-        </ProviderNextThemes>
-      </ProviderUI>
-    </ProviderFont>
+    <ProviderUIBase
+      preventFOUC={appConfig.ui.preventFOUC}
+      preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
+      fontFamilies={fontFamilies}
+    >
+      <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
+        <ProviderUIMantine
+          storagePrefix={appConfig.storage.prefix}
+          themeColors={THEME_COLORS}
+          primaryColor={appConfig.theme.colorDefault}
+          themeOverride={currentMantineTheme}
+        >
+          <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
+            <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
+          </ProviderNextThemes>
+        </ProviderUIMantine>
+      </ProviderFont>
+    </ProviderUIBase>
   );
 }

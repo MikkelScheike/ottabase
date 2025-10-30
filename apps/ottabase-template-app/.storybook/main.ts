@@ -40,7 +40,8 @@ const config: StorybookConfig = {
       "next/font/google": join(rootStorybook, "next-font-mock.js"),
       "next/font/local": join(rootStorybook, "next-font-mock.js"),
       // Add workspace packages
-      "@ottabase/ui-core": join(projectRoot, "packages/ui-core/src"),
+      "@ottabase/ui-base": join(projectRoot, "packages/ui-base/src"),
+      "@ottabase/ui-mantine": join(projectRoot, "packages/ui-mantine/src"),
       "@ottabase/ui-components": join(
         projectRoot,
         "packages/ui-components/src",
