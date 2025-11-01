@@ -767,7 +767,7 @@ export default function ShadcnDemoPage() {
                   <ul className="grid gap-3 p-6 md:w-[400px] lg:w-[500px] lg:grid-cols-[.75fr_1fr]">
                     <li className="row-span-3">
                       <NavigationMenuLink asChild>
-                        <a
+                        <Link
                           className="flex h-full w-full select-none flex-col justify-end rounded-md bg-gradient-to-b from-muted/50 to-muted p-6 no-underline outline-none focus:shadow-md"
                           href="/"
                         >
@@ -778,12 +778,12 @@ export default function ShadcnDemoPage() {
                             Beautifully designed components built with Radix UI
                             and Tailwind CSS.
                           </p>
-                        </a>
+                        </Link>
                       </NavigationMenuLink>
                     </li>
                     <li>
                       <NavigationMenuLink asChild>
-                        <a
+                        <Link
                           className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
                           href="/docs"
                         >
@@ -794,18 +794,20 @@ export default function ShadcnDemoPage() {
                             Re-usable components built using Radix UI and
                             Tailwind CSS.
                           </p>
-                        </a>
+                        </Link>
                       </NavigationMenuLink>
                     </li>
                   </ul>
                 </NavigationMenuContent>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <NavigationMenuLink
-                  className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
-                  href="/docs"
-                >
-                  Documentation
+                <NavigationMenuLink asChild>
+                  <Link
+                    className="group inline-flex h-10 w-max items-center justify-center rounded-md bg-background px-4 py-2 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground focus:outline-none disabled:pointer-events-none disabled:opacity-50"
+                    href="/docs"
+                  >
+                    Documentation
+                  </Link>
                 </NavigationMenuLink>
               </NavigationMenuItem>
             </NavigationMenuList>
@@ -825,10 +827,14 @@ export default function ShadcnDemoPage() {
           <Pagination>
             <PaginationContent>
               <PaginationItem>
-                <PaginationPrevious href="#" />
+                <PaginationPrevious asChild>
+                  <Link href="#" />
+                </PaginationPrevious>
               </PaginationItem>
               <PaginationItem>
-                <PaginationLink href="#">1</PaginationLink>
+                <PaginationLink asChild>
+                  <Link href="#">1</Link>
+                </PaginationLink>
               </PaginationItem>
               <PaginationItem>
                 <PaginationLink href="#" isActive>
