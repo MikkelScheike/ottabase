@@ -153,7 +153,7 @@ export default function ShadcnDemoPage() {
   const [isCollapsibleOpen, setIsCollapsibleOpen] = useState(false);
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10">
+    <div className="mx-auto w-full max-w-5xl space-y-8 px-6 py-12">
       {/* Header */}
       <div className="flex flex-col gap-2">
         <div className="flex flex-wrap gap-2">
@@ -479,7 +479,7 @@ export default function ShadcnDemoPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Command className="rounded-lg border shadow-md">
+          <Command className="rounded-lg border">
             <CommandInput placeholder="Type a command or search..." />
             <CommandList>
               <CommandEmpty>No results found.</CommandEmpty>
@@ -527,7 +527,7 @@ export default function ShadcnDemoPage() {
         </CardHeader>
         <CardContent>
           <ContextMenu>
-            <ContextMenuTrigger className="flex h-[150px] w-full items-center justify-center rounded-md border border-dashed text-sm">
+            <ContextMenuTrigger className="flex h-32 w-full items-center justify-center rounded-md border border-dashed text-sm">
               Right click here
             </ContextMenuTrigger>
             <ContextMenuContent className="w-64">
