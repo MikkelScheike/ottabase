@@ -49,7 +49,6 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@mantine/core": "catalog:",
     "@ottabase/config": "workspace:*",
     "@tabler/icons-react": "catalog:",
     "next-themes": "catalog:"

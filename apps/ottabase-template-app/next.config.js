@@ -27,9 +27,6 @@ const nextConfig = {
     cssChunking: true, // default true
     optimizeCss: true, // default true
     optimizePackageImports: [
-      "@mantine/core",
-      "@mantine/hooks",
-      "@mantine/carousel",
       "@ottabase/ui-core",
       "@ottabase/config",
       "@ottabase/state",

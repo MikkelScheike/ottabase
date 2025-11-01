@@ -22,7 +22,7 @@ import {
   Switch,
   Text,
   Title,
-} from "@mantine/core";
+} from "@ottabase/ui-mantine";
 import { OttaSelect, OttaSelectItem } from "@ottabase/ottaselect";
 import { BlogPagination } from "@ottabase/ui-components";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
