@@ -1,6 +1,10 @@
 import { OutputData } from "@editorjs/editorjs";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { defaultPlugins, getDefaultPlugins, type DefaultPluginName } from "./defaultPlugins";
+import {
+  defaultPlugins,
+  getDefaultPlugins,
+  type DefaultPluginName,
+} from "./defaultPlugins";
 import { OttaEditor } from "./OttaEditor";
 import type { OttaEditorConfig, OttaEditorPlugin } from "./types";
 
@@ -27,7 +31,7 @@ export interface UseOttaEditorOptions extends Omit<OttaEditorConfig, "holder"> {
    * // Load only specific default plugins
    * defaultPlugins: ['header', 'paragraph', 'list']
    */
-  defaultPlugins?: DefaultPluginName[] | 'all';
+  defaultPlugins?: DefaultPluginName[] | "all";
 
   /**
    * Additional custom plugins to append to the default plugins
@@ -104,6 +108,7 @@ export function useOttaEditor(
 ): UseOttaEditorReturn {
   const editorRef = useRef<HTMLDivElement>(null);
   const editorInstanceRef = useRef<OttaEditor | null>(null);
+  const initializingRef = useRef(false);
   const [isReady, setIsReady] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const {
@@ -133,12 +138,25 @@ export function useOttaEditor(
   }
 
   useEffect(() => {
-    if (!editorRef.current || !enableOnMount) {
+    if (
+      !editorRef.current ||
+      !enableOnMount ||
+      initializingRef.current ||
+      editorInstanceRef.current
+    ) {
       return;
     }
 
+    // Mark as initializing to prevent double init in StrictMode
+    initializingRef.current = true;
+
     const initEditor = async () => {
       try {
+        // Double-check we haven't already initialized
+        if (editorInstanceRef.current) {
+          return;
+        }
+
         // Create editor instance
         const editor = new OttaEditor({
           ...editorConfig,
@@ -163,6 +181,7 @@ export function useOttaEditor(
         editorInstanceRef.current = editor;
       } catch (error) {
         console.error("Failed to initialize OttaEditor:", error);
+        initializingRef.current = false;
       }
     };
 
@@ -173,9 +192,11 @@ export function useOttaEditor(
       if (editorInstanceRef.current) {
         editorInstanceRef.current.destroy().catch(console.error);
         editorInstanceRef.current = null;
+        initializingRef.current = false;
         setIsReady(false);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enableOnMount]);
 
   const save = useCallback(async (): Promise<OutputData | null> => {

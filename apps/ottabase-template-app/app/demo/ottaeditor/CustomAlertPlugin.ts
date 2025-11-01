@@ -7,7 +7,6 @@ import type {
   API,
   BlockTool,
   BlockToolConstructorOptions,
-  BlockToolData,
 } from "@editorjs/editorjs";
 
 interface AlertConfig {
@@ -66,7 +65,7 @@ export default class CustomAlertPlugin implements BlockTool {
     const wrapper = document.createElement("div");
     wrapper.classList.add(
       CustomAlertPlugin.CSS.baseClass,
-      CustomAlertPlugin.CSS.wrapper
+      CustomAlertPlugin.CSS.wrapper,
     );
     wrapper.classList.add(CustomAlertPlugin.CSS[this.data.type]);
 
@@ -95,7 +94,7 @@ export default class CustomAlertPlugin implements BlockTool {
         CustomAlertPlugin.CSS.info,
         CustomAlertPlugin.CSS.warning,
         CustomAlertPlugin.CSS.success,
-        CustomAlertPlugin.CSS.error
+        CustomAlertPlugin.CSS.error,
       );
       wrapper.classList.add(CustomAlertPlugin.CSS[this.data.type]);
     });
