@@ -6,8 +6,9 @@ import {
   UI_LAYOUT,
 } from "@/ottabase/config/app.config";
 import {
-  appGlobalStateAtom,
-  createAppGlobalStateAtom,
+  appStateAtom,
+  scaleAtom,
+  themeAtom,
 } from "@/ottabase/state/appGlobalState";
 import {
   Badge,
@@ -26,7 +27,7 @@ import { OttaSelect, OttaSelectItem } from "@ottabase/ottaselect";
 import { BlogPagination } from "@ottabase/ui-components";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import { Logo } from "@ottabase/ui-components/logo";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -52,10 +53,11 @@ const sampleItems = [
 ];
 
 export default function DemoPage() {
-  const [appState, setAppState] = useAtom(appGlobalStateAtom);
-  const setScale = useSetAtom(createAppGlobalStateAtom("scale"));
-  const setTheme = useSetAtom(createAppGlobalStateAtom("theme"));
-  const setCursorTheme = useSetAtom(createAppGlobalStateAtom("cursorTheme"));
+  const appState = useAtomValue(appStateAtom);
+  const [scale, setScale] = useAtom(scaleAtom);
+  const [theme, setTheme] = useAtom(themeAtom);
+  // For more complex updates, you can use the main atom
+  const setAppState = useAtom(appStateAtom)[1];
 
   const [localCounter, setLocalCounter] = useState(0);
   const [singleSelectValue, setSingleSelectValue] =
@@ -69,14 +71,14 @@ export default function DemoPage() {
   };
 
   const toggleTheme = () => {
-    setTheme(appState.theme === "light" ? "dark" : "light");
+    setTheme(theme === "light" ? "dark" : "light");
   };
 
   const updateCursorTheme = () => {
     const themes = ["default", "retro", "modern", "minimal"] as const;
     const currentIndex = themes.indexOf(appState.cursorTheme);
     const nextTheme = themes[(currentIndex + 1) % themes.length];
-    setCursorTheme(nextTheme);
+    setAppState((prev) => ({ ...prev, cursorTheme: nextTheme }));
   };
 
   const updateSelectionColor = () => {
@@ -146,9 +148,7 @@ export default function DemoPage() {
           <Stack gap="md">
             <Group justify="space-between">
               <Text>Current Theme:</Text>
-              <Badge color={appState.theme === "dark" ? "dark" : "blue"}>
-                {appState.theme}
-              </Badge>
+              <Badge color={theme === "dark" ? "dark" : "blue"}>{theme}</Badge>
               <Button size="xs" onClick={toggleTheme}>
                 Toggle Theme
               </Button>
@@ -157,11 +157,11 @@ export default function DemoPage() {
             <Group justify="space-between">
               <Text>UI Scale:</Text>
               <Text size="sm" c="dimmed">
-                {appState.scale}x
+                {scale}x
               </Text>
             </Group>
             <Slider
-              value={appState.scale}
+              value={scale}
               onChange={handleScaleChange}
               min={0.5}
               max={2.0}
