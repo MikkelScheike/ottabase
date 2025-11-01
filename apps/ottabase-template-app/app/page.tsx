@@ -6,7 +6,7 @@ import Link from "next/link";
 export default function HomePage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="flex max-w-2xl flex-col items-center gap-8 px-4 text-center">
+      <div className="flex max-w-3xl flex-col items-center gap-8 px-4 text-center">
         {/* Dark Mode Toggle in corner */}
         <div className="absolute right-5 top-5">
           <DarkModeToggle type="button" title="Toggle dark/light mode" />
@@ -36,8 +36,15 @@ export default function HomePage() {
         </p>
 
         {/* Action Buttons */}
-        <div className="mt-8 flex flex-wrap gap-4">
-          <Button asChild size="lg" className="bg-gradient-to-r from-cyan-500 to-cyan-600">
+        <div className="mt-8 flex flex-wrap gap-2 justify-center">
+          <Button asChild variant="outline" size="lg">
+            <a href="/demo">Demo Page</a>
+          </Button>
+          <Button
+            asChild
+            size="lg"
+            className="bg-gradient-to-r from-cyan-500 to-cyan-600"
+          >
             <Link href="/demo/mantine">Mantine Demo</Link>
           </Button>
 
@@ -46,7 +53,11 @@ export default function HomePage() {
           </Button>
 
           <Button asChild variant="outline" size="lg">
-            <a href="https://github.com/thinkdj/" target="_blank" rel="noopener noreferrer">
+            <a
+              href="https://github.com/thinkdj/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               Homepage
             </a>
           </Button>
