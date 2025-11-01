@@ -12,6 +12,7 @@ export { useOttaEditor } from "./useOttaEditor";
 export {
   CheckList,
   CodeTool,
+  DEFAULT_PLUGIN_NAMES,
   Delimiter,
   Embed,
   Header,
@@ -28,7 +29,6 @@ export {
   defaultPlugins,
   defaultPluginsMap,
   getDefaultPlugins,
-  DEFAULT_PLUGIN_NAMES,
 } from "./defaultPlugins";
 
 export type { DefaultPluginName } from "./defaultPlugins";
@@ -54,6 +54,7 @@ export type {
   BlockAPI,
   BlockTool,
   BlockToolConstructable,
+  BlockToolConstructorOptions,
   BlockToolData,
   OutputBlockData,
   OutputData,

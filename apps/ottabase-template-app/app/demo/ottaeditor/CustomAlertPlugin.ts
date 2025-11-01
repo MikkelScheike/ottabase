@@ -7,7 +7,7 @@ import type {
   API,
   BlockTool,
   BlockToolConstructorOptions,
-} from "@editorjs/editorjs";
+} from "@ottabase/ottaeditor";
 
 interface AlertConfig {
   defaultType?: "info" | "warning" | "success" | "error";
@@ -142,6 +142,7 @@ export default class CustomAlertPlugin implements BlockTool {
         border-radius: 8px;
         border-left: 4px solid;
         margin: 10px 0;
+        transition: background-color 0.2s, border-color 0.2s;
       }
 
       .cdx-alert__select {
@@ -153,6 +154,9 @@ export default class CustomAlertPlugin implements BlockTool {
         border-radius: 4px;
         font-size: 14px;
         font-family: inherit;
+        background-color: white;
+        color: #1f2937;
+        transition: background-color 0.2s, border-color 0.2s, color 0.2s;
       }
 
       .cdx-alert__message {
@@ -165,26 +169,72 @@ export default class CustomAlertPlugin implements BlockTool {
         font-family: inherit;
         resize: vertical;
         min-height: 60px;
+        background-color: white;
+        color: #1f2937;
+        transition: background-color 0.2s, border-color 0.2s, color 0.2s;
       }
 
+      /* Light mode alert types */
       .cdx-alert--info {
         background-color: #eff6ff;
         border-left-color: #3b82f6;
+        color: #1e40af;
       }
 
       .cdx-alert--warning {
         background-color: #fffbeb;
         border-left-color: #f59e0b;
+        color: #92400e;
       }
 
       .cdx-alert--success {
         background-color: #f0fdf4;
         border-left-color: #10b981;
+        color: #065f46;
       }
 
       .cdx-alert--error {
         background-color: #fef2f2;
         border-left-color: #ef4444;
+        color: #991b1b;
+      }
+
+      /* Dark mode support (Tailwind-style) */
+      .dark .cdx-alert__select,
+      .dark .cdx-alert__message {
+        background-color: #1f2937;
+        border-color: #374151;
+        color: #f3f4f6;
+      }
+
+      .dark .cdx-alert__select:focus,
+      .dark .cdx-alert__message:focus {
+        border-color: #4b5563;
+        outline: none;
+      }
+
+      .dark .cdx-alert--info {
+        background-color: #1e3a8a;
+        border-left-color: #60a5fa;
+        color: #dbeafe;
+      }
+
+      .dark .cdx-alert--warning {
+        background-color: #78350f;
+        border-left-color: #fbbf24;
+        color: #fef3c7;
+      }
+
+      .dark .cdx-alert--success {
+        background-color: #064e3b;
+        border-left-color: #34d399;
+        color: #d1fae5;
+      }
+
+      .dark .cdx-alert--error {
+        background-color: #7f1d1d;
+        border-left-color: #f87171;
+        color: #fecaca;
       }
     `;
 

@@ -1,8 +1,7 @@
 import { createDefaultAppState } from "@ottabase/state";
-import { appConfig } from "@/ottabase/config/app.config";
 
 // Create app state using the shared state package
-const appState = createDefaultAppState(appConfig.features.crudHub.urlBase);
+const appState = createDefaultAppState();
 
 // Export the main atom containing the entire state object.
 export const appStateAtom = appState.appStateAtom;
@@ -24,7 +23,7 @@ export default appState;
 /*
     NEW, SIMPLIFIED USAGE EXAMPLES
     ----------------------------------------------------------------
-    
+
     1. Reading and Writing a specific value (e.g., scale)
        Best for performance, as this only re-renders when `scale` changes.
     ----------------------------------------------------------------
@@ -33,7 +32,7 @@ export default appState;
 
     function ScaleChanger() {
       const [scale, setScale] = useAtom(scaleAtom);
-      
+
       return <input value={scale} onChange={(e) => setScale(Number(e.target.value))} />;
     }
 
@@ -45,7 +44,7 @@ export default appState;
 
     function GlobalStateViewer() {
       const state = useAtomValue(appStateAtom);
-      
+
       return <pre>{JSON.stringify(state, null, 2)}</pre>;
     }
 
