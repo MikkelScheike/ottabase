@@ -40,7 +40,7 @@
     "postcss-loader": "catalog:",
     "storybook": "catalog:",
     "style-loader": "catalog:",
-    "turbo": "^2.5.8"
+    "turbo": "^2.6.0"
   },
   "packageManager": "pnpm@10.15.1",
   "engines": {
