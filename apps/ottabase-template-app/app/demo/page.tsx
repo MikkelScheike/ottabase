@@ -128,6 +128,14 @@ export default function DemoPage() {
             >
               Explore shadcn/ui demo
             </Button>
+            <Button
+              component={Link}
+              href="/demo/ottaeditor"
+              variant="outline"
+              leftSection={<span aria-hidden="true">✏️</span>}
+            >
+              Explore OttaEditor demo
+            </Button>
           </Group>
         </div>
 
