@@ -4,6 +4,7 @@ import {
   DEFAULT_PLUGIN_NAMES,
   useOttaEditor,
   type OutputData,
+  type BlockToolConstructable,
 } from "@ottabase/ottaeditor";
 import {
   Badge,
@@ -231,7 +232,7 @@ export function EditorClient() {
     additionalPlugins: [
       {
         name: "alert",
-        tool: CustomAlertPlugin as any,
+        tool: CustomAlertPlugin as unknown as BlockToolConstructable,
         config: { defaultType: "info" } as Record<string, unknown>,
       },
     ],

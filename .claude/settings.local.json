@@ -14,7 +14,9 @@
       "Bash(pnpm db:generate)",
       "Bash(pnpm storybook)",
       "Bash(pnpm storybook:build)",
-      "Bash(pnpm db:generate:*)"
+      "Bash(pnpm db:generate:*)",
+      "Bash(find:*)",
+      "Bash(pnpm --filter *)"
     ],
     "deny": [],
     "ask": []

@@ -1,8 +1,11 @@
-import { atom } from "jotai";
+import { atom, type WritableAtom } from "jotai";
 import type { AppGlobalState, AppStateConfig, BaseUser } from "./types";
 
 /**
- * Creates app global state atom with default values and environment variable support
+ * Creates app global state atom with default values, and environment variable support.
+ * NOTE: The theme value is NOT persisted here. Persistence is handled by `next-themes`,
+ * and the `useThemeManager` hook hydrates the Jotai atom from `next-themes`.
+ *
  * @param config Configuration options for the app state
  * @returns App global state atom and individual property atoms
  */
@@ -19,8 +22,14 @@ export function createAppState<TUser extends BaseUser = BaseUser>(
     return fallback;
   };
 
-  // Create the main app global state atom
-  const appGlobalStateAtom = atom<AppGlobalState<TUser>>({
+  // The theme atom is a simple, non-persisted atom.
+  // It gets its value from the useThemeManager hook, which syncs it with `next-themes`.
+  const themeStorageAtom = atom<"light" | "dark">(
+    (initialState.theme as "light" | "dark") ?? "light",
+  );
+
+  // Base state atom (stores all properties; theme value is overridden by persisted atom on read)
+  const baseStateAtom = atom<AppGlobalState<TUser>>({
     theme: "light",
     scale: 1.0,
     user: null,
@@ -38,14 +47,78 @@ export function createAppState<TUser extends BaseUser = BaseUser>(
     ...initialState,
   });
 
+  // Create the main app global state atom (reads theme from localStorage-backed atom)
+  const appGlobalStateAtom = atom(
+    (get) => {
+      const base = get(baseStateAtom);
+      const persistedTheme = get(themeStorageAtom);
+      return { ...base, theme: persistedTheme };
+    },
+    (
+      get,
+      set,
+      update:
+        | AppGlobalState<TUser>
+        | ((prev: AppGlobalState<TUser>) => AppGlobalState<TUser>),
+    ) => {
+      const prev = get(
+        appGlobalStateAtom as unknown as WritableAtom<
+          AppGlobalState<TUser>,
+          [
+            | AppGlobalState<TUser>
+            | ((prev: AppGlobalState<TUser>) => AppGlobalState<TUser>),
+          ],
+          void
+        >,
+      );
+      const next =
+        typeof update === "function"
+          ? (update as (p: AppGlobalState<TUser>) => AppGlobalState<TUser>)(
+              prev,
+            )
+          : update;
+
+      // Keep persisted theme in sync when the main atom is updated directly
+      if (next.theme && next.theme !== get(themeStorageAtom)) {
+        set(themeStorageAtom, next.theme as "light" | "dark");
+      }
+
+      set(baseStateAtom, next);
+    },
+  ) as unknown as WritableAtom<
+    AppGlobalState<TUser>,
+    [
+      | AppGlobalState<TUser>
+      | ((prev: AppGlobalState<TUser>) => AppGlobalState<TUser>),
+    ],
+    void
+  >;
+
   // Helper function to create individual atoms for each property
   function createAppGlobalStateAtom<K extends keyof AppGlobalState<TUser>>(
     key: K,
   ) {
+    // Special handling for theme to use localStorage-backed atom
+    if (key === "theme") {
+      return atom(
+        (get) => get(themeStorageAtom),
+        (_get, set, update: AppGlobalState<TUser>[K]) => {
+          set(themeStorageAtom, update as "light" | "dark");
+          set(appGlobalStateAtom, (prev: AppGlobalState<TUser>) => ({
+            ...prev,
+            [key]: update,
+          }));
+        },
+      ) as any;
+    }
+
     return atom(
       (get) => get(appGlobalStateAtom)[key],
       (_get, set, update: AppGlobalState<TUser>[K]) =>
-        set(appGlobalStateAtom, (prev) => ({ ...prev, [key]: update })),
+        set(appGlobalStateAtom, (prev: AppGlobalState<TUser>) => ({
+          ...prev,
+          [key]: update,
+        })),
     );
   }
 

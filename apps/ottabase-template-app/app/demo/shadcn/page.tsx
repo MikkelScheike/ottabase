@@ -67,7 +67,7 @@ export default function ShadcnDemoPage() {
             variant="ghost"
             className="w-fit text-muted-foreground hover:text-foreground"
           >
-            <Link href="/demo">← Back to Mantine demo</Link>
+            <Link href="/demo">← Back to Demo Gallery</Link>
           </Button>
         </div>
         <div className="flex flex-wrap items-center gap-3">
