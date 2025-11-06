@@ -239,6 +239,9 @@ importers:
       '@ottabase/cf':
         specifier: workspace:*
         version: link:../../packages/cf
+      '@ottabase/cf-realtime':
+        specifier: workspace:*
+        version: link:../../packages/cf-realtime
       '@ottabase/config':
         specifier: workspace:*
         version: link:../../packages/config
@@ -397,6 +400,28 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^4.20241127.0
         version: 4.20251014.0
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.0(@swc/core@1.13.5)(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.2)(yaml@2.8.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.2
+
+  packages/cf-realtime:
+    dependencies:
+      '@cloudflare/actors':
+        specifier: ^0.0.1-beta.6
+        version: 0.0.1-beta.6
+    devDependencies:
+      '@cloudflare/workers-types':
+        specifier: ^4.20250127.0
+        version: 4.20251014.0
+      eslint:
+        specifier: 'catalog:'
+        version: 9.36.0(jiti@1.21.7)
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.0.1
       tsup:
         specifier: 'catalog:'
         version: 8.5.0(@swc/core@1.13.5)(jiti@1.21.7)(postcss@8.5.6)(typescript@5.9.2)(yaml@2.8.1)
@@ -1873,6 +1898,10 @@ packages:
   '@babel/types@7.28.5':
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
     engines: {node: '>=6.9.0'}
+
+  '@cloudflare/actors@0.0.1-beta.6':
+    resolution: {integrity: sha512-8SuwZww14K5YHdF6HdkWCthWZCvuIKk7E0xARI/7vWYtd+OymA2Y3JBhPd+hnuA2R9sr57cZHKhKOcfNbf9xOQ==}
+    engines: {node: '>=18.0.0'}
 
   '@cloudflare/kv-asset-handler@0.3.4':
     resolution: {integrity: sha512-YLPHc8yASwjNkmcDMQMY35yiWjoKAKnhUbPRszBRS0YgH+IXtsMp61j+yTcnCE3oO2DgP0U3iejLC8FTtKDC8Q==}
@@ -5319,6 +5348,10 @@ packages:
   critters@0.0.22:
     resolution: {integrity: sha512-NU7DEcQZM2Dy8XTKFHxtdnIM/drE312j2T4PCVaSUcS0oBeyT/NImpRw/Ap0zOr/1SE7SgPK9tGPg1WK/sVakw==}
 
+  cron-schedule@5.0.4:
+    resolution: {integrity: sha512-nH0a49E/kSVk6BeFgKZy4uUsy6D2A16p120h5bYD9ILBhQu7o2sJFH+WI4R731TSBQ0dB1Ik7inB/dRAB4C8QQ==}
+    engines: {node: '>=18'}
+
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
@@ -6650,6 +6683,11 @@ packages:
   nanoid@3.3.11:
     resolution: {integrity: sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==}
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
+    hasBin: true
+
+  nanoid@5.1.6:
+    resolution: {integrity: sha512-c7+7RQ+dMB5dPwwCp4ee1/iV/q2P6aK1mTZcfr1BTuVlyW9hJYiMPybJCcnBlQtuSmTIWNeazm/zqNoZSSElBg==}
+    engines: {node: ^18 || >=20}
     hasBin: true
 
   napi-postinstall@0.3.3:
@@ -10068,6 +10106,11 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
+
+  '@cloudflare/actors@0.0.1-beta.6':
+    optionalDependencies:
+      cron-schedule: 5.0.4
+      nanoid: 5.1.6
 
   '@cloudflare/kv-asset-handler@0.3.4':
     dependencies:
@@ -13741,6 +13784,9 @@ snapshots:
       postcss: 8.5.6
       postcss-media-query-parser: 0.2.3
 
+  cron-schedule@5.0.4:
+    optional: true
+
   cross-spawn@7.0.6:
     dependencies:
       path-key: 3.1.1
@@ -15350,6 +15396,9 @@ snapshots:
       thenify-all: 1.6.0
 
   nanoid@3.3.11: {}
+
+  nanoid@5.1.6:
+    optional: true
 
   napi-postinstall@0.3.3: {}
 
