@@ -3,30 +3,33 @@
 import React, { ReactNode, useMemo } from "react";
 // Mantine
 import {
-  MantineProvider,
   createTheme,
-  MantineThemeOverride,
   MantineColorsTuple,
+  MantineProvider,
+  MantineThemeOverride,
   mergeMantineTheme,
 } from "@mantine/core";
-import { Notifications } from "@mantine/notifications";
 import { ModalsProvider } from "@mantine/modals";
+import { Notifications } from "@mantine/notifications";
 //import {SpotlightProvider} from '@mantine/spotlight';
-import { Group, Text, Anchor, rem } from "@mantine/core";
-import { useLocalStorage } from "@mantine/hooks";
+import { Anchor, Group, rem, Text } from "@mantine/core";
 
 // Import theme presets
-import mantineShadcn from "../themes/mantine-shadcn";
-import mantineVercel from "../themes/mantine-vercel";
 import mantineAnt from "../themes/mantine-ant";
+import mantineShadcn from "../themes/mantine-shadcn";
 import mantineStripe from "../themes/mantine-stripe";
+import mantineVercel from "../themes/mantine-vercel";
 
 /* Import Mantine CSS */
+import "@mantine/carousel/styles.css";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
-import "@mantine/carousel/styles.css";
 
-export type MantineThemePreset = "mantine-shadcn" | "mantine-vercel" | "mantine-ant" | "mantine-stripe";
+export type MantineThemePreset =
+  | "mantine-shadcn"
+  | "mantine-vercel"
+  | "mantine-ant"
+  | "mantine-stripe";
 
 interface ProviderUIMantineProps {
   children: ReactNode;
@@ -98,9 +101,11 @@ const ProviderUIMantine = ({
       return themeOverride;
     } else {
       // Merge the base theme preset with custom settings
-      const defaultTheme = createTheme(mantineDefaultTheme);
       const baseThemeInstance = createTheme(selectedBaseTheme);
-      return mergeMantineTheme(baseThemeInstance, defaultTheme);
+      return mergeMantineTheme(
+        baseThemeInstance as any,
+        mantineDefaultTheme as any,
+      );
     }
   }, [baseTheme, themeColors, primaryColor, scale, themeOverride]);
 
