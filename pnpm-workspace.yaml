@@ -24,8 +24,8 @@ catalog:
   "@types/node": ^20.19.17
   "@types/react": ^18.3.24
   "@types/react-dom": ^18.3.7
-  "@typescript-eslint/eslint-plugin": ^8.46.2
-  "@typescript-eslint/parser": ^8.46.2
+  "@typescript-eslint/eslint-plugin": ^8.47.0
+  "@typescript-eslint/parser": ^8.47.0
   autoprefixer: ^10.4.21
   babel-loader: ^9.2.1
   class-variance-authority: ^0.7.0
