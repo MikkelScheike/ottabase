@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_KV) {
+    if (!env.OTTABASE_KV) {
       return NextResponse.json(
         { error: 'KV namespace binding not configured' },
         { status: 500 }
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
 
-    const kv = createKVClient({ namespace: env.MY_KV });
+    const kv = createKVClient({ namespace: env.OTTABASE_KV });
     const result = await kv.getText(key);
 
     if (!result.success) {
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_KV) {
+    if (!env.OTTABASE_KV) {
       return NextResponse.json(
         { error: 'KV namespace binding not configured' },
         { status: 500 }
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const kv = createKVClient({ namespace: env.MY_KV });
+    const kv = createKVClient({ namespace: env.OTTABASE_KV });
     const result = await kv.put(key, value, {
       expirationTtl: ttl ? parseInt(ttl) : undefined,
     });
@@ -96,7 +96,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_KV) {
+    if (!env.OTTABASE_KV) {
       return NextResponse.json(
         { error: 'KV namespace binding not configured' },
         { status: 500 }
@@ -108,7 +108,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Key is required' }, { status: 400 });
     }
 
-    const kv = createKVClient({ namespace: env.MY_KV });
+    const kv = createKVClient({ namespace: env.OTTABASE_KV });
     const result = await kv.delete(key);
 
     if (!result.success) {

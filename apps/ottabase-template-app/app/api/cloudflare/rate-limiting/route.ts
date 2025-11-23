@@ -7,12 +7,12 @@ export const runtime = 'edge';
 
 // Simulated rate limiter using KV for local dev
 async function simulateRateLimit(env: any, key: string) {
-  if (!env.MY_KV) {
+  if (!env.OTTABASE_KV) {
     console.log('[Rate Limit] KV not available');
     return null; // KV not available, can't simulate
   }
 
-  const kv = createKVClient({ namespace: env.MY_KV });
+  const kv = createKVClient({ namespace: env.OTTABASE_KV });
   const rateLimitKey = `ratelimit:${key}`;
 
   const LIMIT = 10;
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Rate limiter not available',
-            hint: 'Enable RATE_LIMITER binding or ensure MY_KV is configured for local dev simulation'
+            hint: 'Enable RATE_LIMITER binding or ensure OTTABASE_KV is configured for local dev simulation'
           },
           { status: 500 }
         );

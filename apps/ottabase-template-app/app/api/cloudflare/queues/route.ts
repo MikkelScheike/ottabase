@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Store sent messages in KV for demo purposes (to display in UI)
-      if (env.MY_KV) {
+      if (env.OTTABASE_KV) {
         try {
-          const kv = createKVClient({ namespace: env.MY_KV });
+          const kv = createKVClient({ namespace: env.OTTABASE_KV });
           const timestamp = Date.now();
 
           for (let i = 0; i < batch.length; i++) {
@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Store sent message in KV for demo purposes
-      if (env.MY_KV) {
+      if (env.OTTABASE_KV) {
         try {
-          const kv = createKVClient({ namespace: env.MY_KV });
+          const kv = createKVClient({ namespace: env.OTTABASE_KV });
           const key = `queue:message:${Date.now()}`;
           await kv.put(key, JSON.stringify({
             ...message,
@@ -116,14 +116,14 @@ export async function GET() {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_KV) {
+    if (!env.OTTABASE_KV) {
       return NextResponse.json(
         { error: 'KV binding not configured' },
         { status: 500 }
       );
     }
 
-    const kv = createKVClient({ namespace: env.MY_KV });
+    const kv = createKVClient({ namespace: env.OTTABASE_KV });
     const listResult = await kv.list({ prefix: 'queue:message:' });
 
     if (!listResult.success) {

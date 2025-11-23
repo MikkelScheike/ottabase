@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_BUCKET) {
+    if (!env.OTTABASE_BUCKET) {
       return NextResponse.json(
         { error: 'R2 bucket binding not configured' },
         { status: 500 }
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const r2 = createR2Client({ bucket: env.MY_BUCKET });
+    const r2 = createR2Client({ bucket: env.OTTABASE_BUCKET });
     const buffer = await file.arrayBuffer();
 
     const result = await r2.put(key, buffer, {
@@ -70,7 +70,7 @@ export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_BUCKET) {
+    if (!env.OTTABASE_BUCKET) {
       return NextResponse.json(
         { error: 'R2 bucket binding not configured' },
         { status: 500 }
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
     const key = searchParams.get('key');
     const list = searchParams.get('list') === 'true';
 
-    const r2 = createR2Client({ bucket: env.MY_BUCKET });
+    const r2 = createR2Client({ bucket: env.OTTABASE_BUCKET });
 
     if (list) {
       // List all objects
@@ -153,7 +153,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_BUCKET) {
+    if (!env.OTTABASE_BUCKET) {
       return NextResponse.json(
         { error: 'R2 bucket binding not configured' },
         { status: 500 }
@@ -170,7 +170,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const r2 = createR2Client({ bucket: env.MY_BUCKET });
+    const r2 = createR2Client({ bucket: env.OTTABASE_BUCKET });
     const result = await r2.delete(key);
 
     if (!result.success) {

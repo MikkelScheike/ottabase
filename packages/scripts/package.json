@@ -18,7 +18,9 @@
     }
   },
   "bin": {
-    "db-prisma-schema-concatenate": "bin/db-prisma-schema-concatenate.cjs"
+    "db-prisma-schema-concatenate": "bin/db-prisma-schema-concatenate.cjs",
+    "cloudflare-setup": "bin/cloudflare-setup.cjs",
+    "cloudflare-validate": "bin/cloudflare-validate.cjs"
   },
   "files": [
     "dist",
@@ -26,8 +28,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/cli/db-prisma-schema-concatenate.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/cli/db-prisma-schema-concatenate.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/cli/db-prisma-schema-concatenate.ts src/cli/cloudflare-setup.ts src/cli/cloudflare-validate.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/cli/db-prisma-schema-concatenate.ts src/cli/cloudflare-setup.ts src/cli/cloudflare-validate.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit"

@@ -20,7 +20,9 @@
     "test": "turbo test",
     "format": "prettier --write .",
     "storybook": "storybook dev -p 6006",
-    "storybook:build": "storybook build"
+    "storybook:build": "storybook build",
+    "cloudflare:setup": "pnpm --filter @ottabase/scripts exec cloudflare-setup",
+    "cloudflare:validate": "pnpm --filter @ottabase/scripts exec cloudflare-validate"
   },
   "devDependencies": {
     "@babel/core": "catalog:",

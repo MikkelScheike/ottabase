@@ -22,10 +22,10 @@ export interface CloudflareEnv {
   DB: D1Database;
 
   // KV Namespace
-  MY_KV: KVNamespace;
+  OTTABASE_KV: KVNamespace;
 
   // R2 Bucket
-  MY_BUCKET: R2Bucket;
+  OTTABASE_BUCKET: R2Bucket;
 
   // Queue
   MY_QUEUE: Queue;

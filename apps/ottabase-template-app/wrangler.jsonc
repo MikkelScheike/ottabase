@@ -38,9 +38,9 @@
   // Preview/Prod: Uses real Cloudflare KV namespace
   "kv_namespaces": [
     {
-      "binding": "MY_KV",
-      "id": "YOUR_KV_NAMESPACE_ID", // Replace with: wrangler kv:namespace create MY_KV
-      "preview_id": "YOUR_KV_PREVIEW_ID" // Replace with: wrangler kv:namespace create MY_KV --preview
+      "binding": "OTTABASE_KV",
+      "id": "YOUR_KV_NAMESPACE_ID", // Replace with: wrangler kv:namespace create OTTABASE_KV
+      "preview_id": "YOUR_KV_PREVIEW_ID" // Replace with: wrangler kv:namespace create OTTABASE_KV --preview
     }
   ],
 
@@ -49,7 +49,7 @@
   // Preview/Prod: Uses real Cloudflare R2 bucket
   "r2_buckets": [
     {
-      "binding": "MY_BUCKET",
+      "binding": "OTTABASE_BUCKET",
       "bucket_name": "ottabase-bucket", // Create with: wrangler r2 bucket create ottabase-bucket
       "preview_bucket_name": "ottabase-bucket-preview" // Create with: wrangler r2 bucket create ottabase-bucket-preview
     }

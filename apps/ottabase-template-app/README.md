@@ -31,8 +31,8 @@ Quick commands:
 pnpm wrangler d1 create ottabase-db
 
 # Create KV namespace
-pnpm wrangler kv:namespace create MY_KV
-pnpm wrangler kv:namespace create MY_KV --preview
+pnpm wrangler kv:namespace create OTTABASE_KV
+pnpm wrangler kv:namespace create OTTABASE_KV --preview
 
 # Create R2 bucket
 pnpm wrangler r2 bucket create ottabase-bucket
@@ -59,7 +59,7 @@ pnpm deploy
 
 ## Project Structure
 
-```
+```tree
 apps/ottabase-template-app/
 ├── app/                      # Next.js app directory
 │   ├── api/                  # API routes
@@ -116,7 +116,7 @@ import { createKVClient } from '@ottabase/cf/kv';
 
 export default async function Page() {
   const { env } = await getCloudflareContext();
-  const kv = createKVClient({ namespace: env.MY_KV });
+  const kv = createKVClient({ namespace: env.OTTABASE_KV });
 
   const data = await kv.getJSON('key');
 
