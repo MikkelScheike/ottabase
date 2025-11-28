@@ -54,9 +54,16 @@ jobs:
               run: pnpm config set store-dir ~/.pnpm-store
 
             - name: Install Dependencies
+              run: pnpm install --frozen-lockfile
+
+            # Setup Prisma (build scripts are disabled by default, so we need to run postinstall manually)
+            - name: Setup Prisma
               run: |
-                  pnpm install --frozen-lockfile
-                  # Generate Prisma Client after install (build scripts are disabled by default)
+                  # Install Prisma CLI binaries by running the postinstall script
+                  cd node_modules/prisma
+                  npm run postinstall || true
+                  cd ../..
+                  # Now generate the Prisma Client
                   pnpm --filter @ottabase/db prisma:generate
 
             # Cache Turborepo build outputs
@@ -108,6 +115,18 @@ jobs:
               with:
                   node-version: "24"
                   cache: "pnpm"
+
+            # Cache pnpm store for faster installs
+            - name: Setup pnpm cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-store-
+
+            - name: Configure pnpm
+              run: pnpm config set store-dir ~/.pnpm-store
 
             - name: Install Dependencies
               run: pnpm install --frozen-lockfile
