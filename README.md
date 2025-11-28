@@ -4,7 +4,7 @@ A modern monorepo setup with pnpm workspaces and Turborepo for Next.js 15+ appli
 
 ## 🏗️ Structure
 
-```
+```text
 ottabase/
 ├── apps/                       # Next.js applications
 │   └── ottabase-template-app/  # Example Next.js 15 app that uses packages as sample
@@ -12,7 +12,6 @@ ottabase/
 │   ├── db/                  # Shared Prisma database client
 │   ├── ui/                  # UI components and providers
 │   └── hello-world/         # Example package
-```
 ├── turbo.json              # Turborepo configuration
 ├── pnpm-workspace.yaml     # pnpm workspace configuration
 └── package.json            # Root package.json
@@ -22,8 +21,8 @@ ottabase/
 
 ### Prerequisites
 
-- Node.js 18+
-- pnpm 8+
+- **Node.js**: `>=24.0.0` (LTS)
+- **pnpm**: `>=10.0.0` (specified: `10.15.1`)
 
 ### Installation
 
