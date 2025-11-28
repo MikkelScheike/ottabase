@@ -54,7 +54,10 @@ jobs:
               run: pnpm config set store-dir ~/.pnpm-store
 
             - name: Install Dependencies
-              run: pnpm install --frozen-lockfile
+              run: |
+                  pnpm install --frozen-lockfile
+                  # Generate Prisma Client after install (build scripts are disabled by default)
+                  pnpm --filter @ottabase/db prisma:generate
 
             # Cache Turborepo build outputs
             - name: Setup Turborepo cache
