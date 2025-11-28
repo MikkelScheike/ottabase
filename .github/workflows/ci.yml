@@ -1,14 +1,16 @@
 name: CI - Build & Test
 
 on:
-    pull_request:
-        branches:
-            - main
-            - develop
-    push:
-        branches:
-            - main
-            - develop
+    workflow_dispatch:  # Manual trigger only
+    # Disabled automatic triggers - uncomment to enable:
+    # pull_request:
+    #     branches:
+    #         - main
+    #         - develop
+    # push:
+    #     branches:
+    #         - main
+    #         - develop
 
 jobs:
     # Test on multiple platforms

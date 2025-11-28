@@ -11,8 +11,8 @@ jobs:
     name: Deploy ${{ matrix.app }}
     strategy:
       matrix:
-        app: [ottabase-template-app]
-        # Add more apps here as needed, e.g. ottabase-template-app, app1, app2
+        app: ['@ottabase/ottabase-template-app']
+        # Add more apps here as needed, e.g. '@ottabase/app1', '@ottabase/app2'
 
     steps:
       - name: Checkout
@@ -32,13 +32,20 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Set app folder name
+        id: app-info
+        run: |
+          # Extract folder name from scoped package name (@ottabase/app-name -> app-name)
+          APP_FOLDER=$(echo "${{ matrix.app }}" | sed 's/@ottabase\///')
+          echo "folder=$APP_FOLDER" >> $GITHUB_OUTPUT
+
       - name: Build with Turborepo (includes dependencies)
         run: pnpm turbo build --filter=${{ matrix.app }}...
         env:
           NODE_ENV: production
 
       - name: Substitute production resource IDs
-        working-directory: apps/${{ matrix.app }}
+        working-directory: apps/${{ steps.app-info.outputs.folder }}
         run: |
           # Replace placeholder IDs with actual values from GitHub secrets
           sed -i 's/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g' wrangler.jsonc
@@ -49,5 +56,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/${{ matrix.app }}
+          workingDirectory: apps/${{ steps.app-info.outputs.folder }}
           command: deploy --env production
