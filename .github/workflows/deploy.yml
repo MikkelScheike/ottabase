@@ -34,12 +34,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Generate Prisma Client before building
-      - name: Generate Prisma Client
+      # Setup Prisma - download binaries and generate client
+      - name: Setup Prisma
         run: |
-          # Use the workspace's Prisma version to generate client
+          # Run Prisma's postinstall to download binaries (normally skipped in CI)
+          # Find the Prisma package and run its postinstall script
+          PRISMA_PKG=$(find node_modules/.pnpm -type d -path "*/node_modules/prisma" | head -1)
+          if [ -n "$PRISMA_PKG" ]; then
+            echo "Found Prisma at: $PRISMA_PKG"
+            cd "$PRISMA_PKG"
+            node scripts/postinstall.js
+            cd - > /dev/null
+          fi
+          # Now generate the Prisma Client
           cd packages/db
-          pnpm exec prisma generate
+          ../../node_modules/.bin/prisma generate || pnpm exec prisma generate
         continue-on-error: false
 
       # Cache Turborepo outputs for faster builds
