@@ -47,10 +47,17 @@ jobs:
       # Setup Prisma (build scripts are disabled by default, so we need to run postinstall manually)
       - name: Setup Prisma
         run: |
-          # Install Prisma CLI binaries by running the postinstall script
-          cd node_modules/prisma
-          npm run postinstall || true
-          cd ../..
+          # Find and run Prisma postinstall scripts
+          if [ -d "node_modules/.pnpm/prisma@"* ]; then
+            cd node_modules/.pnpm/prisma@*/node_modules/prisma
+            npm run postinstall || true
+            cd ../../../../..
+          fi
+          if [ -d "node_modules/.pnpm/@prisma+client@"* ]; then
+            cd node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client
+            npm run postinstall || true
+            cd ../../../../..
+          fi
           # Now generate the Prisma Client
           pnpm --filter @ottabase/db prisma:generate
 
