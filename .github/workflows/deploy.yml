@@ -4,10 +4,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch: # Allow manual triggers
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     name: Deploy ${{ matrix.app }}
     strategy:
       matrix:
@@ -18,91 +20,70 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install pnpm
+      - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
           version: 10.15.1
 
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "24"
           cache: "pnpm"
 
-      # Cache pnpm store for faster installs
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Configure pnpm
-        run: pnpm config set store-dir ~/.pnpm-store
-
-      - name: Install Dependencies
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # Setup Prisma (build scripts are disabled by default, so we need to run postinstall manually)
-      - name: Setup Prisma
+      # Generate Prisma Client before building
+      - name: Generate Prisma Client
         run: |
-          # Find and run Prisma postinstall scripts
-          if [ -d "node_modules/.pnpm/prisma@"* ]; then
-            cd node_modules/.pnpm/prisma@*/node_modules/prisma
-            npm run postinstall || true
-            cd ../../../../..
-          fi
-          if [ -d "node_modules/.pnpm/@prisma+client@"* ]; then
-            cd node_modules/.pnpm/@prisma+client@*/node_modules/@prisma/client
-            npm run postinstall || true
-            cd ../../../../..
-          fi
-          # Now generate the Prisma Client
-          pnpm --filter @ottabase/db prisma:generate
+          # Use pnpm dlx to run prisma directly (ensures binary is available)
+          cd packages/db
+          pnpm dlx prisma generate
+        continue-on-error: false
 
-      # Cache Turborepo build outputs
-      - name: Setup Turborepo cache
+      # Cache Turborepo outputs for faster builds
+      - name: Cache Turborepo
         uses: actions/cache@v4
         with:
-          path: |
-            .turbo
-            **/node_modules/.cache/turbo
+          path: .turbo
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      # Cache Next.js build outputs
-      - name: Setup Next.js cache
+      # Cache Next.js build for faster rebuilds
+      - name: Cache Next.js
         uses: actions/cache@v4
         with:
-          path: |
-            apps/*/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/**/*.js', 'apps/**/*.jsx', 'apps/**/*.ts', 'apps/**/*.tsx') }}
+          path: apps/*/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
             ${{ runner.os }}-nextjs-
 
+      # Extract app folder name for later steps
       - name: Set app folder name
         id: app-info
         run: |
-          # Extract folder name from scoped package name (@ottabase/app-name -> app-name)
           APP_FOLDER=$(echo "${{ matrix.app }}" | sed 's/@ottabase\///')
           echo "folder=$APP_FOLDER" >> $GITHUB_OUTPUT
 
-      - name: Build with Turborepo (includes dependencies)
+      # Build the app and all its dependencies using Turborepo
+      - name: Build
         run: pnpm turbo build --filter=${{ matrix.app }}...
         env:
           NODE_ENV: production
 
+      # Substitute production secrets into wrangler.jsonc
       - name: Substitute production resource IDs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         working-directory: apps/${{ steps.app-info.outputs.folder }}
         run: |
-          # Replace placeholder IDs with actual values from GitHub secrets
           sed -i 's/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g' wrangler.jsonc
           sed -i 's/PRODUCTION_KV_NAMESPACE_ID/${{ secrets.KV_NAMESPACE_ID }}/g' wrangler.jsonc
 
-      - name: Deploy to Cloudflare Workers
+      # Deploy to Cloudflare Workers
+      - name: Deploy to Cloudflare
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
