@@ -37,9 +37,9 @@ jobs:
       # Generate Prisma Client before building
       - name: Generate Prisma Client
         run: |
-          # Use pnpm dlx to run prisma directly (ensures binary is available)
+          # Use the workspace's Prisma version to generate client
           cd packages/db
-          pnpm dlx prisma generate
+          pnpm exec prisma generate
         continue-on-error: false
 
       # Cache Turborepo outputs for faster builds
