@@ -1,0 +1,89 @@
+name: CI - Build & Test
+
+on:
+    pull_request:
+        branches:
+            - main
+            - develop
+    push:
+        branches:
+            - main
+            - develop
+
+jobs:
+    # Test on multiple platforms
+    test:
+        name: Test on ${{ matrix.os }} - Node ${{ matrix.node }}
+        runs-on: ${{ matrix.os }}
+        timeout-minutes: 15
+        strategy:
+            fail-fast: false
+            matrix:
+                os: [ubuntu-latest, windows-latest, macos-latest]
+                node: ["24"]
+                # Optionally test multiple Node versions
+                # node: ['24', '22']
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              with:
+                  version: 10.15.1
+
+            - name: Setup Node.js ${{ matrix.node }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node }}
+                  cache: "pnpm"
+
+            - name: Install Dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Lint
+              run: pnpm lint
+              continue-on-error: true
+
+            - name: Type Check
+              run: pnpm type-check
+
+            - name: Build All Packages (with Turborepo)
+              run: pnpm turbo build --filter="./packages/*"
+
+            - name: Build All Apps (with dependencies)
+              run: pnpm turbo build --filter="./apps/*..."
+
+            - name: Test
+              run: pnpm test
+              continue-on-error: true
+
+    # Validate Cloudflare configuration
+    validate-cloudflare:
+        name: Validate Cloudflare Config
+        runs-on: ubuntu-latest
+        needs: test
+        timeout-minutes: 10
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Install pnpm
+              uses: pnpm/action-setup@v3
+              with:
+                  version: 10.15.1
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "24"
+                  cache: "pnpm"
+
+            - name: Install Dependencies
+              run: pnpm install --frozen-lockfile
+
+            - name: Validate Cloudflare Configuration
+              run: pnpm cloudflare:validate
+              continue-on-error: true

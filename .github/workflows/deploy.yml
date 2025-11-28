@@ -32,8 +32,8 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build
-        run: pnpm --filter ${{ matrix.app }} build
+      - name: Build with Turborepo (includes dependencies)
+        run: pnpm turbo build --filter=${{ matrix.app }}...
         env:
           NODE_ENV: production
 
