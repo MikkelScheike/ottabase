@@ -41,8 +41,31 @@ jobs:
                   node-version: ${{ matrix.node }}
                   cache: "pnpm"
 
+            # Cache pnpm store for faster installs
+            - name: Setup pnpm cache
+              uses: actions/cache@v4
+              with:
+                  path: ~/.pnpm-store
+                  key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+                  restore-keys: |
+                      ${{ runner.os }}-pnpm-store-
+
+            - name: Configure pnpm
+              run: pnpm config set store-dir ~/.pnpm-store
+
             - name: Install Dependencies
               run: pnpm install --frozen-lockfile
+
+            # Cache Turborepo build outputs
+            - name: Setup Turborepo cache
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      .turbo
+                      **/node_modules/.cache/turbo
+                  key: ${{ runner.os }}-turbo-${{ github.sha }}
+                  restore-keys: |
+                      ${{ runner.os }}-turbo-
 
             - name: Lint
               run: pnpm lint

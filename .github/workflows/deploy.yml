@@ -29,8 +29,42 @@ jobs:
           node-version: "24"
           cache: "pnpm"
 
+      # Cache pnpm store for faster installs
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
+
+      - name: Configure pnpm
+        run: pnpm config set store-dir ~/.pnpm-store
+
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+
+      # Cache Turborepo build outputs
+      - name: Setup Turborepo cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            **/node_modules/.cache/turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      # Cache Next.js build outputs
+      - name: Setup Next.js cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/*/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-${{ hashFiles('apps/**/*.js', 'apps/**/*.jsx', 'apps/**/*.ts', 'apps/**/*.tsx') }}
+          restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-
 
       - name: Set app folder name
         id: app-info
