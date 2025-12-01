@@ -1,0 +1,83 @@
+{
+  "name": "@ottabase/auth",
+  "version": "1.0.0",
+  "description": "Authentication package for Ottabase with Auth.js (NextAuth.js) support",
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./adapter": {
+      "types": "./dist/adapter.d.ts",
+      "import": "./dist/adapter.mjs",
+      "require": "./dist/adapter.js"
+    },
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.mjs",
+      "require": "./dist/config.js"
+    },
+    "./providers": {
+      "types": "./dist/providers.d.ts",
+      "import": "./dist/providers.mjs",
+      "require": "./dist/providers.js"
+    },
+    "./session": {
+      "types": "./dist/session.d.ts",
+      "import": "./dist/session.mjs",
+      "require": "./dist/session.js"
+    },
+    "./schema": "./prisma/auth.schema.prisma"
+  },
+  "files": [
+    "dist",
+    "prisma",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts src/adapter.ts src/config.ts src/providers.ts src/session.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/adapter.ts src/config.ts src/providers.ts src/session.ts --format cjs,esm --dts --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "auth",
+    "authjs",
+    "nextauth",
+    "prisma",
+    "cloudflare-d1"
+  ],
+  "author": "",
+  "license": "MIT",
+  "peerDependencies": {
+    "@auth/core": ">=0.34.0",
+    "@auth/prisma-adapter": ">=2.0.0",
+    "@ottabase/cf": "workspace:*",
+    "@ottabase/db": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@auth/core": {
+      "optional": true
+    },
+    "@auth/prisma-adapter": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@ottabase/cf": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "@ottabase/db": "workspace:*",
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:",
+    "rimraf": "catalog:",
+    "eslint": "catalog:"
+  }
+}
