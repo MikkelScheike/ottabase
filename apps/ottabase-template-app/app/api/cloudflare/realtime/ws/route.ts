@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
 
     // Forward the WebSocket upgrade request to the Durable Object
     // The RealtimeActor will handle the WebSocket protocol
-    return stub.fetch(request);
+    return stub.fetch(request as any) as unknown as Response;
   } catch (error) {
     console.error('Realtime WebSocket error:', error);
     return new Response(

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import { RealtimeClient, ConnectionState } from '@ottabase/cf-realtime';
 
 interface Message {
@@ -206,12 +207,30 @@ export default function RealtimeDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-6xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Realtime Pub/Sub Demo
           </h1>
           <p className="text-gray-600">
             WebSocket-based real-time messaging with offline support
+          </p>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="mb-2 text-sm font-medium text-red-900">
+            ❌ Local Development Not Supported
+          </h3>
+          <p className="text-sm text-red-700">
+            <strong>Durable Objects do not work in local Windows development.</strong> This feature requires
+            Cloudflare's distributed runtime and internal Durable Object bindings. Testing and demos work
+            fully when deployed to Cloudflare Pages/Workers in production.
           </p>
         </div>
 

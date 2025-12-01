@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 interface RateLimitResult {
   success: boolean;
@@ -72,6 +73,13 @@ export default function RateLimitingDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-3xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Rate Limiting Demo
@@ -83,12 +91,12 @@ export default function RateLimitingDemoPage() {
 
         <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
           <h3 className="mb-2 text-sm font-medium text-blue-900">
-            Local Development Mode
+            🔄 Local Development Fallback
           </h3>
           <p className="text-sm text-blue-700">
-            In local dev, rate limiting is simulated using KV storage since Wrangler's
-            rate limiter mock doesn't work properly. The simulation provides accurate
-            rate limiting behavior with a 10 requests per 60 seconds limit.
+            <strong>Rate limiting uses KV-based simulation locally</strong> since Cloudflare's Rate Limiting API
+            requires production deployment. The KV fallback provides accurate rate limiting behavior (10 requests
+            per 60 seconds). In production, this automatically uses Cloudflare's distributed Rate Limiting API.
           </p>
         </div>
 

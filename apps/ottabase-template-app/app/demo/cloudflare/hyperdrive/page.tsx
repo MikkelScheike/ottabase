@@ -1,7 +1,16 @@
+import Link from 'next/link';
+
 export default function HyperdriveDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-4xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Hyperdrive Demo
@@ -11,14 +20,14 @@ export default function HyperdriveDemoPage() {
           </p>
         </div>
 
-        <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-6">
-          <h3 className="mb-3 text-sm font-medium text-blue-900">
-            What is Hyperdrive?
+        <div className="mb-8 rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+          <h3 className="mb-3 text-sm font-medium text-yellow-900">
+            ☁️ Production-Only Feature
           </h3>
-          <p className="mb-4 text-sm text-blue-700">
-            Hyperdrive speeds up access to your existing databases by maintaining connection pools
-            and caching frequent queries at Cloudflare's edge. It works with PostgreSQL and MySQL
-            databases, including popular managed services like:
+          <p className="mb-4 text-sm text-yellow-700">
+            <strong>Hyperdrive requires deployment to Cloudflare Workers.</strong> It accelerates connections to
+            remote databases (PostgreSQL, MySQL) using Cloudflare's connection pooling infrastructure.
+            Local development should connect directly to your database. Hyperdrive works with:
           </p>
           <ul className="space-y-2 text-sm text-blue-700">
             <li>• PostgreSQL: Amazon RDS, Google Cloud SQL, Neon, Supabase, etc.</li>

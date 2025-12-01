@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface QueueMessage {
   key: string;
@@ -124,12 +125,29 @@ export default function QueuesDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-4xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Queues Demo
           </h1>
           <p className="text-gray-600">
             Async message queue processing
+          </p>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+          <h3 className="mb-2 text-sm font-medium text-yellow-900">
+            ⚠️ Local Development Limitations
+          </h3>
+          <p className="text-sm text-yellow-700">
+            <strong>Sending messages works locally</strong> via Wrangler. However, queue consumers (batch processing)
+            have limited support on Windows. Message delivery and consumer handlers work fully in production on Cloudflare.
           </p>
         </div>
 

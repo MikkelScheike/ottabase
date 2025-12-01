@@ -47,6 +47,13 @@ export default function CloudflareDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-4xl">
+        <Link
+          href="/demo"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Demo Gallery
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Cloudflare Features

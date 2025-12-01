@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface R2Object {
   key: string;
@@ -150,12 +151,29 @@ export default function R2DemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-4xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             R2 Storage Demo
           </h1>
           <p className="text-gray-600">
             Object storage for file uploads and downloads
+          </p>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <h3 className="mb-2 text-sm font-medium text-green-900">
+            ✅ Full Local Development Support
+          </h3>
+          <p className="text-sm text-green-700">
+            <strong>R2 works perfectly in local Windows development</strong> via Wrangler's local object storage.
+            All upload, download, metadata, and listing operations work identically in local dev and production.
           </p>
         </div>
 

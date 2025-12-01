@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 
 interface Todo {
   id: number;
@@ -136,12 +137,29 @@ export default function D1DemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-2xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             D1 Database Demo
           </h1>
           <p className="text-gray-600">
             Full CRUD operations with Cloudflare D1 SQLite database
+          </p>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <h3 className="mb-2 text-sm font-medium text-green-900">
+            ✅ Full Local Development Support
+          </h3>
+          <p className="text-sm text-green-700">
+            <strong>D1 works perfectly in local Windows development</strong> via Wrangler's local SQLite.
+            All queries, migrations, and Prisma integration work identically in local dev and production.
           </p>
         </div>
 

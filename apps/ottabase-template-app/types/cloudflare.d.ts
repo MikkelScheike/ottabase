@@ -16,39 +16,42 @@ import type {
 /**
  * Cloudflare environment bindings
  * Add all your Cloudflare bindings here to get type safety
+ *
+ * Note: All bindings are optional to support local development builds.
+ * At runtime on Cloudflare, these will be available.
  */
 export interface CloudflareEnv {
   // D1 Database
-  DB: D1Database;
+  DB?: D1Database;
 
   // KV Namespace
-  OTTABASE_KV: KVNamespace;
+  OTTABASE_KV?: KVNamespace;
 
   // R2 Bucket
-  OTTABASE_BUCKET: R2Bucket;
+  OTTABASE_BUCKET?: R2Bucket;
 
   // Queue
-  MY_QUEUE: Queue;
+  MY_QUEUE?: Queue;
 
   // Hyperdrive (uncomment when configured)
-  // HYPERDRIVE: Hyperdrive;
+  // HYPERDRIVE?: Hyperdrive;
 
-  // Rate Limiter (uncomment when configured)
-  // RATE_LIMITER: RateLimiter;
+  // Rate Limiter
+  RATE_LIMITER?: RateLimiter;
 
   // Durable Objects
-  REALTIME: DurableObjectNamespace;
+  REALTIME?: DurableObjectNamespace;
 
   // Environment Variables
-  ENVIRONMENT: string;
-  NODE_ENV: string;
+  ENVIRONMENT?: string;
+  NODE_ENV?: string;
 
   // Secrets (set via wrangler secret put)
   CF_ACCOUNT_ID?: string;
   CF_API_TOKEN?: string;
 
   // Assets binding (automatically added by OpenNext)
-  ASSETS: Fetcher;
+  ASSETS?: Fetcher;
 }
 
 /**

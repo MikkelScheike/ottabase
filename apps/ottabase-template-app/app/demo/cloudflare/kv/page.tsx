@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function KVDemoPage() {
   const [key, setKey] = useState('');
@@ -94,12 +95,29 @@ export default function KVDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-2xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             KV Storage Demo
           </h1>
           <p className="text-gray-600">
             Key-value storage with optional TTL (Time To Live)
+          </p>
+        </div>
+
+        <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-4">
+          <h3 className="mb-2 text-sm font-medium text-green-900">
+            ✅ Full Local Development Support
+          </h3>
+          <p className="text-sm text-green-700">
+            <strong>KV works perfectly in local Windows development</strong> via Wrangler's local KV.
+            All operations including TTL, JSON storage, and metadata work identically in local dev and production.
           </p>
         </div>
 

@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
     }
 
     const object = result.data;
-    const arrayBuffer = await object.arrayBuffer();
+    const arrayBuffer = await (object as any).arrayBuffer();
 
     return new Response(arrayBuffer, {
       headers: {

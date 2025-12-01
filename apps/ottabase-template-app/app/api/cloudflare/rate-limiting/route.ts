@@ -23,9 +23,9 @@ async function simulateRateLimit(env: any, key: string) {
   const result = await kv.getText(rateLimitKey);
   console.log(`[Rate Limit] KV get result:`, {
     success: result.success,
-    hasData: !!result.data,
-    dataType: typeof result.data,
-    data: result.data
+    hasData: result.success ? !!result.data : false,
+    dataType: result.success ? typeof result.data : 'error',
+    data: result.success ? result.data : null
   });
 
   let count = 0;

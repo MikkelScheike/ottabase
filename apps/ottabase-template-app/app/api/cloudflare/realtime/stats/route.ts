@@ -8,7 +8,7 @@ export const runtime = 'edge';
  * Get realtime stats
  * GET /api/cloudflare/realtime/stats
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 

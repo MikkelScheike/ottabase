@@ -76,6 +76,39 @@ const nextConfig = {
   serverExternalPackages: [
     "fs", // For Email Templates compiler
   ],
+
+  // Webpack configuration
+  webpack: (config, { isServer, webpack }) => {
+    // Handle Cloudflare-specific imports that aren't available during build
+    // These are only available in the Cloudflare Workers runtime
+    if (isServer) {
+      // Add plugin to replace cloudflare: imports with empty stubs
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /^cloudflare:(.*)$/,
+          (resource) => {
+            // Replace cloudflare: imports with an empty module
+            resource.request = require.resolve('./cloudflare-stub.js');
+          }
+        )
+      );
+    }
+
+    // Configure webpack watching to avoid Windows-specific errors
+    config.watchOptions = {
+      ...config.watchOptions,
+      // Ignore Watchpack errors for CSS files (known Windows issue)
+      ignored: config.watchOptions?.ignored || /node_modules/,
+    };
+
+    // Suppress Watchpack ENOTDIR errors (Windows-specific CSS file watching issue)
+    config.infrastructureLogging = {
+      ...config.infrastructureLogging,
+      level: 'error',
+    };
+
+    return config;
+  },
 };
 
 module.exports = nextConfig;

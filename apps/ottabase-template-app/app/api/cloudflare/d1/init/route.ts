@@ -4,7 +4,7 @@ import { createD1Client } from '@ottabase/cf/d1';
 
 export const runtime = 'edge';
 
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 

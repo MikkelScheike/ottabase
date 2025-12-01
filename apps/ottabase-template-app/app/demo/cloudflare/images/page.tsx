@@ -1,7 +1,16 @@
+import Link from 'next/link';
+
 export default function ImagesDemoPage() {
   return (
     <div className="min-h-screen bg-[#FBFBFA] p-8">
       <div className="mx-auto max-w-3xl">
+        <Link
+          href="/demo/cloudflare"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-8"
+        >
+          ← Back to Cloudflare Features
+        </Link>
+
         <div className="mb-8">
           <h1 className="mb-2 text-3xl font-semibold text-gray-900">
             Images Demo
@@ -11,13 +20,13 @@ export default function ImagesDemoPage() {
           </p>
         </div>
 
-        <div className="mb-8 rounded-lg border border-blue-200 bg-blue-50 p-6">
-          <h3 className="mb-3 text-sm font-medium text-blue-900">
-            Configuration Required
+        <div className="mb-8 rounded-lg border border-yellow-200 bg-yellow-50 p-6">
+          <h3 className="mb-3 text-sm font-medium text-yellow-900">
+            ☁️ Cloud-Only Service
           </h3>
-          <p className="mb-4 text-sm text-blue-700">
-            Cloudflare Images requires API authentication (unlike other Worker bindings).
-            To use Images in your application:
+          <p className="mb-4 text-sm text-yellow-700">
+            <strong>Cloudflare Images is a cloud-only service.</strong> It requires API authentication
+            and uploads go directly to Cloudflare (not local storage). To use Images in development:
           </p>
           <ol className="space-y-2 text-sm text-blue-700">
             <li>1. Enable Cloudflare Images in your dashboard</li>
