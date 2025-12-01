@@ -6,7 +6,8 @@ Framework-agnostic Cloudflare bindings wrapper for TypeScript applications.
 
 Type-safe wrappers for all major Cloudflare Worker bindings:
 
-- **D1**: SQLite database with query builder
+- **Prisma D1**: Prisma ORM integration for D1 (recommended for complex queries)
+- **D1**: Raw SQLite database with query builder
 - **KV**: Key-value storage
 - **R2**: Object storage
 - **Images**: Image transformation and optimization
@@ -23,7 +24,38 @@ pnpm add @ottabase/cf
 
 ## Usage
 
-### D1 Database
+### Prisma D1 (Recommended)
+
+Use Prisma ORM with Cloudflare D1 for type-safe database access:
+
+```typescript
+import { createPrismaD1Client, getPrismaD1Client } from "@ottabase/cf/d1-prisma";
+
+export default {
+  async fetch(request: Request, env: Env) {
+    // Create a new client
+    const prisma = createPrismaD1Client(env.DB);
+
+    // Or use cached client (recommended for multiple queries)
+    const prisma = getPrismaD1Client(env.DB);
+
+    // Type-safe queries with Prisma
+    const users = await prisma.user.findMany({
+      where: { email: { contains: "@example.com" } },
+      include: { posts: true },
+    });
+
+    return Response.json(users);
+  },
+};
+```
+
+**Requirements:**
+
+- `@prisma/client` and `@prisma/adapter-d1` as peer dependencies
+- Generated Prisma client (run `pnpm db:generate`)
+
+### D1 Raw SQL
 
 ```typescript
 import { createD1Client } from '@ottabase/cf/d1';
