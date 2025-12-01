@@ -1,10 +1,33 @@
-export { concatenatePrismaSchema } from "./concatenate";
+// ============================================================
+// @ottabase/scripts - Utility Scripts for Ottabase Monorepo
+// ============================================================
 
-// Re-export types from @ottabase/db
+// Schema concatenation
+export {
+  concatenateAppSchema,
+  type ConcatenateOptions,
+  type ConcatenateResult,
+} from "./schema/concatenate";
+
+// Migrations
+export {
+  discoverMigrations,
+  generateMigrationPlan,
+  createCombinedMigration,
+  runD1Migrations,
+  getAppliedMigrations,
+  type MigrationFile,
+  type MigrationResult,
+  type DiscoverMigrationsOptions,
+  type RunMigrationsOptions,
+} from "./migrations/runner";
+
+// Re-export types from @ottabase/db for convenience
 export type {
-  CoreSchemaName,
-  PrismaConfig,
-  PrismaDatasource,
-} from "@ottabase/db/prisma";
+  AppDbConfig,
+  DbProvider,
+  FeatureId,
+  FeatureSchemaDefinition,
+} from "@ottabase/db/config";
 
-export { definePrismaConfig } from "@ottabase/db/prisma";
+export { defineAppDbConfig, defineFeatureSchema } from "@ottabase/db/config";
