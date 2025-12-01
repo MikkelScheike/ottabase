@@ -1,31 +1,54 @@
-/// Base Prisma configuration - generator and datasource
-/// This file is a template. The actual datasource will be configured
-/// based on the app's prisma.config.js settings during schema generation.
+// ============================================================
+// @ottabase/db - Main Prisma Schema
+// ============================================================
+//
+// This is the main schema file for the @ottabase/db package.
+// It contains the generator and datasource configuration,
+// plus core models that are always included.
+//
+// For modular schema composition, use the db-generate CLI:
+//   pnpm db:generate
+//
+// For Cloudflare D1:
+//   - Set DATABASE_URL="file:./dev.db" in .env (for local dev)
+//   - Use createD1Client(env.DB) in your Cloudflare Worker code
+//
+// ============================================================
 
 generator client {
-    provider = "prisma-client-js"
+    provider        = "prisma-client-js"
+    previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
-    provider = "postgresql"
+    provider = "sqlite"
     url      = env("DATABASE_URL")
 }
 
-/// User model - Core authentication and user management
+// ============================================================
+// CORE MODELS
+// ============================================================
+// These models are included by default in all applications.
+// When using @ottabase/auth, relations are added via schema concatenation.
+// ============================================================
 
+/// User model - Auth.js compatible base fields
+/// When @ottabase/auth is enabled, this model is extended with auth relations
 model User {
-    id        String   @id @default(cuid())
-    email     String   @unique
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    id            String    @id @default(cuid())
+    name          String?
+    email         String?   @unique
+    emailVerified DateTime?
+    image         String?
+    createdAt     DateTime  @default(now())
+    updatedAt     DateTime  @updatedAt
 }
 
 /// Post model - Blog posts and content management
-
 model Post {
     id        String   @id @default(cuid())
     title     String
-    content   String?  @db.Text
+    content   String?
     published Boolean  @default(false)
     authorId  String?
     createdAt DateTime @default(now())

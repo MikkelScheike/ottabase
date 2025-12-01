@@ -1,7 +1,7 @@
 {
   "name": "@ottabase/db",
   "version": "1.0.0",
-  "description": "Shared Prisma database client for Ottabase applications",
+  "description": "Shared Prisma database layer for Ottabase applications - schema configuration, feature registry, and ORM setup",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -16,10 +16,15 @@
       "import": "./dist/client.mjs",
       "require": "./dist/client.js"
     },
-    "./prisma": {
-      "types": "./dist/prisma-config.d.ts",
-      "import": "./dist/prisma-config.mjs",
-      "require": "./dist/prisma-config.js"
+    "./config": {
+      "types": "./dist/config.d.ts",
+      "import": "./dist/config.mjs",
+      "require": "./dist/config.js"
+    },
+    "./registry": {
+      "types": "./dist/registry.d.ts",
+      "import": "./dist/registry.mjs",
+      "require": "./dist/registry.js"
     },
     "./schema": "./prisma/schema.prisma"
   },
@@ -29,8 +34,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/prisma-config.ts --format cjs,esm --dts --clean",
-    "dev": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/prisma-config.ts --format cjs,esm --dts --watch",
+    "build": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/config.ts src/registry.ts --format cjs,esm --dts --clean",
+    "dev": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/config.ts src/registry.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
@@ -41,17 +46,18 @@
   "keywords": [
     "prisma",
     "database",
-    "postgresql",
     "orm",
-    "monorepo"
+    "monorepo",
+    "schema"
   ],
   "author": "",
   "license": "MIT",
   "prisma": {
     "schema": "prisma/schema.prisma"
   },
+  "dependencies": {},
   "peerDependencies": {
-    "@prisma/client": ">=5.22.0"
+    "@prisma/client": ">=5.0.0"
   },
   "devDependencies": {
     "@prisma/client": "catalog:",
