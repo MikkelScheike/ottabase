@@ -20,6 +20,7 @@ export default function D1DemoPage() {
   // Initialize database on mount
   useEffect(() => {
     initializeDb();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const initializeDb = async () => {

@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     if (batch && Array.isArray(batch)) {
       // Send batch of messages
-      const messages = batch.map((msg: any) => ({
+      const messages = batch.map((msg: unknown) => ({
         body: msg,
       }));
 

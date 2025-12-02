@@ -7,7 +7,7 @@ interface QueueMessage {
   key: string;
   userId?: string;
   action?: string;
-  data?: any;
+  data?: unknown;
   sentAt: string;
   type: 'single' | 'batch';
 }
@@ -52,7 +52,7 @@ export default function QueuesDemoPage() {
       setError(null);
       setSuccess(null);
 
-      const message: any = {
+      const message: Record<string, unknown> = {
         action,
       };
 
@@ -325,11 +325,11 @@ export default function QueuesDemoPage() {
                           User: {msg.userId}
                         </p>
                       )}
-                      {msg.data && (
+                      {msg.data ? (
                         <pre className="mt-2 overflow-x-auto rounded bg-gray-50 p-2 text-xs text-gray-700">
                           {JSON.stringify(msg.data, null, 2)}
                         </pre>
-                      )}
+                      ) : null}
                     </div>
                     <span className="text-xs text-gray-500">
                       {new Date(msg.sentAt).toLocaleTimeString()}

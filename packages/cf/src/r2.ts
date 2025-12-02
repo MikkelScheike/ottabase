@@ -5,7 +5,7 @@
  * @see https://developers.cloudflare.com/r2/
  */
 
-import type { R2Bucket, R2Object, R2MultipartUpload } from '@cloudflare/workers-types';
+import type { R2Bucket, R2Object, R2ObjectBody, R2MultipartUpload } from '@cloudflare/workers-types';
 import { CloudflareError, type Result } from './types';
 
 export interface R2Config {
@@ -68,7 +68,7 @@ export class R2Client {
   async get(
     key: string,
     options?: R2GetOptions
-  ): Promise<Result<R2Object | null, Error>> {
+  ): Promise<Result<R2ObjectBody | null, Error>> {
     try {
       const object = await this.bucket.get(key, options);
 

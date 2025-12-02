@@ -8,7 +8,7 @@ interface Message {
   id: string;
   channel: string;
   event: string;
-  data: any;
+  data: unknown;
   timestamp: number;
   isOffline?: boolean;
 }

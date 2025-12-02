@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { createRateLimitingClient } from '@ottabase/cf/rate-limiting';
 import { createKVClient } from '@ottabase/cf/kv';
+import type { KVNamespace } from '@cloudflare/workers-types';
 
 export const runtime = 'edge';
 
 // Simulated rate limiter using KV for local dev
-async function simulateRateLimit(env: any, key: string) {
+async function simulateRateLimit(env: { OTTABASE_KV?: KVNamespace }, key: string) {
   if (!env.OTTABASE_KV) {
     console.log('[Rate Limit] KV not available');
     return null; // KV not available, can't simulate
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let rateLimitData: any = null;
+    let rateLimitData: { success: boolean; limit: number; remaining: number; resetAfter: number } | null = null;
 
     // Try real rate limiter first
     if (env.RATE_LIMITER) {

@@ -127,13 +127,13 @@ export async function GET(request: NextRequest) {
     }
 
     const object = result.data;
-    const arrayBuffer = await (object as any).arrayBuffer();
 
-    return new Response(arrayBuffer, {
+    return new Response(object.body as unknown as BodyInit, {
       headers: {
         'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
         'Content-Length': object.size.toString(),
         'Content-Disposition': `attachment; filename="${key}"`,
+        'ETag': object.etag,
       },
     });
   } catch (error) {
