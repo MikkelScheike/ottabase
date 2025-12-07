@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { StorybookConfig } from "@storybook/react-webpack5";
+import { resolveScope } from "./scope.ts";
 
 type ScopeKind = "package" | "app";
 
@@ -24,10 +25,6 @@ type ScopeResult = {
   selectedApps: ScopeRecord[];
   primaryApp: ScopeRecord | null;
 };
-
-const {
-  resolveScope,
-}: { resolveScope: () => ScopeResult } = require("./scope.js");
 
 const STORY_PATTERN = "**/*.stories.@(js|jsx|ts|tsx|mdx)";
 

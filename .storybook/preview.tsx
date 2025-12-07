@@ -1,7 +1,6 @@
 import type { Preview } from "@storybook/react-webpack5";
 import React from "react";
-/* Import CSS from core/providers here */
-import "../packages/ui-core/styles/index.css";
+/* Import CSS files */
 import "../packages/ui-tailwind/styles/tailwind.base.css";
 import { StoryShell } from "./StoryShell";
 
@@ -38,8 +37,8 @@ export const parameters: Preview["parameters"] = {
       dark: {
         name: "dark",
         value: "#111827",
-      }
-    }
+      },
+    },
   },
 };
 
@@ -78,6 +77,6 @@ export const decorators = [withOttabaseShell];
 
 export const initialGlobals = {
   backgrounds: {
-    value: "light"
-  }
+    value: "light",
+  },
 };

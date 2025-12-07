@@ -1,5 +1,30 @@
-const fs = require("fs");
-const path = require("path");
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+type ScopeKind = "package" | "app";
+
+type ScopeRecord = {
+  kind: ScopeKind;
+  dirName: string;
+  root: string;
+  packageJsonPath: string;
+  packageJson: { name?: string } | null;
+  packageName: string | null;
+  title: string;
+};
+
+type ScopeResult = {
+  rootDir: string;
+  packagesRoot: string;
+  appsRoot: string;
+  allPackages: ScopeRecord[];
+  allApps: ScopeRecord[];
+  selectedPackages: ScopeRecord[];
+  selectedApps: ScopeRecord[];
+  primaryApp: ScopeRecord | null;
+};
 
 const ACRONYM_SEGMENTS = new Set([
   "ui",
@@ -12,7 +37,7 @@ const ACRONYM_SEGMENTS = new Set([
   "cli",
 ]);
 
-function humanizeSegment(segment) {
+function humanizeSegment(segment: string): string {
   const lower = segment.toLowerCase();
   if (ACRONYM_SEGMENTS.has(lower)) {
     return lower.toUpperCase();
@@ -23,7 +48,7 @@ function humanizeSegment(segment) {
   return segment.charAt(0).toUpperCase() + segment.slice(1);
 }
 
-function humanize(value) {
+export function humanize(value: string): string {
   return value
     .split(/[\\/]/)
     .map((part) =>
@@ -37,7 +62,7 @@ function humanize(value) {
     .join(" / ");
 }
 
-function readJsonIfExists(filePath) {
+function readJsonIfExists(filePath: string): any {
   try {
     if (fs.existsSync(filePath)) {
       return JSON.parse(fs.readFileSync(filePath, "utf8"));
@@ -49,7 +74,12 @@ function readJsonIfExists(filePath) {
   return null;
 }
 
-function listChildDirectories(rootDir) {
+interface DirectoryEntry {
+  dirName: string;
+  root: string;
+}
+
+function listChildDirectories(rootDir: string): DirectoryEntry[] {
   try {
     return fs
       .readdirSync(rootDir, { withFileTypes: true })
@@ -63,7 +93,7 @@ function listChildDirectories(rootDir) {
   }
 }
 
-function buildRecords(rootDir, kind) {
+function buildRecords(rootDir: string, kind: ScopeKind): ScopeRecord[] {
   return listChildDirectories(rootDir).map((entry) => {
     const packageJsonPath = path.join(entry.root, "package.json");
     const packageJson = readJsonIfExists(packageJsonPath);
@@ -79,7 +109,7 @@ function buildRecords(rootDir, kind) {
   });
 }
 
-function createLookup(records) {
+function createLookup(records: ScopeRecord[]): Map<string, ScopeRecord> {
   const map = new Map();
   records.forEach((record) => {
     map.set(record.dirName, record);
@@ -94,7 +124,10 @@ function createLookup(records) {
   return map;
 }
 
-function filterRecords(records, rawValue) {
+export function filterRecords(
+  records: ScopeRecord[],
+  rawValue?: string,
+): ScopeRecord[] {
   if (!rawValue || !rawValue.trim()) {
     return records;
   }
@@ -122,7 +155,7 @@ function filterRecords(records, rawValue) {
     .filter((token) => token.startsWith("-"))
     .map((token) => token.slice(1));
 
-  let selected;
+  let selected: ScopeRecord[];
   if (includes.length) {
     const seen = new Set();
     selected = [];
@@ -151,7 +184,10 @@ function filterRecords(records, rawValue) {
   return selected;
 }
 
-function findRecord(records, token) {
+function findRecord(
+  records: ScopeRecord[],
+  token?: string,
+): ScopeRecord | null {
   if (!token) {
     return null;
   }
@@ -159,7 +195,9 @@ function findRecord(records, token) {
   return lookup.get(token) || null;
 }
 
-function resolveScope() {
+export function resolveScope(): ScopeResult {
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = dirname(__filename);
   const rootDir = path.resolve(__dirname, "..");
   const packagesRoot = path.join(rootDir, "packages");
   const appsRoot = path.join(rootDir, "apps");
@@ -190,9 +228,4 @@ function resolveScope() {
   };
 }
 
-module.exports = {
-  resolveScope,
-  humanize,
-  listChildDirectories,
-  filterRecords,
-};
+export { listChildDirectories };

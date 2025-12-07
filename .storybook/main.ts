@@ -1,11 +1,14 @@
 import type { StorybookConfig } from "@storybook/react-webpack5";
-import { createRequire } from "node:module";
 import path, { dirname, join } from "node:path";
-import { resolveStorybookEntries } from "./story-sources";
-
-const require = createRequire(import.meta.url);
+import { fileURLToPath } from "node:url";
+import { resolveStorybookEntries } from "./story-sources.ts";
+import webpack from "webpack";
 
 const { stories, staticDirs, scope } = resolveStorybookEntries();
+
+// Define __dirname equivalent for ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const projectRoot = path.resolve(__dirname, "..");
 const storybookPostCssConfig = path.resolve(__dirname, "postcss.config.cjs");
@@ -51,15 +54,15 @@ const config: StorybookConfig = {
             test: /\.css$/,
             sideEffects: true,
             use: [
-              require.resolve("style-loader"),
+              "style-loader",
               {
-                loader: require.resolve("css-loader"),
+                loader: "css-loader",
                 options: {
                   importLoaders: 1,
                 },
               },
               {
-                loader: require.resolve("postcss-loader"),
+                loader: "postcss-loader",
                 options: {
                   postcssOptions: {
                     config: storybookPostCssConfig,
@@ -123,7 +126,7 @@ const config: StorybookConfig = {
     // Add simple process polyfill using DefinePlugin
     config.plugins = config.plugins || [];
     config.plugins.push(
-      new (require("webpack").DefinePlugin)({
+      new webpack.DefinePlugin({
         "process.env": JSON.stringify({}),
         "process.browser": JSON.stringify(true),
         "process.version": JSON.stringify(""),
@@ -212,8 +215,8 @@ const config: StorybookConfig = {
       const uses = Array.isArray(rule.use)
         ? rule.use
         : rule.use
-        ? [rule.use]
-        : [];
+          ? [rule.use]
+          : [];
 
       uses.forEach((useEntry) => {
         if (
@@ -244,15 +247,12 @@ const config: StorybookConfig = {
       exclude: /node_modules/,
       use: [
         {
-          loader: require.resolve("babel-loader"),
+          loader: "babel-loader",
           options: {
             presets: [
-              require.resolve("@babel/preset-env"),
-              [
-                require.resolve("@babel/preset-react"),
-                { runtime: "automatic" },
-              ],
-              require.resolve("@babel/preset-typescript"),
+              "@babel/preset-env",
+              ["@babel/preset-react", { runtime: "automatic" }],
+              "@babel/preset-typescript",
             ],
           },
         },
@@ -289,5 +289,5 @@ const config: StorybookConfig = {
 export default config;
 
 function getAbsolutePath(value: string): any {
-  return dirname(require.resolve(join(value, "package.json")));
+  return path.join(__dirname, "../node_modules", value);
 }
