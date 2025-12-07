@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { ProviderState } from "@ottabase/state";
 import { ShadcnProviders } from "@ottabase/ui-shadcn/providers";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
+import { ThemeProvider } from "next-themes";
 
 interface StoryShellProps {
   children: ReactNode;
@@ -14,16 +15,27 @@ interface StoryShellProps {
 export function StoryShell({ children }: StoryShellProps) {
   return (
     <ProviderState>
-      <ShadcnProviders
-        storagePrefix="storybook"
+      {/*
+          ThemeProvider needs to come before ShadcnProviders for dark mode toggle to work.
+          This matches the app structure where ProviderNextThemes wraps ShadcnProviders.
+        */}
+      <ThemeProvider
+        attribute="class"
+        storageKey="ottabase-theme"
         defaultTheme="light"
-        enableTooltipProvider={true}
-        enableToaster={true}
+        enableSystem={false}
+        disableTransitionOnChange={false}
       >
-        <ProviderCodeHighlight>
-          <div className="story-shell p-4">{children}</div>
-        </ProviderCodeHighlight>
-      </ShadcnProviders>
+        <ShadcnProviders
+          enableThemeProvider={false} // We're already providing next-themes above
+          enableTooltipProvider={true}
+          enableToaster={true}
+        >
+          <ProviderCodeHighlight>
+            <div className="story-shell p-4">{children}</div>
+          </ProviderCodeHighlight>
+        </ShadcnProviders>
+      </ThemeProvider>
     </ProviderState>
   );
 }

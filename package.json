@@ -38,7 +38,7 @@
     "babel-loader": "catalog:",
     "css-loader": "catalog:",
     "eslint-plugin-storybook": "catalog:",
-    "next-themes": "^0.4.6",
+    "next-themes": "catalog:",
     "pnpm": "10.24.0",
     "postcss-loader": "catalog:",
     "storybook": "catalog:",
