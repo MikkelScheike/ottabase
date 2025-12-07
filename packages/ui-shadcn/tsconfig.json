@@ -6,8 +6,16 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "strict": false,
+    "isolatedModules": false,
+    "noImplicitAny": false,
+    "preserveSymlinks": true
   },
-  "include": ["src/**/*", "components/**/*", "providers/**/*"],
+  "include": [
+    "src/**/*",
+    "components/**/*",
+    "providers/**/*"
+  ],
   "exclude": ["dist", "node_modules", "**/*.test.*", "**/*.spec.*"]
 }

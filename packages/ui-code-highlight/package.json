@@ -23,14 +23,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "highlight.js": "^11.11.1",
-    "react": "catalog:"
+    "highlight.js": "^11.11.1"
   },
   "peerDependencies": {
     "@mantine/code-highlight": "^8.3.1",
     "@mantine/core": "^8.3.1",
-    "react": ">=18.0.0",
-    "react-dom": ">=18.0.0"
+    "react": "catalog:",
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@types/react": "catalog:",
