@@ -1,7 +1,7 @@
 {
   "name": "@ottabase/db",
   "version": "1.0.0",
-  "description": "Shared Prisma database layer for Ottabase applications - schema configuration, feature registry, and ORM setup",
+  "description": "Shared database layer for Ottabase applications - Prisma schema configuration, Drizzle driver support, and ORM setup",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
@@ -26,7 +26,17 @@
       "import": "./dist/registry.mjs",
       "require": "./dist/registry.js"
     },
-    "./schema": "./prisma/schema.prisma"
+    "./schema": "./prisma/schema.prisma",
+    "./drizzle": {
+      "types": "./dist/drizzle/drizzle.d.ts",
+      "import": "./dist/drizzle/drizzle.mjs",
+      "require": "./dist/drizzle/drizzle.js"
+    },
+    "./drizzle-d1": {
+      "types": "./dist/drizzle/drizzle-d1.d.ts",
+      "import": "./dist/drizzle/drizzle-d1.mjs",
+      "require": "./dist/drizzle/drizzle-d1.js"
+    }
   },
   "files": [
     "dist",
@@ -34,8 +44,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/config.ts src/registry.ts --format cjs,esm --dts --clean",
-    "dev": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/config.ts src/registry.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/client.ts src/config.ts src/registry.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --clean",
+    "dev": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/config.ts src/registry.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
@@ -57,11 +67,22 @@
   },
   "dependencies": {},
   "peerDependencies": {
-    "@prisma/client": ">=5.0.0"
+    "@prisma/client": ">=5.0.0",
+    "drizzle-orm": ">=0.30.0"
+  },
+  "peerDependenciesMeta": {
+    "@prisma/client": {
+      "optional": true
+    },
+    "drizzle-orm": {
+      "optional": true
+    }
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "catalog:",
     "@prisma/client": "catalog:",
     "@types/node": "catalog:",
+    "drizzle-orm": "catalog:",
     "prisma": "catalog:",
     "typescript": "catalog:",
     "tsup": "catalog:",

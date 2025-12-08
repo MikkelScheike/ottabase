@@ -7,8 +7,10 @@ catalog:
   "@babel/preset-env": ^7.28.5
   "@babel/preset-react": ^7.28.5
   "@babel/preset-typescript": ^7.28.5
+  "@cloudflare/workers-types": ^4.20241230.0
   "@prisma/adapter-d1": ^5.22.0
   "@prisma/client": ^5.22.0
+  "drizzle-orm": ^0.38.3
   "@radix-ui/react-slot": ^1.1.1
   "@radix-ui/react-switch": ^1.1.1
   "@radix-ui/react-tabs": ^1.1.1
