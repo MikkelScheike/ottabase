@@ -15,6 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@ottabase/ui-shadcn";
+import Link from "next/link";
 import { useState } from "react";
 import CustomAlertPlugin from "./CustomAlertPlugin";
 
@@ -261,6 +262,14 @@ export function EditorClient() {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-8">
+      {/* Back to Demo Gallery */}
+      <Link
+        href="/demo"
+        className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+      >
+        ← Back to Demo Gallery
+      </Link>
+
       {/* Header */}
       <div className="space-y-4">
         <h1 className="text-4xl font-bold tracking-tight">

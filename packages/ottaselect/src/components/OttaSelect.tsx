@@ -68,7 +68,7 @@ const normalizeItem = (item: OttaSelectInputItem): OttaSelectItem => {
   };
 };
 
-export const OttaSelect: React.FC<OttaSelectProps> = ({
+export function OttaSelect({
   mode = "single",
   value = null,
   onChange,
@@ -88,7 +88,7 @@ export const OttaSelect: React.FC<OttaSelectProps> = ({
   emptyMessage = "No options found",
   loadingMessage = "Loading...",
   errorMessage = "Error loading options",
-}) => {
+}: OttaSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -480,6 +480,6 @@ export const OttaSelect: React.FC<OttaSelectProps> = ({
       )}
     </div>
   );
-};
+}
 
 export default OttaSelect;

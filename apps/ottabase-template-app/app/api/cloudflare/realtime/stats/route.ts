@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
+// import { RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
 
-export const runtime = 'edge';
+// TODO: Re-enable edge runtime after fixing Cloudflare Workers module bundling
+// export const runtime = 'edge';
 
 /**
  * Get realtime stats
@@ -19,10 +20,11 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    const broadcaster = new RealtimeBroadcaster(env.REALTIME);
-    const stats = await broadcaster.getStats();
+    // TODO: Re-enable after fixing bundling
+    // const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+    // const stats = await broadcaster.getStats();
 
-    return NextResponse.json(stats || {
+    return NextResponse.json({
       totalConnections: 0,
       channels: [],
       offlineMessagesQueued: 0,

@@ -98,11 +98,14 @@ export default function DemoPage() {
   return (
     <Container size="md" py="xl">
       {/* Back to Demo Gallery */}
-      <Group justify="flex-start" align="center" mb="xl">
-        <Button component={Link} href="/demo" variant="light" size="sm">
-          ← Back to Demo Gallery
-        </Button>
-      </Group>
+      <div className="mb-8">
+        <Link
+          href="/demo"
+          className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900"
+        >
+          ← Back to Demo Gallery!!!!
+        </Link>
+      </div>
 
       <div className="bg-red-500 text-white p-4 my-4 rounded-sm">
         Tailwind is working!

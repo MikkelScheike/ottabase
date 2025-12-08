@@ -14,8 +14,8 @@
 // ============================================================
 
 // Re-export Prisma client and types
-export * from "@prisma/client";
-export type { PrismaClient } from "@prisma/client";
+// Note: Prisma types are re-exported from the client module to avoid circular dependency
+// during schema generation when @prisma/client hasn't been generated yet
 
 // Configuration types and helpers
 export type {

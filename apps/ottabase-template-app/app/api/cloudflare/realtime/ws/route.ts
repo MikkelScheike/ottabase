@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-export const runtime = 'edge';
+// TODO: Re-enable edge runtime after fixing Cloudflare Workers module bundling
+// export const runtime = 'edge';
 
 /**
  * WebSocket endpoint for realtime connections

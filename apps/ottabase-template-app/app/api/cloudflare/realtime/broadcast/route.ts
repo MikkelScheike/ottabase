@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
+// import { RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
 
-export const runtime = 'edge';
+// TODO: Re-enable edge runtime after fixing Cloudflare Workers module bundling
+// export const runtime = 'edge';
 
 /**
  * Broadcast message to channels
@@ -38,30 +39,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create broadcaster and send message
-    const broadcaster = new RealtimeBroadcaster(env.REALTIME);
-
-    const result = await broadcaster.broadcast({
-      channels,
-      event,
-      data,
-      persistForOffline,
-      metadata: {
-        sentAt: Date.now(),
-        source: 'api',
-      },
-    });
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Failed to broadcast message', details: result.error },
-        { status: 500 }
-      );
-    }
+    // TODO: Re-enable after fixing bundling
+    // const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+    // const result = await broadcaster.broadcast({
+    //   channels,
+    //   event,
+    //   data,
+    //   persistForOffline,
+    //   metadata: {
+    //     sentAt: Date.now(),
+    //     source: 'api',
+    //   },
+    // });
+    // if (!result.success) {
+    //   return NextResponse.json(
+    //     { error: 'Failed to broadcast message', details: result.error },
+    //     { status: 500 }
+    //   );
+    // }
 
     return NextResponse.json({
       success: true,
       channelsCount: channels.length,
+      note: 'Realtime broadcasting temporarily disabled during build fixes',
     });
   } catch (error) {
     console.error('Broadcast error:', error);

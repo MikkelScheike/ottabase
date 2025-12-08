@@ -17,14 +17,14 @@ interface LogoProps {
 const defaultSizePx = 32;
 
 // Pass a space " " for no appName (logo only)
-export const Logo: React.FC<LogoProps> = ({
+export function Logo({
   size = defaultSizePx,
   darkModeSwitcher = false,
   logoUrl,
   appName,
   linkUrl = "",
   appConfig,
-}) => {
+}: LogoProps) {
   // Create default config if none provided
   const config = appConfig || createAppConfig();
 
@@ -71,6 +71,6 @@ export const Logo: React.FC<LogoProps> = ({
       {renderDarkModeToggle()}
     </div>
   );
-};
+}
 
 export default Logo;
