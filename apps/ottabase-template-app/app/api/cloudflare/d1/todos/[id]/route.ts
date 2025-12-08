@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createD1Client } from '@ottabase/cf/d1';
+import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
+import type { PrismaClient } from '@prisma/client';
 
 export const runtime = 'edge';
 
-// PATCH /api/cloudflare/d1/todos/[id] - Update a todo
+// PATCH /api/cloudflare/d1/todos/[id] - Update a todo (using Prisma)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -35,23 +36,19 @@ export async function PATCH(
       );
     }
 
-    const db = createD1Client({ database: env.DB });
+    // ✅ Use Prisma with D1 adapter (type-safe updates)
+    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
 
-    const result = await db.execute(
-      'UPDATE todos SET completed = ? WHERE id = ?',
-      [completed ? 1 : 0, id]
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Failed to update todo', details: result.error.message },
-        { status: 500 }
-      );
-    }
+    // Type-safe update operation
+    const todo = await prisma.todo.update({
+      where: { id },
+      data: { completed },
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Todo updated successfully',
+      todo,
     });
   } catch (error) {
     console.error('D1 PATCH error:', error);
@@ -65,7 +62,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/cloudflare/d1/todos/[id] - Delete a todo
+// DELETE /api/cloudflare/d1/todos/[id] - Delete a todo (using Prisma)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -86,16 +83,13 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
 
-    const db = createD1Client({ database: env.DB });
+    // ✅ Use Prisma with D1 adapter (type-safe deletes)
+    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
 
-    const result = await db.execute('DELETE FROM todos WHERE id = ?', [id]);
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Failed to delete todo', details: result.error.message },
-        { status: 500 }
-      );
-    }
+    // Type-safe delete operation
+    await prisma.todo.delete({
+      where: { id },
+    });
 
     return NextResponse.json({
       success: true,

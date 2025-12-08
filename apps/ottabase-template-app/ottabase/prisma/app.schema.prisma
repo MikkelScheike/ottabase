@@ -15,3 +15,14 @@ model OttabaseTemplateAppData {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/// Todo model - Example for D1 demo
+/// Demonstrates Prisma ORM with Cloudflare D1
+model Todo {
+  id        Int      @id @default(autoincrement())
+  title     String
+  completed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}

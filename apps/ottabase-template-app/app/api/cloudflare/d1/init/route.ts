@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createD1Client } from '@ottabase/cf/d1';
+import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
+import type { PrismaClient } from '@prisma/client';
 
 export const runtime = 'edge';
 
@@ -15,34 +16,40 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    const db = createD1Client({ database: env.DB });
+    // ✅ Use Prisma with D1 adapter
+    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
 
-    // Create todos table if not exists
-    const createTableResult = await db.execute(
-      `CREATE TABLE IF NOT EXISTS todos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        completed INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )`
-    );
+    // Test the connection by counting todos
+    // In production, use migrations: pnpm db:migrate --name=init
+    const count = await prisma.todo.count();
 
-    if (!createTableResult.success) {
+    return NextResponse.json({
+      success: true,
+      message: 'Database connection verified successfully',
+      info: `Found ${count} existing todos. Use 'pnpm db:migrate --name=init' to run migrations.`,
+    });
+  } catch (error) {
+    console.error('D1 initialization error:', error);
+
+    // If the table doesn't exist, provide helpful migration instructions
+    if (
+      error instanceof Error &&
+      error.message.includes('no such table')
+    ) {
       return NextResponse.json(
-        { error: 'Failed to create table', details: createTableResult.error },
+        {
+          error: 'Database not initialized',
+          message:
+            'Run migrations first: cd apps/ottabase-template-app && pnpm db:migrate --name=init --apply=local',
+          hint: 'Or use wrangler: wrangler d1 execute DB --local --file=prisma/migrations/.../migration.sql',
+        },
         { status: 500 }
       );
     }
 
-    return NextResponse.json({
-      success: true,
-      message: 'Database initialized successfully',
-    });
-  } catch (error) {
-    console.error('D1 initialization error:', error);
     return NextResponse.json(
       {
-        error: 'Failed to initialize database',
+        error: 'Failed to verify database connection',
         message: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }

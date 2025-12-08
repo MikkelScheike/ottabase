@@ -255,7 +255,7 @@ const DEFAULT_CONFIG: {
   generator: {
     provider: "prisma-client-js",
     previewFeatures: ["driverAdapters"],
-    binaryTargets: [],
+    binaryTargets: ["native", "rhel-openssl-3.0.x"], // native + Cloudflare Workers
   },
   migrations: {
     autoRun: false,

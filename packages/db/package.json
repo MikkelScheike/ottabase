@@ -11,11 +11,6 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./client": {
-      "types": "./dist/client.d.ts",
-      "import": "./dist/client.mjs",
-      "require": "./dist/client.js"
-    },
     "./config": {
       "types": "./dist/config.d.ts",
       "import": "./dist/config.mjs",
@@ -26,7 +21,16 @@
       "import": "./dist/registry.mjs",
       "require": "./dist/registry.js"
     },
-    "./schema": "./prisma/schema.prisma",
+    "./client": {
+      "types": "./dist/prisma/client.d.ts",
+      "import": "./dist/prisma/client.mjs",
+      "require": "./dist/prisma/client.js"
+    },
+    "./prisma": {
+      "types": "./dist/prisma/prisma.d.ts",
+      "import": "./dist/prisma/prisma.mjs",
+      "require": "./dist/prisma/prisma.js"
+    },
     "./drizzle": {
       "types": "./dist/drizzle/drizzle.d.ts",
       "import": "./dist/drizzle/drizzle.mjs",
@@ -36,7 +40,8 @@
       "types": "./dist/drizzle/drizzle-d1.d.ts",
       "import": "./dist/drizzle/drizzle-d1.mjs",
       "require": "./dist/drizzle/drizzle-d1.js"
-    }
+    },
+    "./schema": "./prisma/schema.prisma"
   },
   "files": [
     "dist",
@@ -44,8 +49,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/client.ts src/config.ts src/registry.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --clean",
-    "dev": "pnpm prisma:generate && tsup src/index.ts src/client.ts src/config.ts src/registry.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --clean",
+    "dev": "pnpm prisma:generate && tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",

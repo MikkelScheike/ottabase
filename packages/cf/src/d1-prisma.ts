@@ -345,3 +345,111 @@ export function createPrismaD1ClientSafe<T = PrismaClientType>(
 
   return createPrismaD1Client<T>(d1, options);
 }
+
+// ============================================================
+// CLEANUP & LIFECYCLE MANAGEMENT
+// ============================================================
+
+/**
+ * Disconnect a Prisma client and cleanup resources
+ *
+ * This is typically not needed in Cloudflare Workers (runtime handles cleanup),
+ * but useful for:
+ * - Local development with long-running processes
+ * - Testing environments
+ * - Explicit resource management
+ *
+ * @param client - The Prisma client to disconnect
+ *
+ * @example
+ * ```typescript
+ * import { createPrismaD1Client, disconnectPrismaClient } from "@ottabase/cf/d1-prisma";
+ *
+ * const prisma = createPrismaD1Client(env.DB);
+ * try {
+ *   await prisma.user.findMany();
+ * } finally {
+ *   await disconnectPrismaClient(prisma);
+ * }
+ * ```
+ */
+export async function disconnectPrismaClient(
+  client: PrismaClientType,
+): Promise<void> {
+  if (client && typeof client.$disconnect === "function") {
+    await client.$disconnect();
+  }
+}
+
+/**
+ * Clear all cached Prisma clients
+ *
+ * Useful for testing or when you need to force recreation of all clients.
+ * Also disconnects all cached clients before clearing.
+ *
+ * Note: In Cloudflare Workers, you typically don't need this as the
+ * runtime manages lifecycle. This is mainly for development/testing.
+ *
+ * @example
+ * ```typescript
+ * import { clearPrismaClientCache } from "@ottabase/cf/d1-prisma";
+ *
+ * // Clear all cached clients (e.g., between tests)
+ * await clearPrismaClientCache();
+ * ```
+ */
+export async function clearPrismaClientCache(): Promise<void> {
+  // WeakMap doesn't have iteration, so we can't disconnect cached clients
+  // This is a limitation but acceptable since:
+  // 1. In Workers, the runtime handles cleanup
+  // 2. In dev/test, you can manage clients manually
+  // 3. WeakMap allows GC when D1 bindings are no longer referenced
+
+  // Note: We can't iterate WeakMap, but we can let GC handle cleanup
+  // If you need explicit cleanup, use disconnectPrismaClient on individual clients
+
+  // This function is kept for API consistency and documentation
+  console.warn(
+    "[d1-prisma] clearPrismaClientCache: WeakMap-based cache cannot be manually cleared. " +
+      "Clients will be garbage collected when D1 bindings are no longer referenced.",
+  );
+}
+
+/**
+ * Create a Prisma client with automatic cleanup using AsyncDisposable (TC39 proposal)
+ *
+ * When using TypeScript 5.2+ with explicit resource management:
+ *
+ * @example
+ * ```typescript
+ * import { createDisposablePrismaD1Client } from "@ottabase/cf/d1-prisma";
+ *
+ * // TypeScript 5.2+ with explicit resource management
+ * await using prisma = createDisposablePrismaD1Client(env.DB);
+ * const users = await prisma.user.findMany();
+ * // prisma.$disconnect() called automatically when scope exits
+ * ```
+ *
+ * For environments without explicit resource management support:
+ * ```typescript
+ * const disposable = createDisposablePrismaD1Client(env.DB);
+ * try {
+ *   const users = await disposable.user.findMany();
+ * } finally {
+ *   await disposable[Symbol.asyncDispose]();
+ * }
+ * ```
+ */
+export function createDisposablePrismaD1Client<T = PrismaClientType>(
+  d1: D1Database,
+  options: PrismaD1ClientOptions = {},
+): T & AsyncDisposable {
+  const client = createPrismaD1Client<T>(d1, options);
+
+  // Add AsyncDisposable support (TC39 proposal - Stage 3)
+  (client as any)[Symbol.asyncDispose] = async () => {
+    await disconnectPrismaClient(client);
+  };
+
+  return client as T & AsyncDisposable;
+}

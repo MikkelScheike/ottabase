@@ -4,7 +4,8 @@
   "tasks": {
     "prisma:generate": {
       "cache": false,
-      "outputs": ["node_modules/.prisma/**"]
+      "outputs": ["node_modules/.prisma/**"],
+      "dependsOn": ["^build", "^prisma:generate"]
     },
     "build": {
       "dependsOn": ["^build", "prisma:generate"],

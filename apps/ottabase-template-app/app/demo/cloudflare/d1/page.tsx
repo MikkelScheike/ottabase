@@ -246,12 +246,13 @@ export default function D1DemoPage() {
             Implementation Notes
           </h3>
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>• Uses @ottabase/cf D1 wrapper for type-safe queries</li>
-            <li>• Auto-creates table if not exists on initialization</li>
-            <li>• Full CRUD: Create, Read, Update, Delete operations</li>
-            <li>• Error handling with user-friendly messages</li>
+            <li>✅ Uses <strong>Prisma ORM</strong> with D1 adapter for type-safe queries</li>
+            <li>✅ Schema managed via Prisma migrations (not raw SQL)</li>
+            <li>✅ Full CRUD: Create, Read, Update, Delete operations</li>
+            <li>✅ Type-safe data access with auto-completion</li>
+            <li>✅ Works locally with wrangler (no Cloudflare account needed)</li>
             <li>
-              • Works locally with wrangler (no Cloudflare account needed)
+              📚 See <a href="https://github.com/yourusername/ottabase/blob/main/docs/D1_LOCAL_DEVELOPMENT.md" className="text-blue-600 hover:underline">D1 Local Development Guide</a>
             </li>
           </ul>
         </div>

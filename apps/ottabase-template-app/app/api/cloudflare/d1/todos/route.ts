@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createD1Client } from '@ottabase/cf/d1';
+import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
+import type { PrismaClient } from '@prisma/client';
 
 export const runtime = 'edge';
 
-interface Todo {
-  id: number;
-  title: string;
-  completed: number;
-  created_at: string;
-}
-
-// GET /api/cloudflare/d1/todos - List all todos
+// GET /api/cloudflare/d1/todos - List all todos (using Prisma)
 export async function GET(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
@@ -23,24 +17,15 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    const db = createD1Client({ database: env.DB });
+    // ✅ Use Prisma with D1 adapter (type-safe queries)
+    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
 
-    const result = await db.query<Todo>(
-      'SELECT * FROM todos ORDER BY created_at DESC'
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Failed to fetch todos', details: result.error.message },
-        { status: 500 }
-      );
-    }
-
-    // Convert completed from INTEGER to boolean
-    const todos = result.data.map((todo) => ({
-      ...todo,
-      completed: todo.completed === 1,
-    }));
+    // Type-safe query with Prisma ORM
+    const todos = await prisma.todo.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
 
     return NextResponse.json({ todos });
   } catch (error) {
@@ -55,7 +40,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-// POST /api/cloudflare/d1/todos - Create a new todo
+// POST /api/cloudflare/d1/todos - Create a new todo (using Prisma)
 export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
@@ -77,23 +62,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = createD1Client({ database: env.DB });
+    // ✅ Use Prisma with D1 adapter (type-safe operations)
+    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
 
-    const result = await db.execute(
-      'INSERT INTO todos (title, completed) VALUES (?, 0)',
-      [title.trim()]
-    );
-
-    if (!result.success) {
-      return NextResponse.json(
-        { error: 'Failed to create todo', details: result.error.message },
-        { status: 500 }
-      );
-    }
+    // Type-safe create operation
+    const todo = await prisma.todo.create({
+      data: {
+        title: title.trim(),
+        completed: false,
+      },
+    });
 
     return NextResponse.json({
       success: true,
       message: 'Todo created successfully',
+      todo,
     });
   } catch (error) {
     console.error('D1 POST error:', error);

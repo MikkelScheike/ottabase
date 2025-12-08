@@ -2,49 +2,21 @@
 // @ottabase/db - Shared Database Package
 // ============================================================
 //
-// This package provides a unified database layer for Ottabase applications.
-// It handles Prisma schema configuration, feature registry, and client setup.
+// This package provides database abstractions for Ottabase applications.
+// Choose your ORM based on your needs:
 //
-// For Cloudflare D1 integration, use @ottabase/cf/prisma-d1:
-//   import { createPrismaD1Client } from "@ottabase/cf/prisma-d1";
+// ## Prisma ORM
+// For traditional databases and Prisma-based workflows:
+//   import { prisma, defineAppDbConfig } from "@ottabase/db/prisma";
 //
-// For schema configuration:
-//   import { defineAppDbConfig } from "@ottabase/db";
+// ## Drizzle ORM (Recommended for Cloudflare D1)
+// For Cloudflare D1 and modern edge deployments:
+//   import { createD1Driver } from "@ottabase/db/drizzle-d1";
+//
+// For other Drizzle drivers:
+//   import { BaseDbDriver } from "@ottabase/db/drizzle";
 //
 // ============================================================
 
-// Re-export Prisma client and types
-// Note: Prisma types are re-exported from the client module to avoid circular dependency
-// during schema generation when @prisma/client hasn't been generated yet
-
-// Configuration types and helpers
-export type {
-  AppDbConfig,
-  CoreSchemaName,
-  CreateClientOptions,
-  DbProvider,
-  FeatureId,
-  FeatureRegistry,
-  FeatureSchemaDefinition,
-  GeneratorConfig,
-  MigrationConfig,
-  ResolvedAppDbConfig,
-} from "./config";
-
-export {
-  defineAppDbConfig,
-  defineFeatureSchema,
-  resolveAppDbConfig,
-} from "./config";
-
-// Feature registry
-export {
-  createFeatureRegistry,
-  discoverFeatures,
-  getFeatureRegistry,
-  registerFeature,
-  resetFeatureRegistry,
-} from "./registry";
-
-// Base Prisma client (for non-D1 usage / development)
-export { prisma } from "./client";
+// Shared types only - no ORM-specific implementations
+export type { DbProvider } from "./config";
