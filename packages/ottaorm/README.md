@@ -143,13 +143,13 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init
 
 No environment variables needed! D1 binding is configured via `wrangler.jsonc` and accessed as `env.DB`.
 
-#### Next.js on Pages (using @cloudflare/next-on-pages)
+#### Next.js on Cloudflare (using @opennextjs/cloudflare)
 
 ```typescript
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function GET() {
-  const { env } = getRequestContext();
+  const { env } = getCloudflareContext();
   // env.DB is your D1 database binding
   const driver = createD1Driver(env.DB);
   setDriver(driver);
@@ -635,7 +635,7 @@ console.log(fields.title.uiConfig.label); // "Title"
 ```typescript
 // app/api/ottaorm/init/route.ts
 import { NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
 import { appMigrations } from "../../../../ottabase/migrations";
@@ -656,7 +656,7 @@ async function checkAuth(request, env) {
 }
 
 export async function POST(request) {
-  const { env } = getRequestContext();
+  const { env } = getCloudflareContext();
 
   // Check authentication
   if (!await checkAuth(request, env)) {
@@ -681,7 +681,7 @@ export async function POST(request) {
 ```typescript
 // app/api/ottaorm/todos/route.ts
 import { NextResponse } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { setDriver } from "@ottabase/ottaorm";
 import { Todo } from "../../../../ottabase/models/Todo";
@@ -689,7 +689,7 @@ import { Todo } from "../../../../ottabase/models/Todo";
 export const runtime = "edge";
 
 export async function GET() {
-  const { env } = getRequestContext();
+  const { env } = getCloudflareContext();
   setDriver(createD1Driver(env.DB));
 
   const todos = await Todo.all();
@@ -700,7 +700,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const { env } = getRequestContext();
+  const { env } = getCloudflareContext();
   setDriver(createD1Driver(env.DB));
 
   const body = await request.json();

@@ -5,7 +5,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { setDriver, User } from "@ottabase/ottaorm";
 
@@ -19,7 +19,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { env } = getRequestContext();
+    const { env } = getCloudflareContext();
     const { id } = await params;
 
     if (!env.DB) {
@@ -64,7 +64,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { env } = getRequestContext();
+    const { env } = getCloudflareContext();
     const { id } = await params;
 
     if (!env.DB) {

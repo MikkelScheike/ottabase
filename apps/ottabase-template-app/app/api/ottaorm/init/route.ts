@@ -11,7 +11,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
 import { appMigrations } from "../../../../ottabase/migrations";
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
 async function handleMigration(request: NextRequest) {
   try {
-    const { env } = getRequestContext();
+    const { env } = getCloudflareContext();
 
     if (!env.DB) {
       return NextResponse.json(

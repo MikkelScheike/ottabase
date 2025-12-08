@@ -6,7 +6,7 @@
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { getRequestContext } from "@cloudflare/next-on-pages";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { setDriver, Post } from "@ottabase/ottaorm";
 
@@ -17,7 +17,7 @@ export const runtime = "edge";
  */
 export async function GET(request: NextRequest) {
   try {
-    const { env } = getRequestContext();
+    const { env } = getCloudflareContext();
 
     if (!env.DB) {
       return NextResponse.json(
@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { env } = getRequestContext();
+    const { env } = getCloudflareContext();
 
     if (!env.DB) {
       return NextResponse.json(
