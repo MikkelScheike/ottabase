@@ -5,15 +5,25 @@ Framework-agnostic Auth.js integration for Ottabase applications with Cloudflare
 ## Features
 
 - 🔐 **Auth.js Integration** - Full Auth.js v5 support with D1 adapter
-- ☁️ **Cloudflare D1** - Native D1 database support via `@ottabase/cf`
-- 🎯 **Provider Presets** - Pre-configured Google, GitHub, Discord, Azure AD, Auth0
+- ☁️ **Cloudflare D1** - Native D1 database support  
+- 🎯 **Dual ORM Support** - Works with both **Drizzle** (recommended) and Prisma
+- 🚀 **Provider Presets** - Pre-configured Google, GitHub, Discord, Azure AD, Auth0
 - 🌐 **Framework-Agnostic** - Works with any framework (Next.js, Remix, SvelteKit, etc.)
 - 📦 **Reusable** - Works across all apps in your Ottabase monorepo
 - 🛡️ **Type-Safe** - Full TypeScript support with type inference
+- ⚡ **Edge-Optimized** - Drizzle adapter built for Cloudflare Workers
 
 ## Installation
 
 The auth package is already included in your Ottabase monorepo. Install the required peer dependencies:
+
+### For Drizzle (Recommended for D1)
+
+```bash
+pnpm add @auth/core drizzle-orm
+```
+
+### For Prisma (Legacy)
 
 ```bash
 pnpm add @auth/core @auth/prisma-adapter
@@ -35,11 +45,25 @@ export default defineAppDbConfig({
 });
 ```
 
-### 2. Generate Database Schema
+### 2. Run Database Migrations
+
+Auth tables are integrated into **OttaORM core migrations**. No separate schema generation needed!
+
+The following migrations are automatically included:
+- `001_create_users_table` - User accounts
+- `002_create_accounts_table` - OAuth provider accounts  
+- `006_create_sessions_table` - Active sessions
+- `007_create_verification_tokens_table` - Email verification tokens
+- `008_create_authenticators_table` - WebAuthn/Passkey credentials
+
+Run migrations:
 
 ```bash
-pnpm db:generate
-pnpm db:migrate --name=add_auth
+# In your app directory
+pnpm ottaorm:migrate
+
+# Or if using migration scripts
+pnpm migrate
 ```
 
 ### 3. Create Auth Configuration
@@ -64,24 +88,94 @@ export const authConfig = createOttabaseAuthConfig({
 
 ## Configuration
 
+### Database Schema Integration
+
+Auth tables are **integrated into OttaORM core migrations** - no separate schema files needed!
+
+The auth package provides models that work with OttaORM's migration system:
+
+- **User** & **Account** - Core auth tables (migrations 001-002)
+- **Session** - Active session tracking (migration 006)
+- **VerificationToken** - Email/SMS verification (migration 007)
+- **Authenticator** - WebAuthn/Passkey support (migration 008)
+
+All models are available via:
+
+```typescript
+import { User, Account, Session, VerificationToken, Authenticator } from "@ottabase/ottaorm/models";
+```
+
+### Choosing an ORM
+
+The auth package provides **separate adapter implementations** with clear separation:
+
+**🚀 Drizzle (Default & Recommended)**
+
+- ✅ Location: `src/adapters/drizzle-adapter.ts`
+- ✅ Migrations: Integrated in OttaORM core
+- ✅ Better edge/serverless performance
+- ✅ Smaller bundle size (~50% smaller)
+- ✅ Native D1 support without adapters
+- ✅ No build-time code generation required
+- ✅ Direct SQL queries for maximum performance
+
+**📦 Prisma (Legacy Support)**
+
+- 📁 Location: `src/adapters/prisma-adapter.ts`
+- 📁 Schema: `prisma/auth.schema.prisma`
+- Compatible with existing Prisma schemas
+- Requires `@auth/prisma-adapter`
+- Requires Prisma Client generation
+
 ### D1 Adapter
 
-The auth package uses `@ottabase/cf` for consistent D1 client creation across all Ottabase apps.
+#### Using Drizzle (Recommended)
 
 ```typescript
 import { createD1AuthAdapter } from "@ottabase/auth";
 
-// Basic usage
+// Basic usage (defaults to Drizzle)
 const adapter = createD1AuthAdapter(env.DB);
 
-// With logging
+// Explicit Drizzle with options
 const adapter = createD1AuthAdapter(env.DB, {
+  orm: "drizzle",
   log: ["query", "error"],
 });
 
 // Cached adapter (recommended for production)
 import { createD1AuthAdapterCached } from "@ottabase/auth";
 const adapter = createD1AuthAdapterCached(env.DB);
+```
+
+#### Using Prisma (Legacy)
+
+```typescript
+import { createD1AuthAdapter } from "@ottabase/auth";
+
+// Explicit Prisma
+const adapter = createD1AuthAdapter(env.DB, {
+  orm: "prisma",
+  log: ["query", "error"],
+});
+
+// Or use the dedicated Prisma adapter
+import { createPrismaD1AuthAdapter } from "@ottabase/auth";
+const adapter = createPrismaD1AuthAdapter(env.DB);
+```
+
+#### Direct Drizzle Adapter Import
+
+For tree-shaking optimization, import the Drizzle adapter directly:
+
+```typescript
+import { createDrizzleAuthAdapter } from "@ottabase/auth";
+// or
+import { createDrizzleD1AuthAdapter } from "@ottabase/auth/adapters/drizzle";
+
+const adapter = createDrizzleAuthAdapter(env.DB, {
+  log: ["query", "error"],
+});
 ```
 
 ### Auth Configuration Options
@@ -92,6 +186,9 @@ import { createOttabaseAuthConfig } from "@ottabase/auth";
 createOttabaseAuthConfig({
   d1: env.DB,
   providers: [/* ... */],
+
+  // ORM selection (default: "drizzle")
+  orm: "drizzle", // or "prisma"
 
   // Session strategy
   sessionStrategy: "jwt", // or "database"
@@ -345,16 +442,36 @@ openssl rand -base64 32
 
 The `@ottabase/auth` package integrates with:
 
-- **@ottabase/cf** - For D1 Prisma client creation (Cloudflare-specific code)
-- **@ottabase/db** - For feature registry and schema management (database layer)
+- **@ottabase/db** - For feature registry, schema management, and Drizzle D1 driver
+- **@ottabase/cf** - For Prisma D1 client creation (legacy support)
 - **@auth/core** - Core Auth.js functionality (framework-agnostic)
-- **@auth/prisma-adapter** - Prisma adapter for Auth.js
+- **drizzle-orm** - Drizzle ORM for D1 (recommended)
+- **@auth/prisma-adapter** - Prisma adapter for Auth.js (optional/legacy)
+
+### ORM Strategy
+
+This package provides **two adapters**:
+
+1. **Drizzle Adapter** (Recommended)
+   - Custom implementation in `src/adapters/drizzle-adapter.ts`
+   - Direct D1 SQL queries for maximum performance
+   - No build-time code generation required
+   - Smaller bundle size
+   - Uses `@ottabase/db/drizzle-d1` driver
+
+2. **Prisma Adapter** (Legacy)
+   - Uses official `@auth/prisma-adapter`
+   - Requires Prisma Client generation
+   - Uses `@ottabase/cf/d1-prisma` for D1 support
+   - Maintained for backward compatibility
 
 This ensures:
+
 - Clean separation of concerns (Cloudflare code in `cf`, database code in `db`)
 - Framework-agnostic auth package (no Next.js dependencies)
 - Consistent D1 usage across all Ottabase applications
 - Reusable across any framework
+- Maximum flexibility with ORM choice
 
 ## API Reference
 

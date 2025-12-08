@@ -18,16 +18,46 @@
 // ============================================================
 // FEATURE REGISTRATION
 // ============================================================
-export { authFeature, registerAuthFeature } from "./db.feature";
+export {
+  authFeature,
+  authFeatureDrizzle,
+  authFeaturePrisma,
+  registerAuthFeature,
+} from "./db.feature";
 
 // ============================================================
-// D1 ADAPTER
+// D1 ADAPTER - Unified Factory (ORM-agnostic)
 // ============================================================
 export {
   createD1AuthAdapter,
   createD1AuthAdapterCached,
+  type AuthORM,
   type D1AuthAdapterOptions,
 } from "./adapter";
+
+// ============================================================
+// DRIZZLE ADAPTER (Recommended for D1)
+// ============================================================
+export {
+    createDrizzleD1AuthAdapter,
+    createDrizzleD1AuthAdapterCached,
+    type DrizzleD1AuthAdapterOptions
+} from "./adapters/drizzle-adapter";
+
+// Convenience aliases
+export {
+    createDrizzleD1AuthAdapter as createDrizzleAuthAdapter,
+    createDrizzleD1AuthAdapterCached as createDrizzleAuthAdapterCached
+} from "./adapters/drizzle-adapter";
+
+// ============================================================
+// PRISMA ADAPTER (Legacy)
+// ============================================================
+export {
+    createPrismaD1AuthAdapter,
+    createPrismaD1AuthAdapterCached,
+    type PrismaD1AuthAdapterOptions
+} from "./adapters/prisma-adapter";
 
 // ============================================================
 // CONFIGURATION HELPERS
@@ -42,12 +72,12 @@ export {
 // PROVIDER PRESETS
 // ============================================================
 export {
-  createGoogleProvider,
-  createGitHubProvider,
-  createDiscordProvider,
-  createAzureAdProvider,
-  createAuth0Provider,
   autoConfigureProviders,
+  createAuth0Provider,
+  createAzureAdProvider,
+  createDiscordProvider,
+  createGitHubProvider,
+  createGoogleProvider,
   type ProviderEnv,
   type ProviderOptions,
 } from "./providers";
@@ -56,11 +86,11 @@ export {
 // SESSION UTILITIES
 // ============================================================
 export {
+  getUserEmail,
+  getUserId,
+  hasVerifiedEmail,
   isAuthenticated,
   requireAuth,
-  getUserId,
-  getUserEmail,
-  hasVerifiedEmail,
   serializeSession,
   type OttabaseSession,
   type SessionData,
@@ -70,3 +100,4 @@ export {
 // TYPE DEFINITIONS
 // ============================================================
 export type { AuthConfig } from "./types";
+

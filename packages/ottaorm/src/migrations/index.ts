@@ -172,7 +172,7 @@ export async function rollbackMigrations(
 
 export const coreMigrations: Migration[] = [
   {
-    name: '001_create_users_table',
+    name: "001_create_users_table",
     up: async (db) => {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS users (
@@ -187,10 +187,10 @@ export const coreMigrations: Migration[] = [
     },
     down: async (db) => {
       await db.execute(`DROP TABLE IF EXISTS users`);
-    }
+    },
   },
   {
-    name: '002_create_accounts_table',
+    name: "002_create_accounts_table",
     up: async (db) => {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS accounts (
@@ -212,15 +212,17 @@ export const coreMigrations: Migration[] = [
         )
       `);
       // Index for faster lookups
-      await db.execute(`CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id)`);
+      await db.execute(
+        `CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id)`,
+      );
     },
     down: async (db) => {
       await db.execute(`DROP INDEX IF EXISTS idx_accounts_user_id`);
       await db.execute(`DROP TABLE IF EXISTS accounts`);
-    }
+    },
   },
   {
-    name: '003_create_posts_table',
+    name: "003_create_posts_table",
     up: async (db) => {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS posts (
@@ -238,10 +240,10 @@ export const coreMigrations: Migration[] = [
     },
     down: async (db) => {
       await db.execute(`DROP TABLE IF EXISTS posts`);
-    }
+    },
   },
   {
-    name: '004_create_tags_table',
+    name: "004_create_tags_table",
     up: async (db) => {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS tags (
@@ -255,10 +257,10 @@ export const coreMigrations: Migration[] = [
     },
     down: async (db) => {
       await db.execute(`DROP TABLE IF EXISTS tags`);
-    }
+    },
   },
   {
-    name: '005_create_post_tags_table',
+    name: "005_create_post_tags_table",
     up: async (db) => {
       await db.execute(`
         CREATE TABLE IF NOT EXISTS post_tags (
@@ -271,6 +273,79 @@ export const coreMigrations: Migration[] = [
     },
     down: async (db) => {
       await db.execute(`DROP TABLE IF EXISTS post_tags`);
-    }
-  }
+    },
+  },
+  {
+    name: "006_create_sessions_table",
+    up: async (db) => {
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS sessions (
+          id TEXT PRIMARY KEY,
+          session_token TEXT NOT NULL UNIQUE,
+          user_id TEXT NOT NULL,
+          expires TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      `);
+      await db.execute(
+        `CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`,
+      );
+      await db.execute(
+        `CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token)`,
+      );
+    },
+    down: async (db) => {
+      await db.execute(`DROP INDEX IF EXISTS idx_sessions_token`);
+      await db.execute(`DROP INDEX IF EXISTS idx_sessions_user_id`);
+      await db.execute(`DROP TABLE IF EXISTS sessions`);
+    },
+  },
+  {
+    name: "007_create_verification_tokens_table",
+    up: async (db) => {
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS verification_tokens (
+          identifier TEXT NOT NULL,
+          token TEXT NOT NULL,
+          expires TEXT NOT NULL,
+          PRIMARY KEY (identifier, token)
+        )
+      `);
+    },
+    down: async (db) => {
+      await db.execute(`DROP TABLE IF EXISTS verification_tokens`);
+    },
+  },
+  {
+    name: "008_create_authenticators_table",
+    up: async (db) => {
+      await db.execute(`
+        CREATE TABLE IF NOT EXISTS authenticators (
+          id TEXT PRIMARY KEY,
+          credential_id TEXT NOT NULL UNIQUE,
+          user_id TEXT NOT NULL,
+          provider_account_id TEXT NOT NULL,
+          credential_public_key TEXT NOT NULL,
+          counter INTEGER NOT NULL,
+          credential_device_type TEXT NOT NULL,
+          credential_backed_up INTEGER NOT NULL,
+          transports TEXT,
+          created_at INTEGER NOT NULL,
+          updated_at INTEGER NOT NULL
+        )
+      `);
+      await db.execute(
+        `CREATE INDEX IF NOT EXISTS idx_authenticators_user_id ON authenticators(user_id)`,
+      );
+      await db.execute(
+        `CREATE INDEX IF NOT EXISTS idx_authenticators_credential_id ON authenticators(credential_id)`,
+      );
+    },
+    down: async (db) => {
+      await db.execute(`DROP INDEX IF EXISTS idx_authenticators_credential_id`);
+      await db.execute(`DROP INDEX IF EXISTS idx_authenticators_user_id`);
+      await db.execute(`DROP TABLE IF EXISTS authenticators`);
+    },
+  },
 ];

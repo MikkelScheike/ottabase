@@ -1,15 +1,29 @@
 // ============================================================
-// @ottabase/auth - D1 Auth.js Adapter
+// @ottabase/auth - D1 Auth.js Adapter Factory
 // ============================================================
 //
-// Provides a D1-compatible adapter for Auth.js using the
-// @ottabase/cf package for Prisma D1 client creation.
+// ORM-agnostic adapter factory for Auth.js with Cloudflare D1
+// Delegates to ORM-specific implementations:
+// - Drizzle adapter (recommended, default) → adapters/drizzle-adapter.ts
+// - Prisma adapter (legacy) → adapters/prisma-adapter.ts
 //
 // ============================================================
 
-import type { D1Database } from "@cloudflare/workers-types";
 import type { Adapter } from "@auth/core/adapters";
-import { createPrismaD1Client } from "@ottabase/cf/d1-prisma";
+import type { D1Database } from "@cloudflare/workers-types";
+import {
+  createDrizzleD1AuthAdapter as createDrizzleAdapter,
+  createDrizzleD1AuthAdapterCached as createDrizzleAdapterCached,
+} from "./adapters/drizzle-adapter";
+import {
+  createPrismaD1AuthAdapter as createPrismaAdapter,
+  createPrismaD1AuthAdapterCached as createPrismaAdapterCached,
+} from "./adapters/prisma-adapter";
+
+/**
+ * Supported ORM types for Auth.js adapters
+ */
+export type AuthORM = "prisma" | "drizzle";
 
 /**
  * Options for creating a D1 Auth.js adapter
@@ -22,14 +36,22 @@ export interface D1AuthAdapterOptions {
    * - Array: Specific log levels to enable
    */
   log?: boolean | ("query" | "info" | "warn" | "error")[];
+
+  /**
+   * ORM to use for the adapter
+   * - "prisma": Use Prisma ORM (requires @auth/prisma-adapter)
+   * - "drizzle": Use Drizzle ORM (custom implementation)
+   *
+   * @default "drizzle"
+   */
+  orm?: AuthORM;
 }
 
 /**
  * Create an Auth.js adapter for Cloudflare D1
  *
- * This adapter bridges Auth.js with Cloudflare D1 using the
- * @ottabase/cf package for consistent D1 client creation across
- * all Ottabase applications.
+ * Supports both Prisma and Drizzle ORMs. Drizzle is the default
+ * and recommended ORM for Cloudflare D1 due to better edge compatibility.
  *
  * @param d1 - The D1 database binding from the Worker environment
  * @param options - Optional configuration for the adapter
@@ -37,7 +59,7 @@ export interface D1AuthAdapterOptions {
  *
  * @example
  * ```typescript
- * // In your Auth.js configuration
+ * // Using Drizzle (default, recommended)
  * import { createD1AuthAdapter } from "@ottabase/auth/adapter";
  *
  * export const { handlers, auth } = NextAuth({
@@ -50,43 +72,39 @@ export interface D1AuthAdapterOptions {
  *
  * @example
  * ```typescript
+ * // Using Prisma explicitly
+ * const adapter = createD1AuthAdapter(env.DB, { orm: "prisma" });
+ * ```
+ *
+ * @example
+ * ```typescript
  * // With logging enabled
- * const adapter = createD1AuthAdapter(env.DB, { log: ["query", "error"] });
+ * const adapter = createD1AuthAdapter(env.DB, {
+ *   orm: "drizzle",
+ *   log: ["query", "error"]
+ * });
  * ```
  */
 export function createD1AuthAdapter(
   d1: D1Database,
   options: D1AuthAdapterOptions = {},
 ): Adapter {
-  // Create Prisma client using the shared @ottabase/cf integration
-  // This ensures consistent D1 client creation across all Ottabase apps
-  const prisma = createPrismaD1Client(d1, options);
+  const { orm = "drizzle", ...adapterOptions } = options;
 
-  // Lazy load the PrismaAdapter to avoid bundling it if not needed
-  let PrismaAdapter: any;
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const adapterModule = require("@auth/prisma-adapter");
-    PrismaAdapter = adapterModule.PrismaAdapter;
-  } catch (error) {
-    throw new Error(
-      "@auth/prisma-adapter is not installed. Install with: pnpm add @auth/prisma-adapter",
-    );
+  // Delegate to ORM-specific adapter
+  if (orm === "drizzle") {
+    return createDrizzleAdapter(d1, adapterOptions);
   }
 
-  // Return the Auth.js PrismaAdapter configured with our D1 client
-  return PrismaAdapter(prisma);
+  // Prisma adapter (legacy)
+  return createPrismaAdapter(d1, adapterOptions);
 }
 
 /**
  * Create a cached D1 Auth.js adapter
  *
- * This version uses the cached D1 client from @ottabase/cf
- * to avoid creating multiple clients for the same D1 binding.
- *
- * Recommended for use in request handlers where the same
- * D1 binding might be accessed multiple times.
+ * Uses caching to avoid creating multiple adapters/clients for the
+ * same D1 binding. Recommended for production use.
  *
  * @param d1 - The D1 database binding from the Worker environment
  * @param options - Optional configuration for the adapter
@@ -103,27 +121,43 @@ export function createD1AuthAdapter(
  *   ],
  * });
  * ```
+ *
+ * @example
+ * ```typescript
+ * // Using Prisma with caching
+ * const adapter = createD1AuthAdapterCached(env.DB, { orm: "prisma" });
+ * ```
  */
 export function createD1AuthAdapterCached(
   d1: D1Database,
   options: D1AuthAdapterOptions = {},
 ): Adapter {
-  // Use the cached client factory from @ottabase/cf
-  const { getPrismaD1Client } = require("@ottabase/cf/d1-prisma");
-  const prisma = getPrismaD1Client(d1, options);
+  const { orm = "drizzle", ...adapterOptions } = options;
 
-  // Lazy load the PrismaAdapter
-  let PrismaAdapter: any;
-
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const adapterModule = require("@auth/prisma-adapter");
-    PrismaAdapter = adapterModule.PrismaAdapter;
-  } catch (error) {
-    throw new Error(
-      "@auth/prisma-adapter is not installed. Install with: pnpm add @auth/prisma-adapter",
-    );
+  // Delegate to ORM-specific cached adapter
+  if (orm === "drizzle") {
+    return createDrizzleAdapterCached(d1, adapterOptions);
   }
 
-  return PrismaAdapter(prisma);
+  // Prisma adapter (legacy)
+  return createPrismaAdapterCached(d1, adapterOptions);
 }
+
+// ============================================================
+// CONVENIENCE RE-EXPORTS FOR SPECIFIC ORMs
+// ============================================================
+
+// Drizzle adapter (recommended for D1)
+export {
+    createDrizzleD1AuthAdapter,
+    createDrizzleD1AuthAdapterCached,
+    type DrizzleD1AuthAdapterOptions
+} from "./adapters/drizzle-adapter";
+
+// Prisma adapter (legacy)
+export {
+    createPrismaD1AuthAdapter,
+    createPrismaD1AuthAdapterCached,
+    type PrismaD1AuthAdapterOptions
+} from "./adapters/prisma-adapter";
+
