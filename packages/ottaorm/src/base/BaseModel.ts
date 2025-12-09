@@ -2,9 +2,11 @@
 // @ottabase/ottaorm - Base Model (Fat Model Pattern)
 // ============================================================
 // Inspired by Laravel Eloquent - everything in one place
+// SQL-specific implementation using Drizzle ORM
 // ============================================================
 
-import { getDriver } from "../context";
+import { AbstractBaseModel, PaginationResult, ModelFieldType, ModelFields, ModelFieldDescriptor } from "./AbstractBaseModel";
+import { getConnection } from "../context";
 import type { DbDriver } from "@ottabase/db/drizzle";
 import { eq, and, or, desc, asc, like, gt, lt, gte, lte, inArray } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
@@ -14,57 +16,24 @@ export interface IModelConstructorParams {
   data: { [key: string]: any };
 }
 
-export type ModelFieldType = 'string' | 'number' | 'integer' | 'float' | 'date' | 'datetime' | 'boolean' | 'id' | 'json' | 'array';
+// Re-export types for backward compatibility
+export type { ModelFieldType, ModelFieldDescriptor, ModelFields, PaginationResult };
 
-export interface ModelFieldDescriptor {
-  type: ModelFieldType;
-  primaryKey?: boolean;
-  unique?: boolean;
-  editable?: boolean;
-  searchable?: boolean;
-  sortable?: boolean;
-  filterable?: boolean;
-  uiConfig?: {
-    label?: string;
-    description?: string;
-    placeholder?: string;
-    hint?: string;
-    defaultValue?: any;
-  };
-  formConfig?: {
-    fieldType?: 'input' | 'textarea' | 'select' | 'multiselect' | 'date' | 'datetime' | 'json' | 'boolean' | 'number' | 'hidden';
-    visible?: boolean;
-    order?: number;
-  };
-  tableConfig?: {
-    visible?: boolean;
-    order?: number;
-    colWidth?: string | number;
-  };
-  validation?: Record<string, any>;
-}
-
-export type ModelFields = {
-  [key: string]: ModelFieldDescriptor;
-};
-
-export interface PaginationResult<T> {
-  data: T[];
-  total: number;
-  page: number;
-  perPage: number;
-  totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
+/**
+ * Type guard to check if a connection is a SQL driver
+ */
+function isSqlDriver(driver: any): driver is DbDriver {
+  return driver && typeof driver.getDb === 'function';
 }
 
 /**
- * Base Model class - Fat Model Pattern
+ * Base Model class - Fat Model Pattern for SQL databases
  *
  * All metadata lives in the model class as static properties:
  * - entity: table name
  * - table: Drizzle table definition
  * - primaryKey: primary key field name
+ * - connection: database connection name (default: 'default')
  * - casts: type casting rules
  * - connect: relationship definitions
  * - with: default eager loading
@@ -78,6 +47,7 @@ export interface PaginationResult<T> {
  *   static entity = "posts";
  *   static table = postsTable;
  *   static primaryKey = "id";
+ *   static connection = "default";  // Optional, this is the default
  *
  *   static casts = {
  *     createdAt: 'date',
@@ -99,144 +69,14 @@ export interface PaginationResult<T> {
  * }
  * ```
  */
-export class BaseModel {
+export class BaseModel extends AbstractBaseModel {
 
-  // Static properties - model metadata
-  static entity: string;
+  // SQL-specific static property
   static table: SQLiteTable;
-  static primaryKey: string = "id";
-
-  protected static casts: { [key: string]: ModelFieldType } = {};
-  protected static connect: string[] = [];
-  protected static with: string[] = [];
-  protected static fields: ModelFields = {};
-  protected static validationRules: any = {};
-  protected static defaults: { [key: string]: any } = {};
-
-  // Instance properties - actual data
-  protected attributes: { [key: string]: any } = {};
-  protected appends: string[] = [];
-  protected hidden: string[] = [];
 
   constructor(params: IModelConstructorParams) {
+    super();
     this.fill(params.data);
-  }
-
-  /**
-   * Fill model with data and apply type casting
-   */
-  fill(data: { [key: string]: any }) {
-    for (const key in data) {
-      this.attributes[key] = this.castAttributeValue(key, data[key]);
-    }
-  }
-
-  /**
-   * Get attribute value
-   */
-  get(key: string): any {
-    return this.attributes[key];
-  }
-
-  /**
-   * Set attribute value with type casting
-   */
-  set(key: string, value: any): void {
-    this.attributes[key] = this.castAttributeValue(key, value);
-  }
-
-  /**
-   * Cast attribute value based on casts configuration
-   */
-  protected castAttributeValue(key: string, value: any): any {
-    const casts = (this.constructor as typeof BaseModel).casts;
-    const castType = casts[key];
-
-    if (!castType || value === null || value === undefined) {
-      return value;
-    }
-
-    // Skip if already correct type
-    if (typeof value === castType ||
-        (castType === 'number' && typeof value === 'number') ||
-        (castType === 'integer' && Number.isInteger(value)) ||
-        (castType === 'float' && typeof value === 'number' && !Number.isInteger(value))) {
-      return value;
-    }
-
-    try {
-      switch (castType) {
-        case 'number':
-        case 'integer':
-          return parseInt(value);
-        case 'float':
-          return parseFloat(value);
-        case 'string':
-          return String(value);
-        case 'boolean':
-          if (typeof value === 'string') {
-            return value.toLowerCase() === 'true' || value === '1';
-          }
-          return Boolean(value);
-        case 'date':
-        case 'datetime':
-          const date = new Date(value);
-          if (isNaN(date.getTime())) {
-            throw new Error(`Invalid date value for ${key}`);
-          }
-          return date;
-        case 'json':
-          return typeof value === 'string' ? JSON.parse(value) : value;
-        case 'array':
-          if (Array.isArray(value)) return value;
-          if (typeof value === 'string') return value.split(/\s*,\s*/);
-          return [value];
-        default:
-          return value;
-      }
-    } catch (e) {
-      throw new Error(`Failed to cast ${key} with value: ${value} to type: ${castType}`);
-    }
-  }
-
-  /**
-   * Make hidden fields visible for this instance
-   */
-  makeVisible(fields: string | string[]): this {
-    const fieldsToMakeVisible = Array.isArray(fields) ? fields : [fields];
-    this.hidden = this.hidden.filter(attr => !fieldsToMakeVisible.includes(attr));
-    return this;
-  }
-
-  /**
-   * Convert to JSON, applying hidden fields and accessors
-   */
-  toJson(): Record<string, any> {
-    const visibleAttributes: { [key: string]: any } = {};
-
-    // Copy non-hidden attributes
-    for (const key in this.attributes) {
-      if (!this.hidden.includes(key)) {
-        visibleAttributes[key] = this.attributes[key];
-      }
-    }
-
-    // Apply accessors (appends)
-    for (const appendKey of this.appends) {
-      const accessorMethod = `get${appendKey.charAt(0).toUpperCase()}${appendKey.slice(1)}`;
-      if (typeof (this as any)[accessorMethod] === 'function') {
-        visibleAttributes[appendKey] = (this as any)[accessorMethod]();
-      }
-    }
-
-    return visibleAttributes;
-  }
-
-  /**
-   * Get model name
-   */
-  getModelName(): string {
-    return (this.constructor as typeof BaseModel).entity;
   }
 
   // ============================================================
@@ -254,10 +94,20 @@ export class BaseModel {
   }
 
   /**
-   * Get database driver
+   * Get database driver for this model's connection
+   * Uses the connection specified in static connection property
    */
   protected static getDriver(driver?: DbDriver): DbDriver {
-    return driver || getDriver();
+    if (driver) return driver;
+
+    const connection = getConnection(this.connection);
+    if (!isSqlDriver(connection)) {
+      throw new Error(
+        `Connection '${this.connection}' is not a SQL driver for model ${this.entity}. ` +
+        `Make sure you registered a SQL driver (e.g., D1Driver) for this connection.`
+      );
+    }
+    return connection;
   }
 
   /**
@@ -618,7 +468,7 @@ export class BaseModel {
     }
 
     const ownerKey = options?.ownerKey || relatedModel.primaryKey;
-    const driver = options?.driver || getDriver();
+    const driver = options?.driver || relatedModel.getDriver();
     const db = driver.getDb();
     const table = relatedModel.getTable();
 
@@ -694,7 +544,7 @@ export class BaseModel {
       return [];
     }
 
-    const driver = options?.driver || getDriver();
+    const driver = options?.driver || relatedModel.getDriver();
     const db = driver.getDb();
     const table = relatedModel.getTable();
 
@@ -800,7 +650,7 @@ export class BaseModel {
       return [];
     }
 
-    const driver = options?.driver || getDriver();
+    const driver = options?.driver || relatedModel.getDriver();
     const db = driver.getDb();
 
     // Infer keys from model names if not provided

@@ -41,6 +41,11 @@
       "import": "./dist/drizzle/drizzle-d1.mjs",
       "require": "./dist/drizzle/drizzle-d1.js"
     },
+    "./mongodb": {
+      "types": "./dist/mongodb/index.d.ts",
+      "import": "./dist/mongodb/index.mjs",
+      "require": "./dist/mongodb/index.js"
+    },
     "./schema": "./prisma/schema.prisma"
   },
   "files": [
@@ -49,8 +54,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --clean",
-    "dev": "pnpm prisma:generate && tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts src/mongodb/index.ts --format cjs,esm --dts --clean",
+    "dev": "pnpm prisma:generate && tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts src/mongodb/index.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
@@ -70,16 +75,19 @@
   "prisma": {
     "schema": "prisma/schema.prisma"
   },
-  "dependencies": {},
   "peerDependencies": {
     "@prisma/client": ">=5.0.0",
-    "drizzle-orm": ">=0.30.0"
+    "drizzle-orm": ">=0.30.0",
+    "mongodb": ">=6.0.0"
   },
   "peerDependenciesMeta": {
     "@prisma/client": {
       "optional": true
     },
     "drizzle-orm": {
+      "optional": true
+    },
+    "mongodb": {
       "optional": true
     }
   },
@@ -88,10 +96,11 @@
     "@prisma/client": "catalog:",
     "@types/node": "catalog:",
     "drizzle-orm": "catalog:",
+    "eslint": "catalog:",
+    "mongodb": "catalog:",
     "prisma": "catalog:",
-    "typescript": "catalog:",
-    "tsup": "catalog:",
     "rimraf": "catalog:",
-    "eslint": "catalog:"
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

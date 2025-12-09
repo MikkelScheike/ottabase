@@ -16,7 +16,14 @@
 // For other Drizzle drivers:
 //   import { BaseDbDriver } from "@ottabase/db/drizzle";
 //
+// ## MongoDB
+// For MongoDB databases:
+//   import { createMongoDriver } from "@ottabase/db/mongodb";
+//
 // ============================================================
 
 // Shared types only - no ORM-specific implementations
 export type { DbProvider } from "./config";
+
+// MongoDB exports
+export type { MongoDriver, MongoDriverConfig } from "./mongodb";

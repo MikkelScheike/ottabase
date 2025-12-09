@@ -34,3 +34,6 @@ export {
   type VerificationTokenType,
 } from "./VerificationToken";
 
+// MongoDB models
+export { Log } from "./Log";
+

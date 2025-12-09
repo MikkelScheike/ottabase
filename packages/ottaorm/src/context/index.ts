@@ -1,56 +1,84 @@
 // ============================================================
-// @ottabase/ottaorm - Global Context for Driver Management
+// @ottabase/ottaorm - Connection Registry
 // ============================================================
 //
-// This provides Eloquent-like syntax by managing the driver globally
-// Usage: setDriver(driver) once, then use models without passing driver
+// Multi-database connection management for OttaORM
+// Supports multiple named connections (e.g., 'default', 'mongodb')
+// Usage: registerConnection(name, driver), models specify connection via static property
 // ============================================================
 
-import type { DbDriver } from "@ottabase/db/drizzle";
-
-let globalDriver: DbDriver | null = null;
+// Connection registry for multi-database support
+const connections: Map<string, any> = new Map();
 
 /**
- * Set the global database driver
- * Call this once at app startup (e.g., in middleware or app init)
+ * Register a named database connection
+ *
+ * @param name - Connection name
+ * @param driver - Database driver (DbDriver for SQL, MongoDriver for MongoDB)
  *
  * @example
  * ```typescript
- * import { setDriver } from "@ottabase/ottaorm";
+ * import { registerConnection } from "@ottabase/ottaorm";
  * import { createD1Driver } from "@ottabase/db/drizzle-d1";
+ * import { createMongoDriver } from "@ottabase/db/mongodb";
  *
- * // In your Cloudflare Worker or Next.js middleware
- * setDriver(createD1Driver(env.DB));
+ * // SQL connection (default)
+ * registerConnection('default', createD1Driver(env.DB));
+ *
+ * // MongoDB connection
+ * const mongoDriver = await createMongoDriver(env.MONGODB_URI, "myapp");
+ * registerConnection('mongodb', mongoDriver);
  * ```
  */
-export function setDriver(driver: DbDriver): void {
-  globalDriver = driver;
+export function registerConnection(name: string, driver: any): void {
+  connections.set(name, driver);
 }
 
 /**
- * Get the global database driver
- * Throws an error if driver hasn't been set
+ * Get a database connection by name
+ * Defaults to 'default' connection if no name provided
+ *
+ * @param name - Connection name (defaults to 'default')
+ * @throws Error if connection hasn't been registered
+ *
+ * @example
+ * ```typescript
+ * const driver = getConnection('default');
+ * const mongoDriver = getConnection('mongodb');
+ * ```
  */
-export function getDriver(): DbDriver {
-  if (!globalDriver) {
+export function getConnection(name: string = 'default'): any {
+  if (!connections.has(name)) {
     throw new Error(
-      "Database driver not initialized. Call setDriver() before using models.\n" +
-      "Example: setDriver(createD1Driver(env.DB))"
+      `Database connection '${name}' not registered. ` +
+      `Call registerConnection('${name}', driver) before using models.`
     );
   }
-  return globalDriver;
+  return connections.get(name);
 }
 
 /**
- * Clear the global driver (useful for testing)
+ * Check if a connection is registered
+ *
+ * @param name - Connection name
+ * @returns True if connection exists
  */
-export function clearDriver(): void {
-  globalDriver = null;
+export function hasConnection(name: string): boolean {
+  return connections.has(name);
 }
 
 /**
- * Check if driver is set
+ * Clear a specific connection (useful for testing)
+ *
+ * @param name - Connection name
  */
-export function hasDriver(): boolean {
-  return globalDriver !== null;
+export function clearConnection(name: string): void {
+  connections.delete(name);
+}
+
+/**
+ * Clear all connections (useful for testing)
+ */
+export function clearAllConnections(): void {
+  connections.clear();
 }

@@ -2,25 +2,37 @@
 // @ottabase/ottaorm - Main Exports
 // ============================================================
 
-// Context (for global driver management)
-export { setDriver, getDriver, clearDriver, hasDriver } from "./context";
+// Connection management (multi-database support)
+export {
+  registerConnection,
+  getConnection,
+  hasConnection,
+  clearConnection,
+  clearAllConnections
+} from "./context";
 
 // Migrations
 export { runMigrations, rollbackMigrations, coreMigrations } from "./migrations";
 export type { Migration } from "./migrations";
 
-// Base model
-export { BaseModel } from "./base/BaseModel";
+// Base models
+export {
+  AbstractBaseModel,
+  BaseModel,
+  MongoBaseModel
+} from "./base";
 export type {
   IModelConstructorParams,
+  IMongoModelConstructorParams,
   ModelFieldType,
   ModelFieldDescriptor,
   ModelFields,
   PaginationResult
-} from "./base/BaseModel";
+} from "./base";
 
 // Core models
 export {
+  // SQL models
   User,
   usersTable,
   Account,
@@ -30,6 +42,8 @@ export {
   postTagsTable,
   Tag,
   tagsTable,
+  // MongoDB models
+  Log,
 } from "./models";
 export type {
   UserType,

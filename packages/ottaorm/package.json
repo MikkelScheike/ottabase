@@ -49,15 +49,22 @@
   },
   "peerDependencies": {
     "@cloudflare/workers-types": ">=4.0.0",
-    "drizzle-orm": ">=0.30.0"
+    "drizzle-orm": ">=0.30.0",
+    "mongodb": ">=6.0.0"
+  },
+  "peerDependenciesMeta": {
+    "mongodb": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
     "@types/node": "catalog:",
     "drizzle-orm": "catalog:",
-    "typescript": "catalog:",
-    "tsup": "catalog:",
+    "eslint": "catalog:",
+    "mongodb": "catalog:",
     "rimraf": "catalog:",
-    "eslint": "catalog:"
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

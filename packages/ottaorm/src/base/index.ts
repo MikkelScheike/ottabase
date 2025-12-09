@@ -1,12 +1,22 @@
 // ============================================================
-// @ottabase/ottaorm - Base Module Exports
+// @ottabase/ottaorm - Base Model Exports
 // ============================================================
 
-export { BaseModel } from "./BaseModel";
+// Abstract base (shared functionality)
+export { AbstractBaseModel } from './AbstractBaseModel';
+
+// SQL base model
+export { BaseModel } from './BaseModel';
+export type { IModelConstructorParams } from './BaseModel';
+
+// MongoDB base model
+export { MongoBaseModel } from './MongoBaseModel';
+export type { IMongoModelConstructorParams } from './MongoBaseModel';
+
+// Shared types
 export type {
-  IModelConstructorParams,
   ModelFieldType,
   ModelFieldDescriptor,
   ModelFields,
   PaginationResult
-} from "./BaseModel";
+} from './AbstractBaseModel';
