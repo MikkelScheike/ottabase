@@ -16,7 +16,7 @@ export interface IModelConstructorParams {
   data: { [key: string]: any };
 }
 
-// Re-export types for backward compatibility
+// Re-export types
 export type { ModelFieldType, ModelFieldDescriptor, ModelFields, PaginationResult };
 
 /**
