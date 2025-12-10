@@ -120,7 +120,7 @@ function initPrismaDependenciesSync(): void {
  *
  * export default {
  *   async fetch(request: Request, env: Env) {
- *     const prisma = createPrismaD1Client(env.DB);
+ *     const prisma = createPrismaD1Client(env.OBCF_D1);
  *     const users = await prisma.user.findMany();
  *     return Response.json(users);
  *   }
@@ -130,10 +130,10 @@ function initPrismaDependenciesSync(): void {
  * @example
  * ```typescript
  * // With logging enabled
- * const prisma = createPrismaD1Client(env.DB, { log: true });
+ * const prisma = createPrismaD1Client(env.OBCF_D1, { log: true });
  *
  * // With specific log levels
- * const prisma = createPrismaD1Client(env.DB, { log: ["query", "error"] });
+ * const prisma = createPrismaD1Client(env.OBCF_D1, { log: ["query", "error"] });
  * ```
  */
 export function createPrismaD1Client<T = PrismaClientType>(
@@ -244,12 +244,12 @@ const clientCache = new WeakMap<D1Database, PrismaClientType>();
  *
  * export default {
  *   async fetch(request: Request, env: Env) {
- *     // Same client instance will be returned for the same env.DB
- *     const prisma = getPrismaD1Client(env.DB);
+ *     // Same client instance will be returned for the same env.OBCF_D1
+ *     const prisma = getPrismaD1Client(env.OBCF_D1);
  *
  *     // Use in multiple places
- *     const users = await getUsers(env.DB);
- *     const posts = await getPosts(env.DB);
+ *     const users = await getUsers(env.OBCF_D1);
+ *     const posts = await getPosts(env.OBCF_D1);
  *
  *     return Response.json({ users, posts });
  *   }
@@ -323,7 +323,7 @@ export function isD1Database(value: unknown): value is D1Database {
  * export default {
  *   async fetch(request: Request, env: Env) {
  *     try {
- *       const prisma = createPrismaD1ClientSafe(env.DB);
+ *       const prisma = createPrismaD1ClientSafe(env.OBCF_D1);
  *       // ...
  *     } catch (error) {
  *       return new Response("Database not configured", { status: 500 });
@@ -365,7 +365,7 @@ export function createPrismaD1ClientSafe<T = PrismaClientType>(
  * ```typescript
  * import { createPrismaD1Client, disconnectPrismaClient } from "@ottabase/cf/d1-prisma";
  *
- * const prisma = createPrismaD1Client(env.DB);
+ * const prisma = createPrismaD1Client(env.OBCF_D1);
  * try {
  *   await prisma.user.findMany();
  * } finally {
@@ -425,14 +425,14 @@ export async function clearPrismaClientCache(): Promise<void> {
  * import { createDisposablePrismaD1Client } from "@ottabase/cf/d1-prisma";
  *
  * // TypeScript 5.2+ with explicit resource management
- * await using prisma = createDisposablePrismaD1Client(env.DB);
+ * await using prisma = createDisposablePrismaD1Client(env.OBCF_D1);
  * const users = await prisma.user.findMany();
  * // prisma.$disconnect() called automatically when scope exits
  * ```
  *
  * For environments without explicit resource management support:
  * ```typescript
- * const disposable = createDisposablePrismaD1Client(env.DB);
+ * const disposable = createDisposablePrismaD1Client(env.OBCF_D1);
  * try {
  *   const users = await disposable.user.findMany();
  * } finally {

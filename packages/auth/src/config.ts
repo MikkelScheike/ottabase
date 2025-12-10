@@ -95,7 +95,7 @@ export interface OttabaseAuthConfigOptions {
  *   const env = request?.env || process.env;
  *
  *   return createOttabaseAuthConfig({
- *     d1: env.DB,
+ *     d1: env.OBCF_D1,
  *     providers: [
  *       Google({
  *         clientId: env.GOOGLE_CLIENT_ID,
@@ -110,7 +110,7 @@ export interface OttabaseAuthConfigOptions {
  * ```typescript
  * // With database sessions
  * createOttabaseAuthConfig({
- *   d1: env.DB,
+ *   d1: env.OBCF_D1,
  *   providers: [Google({ ... })],
  *   sessionStrategy: "database",
  *   sessionMaxAge: 86400, // 1 day
@@ -121,7 +121,7 @@ export interface OttabaseAuthConfigOptions {
  * ```typescript
  * // With custom Auth.js options
  * createOttabaseAuthConfig({
- *   d1: env.DB,
+ *   d1: env.OBCF_D1,
  *   providers: [Google({ ... })],
  *   authConfig: {
  *     pages: {
@@ -197,7 +197,7 @@ export function createOttabaseAuthConfig(
  * import { createOttabaseAuthConfigDev } from "@ottabase/auth/config";
  *
  * export const { handlers, auth } = NextAuth(
- *   createOttabaseAuthConfigDev(env.DB, [
+ *   createOttabaseAuthConfigDev(env.OBCF_D1, [
  *     Google({ ... }),
  *   ])
  * );
@@ -206,7 +206,7 @@ export function createOttabaseAuthConfig(
  * @example
  * ```typescript
  * // Using Prisma for development
- * createOttabaseAuthConfigDev(env.DB, providers, "prisma");
+ * createOttabaseAuthConfigDev(env.OBCF_D1, providers, "prisma");
  * ```
  */
 export function createOttabaseAuthConfigDev(

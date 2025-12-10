@@ -65,7 +65,7 @@ export type NewPostType = typeof postsTable.$inferInsert;
  * import { setDriver } from "@ottabase/ottaorm";
  * import { createD1Driver } from "@ottabase/db/drizzle-d1";
  *
- * setDriver(createD1Driver(env.DB));
+ * setDriver(createD1Driver(env.OBCF_D1));
  *
  * // Create post
  * const post = await Post.create({

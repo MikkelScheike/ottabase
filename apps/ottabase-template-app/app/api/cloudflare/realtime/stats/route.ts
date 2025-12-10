@@ -13,7 +13,7 @@ export async function GET(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.REALTIME) {
+    if (!env.OBCF_REALTIME) {
       return NextResponse.json(
         { error: 'Realtime Durable Object binding not configured' },
         { status: 500 }
@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // TODO: Re-enable after fixing bundling
-    // const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+    // const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
     // const stats = await broadcaster.getStats();
 
     return NextResponse.json({

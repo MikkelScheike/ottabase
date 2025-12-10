@@ -44,7 +44,7 @@ export interface PrismaD1AuthAdapterOptions {
  * import { createPrismaD1AuthAdapter } from "@ottabase/auth/adapters/prisma";
  *
  * export const authConfig = {
- *   adapter: createPrismaD1AuthAdapter(env.DB),
+ *   adapter: createPrismaD1AuthAdapter(env.OBCF_D1),
  *   providers: [
  *     // Your providers
  *   ],
@@ -54,7 +54,7 @@ export interface PrismaD1AuthAdapterOptions {
  * @example
  * ```typescript
  * // With logging enabled
- * const adapter = createPrismaD1AuthAdapter(env.DB, {
+ * const adapter = createPrismaD1AuthAdapter(env.OBCF_D1, {
  *   log: ["query", "error"]
  * });
  * ```
@@ -98,7 +98,7 @@ export function createPrismaD1AuthAdapter(
  * import { createPrismaD1AuthAdapterCached } from "@ottabase/auth/adapters/prisma";
  *
  * export const authConfig = {
- *   adapter: createPrismaD1AuthAdapterCached(env.DB),
+ *   adapter: createPrismaD1AuthAdapterCached(env.OBCF_D1),
  *   providers: [
  *     // Your providers
  *   ],

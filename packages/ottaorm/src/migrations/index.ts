@@ -63,7 +63,7 @@ async function recordMigration(db: any, name: string, driverType: string = 'd1-d
  * import { appMigrations } from "./migrations";
  * import { createD1Driver } from "@ottabase/db/drizzle-d1";
  *
- * const driver = createD1Driver(env.DB);
+ * const driver = createD1Driver(env.OBCF_D1);
  *
  * // Run core + app migrations
  * await runMigrations(driver, [...coreMigrations, ...appMigrations]);

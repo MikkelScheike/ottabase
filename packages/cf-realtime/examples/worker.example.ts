@@ -82,8 +82,8 @@ export default {
  */
 async function handleWebSocket(request: Request, env: Env): Promise<Response> {
   // Get or create the global Actor instance
-  const id = env.REALTIME.idFromName("global");
-  const stub = env.REALTIME.get(id);
+  const id = env.OBCF_REALTIME.idFromName("global");
+  const stub = env.OBCF_REALTIME.get(id);
 
   // Forward the request to the Actor
   return stub.fetch(request);
@@ -117,7 +117,7 @@ async function handleBroadcast(request: Request, env: Env): Promise<Response> {
       );
     }
 
-    const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+    const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
 
     const result = await broadcaster.broadcast({
       channels: body.channels,
@@ -150,7 +150,7 @@ async function handleBroadcast(request: Request, env: Env): Promise<Response> {
  * Handle stats request
  */
 async function handleStats(env: Env): Response {
-  const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+  const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
   const stats = await broadcaster.getStats();
 
   return new Response(JSON.stringify(stats), {
@@ -165,7 +165,7 @@ async function handleStats(env: Env): Response {
  * Handle health check
  */
 async function handleHealth(env: Env): Response {
-  const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+  const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
   const health = await broadcaster.health();
 
   return new Response(JSON.stringify(health), {
@@ -191,7 +191,7 @@ async function handleNotifyUser(
       persistForOffline?: boolean;
     };
 
-    const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+    const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
 
     const result = await broadcaster.send(
       `user:${userId}`,

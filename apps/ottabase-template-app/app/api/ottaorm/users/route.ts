@@ -5,11 +5,11 @@
  * with Eloquent-like syntax (no need to pass driver!)
  */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { setDriver, User } from "@ottabase/ottaorm";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
@@ -20,15 +20,15 @@ export async function GET(request: NextRequest) {
   try {
     const { env } = getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Set driver once - then use models without passing it!
-    setDriver(createD1Driver(env.DB));
+    setDriver(createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const users = await User.all({
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({
-      users: users.map(u => u.toJson()),
+      users: users.map((u) => u.toJson()),
     });
   } catch (error) {
     console.error("Error fetching users:", error);
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         error: "Failed to fetch users",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -58,10 +58,10 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -69,14 +69,11 @@ export async function POST(request: NextRequest) {
     const { name, email } = body;
 
     if (!email) {
-      return NextResponse.json(
-        { error: "Email is required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
     // Set driver once
-    setDriver(createD1Driver(env.DB));
+    setDriver(createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const user = await User.create({
@@ -97,7 +94,7 @@ export async function POST(request: NextRequest) {
         error: "Failed to create user",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

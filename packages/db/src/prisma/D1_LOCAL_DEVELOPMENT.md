@@ -67,7 +67,7 @@ export const runtime = 'edge';
 
 export async function GET() {
   const { env } = await getCloudflareContext();
-  const prisma = createPrismaD1Client<PrismaClient>(env.DB);
+  const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
 
   const todos = await prisma.todo.findMany({
     orderBy: { createdAt: 'desc' }
@@ -97,7 +97,7 @@ Your `wrangler.jsonc` configures the D1 binding:
 {
   "d1_databases": [
     {
-      "binding": "DB",                      // Accessible as env.DB
+      "binding: "OBCF_D1",                      // Accessible as env.OBCF_D1
       "database_name": "ottabase-db",       // Name for CLI commands
       "database_id": "YOUR_D1_DATABASE_ID"  // Not needed for local dev
     }
@@ -188,7 +188,7 @@ wrangler d1 migrations list DB --local
 import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
 import type { PrismaClient } from '@prisma/client';
 
-const prisma = createPrismaD1Client<PrismaClient>(env.DB);
+const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
 
 // Create
 const user = await prisma.user.create({
@@ -215,7 +215,7 @@ await prisma.user.delete({ where: { id: user.id }});
 ```typescript
 import { createD1Client } from '@ottabase/cf/d1';
 
-const db = createD1Client({ database: env.DB });
+const db = createD1Client({ database: env.OBCF_D1 });
 
 // Query
 const result = await db.query('SELECT * FROM users WHERE email = ?', ['test@example.com']);
@@ -292,7 +292,7 @@ Better approach - seed via API route:
 // app/api/db/seed/route.ts
 export async function POST() {
   const { env } = await getCloudflareContext();
-  const prisma = createPrismaD1Client(env.DB);
+  const prisma = createPrismaD1Client(env.OBCF_D1);
 
   await prisma.user.createMany({
     data: [

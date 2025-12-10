@@ -73,10 +73,10 @@ async function main() {
 
   // Verify KV
   const kvList = runCommand(`${wranglerCmd} kv:namespace list --json`);
-  if (kvList.includes('OTTABASE_KV')) {
-    log('✓ KV Namespace: OTTABASE_KV', GREEN);
+  if (kvList.includes('OBCF_KV')) {
+    log('✓ KV Namespace: OBCF_KV', GREEN);
   } else {
-    log('✗ KV Namespace: OTTABASE_KV not found', RED);
+    log('✗ KV Namespace: OBCF_KV not found', RED);
     hasErrors = true;
   }
 

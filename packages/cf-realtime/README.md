@@ -45,14 +45,14 @@ export default {
 
     // WebSocket upgrade - connect to the Actor
     if (url.pathname === "/realtime" && request.headers.get("Upgrade") === "websocket") {
-      const id = env.REALTIME.idFromName("global");
-      const stub = env.REALTIME.get(id);
+      const id = env.OBCF_REALTIME.idFromName("global");
+      const stub = env.OBCF_REALTIME.get(id);
       return stub.fetch(request);
     }
 
     // REST API endpoint to broadcast messages
     if (url.pathname === "/api/broadcast" && request.method === "POST") {
-      const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+      const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
       const body = await request.json();
 
       const result = await broadcaster.broadcast({
@@ -81,7 +81,7 @@ main = "src/worker.ts"
 compatibility_date = "2024-01-01"
 
 [[durable_objects.bindings]]
-name = "REALTIME"
+name = "OBCF_REALTIME"
 class_name = "RealtimeActor"
 
 [[migrations]]
@@ -156,7 +156,7 @@ Send messages to channels from your backend:
 import { RealtimeBroadcaster } from "@ottabase/cf-realtime/server";
 
 // In your Cloudflare Worker
-const broadcaster = new RealtimeBroadcaster(env.REALTIME);
+const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
 
 // Broadcast to specific channels
 await broadcaster.broadcast({

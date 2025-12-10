@@ -81,7 +81,7 @@ export class D1Driver extends BaseDbDriver {
  *
  * export default {
  *   async fetch(request: Request, env: Env) {
- *     const driver = createD1Driver(env.DB);
+ *     const driver = createD1Driver(env.OBCF_D1);
  *     // Use driver with models
  *     const users = await User.all(driver);
  *     return Response.json(users);

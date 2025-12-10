@@ -40,7 +40,7 @@ Copy the returned `database_id` and update `wrangler.jsonc`:
 
 ```jsonc
 "d1_databases": [{
-  "binding": "DB",
+  "binding: "OBCF_D1",
   "database_name": "ottabase-db",
   "database_id": "YOUR_D1_DATABASE_ID"
 }]
@@ -177,7 +177,7 @@ export const runtime = 'edge';
 
 export async function GET() {
   const { env } = await getCloudflareContext();
-  const db = createD1Client({ database: env.DB });
+  const db = createD1Client({ database: env.OBCF_D1 });
 
   // Query
   const result = await db.query<User>(
@@ -404,7 +404,7 @@ export const runtime = 'edge';
 
 export async function POST(request: Request) {
   const { env } = await getCloudflareContext();
-  const queue = createQueuesClient({ queue: env.MY_QUEUE });
+  const queue = createQueuesClient({ queue: env.OBCF_QUEUE });
 
   // Send message
   await queue.send({
@@ -460,7 +460,7 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 
 export default async function Page() {
   const { env } = await getCloudflareContext();
-  // Use env.DB, env.MY_KV, etc.
+  // Use env.OBCF_D1, env.MY_KV, etc.
 }
 ```
 

@@ -46,7 +46,7 @@ function generateBaseSchema(
 //   import { PrismaClient } from "@prisma/client";
 //   import { PrismaD1 } from "@prisma/adapter-d1";
 //
-//   const adapter = new PrismaD1(env.DB);
+//   const adapter = new PrismaD1(env.OBCF_D1);
 //   const prisma = new PrismaClient({ adapter });
 // ============================================================
 `

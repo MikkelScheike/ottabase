@@ -10,7 +10,7 @@ export async function GET(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: 'D1 database binding not configured' },
         { status: 500 }
@@ -18,7 +18,7 @@ export async function GET(_request: NextRequest) {
     }
 
     // ✅ Use Prisma with D1 adapter (type-safe queries)
-    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
+    const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
 
     // Type-safe query with Prisma ORM
     const todos = await prisma.todo.findMany({
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: 'D1 database binding not configured' },
         { status: 500 }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ✅ Use Prisma with D1 adapter (type-safe operations)
-    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
+    const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
 
     // Type-safe create operation
     const todo = await prisma.todo.create({

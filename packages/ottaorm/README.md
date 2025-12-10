@@ -35,7 +35,7 @@ Add D1 binding to your `wrangler.jsonc`:
   "compatibility_date": "2024-01-01",
   "d1_databases": [
     {
-      "binding": "DB",                    // Accessible as env.DB in your code
+      "binding: "OBCF_D1",                    // Accessible as env.OBCF_D1 in your code
       "database_name": "your-app-db",     // Database name for CLI
       "database_id": "local"              // Use "local" for dev, replace for prod
     }
@@ -97,7 +97,7 @@ Or use the migration API directly in your code:
 import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 
-const driver = createD1Driver(env.DB);
+const driver = createD1Driver(env.OBCF_D1);
 await runMigrations(driver, coreMigrations);
 ```
 
@@ -121,7 +121,7 @@ Replace `database_id` with your production ID:
 {
   "d1_databases": [
     {
-      "binding": "DB",
+      "binding: "OBCF_D1",
       "database_name": "your-app-db",
       "database_id": "abc123-def456-ghi789"  // ← Your production ID
     }
@@ -141,7 +141,7 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init
 
 ### Environment Variables
 
-No environment variables needed! D1 binding is configured via `wrangler.jsonc` and accessed as `env.DB`.
+No environment variables needed! D1 binding is configured via `wrangler.jsonc` and accessed as `env.OBCF_D1`.
 
 #### Next.js on Cloudflare (using @opennextjs/cloudflare)
 
@@ -150,8 +150,8 @@ import { getCloudflareContext } from "@opennextjs/cloudflare";
 
 export async function GET() {
   const { env } = getCloudflareContext();
-  // env.DB is your D1 database binding
-  const driver = createD1Driver(env.DB);
+  // env.OBCF_D1 is your D1 database binding
+  const driver = createD1Driver(env.OBCF_D1);
   setDriver(driver);
 }
 ```
@@ -161,8 +161,8 @@ export async function GET() {
 ```typescript
 export default {
   async fetch(request: Request, env: Env) {
-    // env.DB is your D1 database binding
-    const driver = createD1Driver(env.DB);
+    // env.OBCF_D1 is your D1 database binding
+    const driver = createD1Driver(env.OBCF_D1);
     setDriver(driver);
   }
 }
@@ -248,7 +248,7 @@ import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import { User, Post } from "@ottabase/ottaorm";
 
 // Set driver once (e.g., in middleware)
-const driver = createD1Driver(env.DB);
+const driver = createD1Driver(env.OBCF_D1);
 setDriver(driver);
 
 // Use models anywhere without passing driver
@@ -506,7 +506,7 @@ const tags = await post.tags({
 import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 
-const driver = createD1Driver(env.DB);
+const driver = createD1Driver(env.OBCF_D1);
 
 // Run core migrations (User, Post, Tag tables)
 await runMigrations(driver, coreMigrations);
@@ -663,7 +663,7 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const driver = createD1Driver(env.DB);
+  const driver = createD1Driver(env.OBCF_D1);
 
   const result = await runMigrations(driver, [
     ...coreMigrations,
@@ -690,7 +690,7 @@ export const runtime = "edge";
 
 export async function GET() {
   const { env } = getCloudflareContext();
-  setDriver(createD1Driver(env.DB));
+  setDriver(createD1Driver(env.OBCF_D1));
 
   const todos = await Todo.all();
 
@@ -701,7 +701,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const { env } = getCloudflareContext();
-  setDriver(createD1Driver(env.DB));
+  setDriver(createD1Driver(env.OBCF_D1));
 
   const body = await request.json();
   const todo = await Todo.create(body);

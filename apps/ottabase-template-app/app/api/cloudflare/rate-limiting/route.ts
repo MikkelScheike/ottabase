@@ -8,12 +8,12 @@ export const runtime = 'edge';
 
 // Simulated rate limiter using KV for local dev
 async function simulateRateLimit(env: { OTTABASE_KV?: KVNamespace }, key: string) {
-  if (!env.OTTABASE_KV) {
+  if (!env.OBCF_KV) {
     console.log('[Rate Limit] KV not available');
     return null; // KV not available, can't simulate
   }
 
-  const kv = createKVClient({ namespace: env.OTTABASE_KV });
+  const kv = createKVClient({ namespace: env.OBCF_KV });
   const rateLimitKey = `ratelimit:${key}`;
 
   const LIMIT = 10;

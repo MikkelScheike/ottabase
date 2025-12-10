@@ -74,7 +74,7 @@ async function handleMigration(request: NextRequest) {
   try {
     const { env } = getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
         { status: 500 }
@@ -91,7 +91,7 @@ async function handleMigration(request: NextRequest) {
     }
 
     // Create driver
-    const driver = createD1Driver(env.DB);
+    const driver = createD1Driver(env.OBCF_D1);
 
     // Run core migrations + app migrations
     const result = await runMigrations(driver, [

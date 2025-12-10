@@ -9,7 +9,7 @@ export async function POST(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: 'D1 database binding not configured. Check wrangler.jsonc' },
         { status: 500 }
@@ -17,7 +17,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // ✅ Use Prisma with D1 adapter
-    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
+    const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
 
     // Test the connection by counting todos
     // In production, use migrations: pnpm db:migrate --name=init

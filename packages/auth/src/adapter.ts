@@ -63,7 +63,7 @@ export interface D1AuthAdapterOptions {
  * import { createD1AuthAdapter } from "@ottabase/auth/adapter";
  *
  * export const { handlers, auth } = NextAuth({
- *   adapter: createD1AuthAdapter(env.DB),
+ *   adapter: createD1AuthAdapter(env.OBCF_D1),
  *   providers: [
  *     // Your providers
  *   ],
@@ -73,13 +73,13 @@ export interface D1AuthAdapterOptions {
  * @example
  * ```typescript
  * // Using Prisma explicitly
- * const adapter = createD1AuthAdapter(env.DB, { orm: "prisma" });
+ * const adapter = createD1AuthAdapter(env.OBCF_D1, { orm: "prisma" });
  * ```
  *
  * @example
  * ```typescript
  * // With logging enabled
- * const adapter = createD1AuthAdapter(env.DB, {
+ * const adapter = createD1AuthAdapter(env.OBCF_D1, {
  *   orm: "drizzle",
  *   log: ["query", "error"]
  * });
@@ -115,7 +115,7 @@ export function createD1AuthAdapter(
  * import { createD1AuthAdapterCached } from "@ottabase/auth/adapter";
  *
  * export const { handlers, auth } = NextAuth({
- *   adapter: createD1AuthAdapterCached(env.DB),
+ *   adapter: createD1AuthAdapterCached(env.OBCF_D1),
  *   providers: [
  *     // Your providers
  *   ],
@@ -125,7 +125,7 @@ export function createD1AuthAdapter(
  * @example
  * ```typescript
  * // Using Prisma with caching
- * const adapter = createD1AuthAdapterCached(env.DB, { orm: "prisma" });
+ * const adapter = createD1AuthAdapterCached(env.OBCF_D1, { orm: "prisma" });
  * ```
  */
 export function createD1AuthAdapterCached(

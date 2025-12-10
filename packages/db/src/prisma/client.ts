@@ -12,7 +12,7 @@
 // For Cloudflare Workers with D1:
 //   ✅ Use: import { createPrismaD1Client } from "@ottabase/cf/d1-prisma";
 //   ✅ Example:
-//      const prisma = createPrismaD1Client(env.DB);
+//      const prisma = createPrismaD1Client(env.OBCF_D1);
 //      const users = await prisma.user.findMany();
 //
 // This client uses the standard Prisma adapter which is NOT

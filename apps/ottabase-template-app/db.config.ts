@@ -31,7 +31,7 @@ export default defineAppDbConfig({
   // ============================================================
 
   // D1 database binding name (must match wrangler.jsonc)
-  d1Database: "DB",
+  d1Database: "OBCF_D1",
 
   // Wrangler config file path
   wranglerConfig: "wrangler.jsonc",

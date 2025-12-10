@@ -24,7 +24,7 @@
   // Preview/Prod: Uses real Cloudflare D1 database
   "d1_databases": [
     {
-      "binding": "DB",
+      "binding": "OBCF_D1",
       "database_name": "ottabase-db",
       "database_id": "YOUR_D1_DATABASE_ID", // Replace with: wrangler d1 create ottabase-db
       // For preview/prod, create with: wrangler d1 create ottabase-db
@@ -38,9 +38,9 @@
   // Preview/Prod: Uses real Cloudflare KV namespace
   "kv_namespaces": [
     {
-      "binding": "OTTABASE_KV",
-      "id": "YOUR_KV_NAMESPACE_ID", // Replace with: wrangler kv:namespace create OTTABASE_KV
-      "preview_id": "YOUR_KV_PREVIEW_ID" // Replace with: wrangler kv:namespace create OTTABASE_KV --preview
+      "binding": "OBCF_KV",
+      "id": "YOUR_KV_NAMESPACE_ID", // Replace with: wrangler kv:namespace create OBCF_KV
+      "preview_id": "YOUR_KV_PREVIEW_ID" // Replace with: wrangler kv:namespace create OBCF_KV --preview
     }
   ],
 
@@ -49,7 +49,7 @@
   // Preview/Prod: Uses real Cloudflare R2 bucket
   "r2_buckets": [
     {
-      "binding": "OTTABASE_BUCKET",
+      "binding": "OBCF_R2",
       "bucket_name": "ottabase-bucket", // Create with: wrangler r2 bucket create ottabase-bucket
       "preview_bucket_name": "ottabase-bucket-preview" // Create with: wrangler r2 bucket create ottabase-bucket-preview
     }
@@ -60,7 +60,7 @@
   // Uncomment and configure when ready to use
   // "hyperdrive": [
   //   {
-  //     "binding": "HYPERDRIVE",
+  //     "binding": "OBCF_HYPERDRIVE",
   //     "id": "YOUR_HYPERDRIVE_ID" // Create with: wrangler hyperdrive create <name> --connection-string="postgres://..."
   //   }
   // ],
@@ -71,7 +71,7 @@
   "queues": {
     "producers": [
       {
-        "binding": "MY_QUEUE",
+        "binding": "OBCF_QUEUE",
         "queue": "ottabase-queue" // Create with: wrangler queues create ottabase-queue
       }
     ]
@@ -92,7 +92,7 @@
   "unsafe": {
     "bindings": [
       {
-        "name": "RATE_LIMITER",
+        "name": "OBCF_RATE_LIMITER",
         "type": "ratelimit",
         "namespace_id": "1001", // For local dev, can use any value
         "simple": {
@@ -133,7 +133,7 @@
   "durable_objects": {
     "bindings": [
       {
-        "name": "REALTIME",
+        "name": "OBCF_REALTIME",
         "class_name": "RealtimeActor",
         "script_name": "ottabase-template-app"
       }
@@ -162,7 +162,7 @@
       // Production D1 Database - set via CI/CD substitution or manually
       "d1_databases": [
         {
-          "binding": "DB",
+          "binding": "OBCF_D1",
           "database_name": "ottabase-db",
           "database_id": "PRODUCTION_D1_DATABASE_ID"
         }
@@ -170,14 +170,14 @@
       // Production KV Namespace - set via CI/CD substitution or manually
       "kv_namespaces": [
         {
-          "binding": "OTTABASE_KV",
+          "binding": "OBCF_KV",
           "id": "PRODUCTION_KV_NAMESPACE_ID"
         }
       ],
       // Production R2 Bucket
       "r2_buckets": [
         {
-          "binding": "OTTABASE_BUCKET",
+          "binding": "OBCF_R2",
           "bucket_name": "ottabase-bucket"
         }
       ],
@@ -185,7 +185,7 @@
       "queues": {
         "producers": [
           {
-            "binding": "MY_QUEUE",
+            "binding": "OBCF_QUEUE",
             "queue": "ottabase-queue"
           }
         ]

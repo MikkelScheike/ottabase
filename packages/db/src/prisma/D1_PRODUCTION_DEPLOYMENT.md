@@ -31,7 +31,7 @@ Your app uses [wrangler.jsonc](../apps/ottabase-template-app/wrangler.jsonc) wit
 {
   // Default (local dev)
   "d1_databases": [{
-    "binding": "DB",
+    "binding: "OBCF_D1",
     "database_name": "ottabase-db",
     "database_id": "YOUR_D1_DATABASE_ID"  // Not used locally
   }],
@@ -40,7 +40,7 @@ Your app uses [wrangler.jsonc](../apps/ottabase-template-app/wrangler.jsonc) wit
   "env": {
     "production": {
       "d1_databases": [{
-        "binding": "DB",
+        "binding: "OBCF_D1",
         "database_name": "ottabase-db",
         "database_id": "PRODUCTION_D1_DATABASE_ID"  // Must set this!
       }]
@@ -85,7 +85,7 @@ Replace `PRODUCTION_D1_DATABASE_ID` with the actual ID:
   "env": {
     "production": {
       "d1_databases": [{
-        "binding": "DB",
+        "binding: "OBCF_D1",
         "database_name": "ottabase-db",
         "database_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"  // ✅ Real ID
       }]
@@ -466,14 +466,14 @@ curl -X GET "https://api.cloudflare.com/client/v4/accounts/$ACCOUNT_ID/d1/databa
   "env": {
     "preview": {
       "d1_databases": [{
-        "binding": "DB",
+        "binding: "OBCF_D1",
         "database_name": "ottabase-db-preview",
         "database_id": "PREVIEW_DATABASE_ID"
       }]
     },
     "production": {
       "d1_databases": [{
-        "binding": "DB",
+        "binding: "OBCF_D1",
         "database_name": "ottabase-db",
         "database_id": "PRODUCTION_DATABASE_ID"
       }]

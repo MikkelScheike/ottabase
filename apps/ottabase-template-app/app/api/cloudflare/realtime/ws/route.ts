@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.REALTIME) {
+    if (!env.OBCF_REALTIME) {
       return new Response(
         JSON.stringify({ error: 'Realtime Durable Object binding not configured' }),
         {
@@ -35,8 +35,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Get or create the global RealtimeActor instance
-    const id = env.REALTIME.idFromName('global');
-    const stub = env.REALTIME.get(id);
+    const id = env.OBCF_REALTIME.idFromName('global');
+    const stub = env.OBCF_REALTIME.get(id);
 
     // Forward the WebSocket upgrade request to the Durable Object
     // The RealtimeActor will handle the WebSocket protocol

@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.MY_QUEUE) {
+    if (!env.OBCF_QUEUE) {
       return NextResponse.json(
         { error: 'Queue binding not configured' },
         { status: 500 }
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { message, batch } = body;
 
-    const queue = createQueuesClient({ queue: env.MY_QUEUE });
+    const queue = createQueuesClient({ queue: env.OBCF_QUEUE });
 
     if (batch && Array.isArray(batch)) {
       // Send batch of messages
@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Store sent messages in KV for demo purposes (to display in UI)
-      if (env.OTTABASE_KV) {
+      if (env.OBCF_KV) {
         try {
-          const kv = createKVClient({ namespace: env.OTTABASE_KV });
+          const kv = createKVClient({ namespace: env.OBCF_KV });
           const timestamp = Date.now();
 
           for (let i = 0; i < batch.length; i++) {
@@ -75,9 +75,9 @@ export async function POST(request: NextRequest) {
       }
 
       // Store sent message in KV for demo purposes
-      if (env.OTTABASE_KV) {
+      if (env.OBCF_KV) {
         try {
-          const kv = createKVClient({ namespace: env.OTTABASE_KV });
+          const kv = createKVClient({ namespace: env.OBCF_KV });
           const key = `queue:message:${Date.now()}`;
           await kv.put(key, JSON.stringify({
             ...message,
@@ -116,14 +116,14 @@ export async function GET() {
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.OTTABASE_KV) {
+    if (!env.OBCF_KV) {
       return NextResponse.json(
         { error: 'KV binding not configured' },
         { status: 500 }
       );
     }
 
-    const kv = createKVClient({ namespace: env.OTTABASE_KV });
+    const kv = createKVClient({ namespace: env.OBCF_KV });
     const listResult = await kv.list({ prefix: 'queue:message:' });
 
     if (!listResult.success) {

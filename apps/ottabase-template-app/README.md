@@ -100,7 +100,7 @@ export const runtime = 'edge';
 
 export async function GET() {
   const { env } = await getCloudflareContext();
-  const db = createD1Client({ database: env.DB });
+  const db = createD1Client({ database: env.OBCF_D1 });
 
   const result = await db.query('SELECT * FROM users');
 
@@ -116,7 +116,7 @@ import { createKVClient } from '@ottabase/cf/kv';
 
 export default async function Page() {
   const { env } = await getCloudflareContext();
-  const kv = createKVClient({ namespace: env.OTTABASE_KV });
+  const kv = createKVClient({ namespace: env.OBCF_KV });
 
   const data = await kv.getJSON('key');
 

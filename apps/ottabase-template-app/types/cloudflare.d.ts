@@ -5,42 +5,43 @@
 
 import type {
   D1Database,
-  KVNamespace,
-  R2Bucket,
-  Queue,
-  Hyperdrive,
-  RateLimiter,
   DurableObjectNamespace,
-} from '@cloudflare/workers-types';
+  KVNamespace,
+  Queue,
+  R2Bucket,
+  RateLimiter,
+} from "@cloudflare/workers-types";
 
 /**
- * Cloudflare environment bindings
+ * Cloudflare environment bindings with OBCF_* naming convention
+ * OBCF = Ottabase Cloudflare
+ *
  * Add all your Cloudflare bindings here to get type safety
  *
  * Note: All bindings are optional to support local development builds.
  * At runtime on Cloudflare, these will be available.
  */
 export interface CloudflareEnv {
-  // D1 Database
-  DB?: D1Database;
+  // D1 Database (OBCF = Ottabase Cloudflare)
+  OBCF_D1?: D1Database;
 
   // KV Namespace
-  OTTABASE_KV?: KVNamespace;
+  OBCF_KV?: KVNamespace;
 
   // R2 Bucket
-  OTTABASE_BUCKET?: R2Bucket;
+  OBCF_R2?: R2Bucket;
 
   // Queue
-  MY_QUEUE?: Queue;
+  OBCF_QUEUE?: Queue;
 
   // Hyperdrive (uncomment when configured)
-  // HYPERDRIVE?: Hyperdrive;
+  // OBCF_HYPERDRIVE?: Hyperdrive;
 
   // Rate Limiter
-  RATE_LIMITER?: RateLimiter;
+  OBCF_RATE_LIMITER?: RateLimiter;
 
   // Durable Objects
-  REALTIME?: DurableObjectNamespace;
+  OBCF_REALTIME?: DurableObjectNamespace;
 
   // Environment Variables
   ENVIRONMENT?: string;
@@ -62,7 +63,9 @@ export interface CloudflareEnv {
  * import { getCloudflareContext } from '@opennextjs/cloudflare';
  *
  * const { env } = await getCloudflareContext();
- * const db = env.DB;
+ * const db = env.OBCF_D1;
+ * const kv = env.OBCF_KV;
+ * const r2 = env.OBCF_R2;
  * ```
  */
 declare global {
@@ -72,3 +75,4 @@ declare global {
 }
 
 export {};
+

@@ -55,7 +55,7 @@ export interface DrizzleD1AuthAdapterOptions {
  * import { createDrizzleD1AuthAdapter } from "@ottabase/auth/adapters/drizzle";
  *
  * export const authConfig = {
- *   adapter: createDrizzleD1AuthAdapter(env.DB),
+ *   adapter: createDrizzleD1AuthAdapter(env.OBCF_D1),
  *   providers: [
  *     // Your providers
  *   ],
@@ -65,7 +65,7 @@ export interface DrizzleD1AuthAdapterOptions {
  * @example
  * ```typescript
  * // With logging enabled
- * const adapter = createDrizzleD1AuthAdapter(env.DB, {
+ * const adapter = createDrizzleD1AuthAdapter(env.OBCF_D1, {
  *   log: ["query", "error"]
  * });
  * ```

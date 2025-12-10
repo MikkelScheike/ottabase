@@ -19,14 +19,14 @@ export async function GET(request: NextRequest) {
   try {
     const { env } = getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
         { status: 500 }
       );
     }
 
-    setDriver(createD1Driver(env.DB));
+    setDriver(createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const posts = await Post.all({
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   try {
     const { env } = getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
         { status: 500 }
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    setDriver(createD1Driver(env.DB));
+    setDriver(createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const post = await Post.create({

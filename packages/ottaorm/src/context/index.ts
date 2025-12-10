@@ -23,7 +23,7 @@ const connections: Map<string, any> = new Map();
  * import { createMongoDriver } from "@ottabase/db/mongodb";
  *
  * // SQL connection (default)
- * registerConnection('default', createD1Driver(env.DB));
+ * registerConnection('default', createD1Driver(env.OBCF_D1));
  *
  * // MongoDB connection
  * const mongoDriver = await createMongoDriver(env.MONGODB_URI, "myapp");

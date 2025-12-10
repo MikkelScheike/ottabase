@@ -78,16 +78,16 @@ function main() {
   }
 
   // 2. KV Namespace
-  log("Setting up KV Namespace 'OTTABASE_KV'...", YELLOW);
+  log("Setting up KV Namespace 'OBCF_KV'...", YELLOW);
   let kvId = '';
   try {
     const kvList = JSON.parse(runCommand(`${wranglerCmd} kv:namespace list --json`));
-    const existingKv = kvList.find((ns: any) => ns.title === 'OTTABASE_KV');
+    const existingKv = kvList.find((ns: any) => ns.title === 'OBCF_KV');
     if (existingKv) {
       kvId = existingKv.id;
       log(`KV Namespace already exists. ID: ${kvId}`, GREEN);
     } else {
-      const createOutput = JSON.parse(runCommand(`${wranglerCmd} kv:namespace create OTTABASE_KV --json`));
+      const createOutput = JSON.parse(runCommand(`${wranglerCmd} kv:namespace create OBCF_KV --json`));
       kvId = createOutput.id;
       log(`Created KV Namespace. ID: ${kvId}`, GREEN);
     }
@@ -132,15 +132,15 @@ function main() {
     content = content.replace(/"id":\s*"YOUR_KV_NAMESPACE_ID"/, `"id": "${kvId}"`);
 
     // Preview KV
-    log("Setting up KV Preview Namespace 'OTTABASE_KV_PREVIEW'...", YELLOW);
+    log("Setting up KV Preview Namespace 'OBCF_KV_PREVIEW'...", YELLOW);
     let kvPreviewId = '';
     try {
       const kvList = JSON.parse(runCommand(`${wranglerCmd} kv:namespace list --json`));
-      const existingKvPreview = kvList.find((ns: any) => ns.title === 'OTTABASE_KV_preview');
+      const existingKvPreview = kvList.find((ns: any) => ns.title === 'OBCF_KV_preview');
       if (existingKvPreview) {
         kvPreviewId = existingKvPreview.id;
       } else {
-        const createOutput = JSON.parse(runCommand(`${wranglerCmd} kv:namespace create OTTABASE_KV --preview --json`));
+        const createOutput = JSON.parse(runCommand(`${wranglerCmd} kv:namespace create OBCF_KV --preview --json`));
         kvPreviewId = createOutput.id;
       }
       if (kvPreviewId) {
