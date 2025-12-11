@@ -41,14 +41,8 @@ jobs:
                   node-version: ${{ matrix.node }}
                   cache: "pnpm"
 
-            - name: Install dependencies with Prisma postinstall
-              run: |
-                  # Allow build scripts for Prisma packages only
-                  pnpm config set enable-pre-post-scripts true
-                  pnpm install --frozen-lockfile
-              env:
-                  # Ensure Prisma runs its postinstall
-                  PRISMA_SKIP_POSTINSTALL_GENERATE: false
+            - name: Install dependencies
+              run: pnpm install --frozen-lockfile
 
             # Cache Turborepo build outputs
             - name: Setup Turborepo cache
