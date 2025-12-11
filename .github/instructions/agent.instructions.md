@@ -4,6 +4,8 @@
 
 Ottabase is a **pnpm monorepo** with **Turborepo** for build orchestration, featuring:
 
+- **Monorepo**: pnpm workspaces + Turborepo
+- **Stack**: Next.js 16+, React 19, TypeScript 5+, Cloudflare Infra (Workers, D1, KV, Durable Objects)
 - **Next.js 15+ applications** in `apps/` (using App Router)
 - **Shared packages** in `packages/` (React components, utilities, configuration)
 - **Template-driven development** with `ottabase-template-app` as the reference implementation
@@ -176,6 +178,16 @@ packages/my-package/
   }
 }
 ```
+
+## Key Packages
+- **db**: Multi-ORM support (Prisma, Drizzle, MongoDB) with D1/local adapters
+- **ottaorm**: Type-safe ORM layer with schema definitions
+- **auth**: Auth.js integration with D1 adapters
+- **ui-***: UI packages (mantine, shadcn, tailwind, components)
+- **ottalayout**: Layout system for applications
+- **state**: Global state management with Jotai
+- **migrate**: Database migration utilities
+- **cf/cf-realtime**: Cloudflare bindings and realtime utilities
 
 ### PNPM Catalog System Deep Dive
 
