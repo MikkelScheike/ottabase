@@ -41,8 +41,10 @@
     "next-themes": "catalog:",
     "pnpm": "10.24.0",
     "postcss-loader": "catalog:",
+    "rimraf": "catalog:",
     "storybook": "catalog:",
     "style-loader": "catalog:",
+    "tsup": "catalog:",
     "turbo": "^2.6.3",
     "webpack": "^5.103.0"
   },
