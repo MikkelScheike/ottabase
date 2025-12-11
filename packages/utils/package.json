@@ -3,72 +3,72 @@
   "version": "0.1.0",
   "description": "Set of common utility functions for file operations, string manipulation, currency formatting, email parsing, JSON handling, git operations, browser detection, timezone management, and more.",
   "main": "dist/index.js",
-  "module": "dist/index.esm.js",
+  "module": "dist/index.mjs",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.esm.js",
+      "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
     "./file": {
       "types": "./dist/file.d.ts",
-      "import": "./dist/file.esm.js",
+      "import": "./dist/file.mjs",
       "require": "./dist/file.js"
     },
     "./string": {
       "types": "./dist/string.d.ts",
-      "import": "./dist/string.esm.js",
+      "import": "./dist/string.mjs",
       "require": "./dist/string.js"
     },
     "./url": {
       "types": "./dist/url.d.ts",
-      "import": "./dist/url.esm.js",
+      "import": "./dist/url.mjs",
       "require": "./dist/url.js"
     },
     "./env": {
       "types": "./dist/env.d.ts",
-      "import": "./dist/env.esm.js",
+      "import": "./dist/env.mjs",
       "require": "./dist/env.js"
     },
     "./currency": {
       "types": "./dist/currency.d.ts",
-      "import": "./dist/currency.esm.js",
+      "import": "./dist/currency.mjs",
       "require": "./dist/currency.js"
     },
     "./email": {
       "types": "./dist/email.d.ts",
-      "import": "./dist/email.esm.js",
+      "import": "./dist/email.mjs",
       "require": "./dist/email.js"
     },
     "./email-gmail": {
       "types": "./dist/email-gmail.d.ts",
-      "import": "./dist/email-gmail.esm.js",
+      "import": "./dist/email-gmail.mjs",
       "require": "./dist/email-gmail.js"
     },
     "./json": {
       "types": "./dist/json.d.ts",
-      "import": "./dist/json.esm.js",
+      "import": "./dist/json.mjs",
       "require": "./dist/json.js"
     },
     "./user": {
       "types": "./dist/user.d.ts",
-      "import": "./dist/user.esm.js",
+      "import": "./dist/user.mjs",
       "require": "./dist/user.js"
     },
     "./git": {
       "types": "./dist/git.d.ts",
-      "import": "./dist/git.esm.js",
+      "import": "./dist/git.mjs",
       "require": "./dist/git.js"
     },
     "./browser": {
       "types": "./dist/browser.d.ts",
-      "import": "./dist/browser.esm.js",
+      "import": "./dist/browser.mjs",
       "require": "./dist/browser.js"
     },
     "./timezone": {
       "types": "./dist/timezone.d.ts",
-      "import": "./dist/timezone.esm.js",
+      "import": "./dist/timezone.mjs",
       "require": "./dist/timezone.js"
     }
   },
