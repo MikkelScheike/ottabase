@@ -13,7 +13,7 @@ jobs:
     name: Deploy ${{ matrix.app }}
     strategy:
       matrix:
-        app: ['@ottabase/ottabase-template-app']
+        app: ["@ottabase/ottabase-template-app"]
         # Add more apps here as needed, e.g. '@ottabase/app1', '@ottabase/app2'
 
     steps:
@@ -39,8 +39,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: .turbo
-          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
           restore-keys: |
+            ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-turbo-
 
       # Cache Next.js build for faster rebuilds
@@ -48,8 +49,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: apps/*/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('**/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/**/*.ts', 'apps/**/*.tsx', 'apps/**/*.js', 'apps/**/*.jsx') }}
           restore-keys: |
+            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-nextjs-
 
       # Extract app folder name for later steps
@@ -58,6 +60,14 @@ jobs:
         run: |
           APP_FOLDER=$(echo "${{ matrix.app }}" | sed 's/@ottabase\///')
           echo "folder=$APP_FOLDER" >> $GITHUB_OUTPUT
+
+      # Debug: Check if tsup is available
+      - name: Verify tsup installation
+        run: |
+          echo "Checking tsup availability..."
+          which tsup || echo "tsup not in PATH"
+          pnpm exec tsup --version || echo "tsup not executable via pnpm exec"
+          ls -la node_modules/.bin/tsup || echo "tsup binary not found in node_modules/.bin"
 
       # Build packages first
       - name: Build packages
