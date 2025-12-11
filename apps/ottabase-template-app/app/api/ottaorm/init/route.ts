@@ -9,11 +9,11 @@
  * - Production: Requires MIGRATION_SECRET via query param, body, or header
  */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
+import { coreMigrations, runMigrations } from "@ottabase/ottaorm";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { appMigrations } from "../../../../ottabase/migrations";
 
 export const runtime = "edge";

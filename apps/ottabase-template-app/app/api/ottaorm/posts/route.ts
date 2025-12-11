@@ -4,11 +4,11 @@
  * Demonstrates CRUD operations using OttaORM Post model
  */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { setDriver, Post } from "@ottabase/ottaorm";
+import { Post, registerConnection } from "@ottabase/ottaorm";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    setDriver(createD1Driver(env.OBCF_D1));
+    registerConnection("default", createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const posts = await Post.all({
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    setDriver(createD1Driver(env.OBCF_D1));
+    registerConnection("default", createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const post = await Post.create({

@@ -7,7 +7,7 @@
 
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { setDriver, User } from "@ottabase/ottaorm";
+import { registerConnection, User } from "@ottabase/ottaorm";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Set driver once - then use models without passing it!
-    setDriver(createD1Driver(env.OBCF_D1));
+    registerConnection("default", createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const users = await User.all({
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Set driver once
-    setDriver(createD1Driver(env.OBCF_D1));
+    registerConnection("default", createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const user = await User.create({

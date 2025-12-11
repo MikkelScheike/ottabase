@@ -2,11 +2,11 @@
  * OttaORM Post API - Single Post Operations
  */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { setDriver, Post } from "@ottabase/ottaorm";
+import { Post, registerConnection } from "@ottabase/ottaorm";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
@@ -28,7 +28,7 @@ export async function GET(
       );
     }
 
-    setDriver(createD1Driver(env.DB));
+    registerConnection("default", createD1Driver(env.DB));
 
     // Eloquent-like syntax!
     const post = await Post.find(id);
@@ -73,7 +73,7 @@ export async function DELETE(
       );
     }
 
-    setDriver(createD1Driver(env.DB));
+    registerConnection("default", createD1Driver(env.DB));
 
     // Eloquent-like syntax!
     const deleted = await Post.delete(id);

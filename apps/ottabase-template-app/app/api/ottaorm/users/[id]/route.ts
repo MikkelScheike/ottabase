@@ -3,11 +3,11 @@
  * Eloquent-like syntax - no driver parameter needed!
  */
 
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { setDriver, User } from "@ottabase/ottaorm";
+import { registerConnection, User } from "@ottabase/ottaorm";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 export const runtime = "edge";
 
@@ -29,7 +29,7 @@ export async function GET(
       );
     }
 
-    setDriver(createD1Driver(env.DB));
+    registerConnection("default", createD1Driver(env.DB));
 
     // Eloquent-like syntax!
     const user = await User.find(id);
@@ -74,7 +74,7 @@ export async function DELETE(
       );
     }
 
-    setDriver(createD1Driver(env.DB));
+    registerConnection("default", createD1Driver(env.DB));
 
     // Eloquent-like syntax!
     const deleted = await User.delete(id);
