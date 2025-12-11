@@ -4,11 +4,11 @@ auto-install-peers=true
 dedupe-peer-dependents=true
 prefer-workspace-packages=true
 
-# Hoist all dependencies to root node_modules for Turborepo compatibility
-# This ensures tsup and other build tools are accessible when Turbo runs build scripts
-shamefully-hoist=true
+## Use hoisted node linker for maximum compatibility with Turborepo
+## This creates a flat node_modules structure where all dependencies are hoisted
+node-linker=hoisted
 
-# Explicitly hoist build tool binaries to ensure they're accessible in CI
+## Explicitly hoist build tool binaries to ensure they're accessible in CI
 public-hoist-pattern[]=*tsup*
 public-hoist-pattern[]=*rimraf*
 public-hoist-pattern[]=*typescript*
