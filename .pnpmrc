@@ -8,7 +8,13 @@ prefer-workspace-packages=true
 ## This creates a flat node_modules structure where all dependencies are hoisted
 node-linker=hoisted
 
+## Shamefully hoist all dependencies to root for CI compatibility
+## This ensures all binaries are accessible when turbo spawns child processes
+shamefully-hoist=true
+
 ## Explicitly hoist build tool binaries to ensure they're accessible in CI
 public-hoist-pattern[]=*tsup*
 public-hoist-pattern[]=*rimraf*
 public-hoist-pattern[]=*typescript*
+public-hoist-pattern[]=*esbuild*
+public-hoist-pattern[]=*rollup*

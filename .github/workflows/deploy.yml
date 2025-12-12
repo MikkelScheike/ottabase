@@ -80,7 +80,18 @@ jobs:
       - name: Build packages
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          pnpm exec turbo build --filter="./packages/*" --concurrency=1
+          echo "Current PATH: $PATH"
+          echo ""
+          echo "Verifying build dependencies:"
+          echo "- tsc: $(pnpm exec tsc --version)"
+          echo "- tsup: $(pnpm exec tsup --version)"
+          echo "- esbuild: $(pnpm exec esbuild --version || echo 'not found')"
+          echo ""
+          echo "Testing direct build command in a package:"
+          cd packages/state && pnpm exec tsup src/index.ts --format cjs,esm --dts --clean && cd ../..
+          echo ""
+          echo "Direct build successful! Now running turbo build..."
+          pnpm exec turbo build --filter="./packages/*" --concurrency=1 --log-order=stream
         env:
           NODE_ENV: production
 
