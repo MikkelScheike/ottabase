@@ -21,16 +21,6 @@
       "import": "./dist/registry.mjs",
       "require": "./dist/registry.js"
     },
-    "./client": {
-      "types": "./dist/prisma/client.d.ts",
-      "import": "./dist/prisma/client.mjs",
-      "require": "./dist/prisma/client.js"
-    },
-    "./prisma": {
-      "types": "./dist/prisma/prisma.d.ts",
-      "import": "./dist/prisma/prisma.mjs",
-      "require": "./dist/prisma/prisma.js"
-    },
     "./drizzle": {
       "types": "./dist/drizzle/drizzle.d.ts",
       "import": "./dist/drizzle/drizzle.mjs",
@@ -54,8 +44,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts src/mongodb/index.ts --format cjs,esm --dts --clean",
-    "dev": "pnpm prisma:generate && tsup src/index.ts src/config.ts src/registry.ts src/prisma/prisma.ts src/prisma/client.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts src/mongodb/index.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/config.ts src/registry.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts src/mongodb/index.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/config.ts src/registry.ts src/drizzle/drizzle.ts src/drizzle/drizzle-d1.ts src/mongodb/index.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
