@@ -89,6 +89,7 @@ export {
 } from "./rate-limiting";
 
 // D1 Prisma Integration
+/* * /
 export {
   createPrismaD1Client,
   createPrismaD1ClientAsync,
@@ -98,3 +99,4 @@ export {
   type PrismaD1ClientOptions,
   type PrismaClientType,
 } from "./d1-prisma";
+/* */
