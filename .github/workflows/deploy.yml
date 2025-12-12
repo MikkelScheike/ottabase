@@ -91,7 +91,8 @@ jobs:
           cd packages/state && pnpm exec tsup src/index.ts --format cjs,esm --dts --clean && cd ../..
           echo ""
           echo "Direct build successful! Now running turbo build..."
-          pnpm exec turbo build --filter="./packages/*" --concurrency=1 --log-order=stream
+          echo "Turbo will use PATH: $PATH"
+          pnpm exec turbo build --filter="./packages/*" --concurrency=1 --log-order=stream --no-daemon
         env:
           NODE_ENV: production
 
@@ -99,7 +100,7 @@ jobs:
       - name: Build application
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          pnpm exec turbo build --filter=${{ matrix.app }} --concurrency=1
+          pnpm exec turbo build --filter=${{ matrix.app }} --concurrency=1 --no-daemon
         env:
           NODE_ENV: production
 
