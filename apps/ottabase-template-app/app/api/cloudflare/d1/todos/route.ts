@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
-import type { PrismaClient } from '@prisma/client';
+import { createD1Driver } from '@ottabase/db/drizzle-d1';
+import { registerConnection } from '@ottabase/ottaorm';
+import { Todo } from '../../../../ottabase/models/Todo';
 
 export const runtime = 'edge';
 
-// GET /api/cloudflare/d1/todos - List all todos (using Prisma)
+// GET /api/cloudflare/d1/todos - List all todos (using OttaORM/Drizzle)
 export async function GET(_request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
@@ -17,17 +18,18 @@ export async function GET(_request: NextRequest) {
       );
     }
 
-    // ✅ Use Prisma with D1 adapter (type-safe queries)
-    const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
+    // ✅ Use OttaORM with Drizzle (type-safe queries)
+    registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    // Type-safe query with Prisma ORM
-    const todos = await prisma.todo.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+    // Eloquent-like syntax with OttaORM
+    const todos = await Todo.all({
+      orderBy: 'createdAt',
+      orderDirection: 'desc',
     });
 
-    return NextResponse.json({ todos });
+    return NextResponse.json({
+      todos: todos.map(t => t.toJson())
+    });
   } catch (error) {
     console.error('D1 GET error:', error);
     return NextResponse.json(
@@ -40,7 +42,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-// POST /api/cloudflare/d1/todos - Create a new todo (using Prisma)
+// POST /api/cloudflare/d1/todos - Create a new todo (using OttaORM/Drizzle)
 export async function POST(request: NextRequest) {
   try {
     const { env } = await getCloudflareContext();
@@ -62,21 +64,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ Use Prisma with D1 adapter (type-safe operations)
-    const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
+    // ✅ Use OttaORM with Drizzle (type-safe operations)
+    registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    // Type-safe create operation
-    const todo = await prisma.todo.create({
-      data: {
-        title: title.trim(),
-        completed: false,
-      },
+    // Eloquent-like syntax with OttaORM
+    const todo = await Todo.create({
+      id: crypto.randomUUID(),
+      title: title.trim(),
+      completed: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     return NextResponse.json({
       success: true,
       message: 'Todo created successfully',
-      todo,
+      todo: todo.toJson(),
     });
   } catch (error) {
     console.error('D1 POST error:', error);

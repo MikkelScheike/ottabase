@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
-import type { PrismaClient } from '@prisma/client';
+import { createD1Driver } from '@ottabase/db/drizzle-d1';
+import { registerConnection } from '@ottabase/ottaorm';
+import { Todo } from '../../../../ottabase/models/Todo';
 
 export const runtime = 'edge';
 
@@ -16,17 +17,18 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    // ✅ Use Prisma with D1 adapter
-    const prisma = createPrismaD1Client<PrismaClient>(env.OBCF_D1);
+    // ✅ Use Drizzle with OttaORM
+    registerConnection('default', createD1Driver(env.OBCF_D1));
 
     // Test the connection by counting todos
     // In production, use migrations: pnpm db:migrate --name=init
-    const count = await prisma.todo.count();
+    const todos = await Todo.all();
+    const count = todos.length;
 
     return NextResponse.json({
       success: true,
       message: 'Database connection verified successfully',
-      info: `Found ${count} existing todos. Use 'pnpm db:migrate --name=init' to run migrations.`,
+      info: `Found ${count} existing todos. Use 'pnpm api:ottaorm:init' to run migrations.`,
     });
   } catch (error) {
     console.error('D1 initialization error:', error);
@@ -40,8 +42,8 @@ export async function POST(_request: NextRequest) {
         {
           error: 'Database not initialized',
           message:
-            'Run migrations first: cd apps/ottabase-template-app && pnpm db:migrate --name=init --apply=local',
-          hint: 'Or use wrangler: wrangler d1 execute DB --local --file=prisma/migrations/.../migration.sql',
+            'Run migrations first: Visit /api/ottaorm/init or use the OttaORM migration system',
+          hint: 'GET /api/ottaorm/init to initialize the database',
         },
         { status: 500 }
       );

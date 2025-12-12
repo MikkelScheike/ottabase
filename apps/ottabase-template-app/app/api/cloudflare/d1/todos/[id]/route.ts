@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
-import type { PrismaClient } from '@prisma/client';
+import { createD1Driver } from '@ottabase/db/drizzle-d1';
+import { registerConnection } from '@ottabase/ottaorm';
+import { Todo } from '../../../../../ottabase/models/Todo';
 
 export const runtime = 'edge';
 
-// PATCH /api/cloudflare/d1/todos/[id] - Update a todo (using Prisma)
+// PATCH /api/cloudflare/d1/todos/[id] - Update a todo (using OttaORM/Drizzle)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -13,18 +14,14 @@ export async function PATCH(
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: 'D1 database binding not configured' },
         { status: 500 }
       );
     }
 
-    const { id: idParam } = await params;
-    const id = parseInt(idParam);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
-    }
+    const { id } = await params;
 
     const body = await request.json();
     const { completed } = body;
@@ -36,19 +33,27 @@ export async function PATCH(
       );
     }
 
-    // ✅ Use Prisma with D1 adapter (type-safe updates)
-    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
+    // ✅ Use OttaORM with Drizzle (type-safe updates)
+    registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    // Type-safe update operation
-    const todo = await prisma.todo.update({
-      where: { id },
-      data: { completed },
-    });
+    // Find the todo by ID
+    const todo = await Todo.find(id);
+
+    if (!todo) {
+      return NextResponse.json(
+        { error: 'Todo not found' },
+        { status: 404 }
+      );
+    }
+
+    // Update using OttaORM
+    todo.set('completed', completed);
+    await todo.save();
 
     return NextResponse.json({
       success: true,
       message: 'Todo updated successfully',
-      todo,
+      todo: todo.toJson(),
     });
   } catch (error) {
     console.error('D1 PATCH error:', error);
@@ -62,7 +67,7 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/cloudflare/d1/todos/[id] - Delete a todo (using Prisma)
+// DELETE /api/cloudflare/d1/todos/[id] - Delete a todo (using OttaORM/Drizzle)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -70,26 +75,30 @@ export async function DELETE(
   try {
     const { env } = await getCloudflareContext();
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: 'D1 database binding not configured' },
         { status: 500 }
       );
     }
 
-    const { id: idParam } = await params;
-    const id = parseInt(idParam);
-    if (isNaN(id)) {
-      return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
+    const { id } = await params;
+
+    // ✅ Use OttaORM with Drizzle (type-safe deletes)
+    registerConnection('default', createD1Driver(env.OBCF_D1));
+
+    // Find the todo by ID
+    const todo = await Todo.find(id);
+
+    if (!todo) {
+      return NextResponse.json(
+        { error: 'Todo not found' },
+        { status: 404 }
+      );
     }
 
-    // ✅ Use Prisma with D1 adapter (type-safe deletes)
-    const prisma = createPrismaD1Client<PrismaClient>(env.DB);
-
-    // Type-safe delete operation
-    await prisma.todo.delete({
-      where: { id },
-    });
+    // Delete using OttaORM
+    await todo.delete();
 
     return NextResponse.json({
       success: true,
