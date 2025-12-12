@@ -45,6 +45,7 @@
     "@prisma/adapter-d1": "catalog:",
     "@prisma/client": "catalog:",
     "critters": "catalog:",
+    "drizzle-orm": "catalog:",
     "jotai": "catalog:",
     "lucide-react": "catalog:",
     "next": "catalog:",

@@ -317,6 +317,9 @@ importers:
       critters:
         specifier: 'catalog:'
         version: 0.0.22
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.38.4(@cloudflare/workers-types@4.20251205.0)(@prisma/client@5.22.0(prisma@5.22.0))(@types/react@19.2.7)(prisma@5.22.0)(react@19.2.1)
       jotai:
         specifier: 'catalog:'
         version: 2.14.0(@babel/core@7.28.5)(@babel/template@7.27.2)(@types/react@19.2.7)(react@19.2.1)
