@@ -80,27 +80,16 @@ jobs:
       - name: Build packages
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          echo "Current PATH: $PATH"
-          echo ""
-          echo "Verifying build dependencies:"
-          echo "- tsc: $(pnpm exec tsc --version)"
-          echo "- tsup: $(pnpm exec tsup --version)"
-          echo "- esbuild: $(pnpm exec esbuild --version || echo 'not found')"
-          echo ""
-          echo "Testing direct build command in a package:"
-          cd packages/state && pnpm exec tsup src/index.ts --format cjs,esm --dts --clean && cd ../..
-          echo ""
-          echo "Direct build successful! Now running turbo build..."
-          echo "Turbo will use PATH: $PATH"
-          pnpm exec turbo build --filter="./packages/*" --concurrency=1 --log-order=stream --no-daemon
+          echo "Building all packages serially using pnpm..."
+          pnpm --filter "./packages/**" --workspace-concurrency=1 run build
         env:
           NODE_ENV: production
 
-      # Build the app and all its dependencies using Turborepo
+      # Build the app and all its dependencies
       - name: Build application
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          pnpm exec turbo build --filter=${{ matrix.app }} --concurrency=1 --no-daemon
+          pnpm --filter=${{ matrix.app }} run build
         env:
           NODE_ENV: production
 
