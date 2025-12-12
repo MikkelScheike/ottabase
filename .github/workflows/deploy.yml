@@ -71,13 +71,13 @@ jobs:
 
       # Build packages first
       - name: Build packages
-        run: pnpm exec turbo build --filter="./packages/*"
+        run: pnpm exec turbo build --filter="./packages/*" --concurrency=1
         env:
           NODE_ENV: production
 
       # Build the app and all its dependencies using Turborepo
       - name: Build application
-        run: pnpm exec turbo build --filter=${{ matrix.app }}
+        run: pnpm exec turbo build --filter=${{ matrix.app }} --concurrency=1
         env:
           NODE_ENV: production
 
