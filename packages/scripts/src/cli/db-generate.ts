@@ -3,7 +3,7 @@
 // @ottabase/scripts - DB Schema Generator CLI
 // ============================================================
 
-import type { AppDbConfig } from "@ottabase/db/prisma";
+import type { AppDbConfig } from "@ottabase/db/config";
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
 import path from "node:path";
