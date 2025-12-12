@@ -35,11 +35,6 @@
       "types": "./dist/adapters/drizzle-adapter.d.ts",
       "import": "./dist/adapters/drizzle-adapter.mjs",
       "require": "./dist/adapters/drizzle-adapter.js"
-    },
-    "./adapters/prisma": {
-      "types": "./dist/adapters/prisma-adapter.d.ts",
-      "import": "./dist/adapters/prisma-adapter.mjs",
-      "require": "./dist/adapters/prisma-adapter.js"
     }
   },
   "files": [
@@ -48,8 +43,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/adapter.ts src/adapters/drizzle-adapter.ts src/adapters/prisma-adapter.ts src/config.ts src/providers.ts src/session.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/adapter.ts src/adapters/drizzle-adapter.ts src/adapters/prisma-adapter.ts src/config.ts src/providers.ts src/session.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/adapter.ts src/adapters/drizzle-adapter.ts src/config.ts src/providers.ts src/session.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/adapter.ts src/adapters/drizzle-adapter.ts src/config.ts src/providers.ts src/session.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit"

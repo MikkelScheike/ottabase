@@ -53,11 +53,11 @@ export {
 // ============================================================
 // PRISMA ADAPTER (Legacy)
 // ============================================================
-export {
-    createPrismaD1AuthAdapter,
-    createPrismaD1AuthAdapterCached,
-    type PrismaD1AuthAdapterOptions
-} from "./adapters/prisma-adapter";
+//export {
+//    createPrismaD1AuthAdapter,
+//    createPrismaD1AuthAdapterCached,
+//    type PrismaD1AuthAdapterOptions
+//} from "./adapters/prisma-adapter";
 
 // ============================================================
 // CONFIGURATION HELPERS
@@ -100,4 +100,3 @@ export {
 // TYPE DEFINITIONS
 // ============================================================
 export type { AuthConfig } from "./types";
-

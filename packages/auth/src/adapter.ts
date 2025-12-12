@@ -15,15 +15,11 @@ import {
   createDrizzleD1AuthAdapter as createDrizzleAdapter,
   createDrizzleD1AuthAdapterCached as createDrizzleAdapterCached,
 } from "./adapters/drizzle-adapter";
-import {
-  createPrismaD1AuthAdapter as createPrismaAdapter,
-  createPrismaD1AuthAdapterCached as createPrismaAdapterCached,
-} from "./adapters/prisma-adapter";
 
 /**
  * Supported ORM types for Auth.js adapters
  */
-export type AuthORM = "prisma" | "drizzle";
+export type AuthORM = "drizzle";
 
 /**
  * Options for creating a D1 Auth.js adapter
@@ -39,7 +35,6 @@ export interface D1AuthAdapterOptions {
 
   /**
    * ORM to use for the adapter
-   * - "prisma": Use Prisma ORM (requires @auth/prisma-adapter)
    * - "drizzle": Use Drizzle ORM (custom implementation)
    *
    * @default "drizzle"
@@ -91,13 +86,8 @@ export function createD1AuthAdapter(
 ): Adapter {
   const { orm = "drizzle", ...adapterOptions } = options;
 
-  // Delegate to ORM-specific adapter
-  if (orm === "drizzle") {
-    return createDrizzleAdapter(d1, adapterOptions);
-  }
-
-  // Prisma adapter (legacy)
-  return createPrismaAdapter(d1, adapterOptions);
+  // Use Drizzle adapter (recommended for D1)
+  return createDrizzleAdapter(d1, adapterOptions);
 }
 
 /**
@@ -134,13 +124,8 @@ export function createD1AuthAdapterCached(
 ): Adapter {
   const { orm = "drizzle", ...adapterOptions } = options;
 
-  // Delegate to ORM-specific cached adapter
-  if (orm === "drizzle") {
-    return createDrizzleAdapterCached(d1, adapterOptions);
-  }
-
-  // Prisma adapter (legacy)
-  return createPrismaAdapterCached(d1, adapterOptions);
+  // Use Drizzle adapter (recommended for D1)
+  return createDrizzleAdapterCached(d1, adapterOptions);
 }
 
 // ============================================================
@@ -153,11 +138,3 @@ export {
     createDrizzleD1AuthAdapterCached,
     type DrizzleD1AuthAdapterOptions
 } from "./adapters/drizzle-adapter";
-
-// Prisma adapter (legacy)
-export {
-    createPrismaD1AuthAdapter,
-    createPrismaD1AuthAdapterCached,
-    type PrismaD1AuthAdapterOptions
-} from "./adapters/prisma-adapter";
-
