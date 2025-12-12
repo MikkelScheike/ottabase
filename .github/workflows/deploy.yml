@@ -34,6 +34,21 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Verify build tools are accessible
+      - name: Verify build tools
+        run: |
+          echo "Verifying build tool installation..."
+          echo "Node modules bin directory:"
+          ls -la node_modules/.bin/ | grep -E "tsup|rimraf" || true
+          echo ""
+          echo "Checking PATH:"
+          echo $PATH
+          echo ""
+          echo "Testing tsup:"
+          pnpm exec tsup --version
+          echo "Testing rimraf:"
+          pnpm exec rimraf --version
+
       # Cache Turborepo outputs for faster builds
       - name: Cache Turborepo
         uses: actions/cache@v4
@@ -61,23 +76,19 @@ jobs:
           APP_FOLDER=$(echo "${{ matrix.app }}" | sed 's/@ottabase\///')
           echo "folder=$APP_FOLDER" >> $GITHUB_OUTPUT
 
-      # Debug: Check if tsup is available
-      - name: Verify tsup installation
-        run: |
-          echo "Checking tsup availability..."
-          which tsup || echo "tsup not in PATH"
-          pnpm exec tsup --version || echo "tsup not executable via pnpm exec"
-          ls -la node_modules/.bin/tsup || echo "tsup binary not found in node_modules/.bin"
-
       # Build packages first
       - name: Build packages
-        run: pnpm exec turbo build --filter="./packages/*" --concurrency=1
+        run: |
+          export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
+          pnpm exec turbo build --filter="./packages/*" --concurrency=1
         env:
           NODE_ENV: production
 
       # Build the app and all its dependencies using Turborepo
       - name: Build application
-        run: pnpm exec turbo build --filter=${{ matrix.app }} --concurrency=1
+        run: |
+          export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
+          pnpm exec turbo build --filter=${{ matrix.app }} --concurrency=1
         env:
           NODE_ENV: production
 
