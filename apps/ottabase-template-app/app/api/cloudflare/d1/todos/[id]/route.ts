@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import { registerConnection } from '@ottabase/ottaorm';
-import { Todo } from '../../../../../ottabase/models/Todo';
+import { Todo } from '../../../../../../ottabase/models/Todo';
 
 export const runtime = 'edge';
 
