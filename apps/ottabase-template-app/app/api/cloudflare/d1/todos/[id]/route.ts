@@ -98,7 +98,7 @@ export async function DELETE(
     }
 
     // Delete using OttaORM
-    await todo.delete();
+    await todo.destroy();
 
     return NextResponse.json({
       success: true,

@@ -52,7 +52,7 @@ const nextConfig = {
     // Dangerously allow production builds to successfully complete even if
     // your project has type errors.
     // TODO: Remove this once React 19 type compatibility issues are resolved
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
 
   // Experimental features for Next.js 15
@@ -119,9 +119,9 @@ const nextConfig = {
           /^cloudflare:(.*)$/,
           (resource) => {
             // Replace cloudflare: imports with an empty module
-            resource.request = require.resolve('./cloudflare-stub.js');
-          }
-        )
+            resource.request = require.resolve("./cloudflare-stub.js");
+          },
+        ),
       );
     }
 
@@ -135,7 +135,7 @@ const nextConfig = {
     // Suppress Watchpack ENOTDIR errors (Windows-specific CSS file watching issue)
     config.infrastructureLogging = {
       ...config.infrastructureLogging,
-      level: 'error',
+      level: "error",
     };
 
     return config;

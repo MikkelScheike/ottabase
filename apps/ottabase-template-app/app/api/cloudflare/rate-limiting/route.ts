@@ -7,7 +7,7 @@ import type { KVNamespace } from '@cloudflare/workers-types';
 export const runtime = 'edge';
 
 // Simulated rate limiter using KV for local dev
-async function simulateRateLimit(env: { OTTABASE_KV?: KVNamespace }, key: string) {
+async function simulateRateLimit(env: { OBCF_KV?: KVNamespace }, key: string) {
   if (!env.OBCF_KV) {
     console.log('[Rate Limit] KV not available');
     return null; // KV not available, can't simulate
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Rate limiter not available',
-            hint: 'Enable RATE_LIMITER binding or ensure OTTABASE_KV is configured for local dev simulation'
+            hint: 'Enable RATE_LIMITER binding or ensure OBCF_KV is configured for local dev simulation'
           },
           { status: 500 }
         );
