@@ -6,6 +6,9 @@ const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
 initOpenNextCloudflareForDev();
 
 const nextConfig = {
+  // Required for OpenNext packaging (creates `.next/standalone/**`)
+  output: "standalone",
+
   // Enable transpilation of packages
   transpilePackages: [
     "@ottabase/ui-core",
