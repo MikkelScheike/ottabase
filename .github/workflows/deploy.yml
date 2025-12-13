@@ -10,11 +10,15 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    name: Deploy ${{ matrix.app }}
+    name: Deploy ${{ matrix.app }} (apps/${{ matrix.folder }})
     strategy:
       matrix:
-        app: ["@ottabase/ottabase-template-app"]
-        # Add more apps here as needed, e.g. '@ottabase/app1', '@ottabase/app2'
+        include:
+          - app: "@ottabase/ottabase-template-app"
+            folder: "ottabase-template-app"
+        # Add more apps here as needed, e.g.
+        # - app: "@ottabase/app1"
+        #   folder: "app1"
 
     steps:
       - name: Checkout
@@ -30,6 +34,7 @@ jobs:
         with:
           node-version: "24"
           cache: "pnpm"
+          cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts=false
@@ -49,59 +54,42 @@ jobs:
           echo "Testing rimraf:"
           pnpm exec rimraf --version
 
-      # Cache Turborepo outputs for faster builds
+      # Cache Turborepo local cache for faster builds
       - name: Cache Turborepo
         uses: actions/cache@v4
         with:
-          path: .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
+          path: .turbo/cache
+          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml', 'turbo.json') }}
           restore-keys: |
-            ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-turbo-
 
-      # Cache Next.js build for faster rebuilds
+      # Cache Next.js build for faster rebuilds (per app)
       - name: Cache Next.js
         uses: actions/cache@v4
         with:
-          path: apps/*/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/**/*.ts', 'apps/**/*.tsx', 'apps/**/*.js', 'apps/**/*.jsx') }}
+          path: apps/${{ matrix.folder }}/.next/cache
+          key: ${{ runner.os }}-nextjs-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-${{ matrix.folder }}-
             ${{ runner.os }}-nextjs-
 
-      # Extract app folder name for later steps
-      - name: Set app folder name
-        id: app-info
-        run: |
-          APP_FOLDER=$(echo "${{ matrix.app }}" | sed 's/@ottabase\///')
-          echo "folder=$APP_FOLDER" >> $GITHUB_OUTPUT
-
-      # Build packages first
-      - name: Build packages
+      # Build via Turborepo so .turbo cache is populated (app + its deps)
+      - name: Build (Turbo)
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          echo "Building all packages serially using pnpm..."
-          pnpm --filter "./packages/**" --workspace-concurrency=5 run build
-        env:
-          NODE_ENV: production
-
-      # Build the app and all its dependencies
-      - name: Build application
-        run: |
-          export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          pnpm --filter=${{ matrix.app }} run build
+          pnpm turbo build --filter=${{ matrix.app }}...
         env:
           NODE_ENV: production
 
       # Build Cloudflare Worker bundle
       - name: Build Cloudflare Worker
-        working-directory: apps/${{ steps.app-info.outputs.folder }}
+        working-directory: apps/${{ matrix.folder }}
         run: pnpm build:worker
 
       # Substitute production secrets into wrangler.jsonc
       - name: Substitute production resource IDs
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        working-directory: apps/${{ steps.app-info.outputs.folder }}
+        working-directory: apps/${{ matrix.folder }}
         run: |
           sed -i 's/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g' wrangler.jsonc
           sed -i 's/PRODUCTION_KV_NAMESPACE_ID/${{ secrets.KV_NAMESPACE_ID }}/g' wrangler.jsonc
@@ -113,5 +101,5 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/${{ steps.app-info.outputs.folder }}
+          workingDirectory: apps/${{ matrix.folder }}
           command: deploy --env production
