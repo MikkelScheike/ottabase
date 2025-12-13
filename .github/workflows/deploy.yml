@@ -80,8 +80,8 @@ jobs:
       - name: Build packages
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          echo "Building all packages serially using pnpm..."
-          pnpm --filter "./packages/**" --workspace-concurrency=5 run build
+          echo "⏳ Building all packages using pnpm..."
+          pnpm --filter "./packages/**" run build
         env:
           NODE_ENV: production
 
