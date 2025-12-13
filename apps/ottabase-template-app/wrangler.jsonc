@@ -129,25 +129,13 @@
     "nodejs_compat"
   ],
 
-  // Durable Objects bindings for stateful, persistent objects
-  // Local dev: Uses local Durable Object storage
-  // Preview/Prod: Uses real Cloudflare Durable Objects
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "OBCF_REALTIME",
-        "class_name": "RealtimeActor",
-        "script_name": "ottabase-template-app"
-      }
-    ]
-  },
-
   // Limits configuration
   "limits": {
     "cpu_ms": 50000 // 50 seconds CPU time limit
   },
 
   // Migrations for Durable Objects
+  // NOTE: `migrations` is a top-level-only Wrangler key (cannot live under `env.*`).
   "migrations": [
     {
       "tag": "v1",
@@ -161,6 +149,17 @@
       "vars": {
         "ENVIRONMENT": "production"
       },
+// Durable Objects bindings for stateful, persistent objects
+// Enabled only for production deploys (`wrangler deploy --env production`).
+"durable_objects": {
+  "bindings": [
+    {
+      "name": "OBCF_REALTIME",
+      "class_name": "RealtimeActor",
+      "script_name": "ottabase-template-app"
+    }
+  ]
+},
       // Production D1 Database - set via CI/CD substitution or manually
       "d1_databases": [
         {
