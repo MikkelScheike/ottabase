@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
-import { createRateLimitingClient } from '@ottabase/cf/rate-limiting';
-import { createKVClient } from '@ottabase/cf/kv';
-import type { KVNamespace } from '@cloudflare/workers-types';
+import type { KVNamespace } from "@cloudflare/workers-types";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { createKVClient } from "@ottabase/cf/kv";
+import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
+import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = 'edge';
+export const runtime = "edge";
 
 // Simulated rate limiter using KV for local dev
 async function simulateRateLimit(env: { OBCF_KV?: KVNamespace }, key: string) {
   if (!env.OBCF_KV) {
-    console.log('[Rate Limit] KV not available');
+    console.log("[Rate Limit] KV not available");
     return null; // KV not available, can't simulate
   }
 
@@ -25,8 +25,8 @@ async function simulateRateLimit(env: { OBCF_KV?: KVNamespace }, key: string) {
   console.log(`[Rate Limit] KV get result:`, {
     success: result.success,
     hasData: result.success ? !!result.data : false,
-    dataType: result.success ? typeof result.data : 'error',
-    data: result.success ? result.data : null
+    dataType: result.success ? typeof result.data : "error",
+    data: result.success ? result.data : null,
   });
 
   let count = 0;
@@ -40,13 +40,19 @@ async function simulateRateLimit(env: { OBCF_KV?: KVNamespace }, key: string) {
       console.log(`[Rate Limit] Parsed data:`, data);
       count = data.count || 0;
       firstRequestTime = data.firstRequestTime || now;
-      console.log(`[Rate Limit] Loaded count=${count}, firstRequestTime=${new Date(firstRequestTime).toISOString()}`);
+      console.log(
+        `[Rate Limit] Loaded count=${count}, firstRequestTime=${new Date(
+          firstRequestTime,
+        ).toISOString()}`,
+      );
     } catch (error) {
-      console.error('[Rate Limit] Error parsing stored data:', error);
+      console.error("[Rate Limit] Error parsing stored data:", error);
       // Invalid data, reset
     }
   } else {
-    console.log(`[Rate Limit] No stored data found, starting fresh with count=0`);
+    console.log(
+      `[Rate Limit] No stored data found, starting fresh with count=0`,
+    );
   }
 
   // Check if period has expired
@@ -70,7 +76,11 @@ async function simulateRateLimit(env: { OBCF_KV?: KVNamespace }, key: string) {
   const remaining = Math.max(0, LIMIT - count);
   const resetAfter = Math.max(1, Math.ceil(PERIOD - elapsed));
 
-  console.log(`[Rate Limit] Decision: count=${count}, limit=${LIMIT}, isAllowed=${isAllowed} (${count} <= ${LIMIT} = ${count <= LIMIT})`);
+  console.log(
+    `[Rate Limit] Decision: count=${count}, limit=${LIMIT}, isAllowed=${isAllowed} (${count} <= ${LIMIT} = ${
+      count <= LIMIT
+    })`,
+  );
 
   // Store updated count
   const dataToStore = JSON.stringify({ count, firstRequestTime });
@@ -78,11 +88,13 @@ async function simulateRateLimit(env: { OBCF_KV?: KVNamespace }, key: string) {
   const putResult = await kv.put(
     rateLimitKey,
     dataToStore,
-    { expirationTtl: PERIOD + 10 } // Add buffer to prevent early expiration
+    { expirationTtl: PERIOD + 10 }, // Add buffer to prevent early expiration
   );
   console.log(`[Rate Limit] KV put result:`, putResult);
 
-  console.log(`[Rate Limit] Final result for ${key}: count=${count}, limit=${LIMIT}, remaining=${remaining}, resetAfter=${resetAfter}, allowed=${isAllowed}`);
+  console.log(
+    `[Rate Limit] Final result for ${key}: count=${count}, limit=${LIMIT}, remaining=${remaining}, resetAfter=${resetAfter}, allowed=${isAllowed}`,
+  );
 
   return {
     success: isAllowed,
@@ -101,45 +113,56 @@ export async function POST(request: NextRequest) {
     const { key } = body;
 
     if (!key) {
-      return NextResponse.json(
-        { error: 'Key is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Key is required" }, { status: 400 });
     }
 
-    let rateLimitData: { success: boolean; limit: number; remaining: number; resetAfter: number } | null = null;
+    let rateLimitData: {
+      success: boolean;
+      limit: number;
+      remaining: number;
+      resetAfter: number;
+    } | null = null;
 
     // Try real rate limiter first
     if (env.OBCF_RATE_LIMITER) {
       try {
-        const limiter = createRateLimitingClient({ rateLimiter: env.OBCF_RATE_LIMITER });
+        const limiter = createRateLimitingClient({
+          rateLimiter: env.OBCF_RATE_LIMITER,
+        });
         const result = await limiter.limit({ key });
 
         if (result.success) {
           const { success, limit, remaining, resetAfter } = result.data;
 
           // Check if we got valid data (not all undefined)
-          if (limit !== undefined && remaining !== undefined && resetAfter !== undefined) {
+          if (
+            limit !== undefined &&
+            remaining !== undefined &&
+            resetAfter !== undefined
+          ) {
             rateLimitData = { success, limit, remaining, resetAfter };
           }
         }
       } catch (error) {
-        console.warn('Real rate limiter failed, falling back to simulation:', error);
+        console.warn(
+          "Real rate limiter failed, falling back to simulation:",
+          error,
+        );
       }
     }
 
     // Fallback to simulated rate limiter for local dev
     if (!rateLimitData) {
-      console.log('Using simulated rate limiter with KV storage');
+      console.log("Using simulated rate limiter with KV storage");
       rateLimitData = await simulateRateLimit(env, key);
 
       if (!rateLimitData) {
         return NextResponse.json(
           {
-            error: 'Rate limiter not available',
-            hint: 'Enable OBCF_RATE_LIMITER binding or ensure OBCF_KV is configured for local dev simulation'
+            error: "Rate limiter not available",
+            hint: "Enable OBCF_RATE_LIMITER binding or ensure OBCF_KV is configured for local dev simulation",
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
     }
@@ -149,7 +172,7 @@ export async function POST(request: NextRequest) {
     if (!success) {
       return NextResponse.json(
         {
-          error: 'Rate limit exceeded',
+          error: "Rate limit exceeded",
           limit,
           remaining,
           resetAfter,
@@ -157,38 +180,38 @@ export async function POST(request: NextRequest) {
         {
           status: 429,
           headers: {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': remaining.toString(),
-            'X-RateLimit-Reset': resetAfter.toString(),
+            "X-RateLimit-Limit": limit.toString(),
+            "X-RateLimit-Remaining": remaining.toString(),
+            "X-RateLimit-Reset": resetAfter.toString(),
           },
-        }
+        },
       );
     }
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Request allowed',
+        message: "Request allowed",
         limit,
         remaining,
         resetAfter,
       },
       {
         headers: {
-          'X-RateLimit-Limit': limit.toString(),
-          'X-RateLimit-Remaining': remaining.toString(),
-          'X-RateLimit-Reset': resetAfter.toString(),
+          "X-RateLimit-Limit": limit.toString(),
+          "X-RateLimit-Remaining": remaining.toString(),
+          "X-RateLimit-Reset": resetAfter.toString(),
         },
-      }
+      },
     );
   } catch (error) {
-    console.error('Rate limiting error:', error);
+    console.error("Rate limiting error:", error);
     return NextResponse.json(
       {
-        error: 'Failed to check rate limit',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to check rate limit",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
