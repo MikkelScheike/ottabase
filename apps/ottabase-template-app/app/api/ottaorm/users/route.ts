@@ -18,7 +18,7 @@ export const runtime = "edge";
  */
 export async function GET(request: NextRequest) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
 
     if (!env.OBCF_D1) {
       return NextResponse.json(
@@ -56,7 +56,7 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
 
     if (!env.OBCF_D1) {
       return NextResponse.json(

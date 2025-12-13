@@ -110,9 +110,9 @@ export async function POST(request: NextRequest) {
     let rateLimitData: { success: boolean; limit: number; remaining: number; resetAfter: number } | null = null;
 
     // Try real rate limiter first
-    if (env.RATE_LIMITER) {
+    if (env.OBCF_RATE_LIMITER) {
       try {
-        const limiter = createRateLimitingClient({ rateLimiter: env.RATE_LIMITER });
+        const limiter = createRateLimitingClient({ rateLimiter: env.OBCF_RATE_LIMITER });
         const result = await limiter.limit({ key });
 
         if (result.success) {
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(
           {
             error: 'Rate limiter not available',
-            hint: 'Enable RATE_LIMITER binding or ensure OBCF_KV is configured for local dev simulation'
+            hint: 'Enable OBCF_RATE_LIMITER binding or ensure OBCF_KV is configured for local dev simulation'
           },
           { status: 500 }
         );

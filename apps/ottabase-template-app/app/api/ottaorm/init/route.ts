@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
 async function handleMigration(request: NextRequest) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
 
     if (!env.OBCF_D1) {
       return NextResponse.json(

@@ -19,17 +19,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const { id } = await params;
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
         { status: 500 }
       );
     }
 
-    registerConnection("default", createD1Driver(env.DB));
+    registerConnection("default", createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const user = await User.find(id);
@@ -64,17 +64,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { env } = getCloudflareContext();
+    const { env } = await getCloudflareContext();
     const { id } = await params;
 
-    if (!env.DB) {
+    if (!env.OBCF_D1) {
       return NextResponse.json(
         { error: "D1 database not configured" },
         { status: 500 }
       );
     }
 
-    registerConnection("default", createD1Driver(env.DB));
+    registerConnection("default", createD1Driver(env.OBCF_D1));
 
     // Eloquent-like syntax!
     const deleted = await User.delete(id);
