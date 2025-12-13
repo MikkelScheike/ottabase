@@ -7,9 +7,23 @@ const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
 // Initialize OpenNext Cloudflare for local development
 initOpenNextCloudflareForDev();
 
+const isWindows = process.platform === "win32";
+const isCI = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true";
+const forceStandalone =
+  process.env.NEXT_OUTPUT === "standalone" ||
+  process.env.NEXT_OUTPUT_STANDALONE === "true";
+
+// Next.js standalone output copies dependencies into `.next/standalone/**`.
+// On Windows this often involves creating symlinks, which can fail (EPERM)
+// unless Developer Mode / elevated privileges are enabled.
+//
+// We default to NOT using standalone on Windows for local builds, but always
+// keep it for CI (Linux) so OpenNext packaging works.
+const shouldUseStandaloneOutput = forceStandalone || !isWindows || isCI;
+
 const nextConfig = {
   // Required for OpenNext packaging (creates `.next/standalone/**`)
-  output: "standalone",
+  output: shouldUseStandaloneOutput ? "standalone" : undefined,
 
   // Monorepo: ensure Next can trace files outside the app directory
   // so CI/OpenNext packaging consistently includes workspace dependencies.
