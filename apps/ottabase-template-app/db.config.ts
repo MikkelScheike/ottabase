@@ -7,7 +7,7 @@
 //
 // ============================================================
 
-import { defineAppDbConfig } from "@ottabase/db/prisma";
+import { defineAppDbConfig } from "@ottabase/db/config";
 
 export default defineAppDbConfig({
   appId: "ottabase-template-app",

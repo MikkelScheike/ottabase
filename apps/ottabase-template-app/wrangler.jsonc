@@ -6,7 +6,9 @@
   "compatibility_date": "2024-11-01",
 
   // Main worker configuration
-  "main": ".worker-next/index.mjs",
+  // Use a small wrapper entrypoint so we can export custom Durable Object classes
+  // alongside the OpenNext worker handler.
+  "main": "cloudflare-worker.ts",
 
   // Assets configuration for static files
   "assets": {
