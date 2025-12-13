@@ -61,7 +61,7 @@ export interface UseOttaEditorReturn {
   /**
    * Ref to attach to the editor container element
    */
-  editorRef: React.RefObject<HTMLDivElement>;
+  editorRef: React.RefObject<HTMLDivElement | null>;
 
   /**
    * OttaEditor instance
