@@ -14,9 +14,14 @@ export async function GET(request: NextRequest) {
 
     if (!env.OBCF_REALTIME) {
       return new Response(
-        JSON.stringify({ error: 'Realtime Durable Object binding not configured' }),
+        JSON.stringify({
+          error: 'Realtime is not available in this environment',
+          details: 'The Durable Object binding (OBCF_REALTIME) is not configured for local development.',
+          hint: 'Deploy with `wrangler deploy --env production` to enable Durable Objects, or run the Durable Object in a separate Worker for local development.',
+          environment: env.ENVIRONMENT ?? 'unknown',
+        }),
         {
-          status: 500,
+          status: 501,
           headers: { 'Content-Type': 'application/json' },
         }
       );

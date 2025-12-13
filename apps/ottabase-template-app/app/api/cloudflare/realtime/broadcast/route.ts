@@ -16,8 +16,13 @@ export async function POST(request: NextRequest) {
 
     if (!env.OBCF_REALTIME) {
       return NextResponse.json(
-        { error: 'Realtime Durable Object binding not configured' },
-        { status: 500 }
+        {
+          error: 'Realtime is not available in this environment',
+          details: 'The Durable Object binding (OBCF_REALTIME) is not configured for local development.',
+          hint: 'Deploy with `wrangler deploy --env production` to enable Durable Objects, or run the Durable Object in a separate Worker for local development.',
+          environment: env.ENVIRONMENT ?? 'unknown',
+        },
+        { status: 501 }
       );
     }
 

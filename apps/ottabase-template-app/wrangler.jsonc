@@ -149,17 +149,18 @@
       "vars": {
         "ENVIRONMENT": "production"
       },
-// Durable Objects bindings for stateful, persistent objects
-// Enabled only for production deploys (`wrangler deploy --env production`).
-"durable_objects": {
-  "bindings": [
-    {
-      "name": "OBCF_REALTIME",
-      "class_name": "RealtimeActor",
-      "script_name": "ottabase-template-app"
-    }
-  ]
-},
+
+      // Durable Objects bindings for stateful, persistent objects
+      // Enabled only for production deploys (`wrangler deploy --env production`).
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "OBCF_REALTIME",
+            "class_name": "RealtimeActor",
+            "script_name": "ottabase-template-app"
+          }
+        ]
+      },
       // Production D1 Database - set via CI/CD substitution or manually
       "d1_databases": [
         {
