@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { NextRequest, NextResponse } from "next/server";
 // import { RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
 
 // TODO: Re-enable edge runtime after fixing Cloudflare Workers module bundling
@@ -16,12 +16,13 @@ export async function GET(_request: NextRequest) {
     if (!env.OBCF_REALTIME) {
       return NextResponse.json(
         {
-          error: 'Realtime is not available in this environment',
-          details: 'The Durable Object binding (OBCF_REALTIME) is not configured for local development.',
-          hint: 'Deploy with `wrangler deploy --env production` to enable Durable Objects, or run the Durable Object in a separate Worker for local development.',
-          environment: env.ENVIRONMENT ?? 'unknown',
+          error: "Realtime is not available in this environment",
+          details:
+            "The Durable Object binding (OBCF_REALTIME) is not configured for local development.",
+          hint: "Deploy with `wrangler deploy --env production` to enable Durable Objects, or run the Durable Object in a separate Worker for local development.",
+          environment: env.ENVIRONMENT ?? "unknown",
         },
-        { status: 501 }
+        { status: 501 },
       );
     }
 
@@ -35,13 +36,13 @@ export async function GET(_request: NextRequest) {
       offlineMessagesQueued: 0,
     });
   } catch (error) {
-    console.error('Stats error:', error);
+    console.error("Stats error:", error);
     return NextResponse.json(
       {
-        error: 'Failed to get stats',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to get stats",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
