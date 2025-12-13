@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 
+const path = require("path");
+
 const { initOpenNextCloudflareForDev } = require("@opennextjs/cloudflare");
 
 // Initialize OpenNext Cloudflare for local development
@@ -8,6 +10,10 @@ initOpenNextCloudflareForDev();
 const nextConfig = {
   // Required for OpenNext packaging (creates `.next/standalone/**`)
   output: "standalone",
+
+  // Monorepo: ensure Next can trace files outside the app directory
+  // so CI/OpenNext packaging consistently includes workspace dependencies.
+  outputFileTracingRoot: path.resolve(__dirname, "../../"),
 
   // Enable transpilation of packages
   transpilePackages: [
@@ -33,11 +39,6 @@ const nextConfig = {
     // your project has type errors.
     // TODO: Remove this once React 19 type compatibility issues are resolved
     ignoreBuildErrors: true,
-  },
-
-  // Optimize images
-  images: {
-    remotePatterns: [],
   },
 
   // Experimental features for Next.js 15
