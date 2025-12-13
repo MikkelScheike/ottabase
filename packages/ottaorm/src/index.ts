@@ -15,24 +15,27 @@ export {
 export { runMigrations, rollbackMigrations, coreMigrations } from "./migrations";
 export type { Migration } from "./migrations";
 
-// Base models
-export {
-  AbstractBaseModel,
-  BaseModel,
-  MongoBaseModel
-} from "./base";
+/**
+ * Base models (Edge-safe)
+ *
+ * Note: MongoDB-related exports are intentionally NOT exported from this entrypoint
+ * because they pull in the `mongodb` package (Node-only) which breaks Next.js Edge runtime.
+ */
+export { AbstractBaseModel, BaseModel } from "./base";
 export type {
   IModelConstructorParams,
-  IMongoModelConstructorParams,
   ModelFieldType,
   ModelFieldDescriptor,
   ModelFields,
-  PaginationResult
+  PaginationResult,
 } from "./base";
 
-// Core models
+/**
+ * Core models (SQL only - Edge-safe)
+ *
+ * These exports are safe for Next.js Edge runtime.
+ */
 export {
-  // SQL models
   User,
   usersTable,
   Account,
@@ -42,8 +45,13 @@ export {
   postTagsTable,
   Tag,
   tagsTable,
-  // MongoDB models
-  Log,
+  // Auth.js SQL models (Edge-safe)
+  Authenticator,
+  authenticatorsTable,
+  Session,
+  sessionsTable,
+  VerificationToken,
+  verificationTokensTable,
 } from "./models";
 export type {
   UserType,
@@ -54,4 +62,10 @@ export type {
   NewPostType,
   TagType,
   NewTagType,
+  AuthenticatorType,
+  NewAuthenticatorType,
+  SessionType,
+  NewSessionType,
+  VerificationTokenType,
+  NewVerificationTokenType,
 } from "./models";
