@@ -23,6 +23,7 @@ ottabase/
 
 - **Node.js**: `>=24.0.0` (LTS)
 - **pnpm**: `>=10.0.0` (specified: `10.15.1`)
+- **Windows Users**: Ensure [Visual C++ Redistributable](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170#latest-supported-redistributable-version) is installed for builds to work correctly.
 
 ### Installation
 
