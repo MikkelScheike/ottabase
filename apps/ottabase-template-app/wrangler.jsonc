@@ -6,14 +6,12 @@
   "compatibility_date": "2024-11-01",
 
   // Main worker configuration
-  // Use a small wrapper entrypoint so we can export custom Durable Object classes
-  // alongside the OpenNext worker handler.
-  "main": "cloudflare-worker.ts",
+  // Point directly to OpenNext output (OpenNext handles all bundling)
+  // When Durable Objects are needed, use cloudflare-worker.ts wrapper instead
+  "main": ".open-next/index.js",
 
-  // Skip bundling - OpenNext already bundles everything into .open-next/
-  // Wrangler will bundle cloudflare-worker.ts which re-exports from .open-next/index.mjs
-  // The .open-next directory must exist before wrangler runs
-  "no_bundle": false,
+  // Disable bundling - OpenNext already bundles everything
+  "no_bundle": true,
 
   // Assets are handled by OpenNext internally - no separate assets config needed
   // OpenNext bundles static assets into the worker output automatically
@@ -136,26 +134,26 @@
     "cpu_ms": 50000 // 50 seconds CPU time limit
   },
 
-  // Durable Objects bindings for stateful, persistent objects
-  // Available in all environments (dev, preview, production)
-  "durable_objects": {
-    "bindings": [
-      {
-        "name": "OBCF_REALTIME",
-        "class_name": "RealtimeActor",
-        "script_name": "ottabase-template-app"
-      }
-    ]
-  },
+  // Durable Objects temporarily disabled (not being used in code yet)
+  // Uncomment when ready to use Durable Objects
+  // "durable_objects": {
+  //   "bindings": [
+  //     {
+  //       "name": "OBCF_REALTIME",
+  //       "class_name": "RealtimeActor",
+  //       "script_name": "ottabase-template-app"
+  //     }
+  //   ]
+  // },
 
-  // Migrations for Durable Objects
+  // Migrations for Durable Objects (temporarily disabled)
   // NOTE: `migrations` is a top-level-only Wrangler key (cannot live under `env.*`).
-  "migrations": [
-    {
-      "tag": "v1",
-      "new_classes": ["RealtimeActor"]
-    }
-  ],
+  // "migrations": [
+  //   {
+  //     "tag": "v1",
+  //     "new_classes": ["RealtimeActor"]
+  //   }
+  // ],
 
   // Environment-specific overrides
   "env": {

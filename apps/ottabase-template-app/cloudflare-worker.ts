@@ -8,6 +8,7 @@
 export * from "./.open-next/index.js";
 export { default } from "./.open-next/index.js";
 
+// Durable Objects temporarily disabled - uncomment when needed
 // Export RealtimeActor Durable Object for Cloudflare bindings.
 //
 // NOTE: We intentionally export a concrete class from this entry module.
@@ -17,6 +18,5 @@ export { default } from "./.open-next/index.js";
 //
 // We still keep OpenNext's worker handler separate (above) so we don't force
 // OpenNext to bundle `@cloudflare/actors` during its own build step.
-import { RealtimeActor as BaseRealtimeActor } from "@ottabase/cf-realtime/server";
-
-export class RealtimeActor extends BaseRealtimeActor {}
+// import { RealtimeActor as BaseRealtimeActor } from "@ottabase/cf-realtime/server";
+// export class RealtimeActor extends BaseRealtimeActor {}
