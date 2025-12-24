@@ -5,11 +5,9 @@
   "workerName": "ottabase-template-app",
   "buildCommand": "build",
   "workerBuildCommand": "build:worker",
-  "outputDirectory": ".worker-next",
-  "assetsDirectory": ".worker-next/assets",
+  "outputDirectory": ".open-next",
   "verifyPaths": [
-    ".worker-next",
-    ".worker-next/assets"
+    ".open-next"
   ],
   "wranglerConfig": "wrangler.jsonc",
   "wranglerEnv": "production",
