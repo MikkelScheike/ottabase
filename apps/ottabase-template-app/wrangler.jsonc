@@ -10,6 +10,11 @@
   // alongside the OpenNext worker handler.
   "main": "cloudflare-worker.ts",
 
+  // Skip bundling - OpenNext already bundles everything into .open-next/
+  // Wrangler will bundle cloudflare-worker.ts which re-exports from .open-next/index.mjs
+  // The .open-next directory must exist before wrangler runs
+  "no_bundle": false,
+
   // Assets are handled by OpenNext internally - no separate assets config needed
   // OpenNext bundles static assets into the worker output automatically
 

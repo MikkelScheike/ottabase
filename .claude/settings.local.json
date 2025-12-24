@@ -5,7 +5,8 @@
       "Bash(pnpm install:*)",
       "Bash(pnpm build)",
       "Bash(find:*)",
-      "Bash(pnpm prisma:generate:*)"
+      "Bash(pnpm prisma:generate:*)",
+      "Bash(pnpm build:worker:*)"
     ],
     "deny": [],
     "ask": []
