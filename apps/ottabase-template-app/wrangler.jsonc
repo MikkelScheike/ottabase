@@ -134,6 +134,18 @@
     "cpu_ms": 50000 // 50 seconds CPU time limit
   },
 
+  // Durable Objects bindings for stateful, persistent objects
+  // Available in all environments (dev, preview, production)
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "OBCF_REALTIME",
+        "class_name": "RealtimeActor",
+        "script_name": "ottabase-template-app"
+      }
+    ]
+  },
+
   // Migrations for Durable Objects
   // NOTE: `migrations` is a top-level-only Wrangler key (cannot live under `env.*`).
   "migrations": [
@@ -148,18 +160,6 @@
     "production": {
       "vars": {
         "ENVIRONMENT": "production"
-      },
-
-      // Durable Objects bindings for stateful, persistent objects
-      // Enabled only for production deploys (`wrangler deploy --env production`).
-      "durable_objects": {
-        "bindings": [
-          {
-            "name": "OBCF_REALTIME",
-            "class_name": "RealtimeActor",
-            "script_name": "ottabase-template-app"
-          }
-        ]
       },
       // Production D1 Database - set via CI/CD substitution or manually
       "d1_databases": [

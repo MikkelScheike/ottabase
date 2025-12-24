@@ -277,18 +277,41 @@ jobs:
           WORKER_BUILD_CMD="${{ steps.config.outputs.worker-build-cmd }}"
           echo "⏳ Building Cloudflare Worker bundle using '${WORKER_BUILD_CMD}'..."
 
-          # For Next.js apps, explain what's happening
+          # For Next.js apps, explain what's happening and verify .next exists
           if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
             echo "📦 Converting Next.js build to Cloudflare Worker using OpenNext..."
+
+            # Verify .next directory exists
+            if [ ! -d ".next" ]; then
+              echo ""
+              echo "❌ ERROR: .next directory not found in $(pwd)"
+              echo ""
+              echo "OpenNext requires the .next directory to be present."
+              echo "The Next.js build should have created it in the previous step."
+              echo ""
+              echo "Current directory contents:"
+              ls -la
+              echo ""
+              exit 1
+            fi
+            echo "✅ .next directory found, proceeding with worker build..."
           fi
 
           # Run worker build command
+          echo "Running: pnpm run ${WORKER_BUILD_CMD}"
           pnpm run ${WORKER_BUILD_CMD}
+          BUILD_EXIT_CODE=$?
+
+          # Show what was created
+          echo ""
+          echo "📂 Directory contents after worker build:"
+          ls -la
+          echo ""
 
           # Verify worker build succeeded
-          if [ $? -ne 0 ]; then
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
             echo ""
-            echo "❌ ERROR: Cloudflare Worker build failed"
+            echo "❌ ERROR: Cloudflare Worker build failed (exit code: ${BUILD_EXIT_CODE})"
             echo ""
             echo "The '${WORKER_BUILD_CMD}' command failed."
             if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
@@ -302,7 +325,7 @@ jobs:
             exit 1
           fi
 
-          echo "✅ Cloudflare Worker bundle built successfully"
+          echo "✅ Cloudflare Worker bundle built successfully (exit code: 0)"
 
       # Verify worker bundle was created
       - name: Verify worker bundle
