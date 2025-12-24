@@ -10,11 +10,8 @@
   // alongside the OpenNext worker handler.
   "main": "cloudflare-worker.ts",
 
-  // Assets configuration for static files
-  "assets": {
-    "directory": ".worker-next/assets",
-    "binding": "ASSETS"
-  },
+  // Assets are handled by OpenNext internally - no separate assets config needed
+  // OpenNext bundles static assets into the worker output automatically
 
   // Observability - logging configuration
   "observability": {

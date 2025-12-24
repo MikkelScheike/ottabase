@@ -32,12 +32,12 @@
     "outputDirectory": {
       "type": "string",
       "description": "Directory containing worker build output",
-      "default": ".worker-next"
+      "default": ".open-next"
     },
     "assetsDirectory": {
       "type": "string",
       "description": "Directory containing static assets for the worker",
-      "default": ".worker-next/assets"
+      "default": ".open-next/assets"
     },
     "verifyPaths": {
       "type": "array",
@@ -45,7 +45,7 @@
         "type": "string"
       },
       "description": "Paths to verify exist after build",
-      "default": [".worker-next"]
+      "default": [".open-next"]
     },
     "wranglerConfig": {
       "type": "string",
