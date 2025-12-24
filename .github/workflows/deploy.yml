@@ -238,9 +238,10 @@ jobs:
 
           # Run the build
           pnpm --filter=${{ matrix.name }} run ${BUILD_CMD}
+          BUILD_EXIT=$?
 
           # Verify build succeeded
-          if [ $? -ne 0 ]; then
+          if [ $BUILD_EXIT -ne 0 ]; then
             echo ""
             echo "❌ ERROR: Application build failed"
             echo ""
@@ -252,6 +253,11 @@ jobs:
 
           # For Next.js apps, verify .next directory was created
           if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
+            echo "Checking for .next directory at: apps/${{ matrix.folder }}/.next"
+            echo "Current working directory: $(pwd)"
+            echo "Directory listing of apps/${{ matrix.folder }}:"
+            ls -la "apps/${{ matrix.folder }}" | head -20
+
             if [ ! -d "apps/${{ matrix.folder }}/.next" ]; then
               echo ""
               echo "❌ ERROR: Next.js build output not found"
