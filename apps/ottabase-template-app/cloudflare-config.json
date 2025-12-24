@@ -1,0 +1,23 @@
+{
+  "$schema": "../../schemas/cloudflare-config.schema.json",
+  "deployable": true,
+  "appType": "nextjs",
+  "workerName": "ottabase-template-app",
+  "buildCommand": "build",
+  "workerBuildCommand": "build:worker",
+  "outputDirectory": ".worker-next",
+  "assetsDirectory": ".worker-next/assets",
+  "verifyPaths": [
+    ".worker-next",
+    ".worker-next/assets"
+  ],
+  "wranglerConfig": "wrangler.jsonc",
+  "wranglerEnv": "production",
+  "healthCheckPath": "/",
+  "requiresSecrets": [
+    "CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "D1_DATABASE_ID",
+    "KV_NAMESPACE_ID"
+  ]
+}

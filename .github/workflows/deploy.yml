@@ -7,18 +7,158 @@ on:
   workflow_dispatch: # Allow manual triggers
 
 jobs:
+  # Discover all deployable apps dynamically
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    name: Discover deployable apps
+    outputs:
+      matrix: ${{ steps.discover.outputs.matrix }}
+      has-apps: ${{ steps.discover.outputs.has-apps }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Discover apps
+        id: discover
+        run: |
+          # Make discovery script executable
+          chmod +x .github/scripts/discover-deployable-apps.mjs
+
+          # Run discovery and capture output
+          MATRIX_JSON=$(node .github/scripts/discover-deployable-apps.mjs)
+
+          # Set outputs for next job
+          echo "matrix=${MATRIX_JSON}" >> $GITHUB_OUTPUT
+
+          # Check if we have any apps
+          APP_COUNT=$(echo "${MATRIX_JSON}" | jq '.include | length')
+          if [ "$APP_COUNT" -gt 0 ]; then
+            echo "has-apps=true" >> $GITHUB_OUTPUT
+          else
+            echo "has-apps=false" >> $GITHUB_OUTPUT
+          fi
+
+          echo "📊 Discovered ${APP_COUNT} app(s) to deploy"
+
+  # Deploy each discovered app
   deploy:
+    needs: discover
+    if: needs.discover.outputs.has-apps == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    name: Deploy ${{ matrix.app }}
+    name: Deploy ${{ matrix.name }}
     strategy:
-      matrix:
-        app: ["@ottabase/ottabase-template-app"]
-        # Add more apps here as needed, e.g. '@ottabase/app1', '@ottabase/app2'
+      matrix: ${{ fromJson(needs.discover.outputs.matrix) }}
+      fail-fast: false # Continue deploying other apps even if one fails
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Load app configuration
+        id: config
+        run: |
+          # Load configuration from matrix (already parsed by discovery script)
+          CONFIG='${{ toJson(matrix.config) }}'
+
+          # Extract key config values for easy access in later steps
+          echo "app-type=$(echo "${CONFIG}" | jq -r '.appType')" >> $GITHUB_OUTPUT
+          echo "build-cmd=$(echo "${CONFIG}" | jq -r '.buildCommand')" >> $GITHUB_OUTPUT
+          echo "worker-build-cmd=$(echo "${CONFIG}" | jq -r '.workerBuildCommand // empty')" >> $GITHUB_OUTPUT
+          echo "output-dir=$(echo "${CONFIG}" | jq -r '.outputDirectory')" >> $GITHUB_OUTPUT
+          echo "assets-dir=$(echo "${CONFIG}" | jq -r '.assetsDirectory // empty')" >> $GITHUB_OUTPUT
+          echo "wrangler-config=$(echo "${CONFIG}" | jq -r '.wranglerConfig')" >> $GITHUB_OUTPUT
+          echo "wrangler-env=$(echo "${CONFIG}" | jq -r '.wranglerEnv')" >> $GITHUB_OUTPUT
+          echo "health-check=$(echo "${CONFIG}" | jq -r '.healthCheckPath // "/"')" >> $GITHUB_OUTPUT
+
+          # Store verify paths as multiline output
+          VERIFY_PATHS=$(echo "${CONFIG}" | jq -r '.verifyPaths[]?' || echo "")
+          echo "verify-paths<<EOF" >> $GITHUB_OUTPUT
+          echo "${VERIFY_PATHS}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+          # Store required secrets as space-separated list
+          REQUIRED_SECRETS=$(echo "${CONFIG}" | jq -r '.requiresSecrets[]?' | tr '\n' ' ')
+          echo "required-secrets=${REQUIRED_SECRETS}" >> $GITHUB_OUTPUT
+
+          echo "📋 Configuration loaded for ${{ matrix.name }} (${{ matrix.config.appType }})"
+
+      - name: Verify required secrets
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "🔍 Verifying required secrets for ${{ matrix.name }}..."
+          MISSING_SECRETS=()
+          REQUIRED="${{ steps.config.outputs.required-secrets }}"
+
+          # Check each required secret
+          for SECRET_NAME in $REQUIRED; do
+            # Dynamically check if secret exists using indirect reference
+            case "$SECRET_NAME" in
+              "CLOUDFLARE_API_TOKEN")
+                if [ -z "${{ secrets.CLOUDFLARE_API_TOKEN }}" ]; then
+                  MISSING_SECRETS+=("$SECRET_NAME")
+                  echo "  ❌ CLOUDFLARE_API_TOKEN is not set"
+                else
+                  echo "  ✅ CLOUDFLARE_API_TOKEN is configured"
+                fi
+                ;;
+              "CLOUDFLARE_ACCOUNT_ID")
+                if [ -z "${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" ]; then
+                  MISSING_SECRETS+=("$SECRET_NAME")
+                  echo "  ❌ CLOUDFLARE_ACCOUNT_ID is not set"
+                else
+                  echo "  ✅ CLOUDFLARE_ACCOUNT_ID is configured"
+                fi
+                ;;
+              "D1_DATABASE_ID")
+                if [ -z "${{ secrets.D1_DATABASE_ID }}" ]; then
+                  MISSING_SECRETS+=("$SECRET_NAME")
+                  echo "  ❌ D1_DATABASE_ID is not set"
+                else
+                  echo "  ✅ D1_DATABASE_ID is configured"
+                fi
+                ;;
+              "KV_NAMESPACE_ID")
+                if [ -z "${{ secrets.KV_NAMESPACE_ID }}" ]; then
+                  MISSING_SECRETS+=("$SECRET_NAME")
+                  echo "  ❌ KV_NAMESPACE_ID is not set"
+                else
+                  echo "  ✅ KV_NAMESPACE_ID is configured"
+                fi
+                ;;
+              *)
+                echo "  ⚠️  Warning: Unknown secret $SECRET_NAME - cannot verify"
+                ;;
+            esac
+          done
+
+          if [ ${#MISSING_SECRETS[@]} -ne 0 ]; then
+            echo ""
+            echo "❌ ERROR: Missing required GitHub secrets for deployment"
+            echo ""
+            echo "The following secrets are required but not configured:"
+            printf '  • %s\n' "${MISSING_SECRETS[@]}"
+            echo ""
+            echo "To fix this, add the missing secrets in GitHub repository settings:"
+            echo "  Settings → Secrets and variables → Actions → New repository secret"
+            echo ""
+            echo "Required secret locations:"
+            echo "  • CLOUDFLARE_API_TOKEN: Get from Cloudflare dashboard → My Profile → API Tokens"
+            echo "  • CLOUDFLARE_ACCOUNT_ID: Get from Cloudflare dashboard → Workers & Pages → Account ID"
+            echo "  • D1_DATABASE_ID: Run 'wrangler d1 create <name>' to create database"
+            echo "  • KV_NAMESPACE_ID: Run 'wrangler kv:namespace create <name>' to create namespace"
+            echo ""
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ All required secrets are configured"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
@@ -34,53 +174,57 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts=false
 
-      # Verify build tools are accessible
-      - name: Verify build tools
-        run: |
-          echo "Verifying build tool installation..."
-          echo "Node modules bin directory:"
-          ls -la node_modules/.bin/ | grep -E "tsup|rimraf" || true
-          echo ""
-          echo "Checking PATH:"
-          echo $PATH
-          echo ""
-          echo "Testing tsup:"
-          pnpm exec tsup --version
-          echo "Testing rimraf:"
-          pnpm exec rimraf --version
-
       # Cache Turborepo outputs for faster builds
       - name: Cache Turborepo
         uses: actions/cache@v4
         with:
           path: .turbo
-          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx') }}
+          key: ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-${{ hashFiles('pnpm-lock.yaml') }}-
             ${{ runner.os }}-turbo-
 
-      # Cache Next.js build for faster rebuilds
-      - name: Cache Next.js
+      # Cache framework-specific build outputs
+      - name: Cache Next.js builds
+        if: steps.config.outputs.app-type == 'nextjs'
         uses: actions/cache@v4
         with:
-          path: apps/*/.next/cache
-          key: ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/**/*.ts', 'apps/**/*.tsx', 'apps/**/*.js', 'apps/**/*.jsx') }}
+          path: |
+            apps/${{ matrix.folder }}/.next/cache
+            apps/${{ matrix.folder }}/.next/standalone
+          key: ${{ runner.os }}-nextjs-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/${{ matrix.folder }}/**/*.{ts,tsx,js,jsx}') }}
           restore-keys: |
-            ${{ runner.os }}-nextjs-${{ hashFiles('pnpm-lock.yaml') }}-
-            ${{ runner.os }}-nextjs-
+            ${{ runner.os }}-nextjs-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            ${{ runner.os }}-nextjs-${{ matrix.folder }}-
 
-      # Extract app folder name for later steps
-      - name: Set app folder name
-        id: app-info
+      # Verify build tools are accessible
+      - name: Verify build tools
         run: |
-          APP_FOLDER=$(echo "${{ matrix.app }}" | sed 's/@ottabase\///')
-          echo "folder=$APP_FOLDER" >> $GITHUB_OUTPUT
+          echo "🔍 Verifying build tool installation..."
 
-      # Build packages first
+          # Test critical build tools (with fallback checks)
+          if command -v pnpm exec tsup --version &> /dev/null; then
+            echo "  - tsup: $(pnpm exec tsup --version 2>&1 || echo 'installed')"
+          fi
+
+          if command -v pnpm exec rimraf --version &> /dev/null; then
+            echo "  - rimraf: $(pnpm exec rimraf --version 2>&1 || echo 'installed')"
+          fi
+
+          # App-type specific tools
+          if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
+            if command -v pnpm exec next --version &> /dev/null; then
+              echo "  - next: $(pnpm exec next --version 2>&1 || echo 'installed')"
+            fi
+          fi
+
+          echo "✅ Build tools verified"
+
+      # Build packages first (dependencies of apps)
       - name: Build packages
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          echo "⏳ Building all packages using pnpm..."
+          echo "⏳ Building all packages using Turborepo..."
           pnpm --filter "./packages/**" run build
         env:
           NODE_ENV: production
@@ -89,29 +233,258 @@ jobs:
       - name: Build application
         run: |
           export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          pnpm --filter=${{ matrix.app }} run build
+          BUILD_CMD="${{ steps.config.outputs.build-cmd }}"
+          echo "⏳ Building ${{ matrix.name }} using '${BUILD_CMD}'..."
+
+          # Run the build
+          pnpm --filter=${{ matrix.name }} run ${BUILD_CMD}
+
+          # Verify build succeeded
+          if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ ERROR: Application build failed"
+            echo ""
+            echo "The '${BUILD_CMD}' command failed for ${{ matrix.name }}"
+            echo "Check the build output above for specific error messages."
+            echo ""
+            exit 1
+          fi
+
+          # For Next.js apps, verify .next directory was created
+          if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
+            if [ ! -d "apps/${{ matrix.folder }}/.next" ]; then
+              echo ""
+              echo "❌ ERROR: Next.js build output not found"
+              echo ""
+              echo "Expected directory 'apps/${{ matrix.folder }}/.next' was not created."
+              echo "This indicates the Next.js build did not complete successfully."
+              echo ""
+              exit 1
+            fi
+            echo "✅ Next.js build output verified (.next directory exists)"
+          fi
+
+          echo "✅ Application build completed successfully"
         env:
           NODE_ENV: production
 
-      # Build Cloudflare Worker bundle
+      # Build Cloudflare Worker bundle (if configured)
+      # For Next.js apps, this runs OpenNext to convert Next.js build to Cloudflare Worker format
       - name: Build Cloudflare Worker
-        working-directory: apps/${{ steps.app-info.outputs.folder }}
-        run: pnpm build:worker
-
-      # Substitute production secrets into wrangler.jsonc
-      - name: Substitute production resource IDs
-        if: github.ref == 'refs/heads/main'
-        working-directory: apps/${{ steps.app-info.outputs.folder }}
+        if: steps.config.outputs.worker-build-cmd != ''
+        working-directory: apps/${{ matrix.folder }}
         run: |
-          sed -i 's/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g' wrangler.jsonc
-          sed -i 's/PRODUCTION_KV_NAMESPACE_ID/${{ secrets.KV_NAMESPACE_ID }}/g' wrangler.jsonc
+          WORKER_BUILD_CMD="${{ steps.config.outputs.worker-build-cmd }}"
+          echo "⏳ Building Cloudflare Worker bundle using '${WORKER_BUILD_CMD}'..."
 
-      # Deploy to Cloudflare Workers
-      - name: Deploy to Cloudflare
+          # For Next.js apps, explain what's happening
+          if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
+            echo "📦 Converting Next.js build to Cloudflare Worker using OpenNext..."
+          fi
+
+          # Run worker build command
+          pnpm run ${WORKER_BUILD_CMD}
+
+          # Verify worker build succeeded
+          if [ $? -ne 0 ]; then
+            echo ""
+            echo "❌ ERROR: Cloudflare Worker build failed"
+            echo ""
+            echo "The '${WORKER_BUILD_CMD}' command failed."
+            if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
+              echo "This command converts the Next.js build to a Cloudflare Worker using OpenNext."
+              echo "Common issues:"
+              echo "  • Missing @opennextjs/cloudflare package"
+              echo "  • Invalid open-next.config.ts configuration"
+              echo "  • Missing .next directory (Next.js build must run first)"
+            fi
+            echo ""
+            exit 1
+          fi
+
+          echo "✅ Cloudflare Worker bundle built successfully"
+
+      # Verify worker bundle was created
+      - name: Verify worker bundle
+        working-directory: apps/${{ matrix.folder }}
+        run: |
+          echo "🔍 Verifying Cloudflare Worker bundle structure..."
+
+          # Read verify paths from config
+          VERIFY_PATHS="${{ steps.config.outputs.verify-paths }}"
+
+          if [ -z "$VERIFY_PATHS" ]; then
+            echo "⚠️  No verification paths specified in config, skipping verification"
+            exit 0
+          fi
+
+          # Check each path
+          MISSING_PATHS=()
+          while IFS= read -r path; do
+            if [ -n "$path" ]; then
+              if [ ! -e "$path" ]; then
+                MISSING_PATHS+=("$path")
+              else
+                echo "  ✅ $path"
+              fi
+            fi
+          done <<< "$VERIFY_PATHS"
+
+          if [ ${#MISSING_PATHS[@]} -ne 0 ]; then
+            echo ""
+            echo "❌ ERROR: Required paths not found after Worker build"
+            echo ""
+            echo "The following paths were expected but are missing:"
+            printf '  • %s\n' "${MISSING_PATHS[@]}"
+            echo ""
+            if [ "${{ steps.config.outputs.app-type }}" == "nextjs" ]; then
+              echo "For Next.js apps using OpenNext, the expected structure is:"
+              echo "  • .worker-next/ - Main worker output directory"
+              echo "  • .worker-next/assets/ - Static assets directory"
+              echo ""
+              echo "This error usually means:"
+              echo "  1. The 'build:worker' command didn't complete successfully"
+              echo "  2. OpenNext configuration (open-next.config.ts) is incorrect"
+              echo "  3. The Next.js build (.next directory) is missing"
+              echo ""
+            fi
+            echo "Current directory contents:"
+            ls -la
+            echo ""
+            if [ -d ".worker-next" ]; then
+              echo ".worker-next directory contents:"
+              ls -la .worker-next
+            fi
+            echo ""
+            exit 1
+          fi
+
+          echo "✅ Worker bundle structure verified - all required paths exist"
+
+      # Generate production wrangler config from template
+      # Creates a temporary config with secrets injected, without modifying source files
+      - name: Generate production wrangler config
+        if: github.ref == 'refs/heads/main'
+        working-directory: apps/${{ matrix.folder }}
+        run: |
+          WRANGLER_CONFIG="${{ steps.config.outputs.wrangler-config }}"
+          echo "🔧 Generating production wrangler configuration from ${WRANGLER_CONFIG}..."
+
+          # Verify wrangler config exists
+          if [ ! -f "${WRANGLER_CONFIG}" ]; then
+            echo ""
+            echo "❌ ERROR: Wrangler configuration file not found"
+            echo ""
+            echo "Expected file: ${WRANGLER_CONFIG}"
+            echo "Current directory: $(pwd)"
+            echo ""
+            echo "Wrangler config is required for Cloudflare Workers deployment."
+            echo "Make sure your app has a wrangler.jsonc file in its root directory."
+            echo ""
+            exit 1
+          fi
+
+          # Create a temporary production config by substituting placeholders
+          # The output goes to a temporary file that won't be committed
+          cat ${WRANGLER_CONFIG} | \
+            sed -e "s/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g" \
+                -e "s/PRODUCTION_KV_NAMESPACE_ID/${{ secrets.KV_NAMESPACE_ID }}/g" \
+            > wrangler.production.jsonc
+
+          # Verify no placeholders remain in the generated file
+          if grep -q "PRODUCTION_" wrangler.production.jsonc; then
+            echo ""
+            echo "❌ ERROR: Secret substitution incomplete"
+            echo ""
+            echo "The following placeholders were not replaced:"
+            grep "PRODUCTION_" wrangler.production.jsonc
+            echo ""
+            echo "This usually means the corresponding GitHub secrets are not set."
+            echo "Check that all required secrets are configured in repository settings."
+            echo ""
+            rm -f wrangler.production.jsonc
+            exit 1
+          fi
+
+          # Validate JSON structure
+          if ! grep -q "{" wrangler.production.jsonc; then
+            echo ""
+            echo "❌ ERROR: Generated wrangler config appears invalid"
+            echo ""
+            echo "The generated config file doesn't contain valid JSON."
+            echo "Check the source file: ${WRANGLER_CONFIG}"
+            echo ""
+            rm -f wrangler.production.jsonc
+            exit 1
+          fi
+
+          echo "✅ Production configuration generated successfully"
+          echo "📝 Using temporary config file: wrangler.production.jsonc"
+
+      # Deploy to Cloudflare Workers (NOT Cloudflare Pages)
+      # This uses wrangler to deploy directly to Workers
+      # Uses the generated production config file (wrangler.production.jsonc)
+      # The source wrangler.jsonc remains unmodified
+      - name: Deploy to Cloudflare Workers
         if: github.ref == 'refs/heads/main'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: apps/${{ steps.app-info.outputs.folder }}
-          command: deploy --env production
+          workingDirectory: apps/${{ matrix.folder }}
+          command: deploy --env ${{ steps.config.outputs.wrangler-env }} --config wrangler.production.jsonc
+        continue-on-error: false  # Fail the workflow if deployment fails
+
+      # Health check deployed worker
+      - name: Health check deployment
+        if: success() && github.ref == 'refs/heads/main'
+        working-directory: apps/${{ matrix.folder }}
+        run: |
+          echo "🏥 Running health check for ${{ matrix.name }}..."
+
+          # Get worker name from config
+          WORKER_NAME="${{ matrix.config.workerName || matrix.folder }}"
+          HEALTH_PATH="${{ steps.config.outputs.health-check }}"
+
+          # Construct worker URL (Cloudflare workers.dev domain)
+          WORKER_URL="https://${WORKER_NAME}.${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.workers.dev${HEALTH_PATH}"
+
+          echo "📍 Checking: ${WORKER_URL}"
+
+          # Wait a few seconds for deployment to propagate
+          sleep 5
+
+          # Perform health check with retries
+          MAX_RETRIES=3
+          RETRY_DELAY=5
+
+          for i in $(seq 1 $MAX_RETRIES); do
+            if curl -f -s -o /dev/null -w "%{http_code}" "$WORKER_URL" | grep -q "^[23]"; then
+              echo "✅ Health check passed (attempt $i/$MAX_RETRIES)"
+              exit 0
+            else
+              echo "⚠️  Health check failed (attempt $i/$MAX_RETRIES)"
+              if [ $i -lt $MAX_RETRIES ]; then
+                echo "   Retrying in ${RETRY_DELAY}s..."
+                sleep $RETRY_DELAY
+              fi
+            fi
+          done
+
+          echo "⚠️  Warning: Health check failed after $MAX_RETRIES attempts"
+          echo "   The deployment may still be propagating. Check manually: ${WORKER_URL}"
+          # Don't fail the deployment on health check failure
+          exit 0
+
+      # Report deployment status
+      - name: Deployment summary
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Deployment of ${{ matrix.name }} completed successfully"
+            echo "🌐 Worker: ${{ matrix.config.workerName || matrix.folder }}"
+            echo "🔧 Type: ${{ steps.config.outputs.app-type }}"
+          else
+            echo "❌ Deployment of ${{ matrix.name }} failed"
+            exit 1
+          fi
