@@ -106,7 +106,7 @@
       {
         "name": "OBCF_RATE_LIMITER",
         "type": "ratelimit",
-        "namespace_id": "obcf-ratelimiter", // For local dev, can use any value
+        "namespace_id": "1001", // For local dev, can use any value
         "simple": {
           "limit": 10,       // 10 requests
           "period": 60       // per 60 seconds
@@ -172,7 +172,7 @@
           {
             "name": "OBCF_RATE_LIMITER",
             "type": "ratelimit",
-            "namespace_id": "obcf-ratelimiter",
+            "namespace_id": "1001",
             "simple": {
               "limit": 10,
               "period": 60
