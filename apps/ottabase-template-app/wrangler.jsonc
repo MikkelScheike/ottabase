@@ -106,7 +106,7 @@
       {
         "name": "OBCF_RATE_LIMITER",
         "type": "ratelimit",
-        "namespace_id": "1001", // For local dev, can use any value
+        "namespace_id": "obcf-ratelimiter", // For local dev, can use any value
         "simple": {
           "limit": 10,       // 10 requests
           "period": 60       // per 60 seconds
@@ -164,7 +164,21 @@
   "env": {
     "production": {
       "vars": {
-        "ENVIRONMENT": "production"
+        "ENVIRONMENT": "production",
+        "NODE_ENV": "production"
+      },
+      "unsafe": {
+        "bindings": [
+          {
+            "name": "OBCF_RATE_LIMITER",
+            "type": "ratelimit",
+            "namespace_id": "obcf-ratelimiter",
+            "simple": {
+              "limit": 10,
+              "period": 60
+            }
+          }
+        ]
       },
       // Production D1 Database - set via CI/CD substitution or manually
       "d1_databases": [

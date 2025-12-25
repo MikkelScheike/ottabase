@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "build:worker": "node ./scripts/ensure-opennext-dirs.mjs && opennextjs-cloudflare build --skipBuild",
+    "build:worker": "node ./scripts/ensure-opennext-dirs.mjs && opennextjs-cloudflare build --skipBuild && node ./scripts/fix-opennext-cloudflare-imports.mjs",
     "start": "next start",
     "lint": "next lint",
     "type-check": "tsc --noEmit",
