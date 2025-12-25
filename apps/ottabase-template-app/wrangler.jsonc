@@ -97,11 +97,6 @@
     // ]
   },
 
-  //Next.js Image Optimization binding for <Image> component
-  "images": {
-    "binding": "IMAGES",
-  },
-
   // Rate Limiting bindings
   // Note: Rate limiting works differently in local dev vs production
   // Local dev: Uses simulated rate limiting with local state

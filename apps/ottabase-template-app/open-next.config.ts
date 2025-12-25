@@ -11,6 +11,8 @@ const config: OpenNextConfig = {
       tagCache: "dummy",
       // NOTE: "direct" is convenient, but consider a Durable Object based queue for production.
       queue: "direct",
+      // Disable Cloudflare Images optimization
+      imageOptimization: "dummy",
     },
   },
   // Required for Cloudflare wrapper compatibility (validated by OpenNext).
