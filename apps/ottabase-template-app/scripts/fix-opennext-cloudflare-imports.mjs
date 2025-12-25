@@ -21,16 +21,52 @@ function patchFile(filePath) {
   return { filePath, changed: true, skipped: false };
 }
 
+function collectFilesRecursively(rootDir, exts) {
+  const results = [];
+  if (!fs.existsSync(rootDir)) return results;
+
+  const stack = [rootDir];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current) continue;
+
+    let entries;
+    try {
+      entries = fs.readdirSync(current, { withFileTypes: true });
+    } catch {
+      continue;
+    }
+
+    for (const entry of entries) {
+      const fullPath = path.join(current, entry.name);
+      if (entry.isDirectory()) {
+        stack.push(fullPath);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (exts.includes(path.extname(entry.name))) {
+        results.push(fullPath);
+      }
+    }
+  }
+
+  return results;
+}
+
 function main() {
   const appRoot = process.cwd();
   const outputDirs = [".open-next", ".worker-next"]
     .map((d) => path.join(appRoot, d))
     .filter((d) => fs.existsSync(d));
 
-  const targets = outputDirs.flatMap((outDir) => [
-    path.join(outDir, "worker.js"),
-    path.join(outDir, "index.js"),
-  ]);
+  const exts = [".js", ".mjs", ".cjs"];
+  const targets = [
+    ...outputDirs.flatMap((outDir) => collectFilesRecursively(outDir, exts)),
+    // Some OpenNext modes may emit top-level worker entry files.
+    ...["worker.js", "worker.mjs", "index.js", "index.mjs"]
+      .map((f) => path.join(appRoot, f))
+      .filter((f) => fs.existsSync(f)),
+  ];
 
   const results = targets.map(patchFile);
   const changed = results.filter((r) => r.changed);
