@@ -1,21 +1,34 @@
 {
+  "$schema": "node_modules/wrangler/config-schema.json",
   // Wrangler configuration for Next.js app with Cloudflare bindings
   // Supports dev (local with HMR), preview (workerd), and prod (real CF resources)
 
   "name": "ottabase-template-app",
-  "compatibility_date": "2024-11-01",
-
+  "compatibility_date": "2024-12-30",
   // Main worker configuration
   // OpenNext for Cloudflare creates .open-next/worker.js as the entry point
   "main": ".open-next/worker.js",
+  // For next.js apps
+  "compatibility_flags": [
+    // Enable Node.js API
+    // see https://developers.cloudflare.com/workers/configuration/compatibility-flags/#nodejs-compatibility-flag
+    "nodejs_compat",
+    // Allow to fetch URLs in your app
+    // see https://developers.cloudflare.com/workers/configuration/compatibility-flags/#global-fetch-strictly-public
+    "global_fetch_strictly_public",
+  ],
 
-  // Let wrangler bundle to include all dependencies
-  // OpenNext creates the worker structure, but wrangler needs to bundle it
-  "no_bundle": false,
+  // OpenNext already creates the worker & assets structure
+  "no_bundle": true,
 
   // Observability - logging configuration
   "observability": {
     "enabled": true
+  },
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
   },
 
   // D1 Database bindings
@@ -120,11 +133,6 @@
     "port": 8788,
     "local_protocol": "http"
   },
-
-  // Node.js compatibility for Next.js
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
 
   // Limits configuration
   "limits": {
