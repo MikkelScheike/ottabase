@@ -6,16 +6,12 @@
   "compatibility_date": "2024-11-01",
 
   // Main worker configuration
-  // Point directly to OpenNext output (OpenNext handles all bundling)
-  // OpenNext for Cloudflare creates .open-next/worker.js as the main entry point
-  // When Durable Objects are needed, use cloudflare-worker.ts wrapper instead
+  // OpenNext for Cloudflare creates .open-next/worker.js as the entry point
   "main": ".open-next/worker.js",
 
-  // Disable bundling - OpenNext already bundles everything
-  "no_bundle": true,
-
-  // Assets are handled by OpenNext internally - no separate assets config needed
-  // OpenNext bundles static assets into the worker output automatically
+  // Let wrangler bundle to include all dependencies
+  // OpenNext creates the worker structure, but wrangler needs to bundle it
+  "no_bundle": false,
 
   // Observability - logging configuration
   "observability": {

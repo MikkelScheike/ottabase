@@ -308,21 +308,6 @@ jobs:
           pnpm run ${WORKER_BUILD_CMD}
           BUILD_EXIT_CODE=$?
 
-          # Show what was created
-          echo ""
-          echo "📂 Directory contents after worker build:"
-          ls -la
-          echo ""
-
-          # Debug: Show OpenNext output structure
-          if [ -d ".open-next" ]; then
-            echo "📂 Contents of .open-next directory:"
-            ls -laR .open-next/ | head -100
-            echo ""
-            echo "Looking for index/worker files:"
-            find .open-next -name "*.js" -o -name "*.mjs" | head -20
-            echo ""
-          fi
 
           # Verify worker build succeeded
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
