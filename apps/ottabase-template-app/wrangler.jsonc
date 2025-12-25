@@ -7,8 +7,9 @@
 
   // Main worker configuration
   // Point directly to OpenNext output (OpenNext handles all bundling)
+  // OpenNext for Cloudflare creates .open-next/worker.js as the main entry point
   // When Durable Objects are needed, use cloudflare-worker.ts wrapper instead
-  "main": ".open-next/index.js",
+  "main": ".open-next/worker.js",
 
   // Disable bundling - OpenNext already bundles everything
   "no_bundle": true,
