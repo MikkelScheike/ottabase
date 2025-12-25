@@ -82,6 +82,7 @@ const nextConfig = {
     position: "bottom-right",
   },
   images: {
+    unoptimized: true, // Disable Cloudflare Images optimization
     remotePatterns: [
       {
         protocol: "https",
