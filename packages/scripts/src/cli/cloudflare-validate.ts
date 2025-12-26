@@ -52,8 +52,9 @@ async function main() {
   const hasPlaceholderD1 = wranglerContent.includes('YOUR_D1_DATABASE_ID');
   const hasPlaceholderKV = wranglerContent.includes('YOUR_KV_NAMESPACE_ID');
   const hasPlaceholderKVPreview = wranglerContent.includes('YOUR_KV_PREVIEW_ID');
+  const hasPlaceholderAccountId = wranglerContent.includes('YOUR_CLOUDFLARE_ACCOUNT_ID');
 
-  if (hasPlaceholderD1 || hasPlaceholderKV || hasPlaceholderKVPreview) {
+  if (hasPlaceholderD1 || hasPlaceholderKV || hasPlaceholderKVPreview || hasPlaceholderAccountId) {
     log('⚠ wrangler.jsonc contains placeholders. Run: pnpm cloudflare:setup', YELLOW);
     hasWarnings = true;
   } else {

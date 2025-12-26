@@ -414,6 +414,7 @@ jobs:
           cat ${WRANGLER_CONFIG} | \
             sed -e "s/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g" \
                 -e "s/PRODUCTION_KV_NAMESPACE_ID/${{ secrets.KV_NAMESPACE_ID }}/g" \
+                -e "s/YOUR_CLOUDFLARE_ACCOUNT_ID/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/g" \
             > wrangler.production.jsonc
 
           # Verify no placeholders remain in the generated file
