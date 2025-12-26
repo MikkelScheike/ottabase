@@ -4,7 +4,7 @@ const config: OpenNextConfig = {
   default: {
     // Use Cloudflare Workers runtime
     override: {
-      wrapper: "cloudflare-edge",
+      wrapper: "cloudflare-node",
       converter: "edge",
       proxyExternalRequest: "fetch",
       incrementalCache: "dummy",
@@ -15,6 +15,7 @@ const config: OpenNextConfig = {
   },
   // Required for Cloudflare wrapper compatibility (validated by OpenNext).
   edgeExternals: ["node:crypto"],
+
   // External middleware bundle (runs in the edge runtime).
   middleware: {
     external: true,
@@ -27,8 +28,7 @@ const config: OpenNextConfig = {
       queue: "direct",
     },
   },
-  // Export Durable Object classes
-  buildCommand: 'echo "Building with Durable Objects support"',
+
 };
 
 // Note: Durable Object classes must be exported from the Wrangler `main` entry.
