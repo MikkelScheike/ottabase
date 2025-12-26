@@ -22,7 +22,7 @@ catalog:
   "@tabler/icons-react": ^3.35.0
   "@tailwindcss/forms": ^0.5.10
   "@tailwindcss/typography": ^0.5.18
-  "@types/node": ^20.19.17
+  "@types/node": ^20.19.27
   "@types/react": ^19.2.7
   "@types/react-dom": ^19.2.3
   "@typescript-eslint/eslint-plugin": ^8.48.1
@@ -36,7 +36,7 @@ catalog:
   date-fns: ^4.1.0
   date-fns-tz: ^3.2.0
   drizzle-orm: ^0.38.3
-  eslint: ^9.36.0
+  eslint: ^9.39.2
   eslint-config-next: ^15.5.7
   eslint-plugin-storybook: ^10.1.4
   jotai: ^2.14.0
@@ -53,7 +53,7 @@ catalog:
   prisma: ^5.22.0
   react: ^19.2.1
   react-dom: ^19.2.1
-  rimraf: ^6.0.1
+  rimraf: ^6.1.2
   sonner: ^1.5.1
   storybook: ^10.1.4
   style-loader: ^4.0.0
@@ -61,6 +61,6 @@ catalog:
   tailwindcss: ^3.4.17
   tailwindcss-animate: ^1.0.7
   ts-node: ^10.9.2
-  tsup: ^8.5.0
+  tsup: ^8.5.1
   tsx: ^4.19.2
-  typescript: ^5.9.2
+  typescript: ^5.9.3
