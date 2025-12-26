@@ -76,6 +76,6 @@
     "tailwindcss": "catalog:",
     "tailwindcss-animate": "catalog:",
     "typescript": "catalog:",
-    "wrangler": "^4.50.0"
+    "wrangler": "^4.54.0"
   }
 }

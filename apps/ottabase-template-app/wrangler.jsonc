@@ -184,6 +184,13 @@
           }
         ]
       },
+      // Asset and Image bindings for Production
+      "assets": {
+        "binding": "ASSETS",
+      },
+      "images": {
+        "binding": "IMAGES",
+      },
       // Production D1 Database - set via CI/CD substitution or manually
       "d1_databases": [
         {
