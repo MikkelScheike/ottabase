@@ -4,7 +4,7 @@ const config: OpenNextConfig = {
   default: {
     // Use Cloudflare Workers runtime
     override: {
-      wrapper: "cloudflare-node",
+      wrapper: "cloudflare-edge",
       converter: "edge",
       proxyExternalRequest: "fetch",
       incrementalCache: "dummy",
