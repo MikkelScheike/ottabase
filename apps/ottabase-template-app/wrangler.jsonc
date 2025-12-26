@@ -26,9 +26,13 @@
     "enabled": true
   },
 
+  // Asset and Image bindings
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS",
+  },
+  "images": {
+    "binding": "IMAGES",
   },
 
   // D1 Database bindings
