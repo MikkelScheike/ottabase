@@ -26,10 +26,10 @@
     "enabled": true
   },
 
-  "assets": {
-    "directory": ".open-next/assets",
-    "binding": "ASSETS",
-  },
+  //"assets": {
+  //"directory": ".open-next/assets",
+  //"binding": "ASSETS",
+  //},
 
   // D1 Database bindings
   // Local dev: Uses local SQLite file (.wrangler/state/v3/d1)
