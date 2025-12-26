@@ -187,6 +187,7 @@
       // Asset and Image bindings for Production
       "assets": {
         "binding": "ASSETS",
+        "directory": ".open-next/assets",
       },
       "images": {
         "binding": "IMAGES",
