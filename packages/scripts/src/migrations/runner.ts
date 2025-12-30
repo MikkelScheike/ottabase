@@ -275,14 +275,17 @@ export async function runD1Migrations(
 
   // Ensure migrations table exists
   if (!options.dryRun) {
-    await d1.exec(`
-      CREATE TABLE IF NOT EXISTS _ottabase_migrations (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL UNIQUE,
-        feature TEXT,
-        applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    // Using .batch() instead of .exec() to avoid Wrangler dev mode duration metadata error
+    await d1.batch([
+      d1.prepare(`
+        CREATE TABLE IF NOT EXISTS _ottabase_migrations (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          name TEXT NOT NULL UNIQUE,
+          feature TEXT,
+          applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `),
+    ]);
   }
 
   // Get already applied migrations
@@ -301,15 +304,18 @@ export async function runD1Migrations(
 
     try {
       // Run the migration
-      await d1.exec(migration.content);
+      // Using .batch() instead of .exec() to avoid Wrangler dev mode duration metadata error
+      await d1.batch([d1.prepare(migration.content)]);
 
       // Record the migration
       const featureValue = migration.feature
         ? `'${migration.feature}'`
         : "NULL";
-      await d1.exec(
-        `INSERT INTO _ottabase_migrations (name, feature) VALUES ('${migration.filename}', ${featureValue})`,
-      );
+      await d1.batch([
+        d1.prepare(
+          `INSERT INTO _ottabase_migrations (name, feature) VALUES ('${migration.filename}', ${featureValue})`,
+        ),
+      ]);
 
       result.applied.push(migration);
     } catch (error) {
