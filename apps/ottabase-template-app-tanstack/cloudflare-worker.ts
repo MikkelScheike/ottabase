@@ -245,16 +245,19 @@ export default {
       }
 
       // Ensure the app-specific table exists (matches Todo model schema)
-      await env.OBCF_D1.exec(`
-        CREATE TABLE IF NOT EXISTS todos (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          completed INTEGER NOT NULL DEFAULT 0,
-          user_id TEXT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL
-        )
-      `);
+      // Using .batch() instead of .exec() to avoid Wrangler dev mode duration metadata error
+      await env.OBCF_D1.batch([
+        env.OBCF_D1.prepare(`
+          CREATE TABLE IF NOT EXISTS todos (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            completed INTEGER NOT NULL DEFAULT 0,
+            user_id TEXT,
+            created_at INTEGER NOT NULL,
+            updated_at INTEGER NOT NULL
+          )
+        `),
+      ]);
 
       // Verify connection using OttaORM
       registerConnection("default", createD1Driver(env.OBCF_D1));
