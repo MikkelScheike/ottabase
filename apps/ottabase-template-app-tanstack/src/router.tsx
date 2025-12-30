@@ -5,26 +5,11 @@ import {
     Router,
     Link,
     createBrowserHistory,
+    lazyRouteComponent,
 } from "@tanstack/react-router";
 import { APP_META } from "@/ottabase/config/app.config";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import { Button } from "@ottabase/ui-shadcn";
-
-import { DemoIndexPage } from "@/pages/demo/DemoIndexPage";
-import { CloudflareDemoIndexPage } from "@/pages/demo/cloudflare/CloudflareDemoIndexPage";
-import { CloudflareD1DemoPage } from "@/pages/demo/cloudflare/CloudflareD1DemoPage";
-import { CloudflareKVDemoPage } from "@/pages/demo/cloudflare/CloudflareKVDemoPage";
-import { CloudflareR2DemoPage } from "@/pages/demo/cloudflare/CloudflareR2DemoPage";
-import { CloudflareQueuesDemoPage } from "@/pages/demo/cloudflare/CloudflareQueuesDemoPage";
-import { CloudflareRateLimitingDemoPage } from "@/pages/demo/cloudflare/CloudflareRateLimitingDemoPage";
-import { CloudflareRealtimeDemoPage } from "@/pages/demo/cloudflare/CloudflareRealtimeDemoPage";
-import { CloudflareImagesDemoPage } from "@/pages/demo/cloudflare/CloudflareImagesDemoPage";
-import { CloudflareHyperdriveDemoPage } from "@/pages/demo/cloudflare/CloudflareHyperdriveDemoPage";
-import { MantineDemoRoute } from "@/pages/demo/mantine/MantineDemoRoute";
-import { OttaEditorDemoPage } from "@/pages/demo/ottaeditor/OttaEditorDemoPage";
-import { OttaORMDemoPage } from "@/pages/demo/ottaorm/OttaORMDemoPage";
-import { ShadcnDemoPage } from "@/pages/demo/shadcn/ShadcnDemoPage";
-import { TimezoneDemoPage } from "@/pages/demo/timezone/TimezoneDemoPage";
 
 function RootLayout() {
     return (
@@ -104,91 +89,91 @@ const indexRoute = new Route({
 const demoRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo",
-    component: DemoIndexPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/DemoIndexPage").then(m => m.DemoIndexPage)),
 });
 
 const demoMantineRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/mantine",
-    component: MantineDemoRoute,
+    component: lazyRouteComponent(() => import("@/pages/demo/mantine/MantineDemoRoute").then(m => m.MantineDemoRoute)),
 });
 
 const demoShadcnRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/shadcn",
-    component: ShadcnDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/shadcn/ShadcnDemoPage").then(m => m.ShadcnDemoPage)),
 });
 
 const demoOttaEditorRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/ottaeditor",
-    component: OttaEditorDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/ottaeditor/OttaEditorDemoPage").then(m => m.OttaEditorDemoPage)),
 });
 
 const demoOttaOrmRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/ottaorm",
-    component: OttaORMDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/ottaorm/OttaORMDemoPage").then(m => m.OttaORMDemoPage)),
 });
 
 const demoTimezoneRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/timezone",
-    component: TimezoneDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/timezone/TimezoneDemoPage").then(m => m.TimezoneDemoPage)),
 });
 
 const demoCloudflareRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare",
-    component: CloudflareDemoIndexPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareDemoIndexPage").then(m => m.CloudflareDemoIndexPage)),
 });
 
 const demoCloudflareD1Route = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/d1",
-    component: CloudflareD1DemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareD1DemoPage").then(m => m.CloudflareD1DemoPage)),
 });
 
 const demoCloudflareKVRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/kv",
-    component: CloudflareKVDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareKVDemoPage").then(m => m.CloudflareKVDemoPage)),
 });
 
 const demoCloudflareR2Route = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/r2",
-    component: CloudflareR2DemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareR2DemoPage").then(m => m.CloudflareR2DemoPage)),
 });
 
 const demoCloudflareImagesRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/images",
-    component: CloudflareImagesDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareImagesDemoPage").then(m => m.CloudflareImagesDemoPage)),
 });
 
 const demoCloudflareHyperdriveRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/hyperdrive",
-    component: CloudflareHyperdriveDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareHyperdriveDemoPage").then(m => m.CloudflareHyperdriveDemoPage)),
 });
 
 const demoCloudflareQueuesRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/queues",
-    component: CloudflareQueuesDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareQueuesDemoPage").then(m => m.CloudflareQueuesDemoPage)),
 });
 
 const demoCloudflareRateLimitingRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/rate-limiting",
-    component: CloudflareRateLimitingDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareRateLimitingDemoPage").then(m => m.CloudflareRateLimitingDemoPage)),
 });
 
 const demoCloudflareRealtimeRoute = new Route({
     getParentRoute: () => rootRoute,
     path: "/demo/cloudflare/realtime",
-    component: CloudflareRealtimeDemoPage,
+    component: lazyRouteComponent(() => import("@/pages/demo/cloudflare/CloudflareRealtimeDemoPage").then(m => m.CloudflareRealtimeDemoPage)),
 });
 
 const routeTree = rootRoute.addChildren([
