@@ -4,6 +4,7 @@ import {
     Route,
     Router,
     Link,
+    createBrowserHistory,
 } from "@tanstack/react-router";
 import { APP_META } from "@/ottabase/config/app.config";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
@@ -209,8 +210,11 @@ const routeTree = rootRoute.addChildren([
     demoCloudflareRealtimeRoute,
 ]);
 
+const browserHistory = createBrowserHistory();
+
 export const router = new Router({
     routeTree,
+    history: browserHistory,
 });
 
 declare module "@tanstack/react-router" {
