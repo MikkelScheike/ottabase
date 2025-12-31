@@ -17,6 +17,11 @@ interface Todo {
     createdAt?: string;
 }
 
+interface TodoResponse {
+    entity: string;
+    data: Todo;
+}
+
 export function CloudflareD1DemoPage() {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState("");
@@ -58,8 +63,10 @@ export function CloudflareD1DemoPage() {
                 throw new Error(data.error || "Failed to load todos");
             }
 
-            const data = (await response.json()) as { todos: Todo[] };
-            setTodos(data.todos);
+            const data = (await response.json()) as { todos: TodoResponse[] };
+            // Extract the actual todo data from the nested response
+            const extractedTodos = data.todos.map((item) => item.data);
+            setTodos(extractedTodos);
             setError(null);
         } catch (err) {
             setError(err instanceof Error ? err.message : "Unknown error");

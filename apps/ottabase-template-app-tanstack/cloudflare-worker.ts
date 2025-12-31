@@ -339,7 +339,9 @@ export default {
       if (request.method === "DELETE") {
         const todo = await Todo.find(id);
         if (!todo) return json({ error: "Todo not found" }, { status: 404 });
-        await todo.destroy();
+        
+        // Use static delete method instead of instance destroy
+        await Todo.delete(id);
 
         return json({ success: true, message: "Todo deleted successfully" });
       }
