@@ -1,5 +1,6 @@
 import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
+import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import path from "node:path";
 
 // SPA fallback plugin for client-side routing
@@ -37,6 +38,9 @@ export default defineConfig(async () => {
 
   return {
     plugins: [
+      TanStackRouterVite({
+        autoCodeSplitting: true,
+      }),
       tsconfigPaths({
         projects: [path.resolve(__dirname, "./tsconfig.json")],
         ignoreConfigErrors: true,
