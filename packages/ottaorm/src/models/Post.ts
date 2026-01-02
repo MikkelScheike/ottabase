@@ -89,6 +89,12 @@ export class Post extends BaseModel {
   static table = postsTable;
   static primaryKey = "id";
 
+  // UI/Forms metadata
+  static displayName = "Post";
+  static displayNamePlural = "Posts";
+  static defaultSort = "createdAt";
+  static defaultSortDirection = "desc" as const;
+
   static casts = {
     published: 'boolean' as const,
     createdAt: 'date' as const,
@@ -221,9 +227,15 @@ export class Post extends BaseModel {
       formConfig: {
         visible: true,
         fieldType: 'select',
+        relationship: {
+          entity: 'users',
+          labelField: 'name',
+          valueField: 'id',
+        },
       },
       tableConfig: {
-        visible: false,
+        visible: true,
+        colWidth: 150,
       },
     },
     createdAt: {
