@@ -40,6 +40,8 @@ export default defineConfig(async () => {
     plugins: [
       TanStackRouterVite({
         autoCodeSplitting: true,
+        routesDirectory: path.resolve(__dirname, "./src/pages"),
+        generatedRouteTree: path.resolve(__dirname, "./src/routeTree.gen.ts"),
       }),
       tsconfigPaths({
         projects: [path.resolve(__dirname, "./tsconfig.json")],
