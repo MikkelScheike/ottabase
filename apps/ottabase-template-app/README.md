@@ -1,92 +1,106 @@
-# Ottabase Template App
+# Ottabase Template App (Next.js)
 
-Next.js 15 template application with Cloudflare Workers integration using OpenNext.
+Next.js 15 template with automated OttaORM migrations and Cloudflare Workers deployment.
 
 ## Features
 
 - **Next.js 15** with App Router
-- **TypeScript** for type safety
-- **Tailwind CSS** for styling
-- **Cloudflare Workers** deployment via OpenNext
-- **@ottabase/cf** for Cloudflare bindings (D1, KV, R2, etc.)
-- **Prisma** for database ORM (with D1 adapter)
+- **OttaORM** - Fat models with automated migrations
+- **Cloudflare Workers** via OpenNext
+- **TypeScript** + **Tailwind CSS**
+- **@ottabase/cf** for D1, KV, R2, Queues, Rate Limiting
 - **Demo Pages** for all Cloudflare features
 
 ## Quick Start
 
-### Install Dependencies
-
 ```bash
+# Install
 pnpm install
-```
 
-### Setup Cloudflare Bindings
-
-See [Cloudflare Features Documentation](../../docs/cloudflare-features.md) for complete setup.
-
-Quick commands:
-
-```bash
-# Create D1 database
-pnpm wrangler d1 create ottabase-db
-
-# Create KV namespace
-pnpm wrangler kv:namespace create OTTABASE_KV
-pnpm wrangler kv:namespace create OTTABASE_KV --preview
-
-# Create R2 bucket
-pnpm wrangler r2 bucket create ottabase-bucket
-pnpm wrangler r2 bucket create ottabase-bucket-preview
-
-# Create Queue
-pnpm wrangler queues create ottabase-queue
-```
-
-Update the IDs in `wrangler.jsonc`.
-
-### Development
-
-```bash
-# Local development with HMR
+# Start dev server
 pnpm dev
 
-# Preview with Cloudflare Workers runtime
-pnpm preview
+# Initialize database (creates all tables automatically)
+curl -X POST http://localhost:3000/api/ottaorm/init
 
-# Deploy to production
-pnpm deploy
+# Done! Visit http://localhost:3000
 ```
+
+## Database Setup
+
+### Automated Migrations
+
+**Zero-config!** Just define Models and call `/api/ottaorm/init`:
+
+#### 1. Define Model
+```typescript
+// ottabase/models/Todo.ts
+export const todosTable = sqliteTable("todos", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+});
+
+export class Todo extends BaseModel {
+  static entity = "todos";
+  static table = todosTable;
+}
+```
+
+#### 2. Export in Schema
+```typescript
+// ottabase/db/schema.ts
+export { todosTable } from "../models/Todo";
+```
+
+#### 3. Initialize
+```bash
+curl -X POST http://localhost:3000/api/ottaorm/init
+# ✅ Table created automatically!
+```
+
+See [ottabase/migrations/README.md](./ottabase/migrations/README.md) for details.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `pnpm dev` | Start Next.js dev server (HMR) |
+| `pnpm build` | Build Next.js app for production |
+| `pnpm preview` | Build + test with Cloudflare `workerd` runtime |
+| `pnpm deploy` | Build + deploy to Cloudflare Workers |
+| `pnpm type-check` | TypeScript type checking |
+| `pnpm cf-typegen` | Generate Cloudflare types from wrangler.jsonc |
 
 ## Project Structure
 
-```tree
+```
 apps/ottabase-template-app/
-├── app/                      # Next.js app directory
-│   ├── api/                  # API routes
-│   │   └── cloudflare/       # Cloudflare feature demos
-│   ├── demo/                 # Demo pages
-│   │   └── cloudflare/       # Cloudflare demos
-│   ├── layout.tsx
-│   └── page.tsx
+├── app/
+│   ├── api/
+│   │   ├── ottaorm/init/       # Auto-migration endpoint
+│   │   └── cloudflare/         # Cloudflare demos
+│   └── demo/cloudflare/        # Feature demos
+├── ottabase/
+│   ├── models/Todo.ts          # App models
+│   ├── db/schema.ts            # Core + app tables
+│   └── migrations/
+│       ├── index.ts            # Custom migrations
+│       └── custom/             # Seeds, indexes
 ├── types/
-│   └── cloudflare.d.ts       # Cloudflare env types
-├── wrangler.jsonc            # Cloudflare Workers config
-├── open-next.config.ts       # OpenNext configuration
-└── next.config.js            # Next.js configuration
+│   └── cloudflare.d.ts         # Cloudflare env types
+├── wrangler.jsonc              # Cloudflare config
+└── open-next.config.ts         # OpenNext configuration
 ```
 
 ## Cloudflare Features
 
-This template includes working demos for:
-
-- **D1 Database** - SQLite with full CRUD operations
-- **KV Storage** - Key-value storage with TTL
+Demo pages at `/demo/cloudflare`:
+- **D1 Database** - Auto-migrations + CRUD operations
+- **KV Storage** - Key-value with TTL
 - **R2 Storage** - Object storage for files
 - **Images** - Image upload and transformation
 - **Queues** - Async message processing
 - **Rate Limiting** - Request throttling
-
-Visit `/demo/cloudflare` after starting the dev server.
 
 ## Using Cloudflare Bindings
 
@@ -103,7 +117,6 @@ export async function GET() {
   const db = createD1Client({ database: env.OBCF_D1 });
 
   const result = await db.query('SELECT * FROM users');
-
   return Response.json(result.data);
 }
 ```
@@ -119,92 +132,104 @@ export default async function Page() {
   const kv = createKVClient({ namespace: env.OBCF_KV });
 
   const data = await kv.getJSON('key');
-
   return <div>{JSON.stringify(data)}</div>;
 }
 ```
 
-## Documentation
+### With OttaORM
 
-- [Cloudflare Features Guide](../../docs/cloudflare-features.md) - Complete setup and usage
-- [Package Creation Guide](../../PACKAGE_CREATION_GUIDE.md) - Creating new packages
+```typescript
+import { setDriver } from '@ottabase/ottaorm';
+import { Todo } from './ottabase/models/Todo';
 
-## Scripts
+export async function GET() {
+  const { env } = await getCloudflareContext();
+  setDriver(createD1Driver(env.OBCF_D1));
+
+  const todos = await Todo.all();
+  return Response.json({ todos });
+}
+```
+
+## Cloudflare Setup
+
+### Local Development
 
 ```bash
-# Development
-pnpm dev              # Start Next.js dev server (HMR)
-pnpm preview          # Preview with Cloudflare runtime
+# No Cloudflare account needed!
+# Local D1/KV/R2 stored in .wrangler/state/v3/
+pnpm dev
+```
 
-# Build & Deploy
-pnpm build            # Build Next.js app
-pnpm deploy           # Deploy to Cloudflare Workers
+### Production Deployment
 
-# Utilities
-pnpm lint             # Lint code
-pnpm type-check       # Type check
-pnpm wrangler         # Run wrangler commands
+#### 1. Create Cloudflare Resources
+
+```bash
+# Login to Cloudflare
+pnpm wrangler login
+
+# Create D1 database
+pnpm wrangler d1 create ottabase-db
+
+# Create KV namespace
+pnpm wrangler kv:namespace create OTTABASE_KV
+pnpm wrangler kv:namespace create OTTABASE_KV --preview
+
+# Create R2 bucket
+pnpm wrangler r2 bucket create ottabase-bucket
+
+# Create Queue
+pnpm wrangler queues create ottabase-queue
+```
+
+#### 2. Update wrangler.jsonc
+
+```jsonc
+{
+  "d1_databases": [{
+    "binding": "OBCF_D1",
+    "database_id": "YOUR_DATABASE_ID"  // From wrangler d1 create
+  }],
+  "kv_namespaces": [{
+    "binding": "OBCF_KV",
+    "id": "YOUR_KV_ID"  // From wrangler kv:namespace create
+  }]
+  // ... etc
+}
+```
+
+#### 3. Deploy
+
+```bash
+# Deploy to Cloudflare Workers
+pnpm deploy
+
+# Run migrations
+curl -X POST https://your-app.workers.dev/api/ottaorm/init \
+  -H "Authorization: Bearer ${MIGRATION_SECRET}"
 ```
 
 ## Environment Variables
 
-Set via `wrangler.jsonc`:
+Set in `wrangler.jsonc`:
 
 ```jsonc
 "vars": {
-  "ENVIRONMENT": "development",
-  "NODE_ENV": "production"
+  "ENVIRONMENT": "production",
+  "MIGRATION_SECRET": "your-secret-here"
 }
 ```
 
-For secrets:
+For secrets (tokens, API keys):
 
 ```bash
 pnpm wrangler secret put SECRET_NAME
 ```
 
-## Local Development Notes
+## Documentation
 
-- Cloudflare bindings work locally without an account
-- Data stored in `.wrangler/state/v3/`
-- HMR (Hot Module Replacement) works normally
-- Use `pnpm preview` to test with actual Workers runtime
-
-## Deployment
-
-### First-time Setup
-
-1. Login to Cloudflare:
-   ```bash
-   pnpm wrangler login
-   ```
-
-2. Create bindings (D1, KV, R2, etc.)
-
-3. Update `wrangler.jsonc` with IDs
-
-### Deploy
-
-```bash
-pnpm deploy
-```
-
-Your app will be available at `https://ottabase-template-app.<your-subdomain>.workers.dev`
-
-### Custom Domain
-
-Add to `wrangler.jsonc`:
-
-```jsonc
-"routes": [{
-  "pattern": "your-domain.com",
-  "custom_domain": true
-}]
-```
-
-## Learn More
-
-- [Next.js Documentation](https://nextjs.org/docs)
-- [Cloudflare Workers](https://developers.cloudflare.com/workers/)
-- [OpenNext](https://opennext.js.org/cloudflare/)
-- [@ottabase/cf Package](../../packages/cf/README.md)
+- [OttaORM Package](../../packages/ottaorm/README.md) - Full ORM documentation
+- [Migrations Guide](./ottabase/migrations/README.md) - Database migrations
+- [Cloudflare Deploy](../../CLOUDFLARE_DEPLOY.md) - Deployment guide
+- [Cloudflare Config](../../CLOUDFLARE_CONFIGURATION_GUIDE.md) - Bindings setup

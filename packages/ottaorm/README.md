@@ -5,18 +5,96 @@ Laravel Eloquent-inspired ORM for Cloudflare D1 and SQLite. Fat model pattern wi
 ## Features
 
 - **Fat Models** - All metadata, validation, relationships in model class
-- **Global Driver** - Set once, use everywhere (no driver passing)
 - **Eloquent-like API** - `Model.find()`, `Model.where()`, `Model.create()`
+- **Automated Migrations** - Auto-creates tables from Models, no CLI needed
 - **Type-Safe** - Full TypeScript support with Drizzle ORM
 - **Relationships** - belongsTo, hasMany, hasOne, belongsToMany
-- **Migrations** - Core + per-app migration system
 - **Field Metadata** - UI config, validation, form/table config
 - **Type Casting** - Automatic boolean, date, json conversion
+- **Per-App Models** - Core models + app-specific models
 
 ## Installation
 
 ```bash
 pnpm add @ottabase/ottaorm @ottabase/db drizzle-orm
+```
+
+## Quick Start
+
+### 1. Define Your Model
+
+```typescript
+import { BaseModel } from "@ottabase/ottaorm";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+
+export const todosTable = sqliteTable("todos", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  title: text("title").notNull(),
+  completed: integer("completed", { mode: "boolean" }).default(false).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).$defaultFn(() => new Date()).notNull(),
+});
+
+export class Todo extends BaseModel {
+  static entity = "todos";
+  static table = todosTable;
+  static primaryKey = "id";
+
+  static casts = {
+    completed: 'boolean' as const,
+    createdAt: 'date' as const,
+    updatedAt: 'date' as const,
+  };
+
+  // Custom methods
+  static async incomplete() {
+    return this.where({ completed: false });
+  }
+
+  async toggle() {
+    this.set('completed', !this.get('completed'));
+    return this.save();
+  }
+}
+```
+
+### 2. Export in Schema
+
+```typescript
+// ottabase/db/schema.ts
+export { usersTable, postsTable } from "@ottabase/ottaorm";  // Core tables
+export { todosTable } from "../models/Todo";                  // Your tables
+```
+
+### 3. Initialize Database
+
+```typescript
+// app/api/ottaorm/init/route.ts
+import { autoInit, collectTableSchemas } from "@ottabase/ottaorm";
+import { createD1Driver } from "@ottabase/db/drizzle-d1";
+import * as schema from "../../../../ottabase/db/schema";
+
+const driver = createD1Driver(env.OBCF_D1);
+const result = await autoInit({
+  driver,
+  schema: collectTableSchemas(schema),
+});
+// ✅ All tables created automatically!
+```
+
+### 4. Use Models
+
+```typescript
+import { Todo } from "./models/Todo";
+import { setDriver } from "@ottabase/ottaorm";
+
+// Set driver once (in middleware or route)
+setDriver(createD1Driver(env.OBCF_D1));
+
+// Use models anywhere
+const todo = await Todo.create({ title: "Buy groceries" });
+await todo.toggle();
+const all = await Todo.all();
 ```
 
 ## D1 Database Setup
@@ -35,9 +113,9 @@ Add D1 binding to your `wrangler.jsonc`:
   "compatibility_date": "2024-01-01",
   "d1_databases": [
     {
-      "binding: "OBCF_D1",                    // Accessible as env.OBCF_D1 in your code
-      "database_name": "your-app-db",     // Database name for CLI
-      "database_id": "local"              // Use "local" for dev, replace for prod
+      "binding": "OBCF_D1",              // Accessible as env.OBCF_D1
+      "database_name": "your-app-db",
+      "database_id": "local"             // Use "local" for dev
     }
   ]
 }
@@ -55,50 +133,14 @@ Wrangler automatically creates a local SQLite database in:
 
 #### 3. Run Migrations
 
-Create database tables by running migrations via your API:
+Initialize database via your API endpoint:
 
-**Development (no auth required):**
 ```bash
 # Start dev server
 pnpm dev
 
-# Initialize database (runs migrations)
+# Initialize database (creates all tables automatically)
 curl -X POST http://localhost:3000/api/ottaorm/init
-```
-
-**Production (requires secret):**
-```bash
-# Using query parameter
-curl -X POST https://your-app.workers.dev/api/ottaorm/init?secret=your-secret
-
-# Using body parameter
-curl -X POST https://your-app.workers.dev/api/ottaorm/init \
-  -H "Content-Type: application/json" \
-  -d '{"secret": "your-secret"}'
-
-# Using Authorization header
-curl -X POST https://your-app.workers.dev/api/ottaorm/init \
-  -H "Authorization: Bearer your-secret"
-```
-
-**Set the secret in wrangler.jsonc:**
-```jsonc
-{
-  "vars": {
-    "ENVIRONMENT": "production",
-    "MIGRATION_SECRET": "your-strong-secret-here"
-  }
-}
-```
-
-Or use the migration API directly in your code:
-
-```typescript
-import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
-import { createD1Driver } from "@ottabase/db/drizzle-d1";
-
-const driver = createD1Driver(env.OBCF_D1);
-await runMigrations(driver, coreMigrations);
 ```
 
 ### Production Setup
@@ -121,7 +163,7 @@ Replace `database_id` with your production ID:
 {
   "d1_databases": [
     {
-      "binding: "OBCF_D1",
+      "binding": "OBCF_D1",
       "database_name": "your-app-db",
       "database_id": "abc123-def456-ghi789"  // ← Your production ID
     }
@@ -136,7 +178,8 @@ Replace `database_id` with your production ID:
 pnpm deploy
 
 # Run migrations via deployed API
-curl -X POST https://your-app.workers.dev/api/ottaorm/init
+curl -X POST https://your-app.workers.dev/api/ottaorm/init \
+  -H "Authorization: Bearer ${MIGRATION_SECRET}"
 ```
 
 ### Environment Variables
@@ -147,12 +190,15 @@ No environment variables needed! D1 binding is configured via `wrangler.jsonc` a
 
 ```typescript
 import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { setDriver } from "@ottabase/ottaorm";
 
 export async function GET() {
   const { env } = getCloudflareContext();
-  // env.OBCF_D1 is your D1 database binding
   const driver = createD1Driver(env.OBCF_D1);
   setDriver(driver);
+
+  const users = await User.all();
+  return Response.json(users);
 }
 ```
 
@@ -161,104 +207,13 @@ export async function GET() {
 ```typescript
 export default {
   async fetch(request: Request, env: Env) {
-    // env.OBCF_D1 is your D1 database binding
     const driver = createD1Driver(env.OBCF_D1);
     setDriver(driver);
+
+    const users = await User.all();
+    return Response.json(users);
   }
 }
-```
-
-### Inspecting Your Database
-
-#### View Tables
-
-```bash
-# Local
-wrangler d1 execute DB --local --command="SELECT name FROM sqlite_master WHERE type='table'"
-
-# Production
-wrangler d1 execute DB --remote --command="SELECT name FROM sqlite_master WHERE type='table'"
-```
-
-#### Query Data
-
-```bash
-# Local
-wrangler d1 execute DB --local --command="SELECT * FROM users"
-
-# Production
-wrangler d1 execute DB --remote --command="SELECT * FROM users LIMIT 10"
-```
-
-#### Reset Local Database
-
-```bash
-# Delete local database
-rm -rf .wrangler/state/v3/d1/
-
-# Re-run migrations
-curl -X POST http://localhost:3000/api/ottaorm/init
-```
-
-### Cloudflare Recommendations
-
-✅ **Do:**
-- Use migrations for schema changes (version controlled)
-- Test migrations locally before deploying to production
-- Use `--local` flag for all local development
-- Keep local and production schemas in sync
-
-❌ **Don't:**
-- Manually edit D1 schema in production (use migrations)
-- Commit `.wrangler/` directory (always git-ignored)
-- Use transactions (D1 doesn't support them yet)
-- Run heavy migrations during peak traffic
-
-### Multiple Environments
-
-Use different `database_id` values per environment:
-
-```jsonc
-// wrangler.dev.jsonc (local/staging)
-{
-  "d1_databases": [{ "database_id": "dev-123" }]
-}
-
-// wrangler.prod.jsonc (production)
-{
-  "d1_databases": [{ "database_id": "prod-456" }]
-}
-```
-
-Deploy with environment-specific config:
-
-```bash
-# Staging
-wrangler deploy --config wrangler.dev.jsonc
-
-# Production
-wrangler deploy --config wrangler.prod.jsonc
-```
-
-## Quick Start
-
-```typescript
-import { setDriver } from "@ottabase/ottaorm";
-import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { User, Post } from "@ottabase/ottaorm";
-
-// Set driver once (e.g., in middleware)
-const driver = createD1Driver(env.OBCF_D1);
-setDriver(driver);
-
-// Use models anywhere without passing driver
-const user = await User.find("user-id");
-const posts = await Post.where({ published: true });
-const newPost = await Post.create({
-  title: "Hello World",
-  slug: "hello-world",
-  authorId: user.id
-});
 ```
 
 ## Fat Model Pattern
@@ -498,79 +453,74 @@ const tags = await post.tags({
 });
 ```
 
-## Migrations
+## Automated Migrations
 
-### Core Migrations (from package)
+**No CLI commands needed!** Just define Models and call `/api/ottaorm/init`:
 
-```typescript
-import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
-import { createD1Driver } from "@ottabase/db/drizzle-d1";
+```bash
+# Development (no auth)
+curl -X POST http://localhost:3000/api/ottaorm/init
 
-const driver = createD1Driver(env.OBCF_D1);
-
-// Run core migrations (User, Post, Tag tables)
-await runMigrations(driver, coreMigrations);
+# Production (requires MIGRATION_SECRET)
+curl -X POST https://your-app.com/api/ottaorm/init \
+  -H "Authorization: Bearer ${MIGRATION_SECRET}"
 ```
 
-### Per-App Migrations
+**What happens automatically:**
+- ✅ Creates tables that don't exist
+- ✅ Adds new columns to existing tables
+- ✅ Runs custom migrations (seeds, indexes)
+- ✅ Tracks all migrations
 
-Create your app migrations:
+### Adding a New Field
+
+```typescript
+export const todosTable = sqliteTable("todos", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  priority: integer("priority").default(0).notNull(), // NEW!
+});
+
+// Call /api/ottaorm/init → Column added automatically ✅
+```
+
+### Custom Migrations
 
 ```typescript
 // ottabase/migrations/index.ts
-import type { Migration } from "@ottabase/ottaorm";
-
 export const appMigrations: Migration[] = [
   {
-    name: '001_create_todos_table',
+    name: "0000_seed_admin",
     up: async (db) => {
       await db.execute(`
-        CREATE TABLE IF NOT EXISTS todos (
-          id TEXT PRIMARY KEY,
-          title TEXT NOT NULL,
-          completed INTEGER NOT NULL DEFAULT 0,
-          user_id TEXT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL
-        )
+        INSERT OR IGNORE INTO users (id, name, email, created_at, updated_at)
+        VALUES ('admin-001', 'Admin', 'admin@example.com', ...)
       `);
     },
-    down: async (db) => {
-      await db.execute(`DROP TABLE IF EXISTS todos`);
-    }
-  }
+  },
 ];
 ```
 
-Run core + app migrations together:
+### Limitations
 
+SQLite's `ALTER TABLE` has restrictions. The automated system **cannot**:
+
+- ❌ **Change column types** - Use custom migration to recreate table
+- ❌ **Rename columns** - Use custom migration to recreate table
+- ❌ **Drop columns** - Use custom migration to recreate table
+- ❌ **Modify constraints** - Use custom migration to recreate table
+- ⚠️ **Add NOT NULL columns** - Must have `DEFAULT` value
+
+**Example:**
 ```typescript
-import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
-import { appMigrations } from "./ottabase/migrations";
+// ✅ GOOD - Has default value
+status: text("status").default("active").notNull()
 
-// Run all migrations
-const result = await runMigrations(driver, [
-  ...coreMigrations,    // User, Account, Post, Tag
-  ...appMigrations      // Todo
-]);
-
-console.log(`Executed: ${result.executed.length}`);
-console.log(`Skipped: ${result.skipped.length}`);
+// ❌ BAD - No default, will fail if table has data
+status: text("status").notNull()
 ```
 
-### Rollback Migrations
-
-```typescript
-import { rollbackMigrations } from "@ottabase/ottaorm";
-
-// Rollback last migration
-await rollbackMigrations(driver, [...coreMigrations, ...appMigrations], {
-  steps: 1
-});
-
-// Rollback all migrations
-await rollbackMigrations(driver, [...coreMigrations, ...appMigrations]);
-```
+For complex schema changes, use custom migrations. See [Migration READMEs](../../apps/ottabase-template-app/ottabase/migrations/README.md) for examples.
 
 ## Type Casting
 
@@ -630,6 +580,41 @@ const fields = Todo.getFields();
 console.log(fields.title.uiConfig.label); // "Title"
 ```
 
+## Core Models
+
+The package includes these core models (in `@ottabase/ottaorm`):
+
+- **User** - Users with name, email, image
+- **Account** - OAuth provider accounts (NextAuth)
+- **Post** - Blog posts with title, slug, content, author
+- **Tag** - Tags with name and slug
+- **Post_Tags** - Many-to-many pivot table for posts and tags
+- **Session** - User sessions
+- **VerificationToken** - Email verification tokens
+- **Authenticator** - WebAuthn/Passkey credentials
+
+## Architecture
+
+```
+@ottabase/ottaorm (CORE)
+├── User, Post, Tag, Account (Models)
+├── Auto-migration system
+└── Base model & utilities
+
+Your App
+├── ottabase/
+│   ├── models/Todo.ts           # App-specific models
+│   ├── db/schema.ts             # Core + app tables
+│   └── migrations/index.ts      # Custom migrations
+└── /api/ottaorm/init            # Auto-creates everything!
+```
+
+**Core + Per-App Architecture:**
+- Core models exported from `@ottabase/ottaorm`
+- Each app defines its own models in `ottabase/models/`
+- Schema combines core + app tables
+- Migrations run per-app against separate databases
+
 ## Complete Example: API Route
 
 ```typescript
@@ -637,44 +622,25 @@ console.log(fields.title.uiConfig.label); // "Title"
 import { NextResponse } from "next/server";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
-import { runMigrations, coreMigrations } from "@ottabase/ottaorm";
+import { autoInit, collectTableSchemas } from "@ottabase/ottaorm";
+import * as schema from "../../../../ottabase/db/schema";
 import { appMigrations } from "../../../../ottabase/migrations";
 
 export const runtime = "edge";
 
-// Security check for production
-async function checkAuth(request, env) {
-  const isDev = env.ENVIRONMENT === 'development' || !env.ENVIRONMENT;
-  if (isDev) return true;
-
-  // Production: require secret
-  const url = new URL(request.url);
-  const secret = url.searchParams.get('secret') ||
-                 request.headers.get('authorization')?.replace('Bearer ', '');
-
-  return secret === env.MIGRATION_SECRET;
-}
-
 export async function POST(request) {
   const { env } = getCloudflareContext();
 
-  // Check authentication
-  if (!await checkAuth(request, env)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
   const driver = createD1Driver(env.OBCF_D1);
+  const tables = collectTableSchemas(schema);
 
-  const result = await runMigrations(driver, [
-    ...coreMigrations,
-    ...appMigrations
-  ]);
-
-  return NextResponse.json({
-    success: true,
-    executed: result.executed,
-    skipped: result.skipped,
+  const result = await autoInit({
+    driver,
+    schema: tables,
+    customMigrations: appMigrations,
   });
+
+  return NextResponse.json(result);
 }
 ```
 
@@ -693,10 +659,7 @@ export async function GET() {
   setDriver(createD1Driver(env.OBCF_D1));
 
   const todos = await Todo.all();
-
-  return NextResponse.json({
-    todos: todos.map(t => t.toJson())
-  });
+  return NextResponse.json({ todos: todos.map(t => t.toJson()) });
 }
 
 export async function POST(request: Request) {
@@ -706,48 +669,8 @@ export async function POST(request: Request) {
   const body = await request.json();
   const todo = await Todo.create(body);
 
-  return NextResponse.json({
-    todo: todo.toJson()
-  });
+  return NextResponse.json({ todo: todo.toJson() });
 }
-```
-
-## Core Models
-
-The package includes these core models:
-
-- **User** - Users with name, email, image
-- **Account** - NextAuth provider accounts (OAuth, credentials)
-- **Post** - Blog posts with title, slug, content, author
-- **Tag** - Tags with name and slug
-- **Post_Tags** - Many-to-many pivot table for posts and tags
-
-## Architecture
-
-```
-@ottabase/ottaorm
-├── src/
-│   ├── base/
-│   │   └── BaseModel.ts          # Fat model base class
-│   ├── models/
-│   │   ├── User.ts               # Core User model
-│   │   ├── Account.ts            # Core Account model (NextAuth)
-│   │   ├── Post.ts               # Core Post model
-│   │   └── Tag.ts                # Core Tag model
-│   ├── migrations/
-│   │   └── index.ts              # Migration system + core migrations
-│   ├── context.ts                # Global driver management
-│   └── index.ts                  # Main exports
-
-Your App
-├── ottabase/
-│   ├── models/
-│   │   └── Todo.ts               # App-specific model
-│   └── migrations/
-│       └── index.ts              # App-specific migrations
-└── app/api/ottaorm/
-    ├── init/route.ts             # Run migrations
-    └── todos/route.ts            # Todo CRUD API
 ```
 
 ## Benefits
@@ -755,6 +678,7 @@ Your App
 - **Simple** - No complex configuration, just set driver and use models
 - **Type-Safe** - Full TypeScript with IDE autocomplete
 - **Self-Contained** - Each model has everything in one place
+- **Automated** - Migrations run automatically from Model definitions
 - **Extensible** - Easy to add custom methods and relationships
 - **Familiar** - Laravel Eloquent-like API developers know
 - **Cloudflare-First** - Built specifically for D1 and Edge runtime
