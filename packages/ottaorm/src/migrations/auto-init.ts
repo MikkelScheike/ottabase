@@ -11,7 +11,7 @@
 // Usage: Just call autoInit() and it handles everything!
 // ============================================================
 
-import type { DbDriver } from '@ottabase/db';
+import type { DbDriver } from '@ottabase/db/drizzle';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { runAutoMigrations } from './runtime-generator';
 import { Migration } from './index';
@@ -188,9 +188,9 @@ function isSQLiteTableLike(value: unknown): value is SQLiteTable {
   if (!value || typeof value !== 'object') {
     return false;
   }
-  
+
   const obj = value as Record<string, unknown>;
-  
+
   // Drizzle tables have these characteristics:
   // - name: string (table name)
   // - They are not plain objects (have symbols or are class instances)
