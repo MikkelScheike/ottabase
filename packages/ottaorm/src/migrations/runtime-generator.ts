@@ -9,7 +9,7 @@
 // to automatically detect and apply schema changes.
 // ============================================================
 
-import { type DbDriver } from '@ottabase/db';
+import { type DbDriver } from '@ottabase/db/drizzle';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { getTableConfig } from 'drizzle-orm/sqlite-core';
 
@@ -110,6 +110,9 @@ function generateCreateTableSQL(table: SQLiteTable): string {
  */
 async function getExistingTables(driver: DbDriver): Promise<Set<string>> {
   try {
+    if (!driver.executeRaw) {
+      throw new Error('Driver does not support executeRaw - required for automated migrations');
+    }
     // Query system tables to get list of user tables
     // Exclude system tables (sqlite_*) and migration tracking tables (_ottabase_*)
     const result = await driver.executeRaw(`
