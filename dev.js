@@ -32,7 +32,7 @@ const shell = isWindows ? 'powershell.exe' : '/bin/sh';
 const shellArgs = isWindows ? ['-Command'] : ['-c'];
 
 // App directory
-const appDir = path.join(__dirname, '../../apps/ottabase-template-app-tanstack');
+const appDir = path.join(__dirname, 'apps/ottabase-template-app-tanstack');
 
 log.info('Starting TanStack app in development mode...');
 log.info(`Platform: ${process.platform}`);
