@@ -20,7 +20,19 @@ export function ApiDemoPage() {
             setResult(JSON.stringify(data, null, 2));
         } catch (err) {
             if (isApiError(err)) {
-                setResult(`Error ${err.status}: ${err.message}`);
+                // Show a formatted error with the full API response details
+                const errorDetails = {
+                    status: err.status,
+                    message: err.message,
+                    code: err.code,
+                    details: err.details,
+                    hint: err.hint,
+                    messages: err.messages,
+                    fieldErrors: err.fieldErrors,
+                };
+                setResult(`Error ${err.status}: ${err.message}\n\nAPI Response:\n${JSON.stringify(errorDetails, null, 2)}`);
+            } else {
+                setResult(`Unexpected error: ${err instanceof Error ? err.message : String(err)}`);
             }
         } finally {
             setLoading(false);
@@ -87,7 +99,7 @@ export function ApiDemoPage() {
             <div className="rounded-lg border bg-muted/50 p-4 text-sm text-muted-foreground">
                 <p className="font-medium mb-2">Usage:</p>
                 <pre className="text-xs">
-{`await api("/api/demo");              // GET
+                    {`await api("/api/demo");              // GET
 await api("/api/demo", "DELETE");    // shorthand
 await api("/api/demo", { method: "POST", body: {...} });`}
                 </pre>

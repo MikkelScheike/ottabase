@@ -154,7 +154,16 @@ export default {
 
     if (url.pathname === "/api/demo/error") {
       return json(
-        { error: "Something went wrong", code: "DEMO_ERROR", hint: "This is a demo error" },
+        {
+          error: "Something went wrong",
+          code: "DEMO_ERROR",
+          hint: "This is a demo error response with multiple messages",
+          messages: [
+            "Primary error: Database connection failed",
+            "Secondary issue: Authentication token expired",
+            "Additional context: Rate limit may have been exceeded"
+          ]
+        },
         { status: 500 },
       );
     }
@@ -380,7 +389,7 @@ export default {
       if (request.method === "DELETE") {
         const todo = await Todo.find(id);
         if (!todo) return json({ error: "Todo not found" }, { status: 404 });
-        
+
         // Use static delete method instead of instance destroy
         await Todo.delete(id);
 
