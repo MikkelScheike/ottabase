@@ -6,3 +6,5 @@ export {
   handwritingFontFamily,
 } from "./ProviderFont";
 export { default as ProviderNextThemes } from "./ProviderNextThemes";
+export * from "./ThemeContext";
+export * from "./ProviderTheme";

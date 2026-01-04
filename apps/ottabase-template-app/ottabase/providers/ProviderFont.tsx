@@ -1,42 +1,40 @@
-"use client";
+'use client';
 
 import React, { ReactNode } from "react";
 
-// Google Fonts
-import {
-  Inter,
-  Work_Sans,
-  JetBrains_Mono,
-  Patrick_Hand,
-} from "next/font/google";
-// Good fonts:
-// Heading: Work Sans, Palanquin Dark
-// Handwriting: Patrick Hand, Mali
-// Mono: JetBrains Mono, Reddit Mono
+type FontFamily = {
+  style: { fontFamily: string };
+  className: string;
+};
 
-export const primaryFontFamily = Inter({
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-family-primary",
-});
+export const primaryFontFamily: FontFamily = {
+  style: {
+    fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
+  },
+  className: "font-family-primary",
+};
 
-export const headingFontFamily = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-family-heading",
-});
+export const headingFontFamily: FontFamily = {
+  style: {
+    fontFamily: 'var(--font-heading), ui-sans-serif, system-ui, sans-serif',
+  },
+  className: "font-family-heading",
+};
 
-export const monospaceFontFamily = JetBrains_Mono({
-  subsets: ["latin"],
-  weight: ["300", "400"],
-  variable: "--font-family-monospace",
-});
+export const monospaceFontFamily: FontFamily = {
+  style: {
+    fontFamily:
+      '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+  },
+  className: "font-family-monospace",
+};
 
-export const handwritingFontFamily = Patrick_Hand({
-  subsets: ["latin"],
-  weight: ["400"],
-  variable: "--font-family-handwriting",
-});
+export const handwritingFontFamily: FontFamily = {
+  style: {
+    fontFamily: 'var(--font-handwriting), cursive',
+  },
+  className: "font-family-handwriting",
+};
 
 interface ProviderFontProps {
   children: ReactNode;
@@ -50,7 +48,6 @@ const ProviderFont = ({
   const cssAppend = enforceGoogleFonts ? " !important" : "";
 
   React.useEffect(() => {
-    // Inject global styles
     const styleId = "ottabase-font-styles";
     let styleElement = document.getElementById(styleId) as HTMLStyleElement;
 
@@ -60,7 +57,6 @@ const ProviderFont = ({
       document.head.appendChild(styleElement);
     }
 
-    // Inject Custom CSS Font-Family Styles
     styleElement.textContent = `
       h1, h2, h3, h4, h5, h6, .font-family-heading {
         font-family: ${headingFontFamily.style.fontFamily}${cssAppend};
