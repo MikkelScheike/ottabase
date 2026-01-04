@@ -8,6 +8,7 @@ import {
     ProviderNextThemes,
 } from "@/ottabase/providers";
 import { ThemeManager } from "@/ottabase/providers/ThemeManager";
+import { ThemeProvider } from "@/ottabase/providers/ProviderTheme";
 import { ProviderState } from "@ottabase/state";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
 import { ProviderUIBase } from "@ottabase/ui-base";
@@ -35,10 +36,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
                 >
                     <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
                         <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
-                            <ThemeManager />
-                            <ShadcnProviders enableThemeProvider={false} enableToaster>
-                                <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
-                            </ShadcnProviders>
+                            <ThemeProvider>
+                                <ThemeManager />
+                                <ShadcnProviders enableThemeProvider={false} enableToaster>
+                                    <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
+                                </ShadcnProviders>
+                            </ThemeProvider>
                         </ProviderNextThemes>
                     </ProviderFont>
                 </ProviderUIBase>

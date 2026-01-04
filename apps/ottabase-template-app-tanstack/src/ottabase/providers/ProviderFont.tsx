@@ -7,16 +7,14 @@ type FontFamily = {
 
 export const primaryFontFamily: FontFamily = {
     style: {
-        fontFamily:
-            'Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"',
+        fontFamily: 'var(--font-body), ui-sans-serif, system-ui, sans-serif',
     },
     className: "font-family-primary",
 };
 
 export const headingFontFamily: FontFamily = {
     style: {
-        fontFamily:
-            '"Work Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial',
+        fontFamily: 'var(--font-heading), ui-sans-serif, system-ui, sans-serif',
     },
     className: "font-family-heading",
 };
@@ -31,7 +29,7 @@ export const monospaceFontFamily: FontFamily = {
 
 export const handwritingFontFamily: FontFamily = {
     style: {
-        fontFamily: '"Patrick Hand", "Comic Sans MS", cursive',
+        fontFamily: 'var(--font-handwriting), cursive',
     },
     className: "font-family-handwriting",
 };

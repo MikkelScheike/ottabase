@@ -11,9 +11,10 @@ import { APP_META } from "@/ottabase/config/app.config";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import { Button } from "@ottabase/ui-shadcn";
 
+
 function RootLayout() {
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-background font-sans">
             <header className="border-b">
                 <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
                     <div className="flex items-center gap-2">
@@ -29,6 +30,9 @@ function RootLayout() {
                         </Button>
                         <Button asChild variant="ghost" size="sm">
                             <Link to="/demo">Demo</Link>
+                        </Button>
+                        <Button asChild variant="ghost" size="sm">
+                            <Link to="/demo/theming">Themes</Link>
                         </Button>
                         <DarkModeToggle type="button" title="Toggle dark/light mode" />
                     </div>
@@ -188,6 +192,12 @@ const demoApiRoute = new Route({
     component: lazyRouteComponent(() => import("@/pages/demo/api/ApiDemoPage").then((m) => ({ default: m.ApiDemoPage }))),
 });
 
+const demoThemingRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: "/demo/theming",
+    component: lazyRouteComponent(() => import("@/pages/demo/theming/ThemingDemoPage").then((m) => ({ default: m.ThemingDemoPage }))),
+});
+
 const routeTree = rootRoute.addChildren([
     indexRoute,
     demoRoute,
@@ -207,6 +217,7 @@ const routeTree = rootRoute.addChildren([
     demoCloudflareRateLimitingRoute,
     demoCloudflareRealtimeRoute,
     demoApiRoute,
+    demoThemingRoute,
 ]);
 
 const browserHistory = createBrowserHistory();
