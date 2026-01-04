@@ -1,4 +1,4 @@
-﻿export * from "./browser";
+export * from "./browser";
 export * from "./currency";
 export * from "./email";
 export * from "./email-gmail";
