@@ -10,3 +10,4 @@ export * from "./string";
 export * from "./timezone";
 export * from "./url";
 export * from "./user";
+export * from "./errors";

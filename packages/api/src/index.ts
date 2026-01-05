@@ -9,24 +9,7 @@
 // Error Types
 // ============================================================
 
-/**
- * Standardized API error response from the server.
- * All API endpoints should return errors in this format.
- */
-export interface ApiErrorResponse {
-  /** Primary error message */
-  error: string;
-  /** Error code for programmatic handling (e.g., "UNAUTHORIZED", "RATE_LIMITED") */
-  code?: string;
-  /** Additional context about the error */
-  details?: string;
-  /** Actionable suggestion for fixing the error */
-  hint?: string;
-  /** Multiple error messages (e.g., validation errors) */
-  messages?: string[];
-  /** Field-specific errors for form validation */
-  fieldErrors?: Record<string, string[]>;
-}
+import { ApiErrorResponse } from "@ottabase/utils";
 
 /**
  * Custom error class for API errors.

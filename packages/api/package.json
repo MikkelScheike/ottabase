@@ -34,6 +34,9 @@
   ],
   "author": "",
   "license": "MIT",
+  "dependencies": {
+    "@ottabase/utils": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "catalog:",
     "eslint": "catalog:",

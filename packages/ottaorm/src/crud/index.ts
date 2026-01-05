@@ -26,6 +26,11 @@ export interface CrudResponse {
   success: boolean;
   data?: unknown;
   error?: string;
+  code?: string;
+  details?: string;
+  hint?: string;
+  messages?: string[];
+  fieldErrors?: Record<string, string[]>;
   status: number;
 }
 
@@ -171,9 +176,14 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
+    const isD1Error = message.includes("D1_ERROR") || message.includes("SQLITE_ERROR");
+
     return {
       success: false,
       error: message,
+      code: isD1Error ? "DATABASE_ERROR" : "INTERNAL_SERVER_ERROR",
+      messages: [message],
+      hint: isD1Error ? "Make sure your database tables are initialized and migrations are up to date." : undefined,
       status: 500,
     };
   }
