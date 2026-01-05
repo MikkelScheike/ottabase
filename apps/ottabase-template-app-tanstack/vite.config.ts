@@ -49,6 +49,14 @@ export default defineConfig(async () => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    optimizeDeps: {
+      include: [
+        "editorjs-blocks-react-renderer",
+        "html-react-parser",
+        "@wooorm/starry-night",
+        "hast-util-to-jsx-runtime",
+      ],
+    },
     build: {
       outDir: "dist",
       sourcemap: true,

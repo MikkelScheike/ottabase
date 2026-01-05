@@ -198,6 +198,12 @@ const demoThemingRoute = new Route({
     component: lazyRouteComponent(() => import("@/pages/demo/theming/ThemingDemoPage").then((m) => ({ default: m.ThemingDemoPage }))),
 });
 
+const demoRendererRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: "/demo/renderer",
+    component: lazyRouteComponent(() => import("@/pages/demo/renderer/RendererDemoPage").then((m) => ({ default: m.RendererDemoPage }))),
+});
+
 const routeTree = rootRoute.addChildren([
     indexRoute,
     demoRoute,
@@ -218,6 +224,7 @@ const routeTree = rootRoute.addChildren([
     demoCloudflareRealtimeRoute,
     demoApiRoute,
     demoThemingRoute,
+    demoRendererRoute,
 ]);
 
 const browserHistory = createBrowserHistory();

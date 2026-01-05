@@ -144,6 +144,21 @@ export function DemoIndexPage() {
                         </Button>
                     </CardContent>
                 </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>OttaRenderer</CardTitle>
+                        <CardDescription>
+                            Content renderer for EditorJS and HTML with custom block renderers
+                            and dark mode support
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button asChild variant="outline" className="w-full">
+                            <Link to="/demo/renderer">View Renderer Demo</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
 
             <div className="mt-2 rounded-lg border bg-muted/50 p-6">
