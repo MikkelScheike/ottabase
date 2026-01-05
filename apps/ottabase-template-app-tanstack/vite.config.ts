@@ -51,7 +51,6 @@ export default defineConfig(async () => {
     },
     optimizeDeps: {
       include: [
-        "editorjs-blocks-react-renderer",
         "html-react-parser",
         "@wooorm/starry-night",
         "hast-util-to-jsx-runtime",

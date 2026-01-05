@@ -1,5 +1,6 @@
 export { default as BlockInjector } from './BlockInjector';
 export { default as HtmlRenderer } from './HtmlRenderer';
+export { default as Blocks } from 'editorjs-blocks-react-renderer';
 
 // Export custom renderers
 export { default as AdvancedImageBlock } from './components/AdvancedImage/AdvancedImage';
