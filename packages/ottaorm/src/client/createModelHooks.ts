@@ -4,6 +4,7 @@
 // Creates type-safe TanStack Query hooks for any OttaORM model
 // ============================================================
 
+import { useMemo } from "react";
 import {
   useQuery,
   useMutation,
@@ -269,7 +270,7 @@ export function createModelHooks<T extends { id: string | number }>(
     queryOptions?: Partial<UseQueryOptions<T[], Error>>
   ) {
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return useQuery<T[], Error>({
       queryKey: queryKeys.list(options),
@@ -283,7 +284,7 @@ export function createModelHooks<T extends { id: string | number }>(
     queryOptions?: Partial<UseQueryOptions<T | null, Error>>
   ) {
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return useQuery<T | null, Error>({
       queryKey: queryKeys.detail(id),
@@ -298,7 +299,7 @@ export function createModelHooks<T extends { id: string | number }>(
     perPage: number = 10
   ) {
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return useInfiniteQuery<
       PaginationResult<T>,
@@ -326,7 +327,7 @@ export function createModelHooks<T extends { id: string | number }>(
   ) {
     const queryClient = useQueryClient();
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return useMutation<T, Error, Partial<T>, MutationContext<T>>({
       mutationFn: fetchers.createItem,
@@ -345,7 +346,7 @@ export function createModelHooks<T extends { id: string | number }>(
   ) {
     const queryClient = useQueryClient();
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return useMutation<
       T,
@@ -372,7 +373,7 @@ export function createModelHooks<T extends { id: string | number }>(
   ) {
     const queryClient = useQueryClient();
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return useMutation<boolean, Error, string | number, MutationContext<T>>({
       mutationFn: fetchers.deleteItem,
@@ -391,7 +392,7 @@ export function createModelHooks<T extends { id: string | number }>(
   function usePrefetch() {
     const queryClient = useQueryClient();
     const apiClient = useApiClient();
-    const fetchers = createFetchers(apiClient);
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
 
     return {
       prefetchList: async (options?: QueryOptions) => {
