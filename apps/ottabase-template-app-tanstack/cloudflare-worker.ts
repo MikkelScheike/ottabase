@@ -17,7 +17,7 @@ import {
   autoInit,
   collectTableSchemas,
 } from "@ottabase/ottaorm";
-import { ServiceError, errorResponse } from "@ottabase/utils";
+import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { appMigrations } from "./ottabase/migrations";
 import { Todo } from "./ottabase/models/Todo";
 import * as schema from "./ottabase/db/schema";
