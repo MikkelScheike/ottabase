@@ -24,6 +24,17 @@ ottabase/
 
 ## 🚀 Getting Started
 
+### DEV TLDR;
+
+```bash
+# Build packages
+pnpm build:pkg
+
+# Start Dev (BE+FE for tanstack template app)
+pnpm dev
+
+```
+
 ### Prerequisites
 
 - **Node.js**: `>=24.0.0` (LTS)
