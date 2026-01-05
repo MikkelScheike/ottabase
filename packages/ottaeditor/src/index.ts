@@ -31,6 +31,12 @@ export {
   getDefaultPlugins,
 } from "./defaultPlugins";
 
+// Export custom tools
+export { default as AdvancedImageTool } from './tools/AdvancedImageTool/AdvancedImageTool';
+export { default as MediaLibraryTool } from './tools/MediaLibraryTool/MediaLibraryTool';
+export { default as AdvancedImageRenderer } from './tools/AdvancedImageTool/AdvancedImageRenderer';
+export type { AdvancedImageData } from './tools/AdvancedImageTool/types';
+
 export type { DefaultPluginName } from "./defaultPlugins";
 
 export type {

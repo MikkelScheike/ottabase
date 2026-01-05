@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
     Outlet,
     RootRoute,
@@ -10,6 +11,7 @@ import {
 import { APP_META } from "@/ottabase/config/app.config";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import { Button } from "@ottabase/ui-shadcn";
+import { api, isApiError } from "@/lib/api";
 
 
 function RootLayout() {
@@ -47,6 +49,26 @@ function RootLayout() {
 }
 
 function HomeRouteComponent() {
+    const [result, setResult] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
+
+    const checkHealth = async () => {
+        setLoading(true);
+        setResult(null);
+        try {
+            const data = await api("/api/health");
+            setResult(JSON.stringify(data, null, 2));
+        } catch (err) {
+            if (isApiError(err)) {
+                setResult(`Error ${err.status}: ${err.message}`);
+            } else {
+                setResult(`Error: ${err instanceof Error ? err.message : String(err)}`);
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="flex flex-col gap-6">
             <h1 className="text-4xl font-bold">{APP_META.appName}</h1>
@@ -58,15 +80,25 @@ function HomeRouteComponent() {
                     Workers</strong> (assets served by the Worker).
             </p>
 
-            <div className="flex flex-wrap gap-2">
-                <Button asChild variant="outline">
-                    <Link to="/demo">Go to Demo</Link>
-                </Button>
-                <Button asChild variant="outline">
-                    <a href="/api/health" target="_blank" rel="noreferrer">
-                        /api/health
-                    </a>
-                </Button>
+            <div className="flex flex-col gap-4">
+                <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="outline">
+                        <Link to="/demo">Go to Demo</Link>
+                    </Button>
+                    <Button
+                        variant="outline"
+                        onClick={checkHealth}
+                        disabled={loading}
+                    >
+                        {loading ? "Checking..." : "/api/health"}
+                    </Button>
+                </div>
+
+                {result && (
+                    <pre className="mt-2 rounded-lg bg-muted p-4 text-xs overflow-auto max-h-48 border animate-in fade-in slide-in-from-top-2 duration-300">
+                        {result}
+                    </pre>
+                )}
             </div>
         </div>
     );

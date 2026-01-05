@@ -1,4 +1,5 @@
 import { createKVClient } from "@ottabase/cf/kv";
+import { createImagesClient } from "@ottabase/cf/images";
 import { createQueuesClient } from "@ottabase/cf/queues";
 import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { RealtimeBroadcaster, RealtimeActor } from "@ottabase/cf-realtime/server";
@@ -128,7 +129,7 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/api/health") {
-      return Response.json({ ok: true, name: "ottabase-template-app-tanstack" });
+      return Response.json({ ok: true, name: "ottabase-template-app-tanstack", timestamp: Date.now() });
     }
 
     // ============================================================
@@ -272,7 +273,13 @@ export default {
         await env.OBCF_R2.put(key, await file.arrayBuffer(), {
           httpMetadata: { contentType: file.type || "application/octet-stream" },
         });
-        return json({ success: true });
+
+        // Construct public URL - assuming domain is same as worker or configured R2 public domain
+        // For simple R2 buckets without public access, this might just be the key or we might need presigned urls.
+        // But for this demo, we'll return a URL that points to this worker's GET endpoint
+        const publicUrl = `/api/cloudflare/r2?key=${encodeURIComponent(key)}`;
+
+        return json({ success: true, data: { url: publicUrl } });
       }
 
       if (request.method === "DELETE") {
@@ -280,6 +287,51 @@ export default {
         if (!key) return json({ error: "key is required" }, { status: 400 });
         await env.OBCF_R2.delete(key);
         return json({ success: true });
+      }
+
+      return json({ error: "Method not allowed" }, { status: 405 });
+    }
+
+    // Images: /api/cloudflare/images
+    if (url.pathname === "/api/cloudflare/images") {
+      // @ts-ignore - Env variables might not be typed in CloudflareEnv yet
+      const accountId = env.CF_IMAGES_ACCOUNT_ID;
+      // @ts-ignore
+      const apiToken = env.CF_IMAGES_API_TOKEN;
+
+      if (!accountId || !apiToken) {
+        return json({ error: "Cloudflare Images credentials not configured" }, { status: 500 });
+      }
+
+      const imagesClient = createImagesClient({ accountId, apiToken });
+
+      if (request.method === "POST") {
+        const formData = await request.formData();
+        const file = formData.get("file");
+
+        if (!(file instanceof File)) {
+          return json({ error: "file is required" }, { status: 400 });
+        }
+
+        // Upload to CF Images
+        const result = await imagesClient.upload(file);
+
+        if (!result.success) {
+          return json({ error: result.error.message }, { status: 500 });
+        }
+
+        // Return the first variant as the URL (public)
+        const variants = result.data.variants;
+        const publicUrl = variants && variants.length > 0 ? variants[0] : null;
+
+        return json({
+          success: true,
+          data: {
+            url: publicUrl,
+            variants: variants,
+            id: result.data.id
+          }
+        });
       }
 
       return json({ error: "Method not allowed" }, { status: 405 });
