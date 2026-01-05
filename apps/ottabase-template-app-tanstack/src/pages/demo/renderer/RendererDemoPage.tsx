@@ -1,5 +1,4 @@
-import Blocks from "editorjs-blocks-react-renderer";
-import { customRenderers, defaultEJSRConfigs, HtmlRenderer } from "@ottabase/ottarenderer";
+import { Blocks, customRenderers, defaultEJSRConfigs, HtmlRenderer } from "@ottabase/ottarenderer";
 import "@ottabase/ottarenderer/styles";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Tabs, TabsContent, TabsList, TabsTrigger } from "@ottabase/ui-shadcn";
 
@@ -121,8 +120,8 @@ const sampleEditorJSData = {
             id: "code1",
             type: "code",
             data: {
-                code: `import Blocks from "editorjs-blocks-react-renderer";
-import { 
+                code: `import { 
+  Blocks,
   customRenderers, 
   defaultEJSRConfigs, 
   HtmlRenderer 
