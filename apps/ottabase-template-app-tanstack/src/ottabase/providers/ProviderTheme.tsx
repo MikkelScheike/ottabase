@@ -27,7 +27,11 @@ export function ThemeProvider({
     useEffect(() => {
         // Apply the active theme configuration whenever theme or mode changes
         const mode = (resolvedTheme === 'dark' ? 'dark' : 'light');
-        console.log(`[ProviderTheme] Updating theme: ${theme} | mode: ${mode} (resolved: ${resolvedTheme})`);
+
+        if (import.meta.env.DEV) {
+            console.log(`[ProviderTheme] Updating theme: ${theme} | mode: ${mode} (resolved: ${resolvedTheme})`);
+        }
+
         applyTheme(theme, mode);
         setConfig(getTheme(theme));
 

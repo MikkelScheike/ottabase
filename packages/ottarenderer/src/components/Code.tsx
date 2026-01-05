@@ -4,22 +4,6 @@ import { createStarryNight, common } from '@wooorm/starry-night';
 import { toJsxRuntime } from 'hast-util-to-jsx-runtime';
 import { Fragment, jsx, jsxs } from 'react/jsx-runtime';
 
-// Language mapping for common aliases
-const languageMap: Record<string, string> = {
-    'js': 'javascript',
-    'jsx': 'javascript',
-    'ts': 'typescript',
-    'tsx': 'typescript', // TSX uses TypeScript highlighting
-    'py': 'python',
-    'sh': 'shell',
-    'bash': 'shell',
-    'html': 'html',
-    'css': 'css',
-    'json': 'json',
-    'md': 'markdown',
-    'markdown': 'markdown',
-};
-
 // Starry-night instance (singleton)
 let starryNightInstance: Awaited<ReturnType<typeof createStarryNight>> | null = null;
 
@@ -113,3 +97,139 @@ const Code: RenderFn<{ code: string; language?: string }> = ({ data }) => {
 }
 
 export default Code;
+
+// Language mapping
+const languageMap: Record<string, string> = {
+    // javascript
+    'js': 'javascript',
+    'jsx': 'javascript',
+
+    // typescript
+    'ts': 'typescript',
+    'tsx': 'typescript',
+
+    // html
+    'html': 'html',
+    'htm': 'html',
+
+    // xml
+    'xml': 'xml',
+    'svg': 'xml',
+
+    // css
+    'css': 'css',
+
+    // scss
+    'scss': 'scss',
+
+    // sass
+    'sass': 'sass',
+
+    // less
+    'less': 'less',
+
+    // json
+    'json': 'json',
+    'json5': 'json',
+    'jsonc': 'json',
+
+    // yaml
+    'yaml': 'yaml',
+    'yml': 'yaml',
+
+    // toml
+    'toml': 'toml',
+
+    // csv
+    'csv': 'csv',
+
+    // python
+    'py': 'python',
+    'python': 'python',
+
+    // ruby
+    'rb': 'ruby',
+    'ruby': 'ruby',
+
+    // java
+    'java': 'java',
+
+    // c
+    'c': 'c',
+
+    // cpp
+    'cpp': 'cpp',
+    'c++': 'cpp',
+
+    // csharp
+    'cs': 'csharp',
+    'csharp': 'csharp',
+
+    // go
+    'go': 'go',
+    'golang': 'go',
+
+    // rust
+    'rs': 'rust',
+    'rust': 'rust',
+
+    // php
+    'php': 'php',
+
+    // swift
+    'swift': 'swift',
+
+    // kotlin
+    'kotlin': 'kotlin',
+    'kt': 'kotlin',
+
+    // shell
+    'sh': 'shell',
+    'bash': 'shell',
+    'zsh': 'shell',
+    'fish': 'shell',
+    // powershell
+    'powershell': 'powershell',
+    'ps1': 'powershell',
+
+    // markdown
+    'md': 'markdown',
+    'markdown': 'markdown',
+    'mdx': 'markdown',
+
+    // latex
+    'tex': 'latex',
+    'latex': 'latex',
+
+    // sql
+    'd1': 'sql',
+    'sql': 'sql',
+    'mysql': 'sql',
+    'postgresql': 'sql',
+
+    // graphql
+    'graphql': 'graphql',
+    'gql': 'graphql',
+
+    // dockerfile
+    'dockerfile': 'dockerfile',
+    'docker': 'dockerfile',
+
+    // makefile
+    'makefile': 'makefile',
+    'make': 'makefile',
+
+    // nginx
+    'nginx': 'nginx',
+
+    // apache
+    'apache': 'apache',
+
+    // diff
+    'diff': 'diff',
+    'patch': 'diff',
+
+    // regex
+    'regex': 'regex',
+    'regexp': 'regex',
+};

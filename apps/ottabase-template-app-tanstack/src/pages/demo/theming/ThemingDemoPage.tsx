@@ -64,32 +64,35 @@ export function ThemingDemoPage() {
                     <CardHeader>
                         <CardTitle>Typography Check</CardTitle>
                         <CardDescription>
-                            <div className="flex flex-col gap-1 mt-2">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground w-16">Heading:</span>
-                                    <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.typography.heading.fontFamily}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground w-16">Body:</span>
-                                    <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.typography.body.fontFamily}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground w-16">Cursive:</span>
-                                    <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.typography.handwriting.fontFamily}</span>
-                                </div>
-                            </div>
-                            <div className="flex flex-col gap-1 mt-4 pt-4 border-t">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground w-16">Radius:</span>
-                                    <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.radius}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground w-16">Spacing:</span>
-                                    <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.spacing?.section || 'N/A'} (Sec) / {config.spacing?.card || 'N/A'} (Card)</span>
-                                </div>
-                            </div>
+                            View current theme typography and spacing configuration.
                         </CardDescription>
                     </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16">Heading:</span>
+                                <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.typography.heading.fontFamily}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16">Body:</span>
+                                <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.typography.body.fontFamily}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16">Cursive:</span>
+                                <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.typography.handwriting.fontFamily}</span>
+                            </div>
+                        </div>
+                        <div className="flex flex-col gap-1 pt-4 border-t">
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16">Radius:</span>
+                                <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.radius}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16">Spacing:</span>
+                                <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">{config.spacing?.section || 'N/A'} (Sec) / {config.spacing?.card || 'N/A'} (Card)</span>
+                            </div>
+                        </div>
+                    </CardContent>
                     <CardContent className="space-y-4">
                         <div>
                             <h1 className="font-heading text-4xl font-extrabold lg:text-5xl">Heading 1</h1>
