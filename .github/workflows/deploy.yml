@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch: # Allow manual triggers
+    inputs:
+      FORCE_DEPLOY:
+        description: 'Force deploy all apps regardless of changes'
+        required: false
+        default: 'true'
+        type: boolean
 
 jobs:
   # Prepare deployment matrix based on target apps and code changes
@@ -62,10 +68,10 @@ jobs:
             echo "📦 Packages changed - will deploy all target apps"
           fi
 
-          # For workflow_dispatch, treat as if packages changed (deploy all)
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          # For FORCE_DEPLOY, treat as if packages changed (deploy all)
+          if [ "${{ inputs.FORCE_DEPLOY }}" == "true" ]; then
             PACKAGES_CHANGED="true"
-            echo "🔄 Manual trigger - will deploy all target apps"
+            echo "🔄 Manual trigger with FORCE_DEPLOY - will deploy all target apps"
           fi
 
           # Find which apps have code changes
