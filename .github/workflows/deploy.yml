@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allow manual triggers
     inputs:
       FORCE_DEPLOY:
-        description: 'Force deploy all apps regardless of changes'
+        description: 'Force deploy all apps regardless of change-detection'
         required: false
         default: 'true'
         type: boolean
