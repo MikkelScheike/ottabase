@@ -25,6 +25,8 @@ import * as schema from "./ottabase/db/schema";
 
 export { RealtimeActor };
 
+const SPA_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
 function isHtmlRequest(request: Request): boolean {
   const url = new URL(request.url);
   const pathname = url.pathname;
@@ -745,13 +747,17 @@ export default {
       }
 
       const response = await env.OBCF_ASSETS.fetch(request);
-      if (response.status !== 404 || !isHtmlRequest(request)) {
-        return response;
+
+      // Handle SPA routes on direct navigation/refresh
+      if (isHtmlRequest(request)) {
+        if (response.status === 404 || SPA_REDIRECT_STATUSES.has(response.status)) {
+          const indexUrl = new URL(request.url);
+          indexUrl.pathname = "/index.html";
+          return env.OBCF_ASSETS.fetch(new Request(indexUrl.toString(), request));
+        }
       }
 
-      const indexUrl = new URL(request.url);
-      indexUrl.pathname = "/index.html";
-      return env.OBCF_ASSETS.fetch(new Request(indexUrl.toString(), request));
+      return response;
     } catch (err) {
       console.error("Worker unhandled error:", err);
 
@@ -767,4 +773,3 @@ export default {
     }
   },
 };
-
