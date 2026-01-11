@@ -6,6 +6,7 @@ module.exports = {
     "postcss-preset-env": {
       features: {
         "nesting-rules": false,
+        "is-pseudo-class": false,
       },
     },
     "postcss-preset-mantine": {
