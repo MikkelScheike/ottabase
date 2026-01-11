@@ -9,12 +9,17 @@ on:
       FORCE_DEPLOY:
         description: 'Force deploy all apps regardless of change-detection'
         required: false
-        default: 'true'
+        default: true
         type: boolean
 
 jobs:
+  # Build and cache packages first (reusable workflow)
+  build-packages:
+    uses: ./.github/workflows/build-packages.yml
+
   # Prepare deployment matrix based on target apps and code changes
   prepare-deployment:
+    needs: build-packages
     runs-on: ubuntu-latest
     timeout-minutes: 5
     name: Prepare deployment
@@ -225,7 +230,7 @@ jobs:
 
   # Deploy each app
   deploy:
-    needs: prepare-deployment
+    needs: [build-packages, prepare-deployment]
     if: needs.prepare-deployment.outputs.has-apps == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -416,14 +421,35 @@ jobs:
 
           echo "✅ Build tools verified"
 
-      # Build packages first (dependencies of apps)
-      - name: Build packages
+      # Restore pre-built packages from cache (built by build-packages job)
+      - name: Restore packages cache
+        id: restore-packages
         run: |
-          export PATH="${GITHUB_WORKSPACE}/node_modules/.bin:$PATH"
-          echo "⏳ Building all packages using Turborepo..."
-          pnpm --filter "./packages/**" run build
-        env:
-          NODE_ENV: production
+          echo "📦 Restoring pre-built packages from cache..."
+          
+          # Generate the same cache key used by build-packages workflow
+          PACKAGE_HASH=$(find packages -type f \
+            -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" \
+            | sort | xargs cat | sha256sum | cut -d' ' -f1)
+          
+          LOCK_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)
+          CACHE_KEY="packages-build-${LOCK_HASH}-${PACKAGE_HASH}"
+          
+          echo "cache-key=${CACHE_KEY}" >> $GITHUB_OUTPUT
+          echo "📦 Cache key: ${CACHE_KEY}"
+
+      - name: Restore cached packages
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            packages/*/dist
+            packages/*/build
+            packages/*/.turbo
+            .turbo
+          key: ${{ steps.restore-packages.outputs.cache-key }}
+          restore-keys: |
+            packages-build-${{ hashFiles('pnpm-lock.yaml') }}-
+          fail-on-cache-miss: true # Fail if cache not found (should always exist from build-packages job)
 
       # Build the app and all its dependencies
       - name: Build application
