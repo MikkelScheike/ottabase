@@ -46,7 +46,7 @@ export { projectsTable } from "../models/Project";            // NEW!
 
 ```bash
 # Development (no auth)
-curl -X POST http://localhost:8790/api/ottaorm/init
+curl -X POST http://localhost:3004/api/ottaorm/init
 
 # Production (requires MIGRATION_SECRET)
 curl -X POST https://your-app.com/api/ottaorm/init \
@@ -80,7 +80,7 @@ export const projectsTable = sqliteTable("projects", {
 ```
 
 ```bash
-curl -X POST http://localhost:8790/api/ottaorm/init
+curl -X POST http://localhost:3004/api/ottaorm/init
 # ✅ Column added automatically!
 ```
 

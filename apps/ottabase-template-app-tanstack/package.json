@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
-    "dev:worker": "wrangler dev --port 8790",
+    "dev:worker": "wrangler dev",
     "dev:full": "pnpm build && pnpm dev:worker",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "preview": "pnpm build && wrangler dev",

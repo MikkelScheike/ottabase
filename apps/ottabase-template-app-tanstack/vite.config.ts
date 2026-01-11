@@ -1,6 +1,6 @@
-import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { defineConfig, Plugin } from "vite";
 
 // SPA fallback plugin for client-side routing
 function spaFallback(): Plugin {
@@ -78,11 +78,12 @@ export default defineConfig(async () => {
       },
     },
     server: {
-      port: 5174,
+      host: "127.0.0.1",
+      port: parseInt(process.env.PORT_FE || "3003"),
       strictPort: true,
       proxy: {
         "/api": {
-          target: "http://127.0.0.1:8790",
+          target: `http://127.0.0.1:${process.env.PORT_BE || 3004}`,
           changeOrigin: true,
           secure: false,
         },

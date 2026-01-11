@@ -34,9 +34,15 @@ const shellArgs = isWindows ? ['-Command'] : ['-c'];
 // App directory
 const appDir = path.join(__dirname, 'apps/ottabase-template-app-tanstack');
 
+// Default ports
+const PORT_FE = process.env.PORT_FE || 3003;
+const PORT_BE = process.env.PORT_BE || 3004;
+
 log.info('Starting TanStack app in development mode...');
 log.info(`Platform: ${process.platform}`);
 log.info(`App directory: ${appDir}`);
+log.info(`Frontend Port: ${PORT_FE}`);
+log.info(`Backend Port: ${PORT_BE}`);
 
 // Start frontend (Vite)
 log.info('Starting frontend (Vite)...');
@@ -47,6 +53,7 @@ const frontend = spawn(
         cwd: appDir,
         stdio: 'pipe',
         shell: true,
+        env: { ...process.env, PORT_FE, PORT_BE },
     }
 );
 
@@ -54,11 +61,12 @@ const frontend = spawn(
 log.info('Starting backend (Wrangler)...');
 const backend = spawn(
     isWindows ? 'pnpm.cmd' : 'pnpm',
-    ['dev:worker'],
+    ['dev:worker', '--', '--port', PORT_BE],
     {
         cwd: appDir,
         stdio: 'pipe',
         shell: true,
+        env: { ...process.env, PORT_FE, PORT_BE },
     }
 );
 
@@ -115,6 +123,6 @@ process.on('SIGTERM', () => {
 });
 
 log.success('Both processes started successfully!');
-log.info("Frontend: http://127.0.0.1:5174");
-log.info('Backend: http://localhost:8790');
+log.info(`Frontend: http://127.0.0.1:${PORT_FE}`);
+log.info(`Backend: http://127.0.0.1:${PORT_BE}`);
 log.info('Press Ctrl+C to stop both processes');

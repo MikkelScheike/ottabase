@@ -25,9 +25,9 @@ pnpm dev
 pnpm dev:worker
 
 # Initialize database (creates all tables automatically)
-curl -X POST http://localhost:8790/api/ottaorm/init
+curl -X POST http://localhost:3004/api/ottaorm/init
 
-# Done! Visit http://localhost:8790
+# Done! Visit http://localhost:3004
 ```
 
 ## Database Setup
@@ -58,7 +58,7 @@ export { todosTable } from "../models/Todo";
 
 #### 3. Initialize
 ```bash
-curl -X POST http://localhost:8790/api/ottaorm/init
+curl -X POST http://localhost:3004/api/ottaorm/init
 # ✅ Table created automatically!
 ```
 
