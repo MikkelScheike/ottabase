@@ -3,26 +3,24 @@ import path from "node:path";
 import { defineConfig, Plugin } from "vite";
 
 // SPA fallback plugin for client-side routing
+// SPA fallback plugin: rewrites non-API HTML requests to index.html
+// This ensures that paths like /demo or /profile trigger the React app instead of 404ing
 function spaFallback(): Plugin {
   return {
     name: "spa-fallback",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        // Skip API routes
-        if (req.url?.startsWith("/api")) {
-          return next();
-        }
+        const url = req.url || "";
+        // Don't touch API requests
+        if (url.startsWith("/api")) return next();
 
-        // Skip asset requests (files with extensions)
-        const urlPath = (req.url || "").split(/[?#]/, 1)[0];
-        const hasExtension = /\.[a-zA-Z0-9]+$/.test(urlPath);
-        if (hasExtension) {
-          return next();
-        }
+        // Check if path has a file extension (heuristic for "is a file")
+        // We strip query params first so /search?q=doc.pdf works as a route
+        const path = url.split(/[?#]/)[0];
+        const isFile = path.includes(".");
 
-        // For HTML requests without extensions, serve index.html
-        const acceptsHtml = req.headers.accept?.includes("text/html");
-        if (acceptsHtml) {
+        // If it's not a file and the browser wants HTML, serve the app
+        if (!isFile && req.headers.accept?.includes("text/html")) {
           req.url = "/index.html";
         }
 
@@ -49,14 +47,11 @@ export default defineConfig(async () => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    css: {
-      // Lightning CSS cannot safely transform some Tailwind arbitrary variants, so keep PostCSS handling
-      transformer: "postcss",
-    },
     build: {
       outDir: "dist",
       sourcemap: true,
       chunkSizeWarningLimit: 1500,
+      cssTarget: "chrome88",
       rollupOptions: {
         output: {
           manualChunks: {
