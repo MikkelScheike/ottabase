@@ -22,6 +22,10 @@ IMPORTANT NOTE: Packages need to be generic, reusable, optimized, and well-docum
 
 Reusable code shared across applications:
 
+### Local development note
+
+Local development is on Windows 11. Use Command Prompt (cmd) for terminal to avoid path issues (Default would be PowerShell which has issues with some scripts). Nodejs 24 and pnpm with workspace support are used.
+
 ### Core Packages
 
 - **`@ottabase/config`** - Application configuration utilities
