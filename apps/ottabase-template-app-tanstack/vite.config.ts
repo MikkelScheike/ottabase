@@ -40,6 +40,12 @@ export default defineConfig({
       projects: [path.resolve(__dirname, "./tsconfig.json")],
       ignoreConfigErrors: true,
     }),
+    react({
+      // Use SWC for faster transforms
+      babel: {
+        plugins: [],
+      },
+    }),
     react(),
     spaFallback(),
   ],
@@ -47,6 +53,23 @@ export default defineConfig({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react/jsx-runtime",
+      "react/jsx-dev-runtime",
+    ],
+    exclude: [],
+    esbuildOptions: {
+      target: "esnext",
+    },
+  },
+  esbuild: {
+    target: "esnext",
+    legalComments: "none",
+    treeShaking: true,
   },
   logLevel: "info",
   build: {
@@ -60,6 +83,10 @@ export default defineConfig({
     cssTarget: "esnext",
     cssMinify: false,
     minify: "esbuild",
+    target: "esnext",
+    commonjsOptions: {
+      transformMixedEsModules: true,
+    },
     rollupOptions: {
       output: {
         manualChunks: {
