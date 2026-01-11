@@ -45,10 +45,6 @@ export default defineConfig({
     react({
       // Enable the new JSX runtime and fast refresh
       jsxRuntime: "automatic",
-      // Drop console/debugger statements in production builds
-      esbuild: {
-        drop: ["console", "debugger"],
-      },
     }),
     spaFallback(),
   ],
