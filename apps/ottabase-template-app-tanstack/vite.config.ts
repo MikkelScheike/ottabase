@@ -50,8 +50,15 @@ export default defineConfig(async () => {
     build: {
       outDir: "dist",
       sourcemap: true,
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 1500, // kB
+      assetsInlineLimit: 102400, // KiB
+      polyfillModulePreload: true,
+      modulePreload: {
+        polyfill: true,
+      },
       cssTarget: "chrome107",
+      cssMinify: "esbuild",
+      minify: "esbuild",
       rollupOptions: {
         output: {
           manualChunks: {
