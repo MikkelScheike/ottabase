@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: "24"
 
-      - name: Build deployment matrix
+      - name: Find target apps and changes / Build deployment matrix
         id: build-matrix
         run: |
           echo "🔍 Preparing deployment matrix..."
