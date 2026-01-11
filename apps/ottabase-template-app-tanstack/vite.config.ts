@@ -1,6 +1,10 @@
 import react from "@vitejs/plugin-react";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { defineConfig, Plugin } from "vite";
+import tsconfigPaths from "vite-tsconfig-paths";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // SPA fallback plugin for client-side routing
 // SPA fallback plugin: rewrites non-API HTML requests to index.html
@@ -30,69 +34,65 @@ function spaFallback(): Plugin {
   };
 }
 
-export default defineConfig(async () => {
-  const { default: tsconfigPaths } = await import("vite-tsconfig-paths");
-
-  return {
-    plugins: [
-      tsconfigPaths({
-        projects: [path.resolve(__dirname, "./tsconfig.json")],
-        ignoreConfigErrors: true,
-      }),
-      react(),
-      spaFallback(),
-    ],
-    resolve: {
-      alias: {
-        "@": path.resolve(__dirname, "./src"),
-      },
+export default defineConfig({
+  plugins: [
+    tsconfigPaths({
+      projects: [path.resolve(__dirname, "./tsconfig.json")],
+      ignoreConfigErrors: true,
+    }),
+    react(),
+    spaFallback(),
+  ],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
-    build: {
-      outDir: "dist",
-      sourcemap: true,
-      chunkSizeWarningLimit: 1500, // kB
-      assetsInlineLimit: 102400, // KiB
-      polyfillModulePreload: true,
-      modulePreload: {
-        polyfill: true,
-      },
-      cssTarget: "chrome107",
-      cssMinify: "esbuild",
-      minify: "esbuild",
-      rollupOptions: {
-        output: {
-          manualChunks: {
-            mantine: [
-              "@mantine/core",
-              "@mantine/hooks",
-              "@mantine/modals",
-              "@mantine/notifications",
-              "@mantine/carousel",
-            ],
-            tanstack: [
-              "@tanstack/react-query",
-              "@tanstack/react-query-devtools",
-              "@tanstack/react-router",
-            ],
-            ottaeditor: ["@ottabase/ottaeditor"],
-          },
+  },
+  logLevel: "info",
+  build: {
+    outDir: "dist",
+    sourcemap: false, // Temporarily disabled - can cause hangs on Windows
+    chunkSizeWarningLimit: 1500, // kB
+    assetsInlineLimit: 102400, // KiB
+    modulePreload: {
+      polyfill: true,
+    },
+    cssTarget: "esnext",
+    cssMinify: false,
+    minify: "esbuild",
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          mantine: [
+            "@mantine/core",
+            "@mantine/hooks",
+            "@mantine/modals",
+            "@mantine/notifications",
+            "@mantine/carousel",
+          ],
+          tanstack: [
+            "@tanstack/react-query",
+            "@tanstack/react-query-devtools",
+            "@tanstack/react-router",
+          ],
+          ottaeditor: ["@ottabase/ottaeditor"],
         },
       },
     },
-    server: {
-      host: "127.0.0.1",
-      port: parseInt(process.env.PORT_FE || "3003"),
-      strictPort: true,
-      proxy: {
-        "/api": {
-          target: `http://127.0.0.1:${process.env.PORT_BE || 3004}`,
-          changeOrigin: true,
-          secure: false,
-        },
+  },
+  server: {
+    host: "127.0.0.1",
+    port: parseInt(process.env.PORT_FE || "3003"),
+    strictPort: true,
+    proxy: {
+      "/api": {
+        target: `http://127.0.0.1:${process.env.PORT_BE || 3004}`,
+        changeOrigin: true,
+        secure: false,
       },
     },
-    preview: {
-      port: 4173,
-    },
-  };
+  },
+  preview: {
+    port: 4173,
+  },
 });

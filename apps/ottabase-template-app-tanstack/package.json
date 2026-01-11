@@ -1,6 +1,7 @@
 {
   "name": "@ottabase/ottabase-template-app-tanstack",
   "version": "0.1.0",
+  "type": "module",
   "private": true,
   "scripts": {
     "dev": "vite",
@@ -57,13 +58,15 @@
     "@cloudflare/workers-types": "catalog:",
     "@ottabase/ui-tailwind": "workspace:*",
     "@tanstack/react-query-devtools": "catalog:",
+    "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
-    "@types/node": "catalog:",
     "@vitejs/plugin-react": "catalog:",
     "autoprefixer": "catalog:",
+    "baseline-browser-mapping": "^2.9.14",
     "cross-env": "catalog:",
     "drizzle-kit": "catalog:",
+    "localflare": "catalog:",
     "postcss": "catalog:",
     "postcss-preset-env": "catalog:",
     "postcss-preset-mantine": "catalog:",
@@ -73,7 +76,6 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-tsconfig-paths": "catalog:",
-    "wrangler": "catalog:",
-    "localflare": "catalog:"
+    "wrangler": "catalog:"
   }
 }
