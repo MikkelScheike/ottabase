@@ -6,7 +6,7 @@
  */
 
 import { createApiClient, type ApiError } from "@ottabase/api";
-import { toast } from "@ottabase/ui-shadcn";
+import { toast } from "sonner";
 
 /**
  * Get auth token from storage/context.
@@ -108,5 +108,17 @@ export const api = createApiClient({
 });
 
 // Re-export types for convenience
-export { ApiError, isApiError, getErrorMessage, getErrorMessages } from "@ottabase/api";
-export type { ApiErrorResponse, ApiClientConfig, ApiRequestOptions, HttpMethod, ApiFunction } from "@ottabase/api";
+export {
+  ApiError,
+  getErrorMessage,
+  getErrorMessages,
+  isApiError,
+} from "@ottabase/api";
+export type {
+  ApiClientConfig,
+  ApiErrorResponse,
+  ApiFunction,
+  ApiRequestOptions,
+  HttpMethod,
+} from "@ottabase/api";
+
