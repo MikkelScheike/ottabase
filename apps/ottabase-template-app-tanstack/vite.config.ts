@@ -49,12 +49,9 @@ export default defineConfig(async () => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
-    optimizeDeps: {
-      include: [
-        "html-react-parser",
-        "@wooorm/starry-night",
-        "hast-util-to-jsx-runtime",
-      ],
+    css: {
+      // Lightning CSS cannot safely transform some Tailwind arbitrary variants, so keep PostCSS handling
+      transformer: "postcss",
     },
     build: {
       outDir: "dist",
@@ -85,7 +82,7 @@ export default defineConfig(async () => {
       strictPort: true,
       proxy: {
         "/api": {
-          target: "http://localhost:8790",
+          target: "http://127.0.0.1:8790",
           changeOrigin: true,
           secure: false,
         },
