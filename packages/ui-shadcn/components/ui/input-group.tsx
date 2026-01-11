@@ -3,7 +3,7 @@
 import * as React from "react"
 import { cva, type VariantProps } from "class-variance-authority"
 
-import { cn } from "../../src/lib/utils"
+import { cn } from "@ottabase/ui-shadcn/lib/utils"
 import { Button } from "./button"
 import { Input } from "./input"
 import { Textarea } from "./textarea"

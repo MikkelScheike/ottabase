@@ -1,7 +1,7 @@
 import * as React from "react";
 import { ChevronRight, MoreHorizontal } from "lucide-react";
 
-import { cn } from "../../src/lib/utils";
+import { cn } from "@ottabase/ui-shadcn/lib/utils";
 
 const Breadcrumb = React.forwardRef<
   HTMLElement,

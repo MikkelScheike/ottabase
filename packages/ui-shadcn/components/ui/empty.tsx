@@ -1,7 +1,7 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
-import { cn } from "../../src/lib/utils";
+import { cn } from "@ottabase/ui-shadcn/lib/utils";
 
 const emptyVariants = cva(
   "flex flex-col items-center justify-center rounded-lg border border-dashed px-8 py-12 text-center animate-in fade-in-50",

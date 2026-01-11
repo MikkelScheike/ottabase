@@ -1,6 +1,15 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@ottabase/ui-shadcn": [
+        "./src/index.ts"
+      ],
+      "@ottabase/ui-shadcn/*": [
+        "./src/*"
+      ]
+    },
     "outDir": "dist",
     "jsx": "react-jsx",
     "declaration": true,

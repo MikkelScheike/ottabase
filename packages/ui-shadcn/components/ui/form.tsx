@@ -12,7 +12,7 @@ import {
   type FieldValues,
 } from "react-hook-form"
 
-import { cn } from "../../src/lib/utils"
+import { cn } from "@ottabase/ui-shadcn/lib/utils"
 import { Label } from "./label"
 
 const Form = FormProvider

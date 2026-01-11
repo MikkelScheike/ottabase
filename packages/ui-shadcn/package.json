@@ -12,6 +12,11 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./lib/utils": {
+      "types": "./dist/lib/utils.d.ts",
+      "import": "./dist/lib/utils.mjs",
+      "require": "./dist/lib/utils.js"
+    },
     "./accordion": {
       "types": "./dist/accordion.d.ts",
       "import": "./dist/accordion.mjs",
