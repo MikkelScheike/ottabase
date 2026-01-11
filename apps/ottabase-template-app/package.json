@@ -45,7 +45,7 @@
     "drizzle-orm": "catalog:",
     "jotai": "catalog:",
     "lucide-react": "catalog:",
-    "next": "catalog:",
+    "next": "^16.0.7",
     "next-themes": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:"
@@ -71,7 +71,7 @@
     "babel-loader": "catalog:",
     "drizzle-kit": "catalog:",
     "eslint": "catalog:",
-    "eslint-config-next": "catalog:",
+    "eslint-config-next": "^15.5.7",
     "postcss": "catalog:",
     "postcss-preset-env": "catalog:",
     "postcss-preset-mantine": "catalog:",

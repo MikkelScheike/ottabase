@@ -115,6 +115,6 @@ process.on('SIGTERM', () => {
 });
 
 log.success('Both processes started successfully!');
-log.info('Frontend: http://localhost:5174');
+log.info("Frontend: http://127.0.0.1:5174");
 log.info('Backend: http://localhost:8790');
 log.info('Press Ctrl+C to stop both processes');
