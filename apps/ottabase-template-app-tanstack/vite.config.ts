@@ -4,30 +4,29 @@ import { fileURLToPath } from "node:url";
 import { defineConfig, Plugin } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
+// Resolve __dirname in ESM
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// SPA fallback plugin for client-side routing
-// SPA fallback plugin: rewrites non-API HTML requests to index.html
-// This ensures that paths like /demo or /profile trigger the React app instead of 404ing
+/**
+ * SPA fallback plugin – ensures that any non‑API request that expects HTML
+ * serves `index.html`. This enables proper client‑side routing on page reloads
+ * (F5) or direct navigation to nested routes.
+ */
 function spaFallback(): Plugin {
   return {
     name: "spa-fallback",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url || "";
-        // Don't touch API requests
+        // Bypass API routes
         if (url.startsWith("/api")) return next();
-
-        // Check if path has a file extension (heuristic for "is a file")
-        // We strip query params first so /search?q=doc.pdf works as a route
-        const path = url.split(/[?#]/)[0];
-        const isFile = path.includes(".");
-
-        // If it's not a file and the browser wants HTML, serve the app
+        // Strip query/fragment and check for a file extension
+        const pathname = url.split(/[?#]/)[0];
+        const isFile = pathname.includes(".");
+        // If it's not a file and the client expects HTML, rewrite to index.html
         if (!isFile && req.headers.accept?.includes("text/html")) {
           req.url = "/index.html";
         }
-
         next();
       });
     },
@@ -35,18 +34,22 @@ function spaFallback(): Plugin {
 }
 
 export default defineConfig({
+  // Base URL – keep it relative for most deployments
+  base: "/",
   plugins: [
     tsconfigPaths({
       projects: [path.resolve(__dirname, "./tsconfig.json")],
       ignoreConfigErrors: true,
     }),
+    // React plugin with SWC for fast transforms and automatic Fast Refresh
     react({
-      // Use SWC for faster transforms
-      babel: {
-        plugins: [],
+      // Enable the new JSX runtime and fast refresh
+      jsxRuntime: "automatic",
+      // Drop console/debugger statements in production builds
+      esbuild: {
+        drop: ["console", "debugger"],
       },
     }),
-    react(),
     spaFallback(),
   ],
   resolve: {
@@ -55,13 +58,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: [
-      "react",
-      "react-dom",
-      "react/jsx-runtime",
-      "react/jsx-dev-runtime",
-    ],
-    exclude: [],
+    include: ["react/jsx-runtime", "react/jsx-dev-runtime"],
     esbuildOptions: {
       target: "esnext",
     },
@@ -70,23 +67,25 @@ export default defineConfig({
     target: "esnext",
     legalComments: "none",
     treeShaking: true,
+    // Remove dead code and console statements
+    drop: ["console", "debugger"],
   },
   logLevel: "info",
   build: {
     outDir: "dist",
-    sourcemap: false, // Temporarily disabled - can cause hangs on Windows
-    chunkSizeWarningLimit: 1500, // kB
-    assetsInlineLimit: 102400, // KiB
-    modulePreload: {
-      polyfill: true,
-    },
-    cssTarget: "esnext",
-    cssMinify: false,
+    sourcemap: false,
+    // Security‑focused minification
     minify: "esbuild",
+    cssMinify: true,
+    cssTarget: "esnext",
     target: "esnext",
-    commonjsOptions: {
-      transformMixedEsModules: true,
-    },
+    // Smaller chunks improve caching and initial load
+    chunkSizeWarningLimit: 1500,
+    assetsInlineLimit: 40960, // 40 KB – keep small assets inlined
+    cssCodeSplit: true,
+    // Enable module preload polyfill for better HTTP/2 performance
+    modulePreload: { polyfill: true },
+    commonjsOptions: { transformMixedEsModules: true },
     rollupOptions: {
       output: {
         manualChunks: {
@@ -111,6 +110,7 @@ export default defineConfig({
     host: "127.0.0.1",
     port: parseInt(process.env.PORT_FE || "3003"),
     strictPort: true,
+    // Proxy API calls to the backend worker
     proxy: {
       "/api": {
         target: `http://127.0.0.1:${process.env.PORT_BE || 3004}`,
@@ -118,6 +118,8 @@ export default defineConfig({
         secure: false,
       },
     },
+    // Harden the dev server – disallow serving files outside the project root
+    fs: { strict: true },
   },
   preview: {
     port: 4173,
