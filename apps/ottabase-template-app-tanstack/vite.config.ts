@@ -51,7 +51,7 @@ export default defineConfig(async () => {
       outDir: "dist",
       sourcemap: true,
       chunkSizeWarningLimit: 1500,
-      cssTarget: "chrome88",
+      cssTarget: "chrome107",
       rollupOptions: {
         output: {
           manualChunks: {
