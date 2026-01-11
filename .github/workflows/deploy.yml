@@ -15,6 +15,7 @@ on:
 jobs:
   # Build and cache packages first (reusable workflow)
   build-packages:
+    name: Build Packages
     uses: ./.github/workflows/build-packages.yml
 
   # Prepare deployment matrix based on target apps and code changes
