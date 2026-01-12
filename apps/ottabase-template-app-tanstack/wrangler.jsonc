@@ -139,6 +139,14 @@
           }
         ]
       },
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "OBCF_REALTIME",
+            "class_name": "RealtimeActor"
+          }
+        ]
+      },
       // Production assets
       "assets": {
         "binding": "OBCF_ASSETS",

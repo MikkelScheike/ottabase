@@ -72,6 +72,8 @@
     "postcss-preset-env": "catalog:",
     "postcss-preset-mantine": "catalog:",
     "postcss-simple-vars": "catalog:",
+    "nodemailer": "catalog:",
+    "@types/nodemailer": "catalog:",
     "tailwindcss": "catalog:",
     "tailwindcss-animate": "catalog:",
     "typescript": "catalog:",
