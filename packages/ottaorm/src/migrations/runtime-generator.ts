@@ -208,6 +208,8 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
   tablesCreated: string[];
   columnsAdded: string[];
   customMigrationsRun: string[];
+  customMigrationsSkipped: string[];
+  tablesSkipped: string[];
   errors: string[];
 }> {
   const { driver, tables, customMigrations = [], verbose = false } = config;
@@ -216,6 +218,8 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
     tablesCreated: [] as string[],
     columnsAdded: [] as string[],
     customMigrationsRun: [] as string[],
+    customMigrationsSkipped: [] as string[],
+    tablesSkipped: [] as string[],
     errors: [] as string[],
   };
 
@@ -224,7 +228,7 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
     const existingTables = await getExistingTables(driver);
 
     if (verbose) {
-      console.log('📊 Existing tables:', Array.from(existingTables));
+      console.log("📊 Existing tables:", Array.from(existingTables));
     }
 
     // Process each table from Models
@@ -250,9 +254,16 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
           console.error(`❌ ${errorMsg}`);
         }
       } else {
+        // Track as skipped (already exists)
+        result.tablesSkipped.push(tableName);
+
         // Check for new columns
         const existingColumns = await getTableColumns(driver, tableName);
-        const alterStatements = generateAddColumnSQL(tableName, table, existingColumns);
+        const alterStatements = generateAddColumnSQL(
+          tableName,
+          table,
+          existingColumns,
+        );
 
         for (const alterSQL of alterStatements) {
           if (verbose) {
@@ -263,21 +274,38 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
           try {
             await driver.executeRaw(alterSQL);
             // Extract column name from ALTER TABLE ... ADD COLUMN statement
-            const columnMatch = alterSQL.match(/ADD\s+COLUMN\s+("(?:""|[^"])*"|`(?:``|[^`])*`|\[(?:\]\]|[^\]])*\]|\S+)/i);
+            const columnMatch = alterSQL.match(
+              /ADD\s+COLUMN\s+("(?:""|[^"])*"|`(?:``|[^`])*`|\[(?:\]\]|[^\]])*\]|\S+)/i,
+            );
             const rawColumnName = columnMatch?.[1];
-            let cleanedColumnName = 'unknown_column';
+            let cleanedColumnName = "unknown_column";
 
             if (rawColumnName) {
               // Remove quotes/brackets and unescape internal doubled characters
-              if (rawColumnName.startsWith('"') && rawColumnName.endsWith('"')) {
+              if (
+                rawColumnName.startsWith('"') &&
+                rawColumnName.endsWith('"')
+              ) {
                 // Double-quoted identifier: "" inside becomes "
-                cleanedColumnName = rawColumnName.slice(1, -1).replace(/""/g, '"');
-              } else if (rawColumnName.startsWith('`') && rawColumnName.endsWith('`')) {
+                cleanedColumnName = rawColumnName
+                  .slice(1, -1)
+                  .replace(/""/g, '"');
+              } else if (
+                rawColumnName.startsWith("`") &&
+                rawColumnName.endsWith("`")
+              ) {
                 // Backtick-quoted identifier: `` inside becomes `
-                cleanedColumnName = rawColumnName.slice(1, -1).replace(/``/g, '`');
-              } else if (rawColumnName.startsWith('[') && rawColumnName.endsWith(']')) {
+                cleanedColumnName = rawColumnName
+                  .slice(1, -1)
+                  .replace(/``/g, "`");
+              } else if (
+                rawColumnName.startsWith("[") &&
+                rawColumnName.endsWith("]")
+              ) {
                 // Bracket-quoted identifier: ]] inside becomes ]
-                cleanedColumnName = rawColumnName.slice(1, -1).replace(/]]/g, ']');
+                cleanedColumnName = rawColumnName
+                  .slice(1, -1)
+                  .replace(/]]/g, "]");
               } else {
                 cleanedColumnName = rawColumnName;
               }
@@ -309,10 +337,11 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
         // Check if already executed
         const existingResult = await driver.executeRaw(
           `SELECT name FROM ${quotedMigrationTable} WHERE name = ?`,
-          [migration.name]
+          [migration.name],
         );
 
-        const alreadyRun = existingResult.results && existingResult.results.length > 0;
+        const alreadyRun =
+          existingResult.results && existingResult.results.length > 0;
 
         if (!alreadyRun) {
           if (verbose) {
@@ -325,7 +354,7 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
             // Record execution
             await driver.executeRaw(
               `INSERT INTO ${quotedMigrationTable} (name, executed_at) VALUES (?, ?)`,
-              [migration.name, Date.now()]
+              [migration.name, Date.now()],
             );
 
             result.customMigrationsRun.push(migration.name);
@@ -334,8 +363,13 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
             result.errors.push(errorMsg);
             console.error(`❌ ${errorMsg}`);
           }
-        } else if (verbose) {
-          console.log(`⏭️  Skipping already executed migration: ${migration.name}`);
+        } else {
+          if (verbose) {
+            console.log(
+              `⏭️  Skipping already executed migration: ${migration.name}`,
+            );
+          }
+          result.customMigrationsSkipped.push(migration.name);
         }
       }
     }
@@ -354,7 +388,10 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
 export async function runAutoMigrations(
   driver: DbDriver,
   tables: Record<string, SQLiteTable>,
-  customMigrations?: Array<{ name: string; up: (db: DbDriver) => Promise<void> }>
+  customMigrations?: Array<{
+    name: string;
+    up: (db: DbDriver) => Promise<void>;
+  }>,
 ): Promise<{
   success: boolean;
   message: string;
@@ -362,6 +399,8 @@ export async function runAutoMigrations(
     tablesCreated: string[];
     columnsAdded: string[];
     customMigrationsRun: string[];
+    customMigrationsSkipped: string[];
+    tablesSkipped: string[];
     errors: string[];
   };
 }> {
@@ -374,15 +413,17 @@ export async function runAutoMigrations(
 
   const { tablesCreated, columnsAdded, customMigrationsRun, errors } = result;
 
-  const totalChanges = tablesCreated.length + columnsAdded.length + customMigrationsRun.length;
+  const totalChanges =
+    tablesCreated.length + columnsAdded.length + customMigrationsRun.length;
 
   return {
     success: errors.length === 0,
-    message: errors.length > 0
-      ? `Migrations completed with ${errors.length} error(s)`
-      : totalChanges > 0
-      ? `Successfully applied ${totalChanges} change(s)`
-      : 'No changes detected - database is up to date',
+    message:
+      errors.length > 0
+        ? `Migrations completed with ${errors.length} error(s)`
+        : totalChanges > 0
+        ? `Successfully applied ${totalChanges} change(s)`
+        : "No changes detected - database is up to date",
     details: result,
   };
 }

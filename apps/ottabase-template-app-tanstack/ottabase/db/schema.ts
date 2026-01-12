@@ -16,18 +16,27 @@
 // ============================================================
 // CORE TABLES (from @ottabase/ottaorm)
 // ============================================================
-export {
-  // User & Auth
-  usersTable,
+import {
   accountsTable,
-  sessionsTable,
-  verificationTokensTable,
   authenticatorsTable,
-  // Content
   postsTable,
   postTagsTable,
+  sessionsTable,
   tagsTable,
+  usersTable,
+  verificationTokensTable,
 } from "@ottabase/ottaorm";
+
+export {
+  accountsTable,
+  authenticatorsTable,
+  postsTable,
+  postTagsTable,
+  sessionsTable,
+  tagsTable,
+  usersTable,
+  verificationTokensTable,
+};
 
 // ============================================================
 // APP-SPECIFIC TABLES
@@ -35,6 +44,8 @@ export {
 export { todosTable } from "../models/Todo";
 
 // ============================================================
-// SHORTLINKS (from @ottabase/shortlinks package)
+// DYNAMIC PACKAGE TABLES (Configured in config.migrations.ts)
 // ============================================================
-export { shortlinksTable } from "@ottabase/shortlinks/schema";
+import { getEnabledPackageTables } from "../config.migrations";
+
+export const packageTables = getEnabledPackageTables();

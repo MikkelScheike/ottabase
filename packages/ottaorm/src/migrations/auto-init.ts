@@ -13,8 +13,8 @@
 
 import type { DbDriver } from '@ottabase/db/drizzle';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
-import { runAutoMigrations } from './runtime-generator';
-import { Migration } from './index';
+import { Migration } from "./index";
+import { runAutoMigrations } from "./runtime-generator";
 
 export interface AutoInitConfig {
   /**
@@ -85,6 +85,9 @@ export async function autoInit(config: AutoInitConfig): Promise<{
     tablesCreated: string[];
     columnsAdded: string[];
     customMigrationsRun: string[];
+    customMigrationsSkipped: string[];
+    tablesDetected: string[];
+    tablesSkipped: string[];
     errors: string[];
   };
   timestamp: string;
@@ -92,21 +95,22 @@ export async function autoInit(config: AutoInitConfig): Promise<{
   const { driver, schema, customMigrations = [], verbose = true } = config;
 
   // Basic runtime validation of the schema object to avoid crashes
-  const isObject = schema !== null && typeof schema === 'object' && !Array.isArray(schema);
+  const isObject =
+    schema !== null && typeof schema === "object" && !Array.isArray(schema);
   const schemaKeys = isObject ? Object.keys(schema as object) : [];
   const hasAtLeastOneTable =
     schemaKeys.length > 0 &&
     schemaKeys.some((key) => {
       const value = (schema as any)[key];
-      return value !== null && typeof value === 'object';
+      return value !== null && typeof value === "object";
     });
 
   if (!isObject || !hasAtLeastOneTable) {
     const message =
-      'Invalid schema provided to autoInit: expected a non-empty object mapping table names to SQLiteTable definitions.';
+      "Invalid schema provided to autoInit: expected a non-empty object mapping table names to SQLiteTable definitions.";
 
     if (verbose) {
-      console.error('🚨 OttaORM Auto-Init aborted:', message);
+      console.error("🚨 OttaORM Auto-Init aborted:", message);
     }
 
     return {
@@ -116,6 +120,9 @@ export async function autoInit(config: AutoInitConfig): Promise<{
         tablesCreated: [],
         columnsAdded: [],
         customMigrationsRun: [],
+        customMigrationsSkipped: [],
+        tablesDetected: [],
+        tablesSkipped: [],
         errors: [message],
       },
       timestamp: new Date().toISOString(),
@@ -123,29 +130,45 @@ export async function autoInit(config: AutoInitConfig): Promise<{
   }
 
   if (verbose) {
-    console.log('🚀 OttaORM Auto-Init Starting...\n');
+    console.log("🚀 OttaORM Auto-Init Starting...\n");
     console.log(`📊 Schema contains ${schemaKeys.length} table(s)`);
     console.log(`🔧 Custom migrations: ${customMigrations.length}\n`);
   }
 
   // Run auto-migrations
+  // Pass schemaKeys to runAutoMigrations so it can include them in its result
   const result = await runAutoMigrations(driver, schema, customMigrations);
 
   if (verbose) {
-    console.log('\n✅ Auto-Init Complete!\n');
-    console.log('Summary:');
+    console.log("\n✅ Auto-Init Complete!\n");
+    console.log("Summary:");
+    console.log(
+      `  Tables detected: ${schemaKeys.length} (${schemaKeys.join(", ")})`,
+    );
     console.log(`  Tables created: ${result.details.tablesCreated.length}`);
+    console.log(
+      `  Tables skipped (already exist): ${result.details.tablesSkipped.length}`,
+    );
     console.log(`  Columns added: ${result.details.columnsAdded.length}`);
-    console.log(`  Custom migrations: ${result.details.customMigrationsRun.length}`);
+    console.log(
+      `  Custom migrations run: ${result.details.customMigrationsRun.length}`,
+    );
+    console.log(
+      `  Custom migrations skipped: ${result.details.customMigrationsSkipped.length}`,
+    );
 
     if (result.details.errors.length > 0) {
       console.log(`  Errors: ${result.details.errors.length}`);
-      result.details.errors.forEach(err => console.error(`    ❌ ${err}`));
+      result.details.errors.forEach((err) => console.error(`    ❌ ${err}`));
     }
   }
 
   return {
     ...result,
+    details: {
+      ...result.details,
+      tablesDetected: schemaKeys,
+    },
     timestamp: new Date().toISOString(),
   };
 }

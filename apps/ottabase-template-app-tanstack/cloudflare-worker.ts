@@ -13,7 +13,6 @@ import {
   Tag,
   User,
   autoInit,
-  collectTableSchemas,
   handleCrud,
   parseCrudRequest,
   registerConnection,
@@ -21,10 +20,10 @@ import {
 } from "@ottabase/ottaorm";
 import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { jsonResponse } from "@ottabase/utils/http-response";
-import * as schema from "./ottabase/db/schema";
+import { getAllSchemas } from "./ottabase/db/schemas-helper";
 import { appMigrations } from "./ottabase/migrations";
-import { Todo } from "./ottabase/models/Todo";
 import { Shortlink } from "./ottabase/models/Shortlink";
+import { Todo } from "./ottabase/models/Todo";
 
 export { RealtimeActor };
 
@@ -230,15 +229,19 @@ export default {
           });
         } catch (error) {
           return errorResponse(
-            error instanceof Error ? error.message : "Failed to create shortlink",
+            error instanceof Error
+              ? error.message
+              : "Failed to create shortlink",
             400,
-            { code: "VALIDATION_ERROR" }
+            { code: "VALIDATION_ERROR" },
           );
         }
       }
 
       // Update shortlink
-      const shortlinkUpdateMatch = url.pathname.match(/^\/api\/shortlinks\/(.+)$/);
+      const shortlinkUpdateMatch = url.pathname.match(
+        /^\/api\/shortlinks\/(.+)$/,
+      );
       if (shortlinkUpdateMatch && request.method === "PATCH") {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
@@ -275,7 +278,10 @@ export default {
         if (body.fullUrl) shortlink.set("fullUrl", body.fullUrl);
         if (body.type) shortlink.set("type", body.type);
         if (body.expiryDate !== undefined) {
-          shortlink.set("expiryDate", body.expiryDate ? new Date(body.expiryDate) : null);
+          shortlink.set(
+            "expiryDate",
+            body.expiryDate ? new Date(body.expiryDate) : null,
+          );
         }
 
         try {
@@ -286,9 +292,11 @@ export default {
           });
         } catch (error) {
           return errorResponse(
-            error instanceof Error ? error.message : "Failed to update shortlink",
+            error instanceof Error
+              ? error.message
+              : "Failed to update shortlink",
             400,
-            { code: "VALIDATION_ERROR" }
+            { code: "VALIDATION_ERROR" },
           );
         }
       }
@@ -1018,19 +1026,23 @@ export default {
         // AUTOMATED MIGRATIONS - No CLI Required!
         // ============================================================
         // This automatically:
-        // 1. Detects all tables from your Models
-        // 2. Creates tables that don't exist
-        // 3. Adds new columns to existing tables
-        // 4. Runs custom migrations
+        // 1. Detects all tables from CORE schemas (@ottabase/ottaorm)
+        // 2. Detects all tables from APP-SPECIFIC schemas (Todo, etc.)
+        // 3. Detects all tables from ENABLED PACKAGES (shortlinks, etc.)
+        // 4. Creates tables that don't exist
+        // 5. Adds new columns to existing tables
+        // 6. Runs custom migrations (core + app + package)
         //
         // Just define your Models and call this endpoint!
         // ============================================================
         const driver = createD1Driver(env.OBCF_D1);
-        const tables = collectTableSchemas(schema);
+
+        // Get ALL schemas: core + app + packages
+        const allSchemas = getAllSchemas();
 
         const result = await autoInit({
           driver,
-          schema: tables,
+          schema: allSchemas,
           customMigrations: appMigrations,
           verbose: true,
         });

@@ -1,248 +1,304 @@
-# Automated Migrations
+# Migration System Documentation
 
-OttaORM now supports **fully automated migrations** - no CLI commands, no manual SQL!
+## Overview
+
+The OttaBase migration system provides a **simple, automatic, and comprehensive** approach to database migrations that works across your entire monorepo. It handles:
+
+1. **Core schemas** (from `@ottabase/ottaorm`) - users, auth, posts, etc.
+2. **App-specific schemas** - custom tables for your app (like `todos`)
+3. **Package schemas** - tables from enabled packages (like `@ottabase/shortlinks`)
 
 ## How It Works
 
-1. **Define Models** with Drizzle table schemas
-2. **Export in schema.ts** (combines core + app tables)
-3. **Call `/api/ottaorm/init`** → Tables created automatically ✅
+### Architecture
 
-## Quick Start
-
-### 1. Define Your Model
-
-```typescript
-// ottabase/models/Project.ts
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { BaseModel } from "@ottabase/ottaorm";
-
-export const projectsTable = sqliteTable("projects", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
-  name: text("name").notNull(),
-  description: text("description"),
-  createdAt: integer("created_at", { mode: "timestamp" })
-    .$defaultFn(() => new Date())
-    .notNull(),
-});
-
-export class Project extends BaseModel {
-  static entity = "projects";
-  static table = projectsTable;
-  static primaryKey = "id";
-}
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   /api/ottaorm/init                         │
+│                (Migration Endpoint)                          │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              schemas-helper.ts                               │
+│         Collects all table schemas:                          │
+│  • Core (from @ottabase/ottaorm/schema)                     │
+│  • App (from ottabase/db/schema.ts)                         │
+│  • Packages (from config.migrations.ts)                     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│              autoInit()                                      │
+│         (from @ottabase/ottaorm)                            │
+│  • Creates missing tables                                   │
+│  • Adds new columns                                         │
+│  • Runs custom migrations                                   │
+│  • Tracks history in _ottabase_migrations                   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│           Migration Status Page                              │
+│      Shows detailed migration results                        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### 2. Export in Schema
+### Key Components
 
-```typescript
-// ottabase/db/schema.ts
-export { usersTable, postsTable } from "@ottabase/ottaorm";  // Core
-export { todosTable } from "../models/Todo";                  // App
-export { projectsTable } from "../models/Project";            // NEW!
-```
+1. **`ottabase/config.migrations.ts`**
+   - Single source of truth for enabled packages
+   - Configure which packages are active
+   - Each package can provide tables + custom migrations
 
-### 3. Initialize Database
+2. **`ottabase/db/schemas-helper.ts`**
+   - Collects all schemas from different sources
+   - Combines core, app, and package schemas
+   - Used by the migration endpoint
 
+3. **`ottabase/db/schema.ts`**
+   - Exports all table schemas
+   - Core tables from `@ottabase/ottaorm`
+   - App-specific tables
+   - Package tables (via `config.migrations.ts`)
+
+4. **`ottabase/migrations/index.ts`**
+   - Custom migrations registry
+   - Combines core, app, and package migrations
+   - Executed after table creation
+
+5. **`cloudflare-worker.ts` (`/api/ottaorm/init`)**
+   - Migration endpoint
+   - Calls `autoInit()` with all schemas
+   - Returns detailed migration results
+
+## Usage
+
+### Running Migrations
+
+#### Development (wrangler dev)
 ```bash
-# Development (no auth)
-curl -X POST http://localhost:3004/api/ottaorm/init
-
-# Production (requires MIGRATION_SECRET)
-curl -X POST https://your-app.com/api/ottaorm/init \
-  -H "Authorization: Bearer ${MIGRATION_SECRET}"
+curl -X POST http://127.0.0.1:3004/api/ottaorm/init
 ```
 
-**Response:**
-```json
-{
-  "success": true,
-  "message": "Successfully applied 1 change(s)",
-  "details": {
-    "tablesCreated": ["projects"],
-    "columnsAdded": [],
-    "customMigrationsRun": []
-  }
-}
+Or navigate to:
+```
+http://127.0.0.1:3004/migration-status
 ```
 
-## Adding New Fields
+#### Production
+```bash
+curl -X POST https://your-app.workers.dev/api/ottaorm/init \
+  -H "Authorization: Bearer YOUR_MIGRATION_SECRET"
+```
 
-Just add the field and re-run `/api/ottaorm/init`:
+Or with query parameter:
+```bash
+curl -X POST https://your-app.workers.dev/api/ottaorm/init?secret=YOUR_MIGRATION_SECRET
+```
 
+### Adding a New Table (App-Specific)
+
+1. **Create the Model** (`ottabase/models/YourModel.ts`):
 ```typescript
-export const projectsTable = sqliteTable("projects", {
+import { BaseModel } from "@ottabase/ottaorm";
+import { text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable } from "drizzle-orm/sqlite-core";
+
+export const yourTable = sqliteTable("your_table", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  status: text("status").default("active").notNull(), // NEW FIELD!
-  createdAt: integer("created_at", { mode: "timestamp" }).$defaultFn(() => new Date()),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
 });
+
+export class YourModel extends BaseModel {
+  static table = yourTable;
+  static tableName = "your_table";
+}
 ```
 
-```bash
-curl -X POST http://localhost:3004/api/ottaorm/init
-# ✅ Column added automatically!
-```
-
-## Custom Migrations
-
-For seeds, indexes, views, or complex operations, add custom migrations:
-
+2. **Export from schema** (`ottabase/db/schema.ts`):
 ```typescript
-// ottabase/migrations/index.ts
-import type { Migration } from "@ottabase/ottaorm";
+export { yourTable } from "../models/YourModel";
+```
 
-export const appMigrations: Migration[] = [
+3. **Run migrations**:
+```bash
+curl -X POST http://127.0.0.1:3004/api/ottaorm/init
+```
+
+That's it! The table will be automatically created.
+
+### Adding a Package
+
+1. **Enable the package** in `ottabase/config.migrations.ts`:
+```typescript
+import { shortlinksTable } from "@ottabase/shortlinks/schema";
+import { shortlinkMigrations } from "@ottabase/shortlinks/migrations";
+
+const PACKAGE_REGISTRY = {
+  shortlinks: {
+    tables: { shortlinksTable },
+    migrations: shortlinkMigrations, // Optional custom migrations
+  },
+  // Add your package here:
+  myPackage: {
+    tables: { myPackageTable },
+    migrations: myPackageMigrations,
+  },
+} as const;
+
+export const migrationConfig: Record<MigrationPackageName, boolean> = {
+  shortlinks: true,
+  myPackage: true, // Enable it
+};
+```
+
+2. **Run migrations** - the package tables will be created automatically!
+
+### Adding Custom Migrations
+
+For data seeding, indexes, or other custom SQL that can't be expressed in Models:
+
+**In `ottabase/migrations/index.ts`**:
+```typescript
+const appSpecificMigrations: Migration[] = [
   {
-    name: "0000_seed_admin_user",
+    name: "0001_seed_admin_user",
     up: async (db) => {
-      await db.execute(`
+      await db.executeRaw(`
         INSERT OR IGNORE INTO users (id, name, email, created_at, updated_at)
-        VALUES ('admin-001', 'Admin', 'admin@example.com',
-                strftime('%s', 'now') * 1000, strftime('%s', 'now') * 1000)
+        VALUES (
+          'admin-001', 
+          'Admin', 
+          'admin@example.com',
+          strftime('%s', 'now') * 1000, 
+          strftime('%s', 'now') * 1000
+        )
       `);
     },
   },
   {
-    name: "0001_add_indexes",
+    name: "0002_create_custom_index",
     up: async (db) => {
-      await db.execute(`
-        CREATE INDEX IF NOT EXISTS idx_posts_author_published
-        ON posts(author_id, published);
-
-        CREATE INDEX IF NOT EXISTS idx_todos_user_completed
-        ON todos(user_id, completed);
-      `);
-    },
-  },
-  {
-    name: "0002_create_user_stats_view",
-    up: async (db) => {
-      await db.execute(`
-        CREATE VIEW IF NOT EXISTS user_stats AS
-        SELECT
-          u.id,
-          u.name,
-          COUNT(p.id) as post_count,
-          COUNT(t.id) as todo_count
-        FROM users u
-        LEFT JOIN posts p ON p.author_id = u.id
-        LEFT JOIN todos t ON t.user_id = u.id
-        GROUP BY u.id
+      await db.executeRaw(`
+        CREATE INDEX IF NOT EXISTS idx_users_email 
+        ON users(email)
       `);
     },
   },
 ];
 ```
 
-### Best Practices
+Migrations are tracked in the `_ottabase_migrations` table and will only run once.
 
-- ✅ Use descriptive names: `0000_seed_data` not `migration1`
-- ✅ Use `IF NOT EXISTS` / `OR IGNORE` for idempotency
-- ✅ Keep migrations small and focused
-- ✅ Test in development first
-- ⚠️ Don't modify past migrations (create new ones)
-- ⚠️ Be careful with data migrations in production
+## Migration Tracking
 
-## Limitations
+### History Table
 
-SQLite's `ALTER TABLE` has restrictions. The automated system **cannot**:
+All executed migrations are tracked in `_ottabase_migrations`:
 
-- ❌ **Change column types** - Use custom migration to recreate table
-- ❌ **Rename columns** - Use custom migration to recreate table
-- ❌ **Drop columns** - Use custom migration to recreate table
-- ❌ **Modify constraints** - Use custom migration to recreate table
-- ⚠️ **Add NOT NULL columns** - Must have `DEFAULT` value or use custom migration
-
-**Example: Adding NOT NULL column**
-```typescript
-// ✅ GOOD - Has default value
-status: text("status").default("active").notNull()
-
-// ❌ BAD - No default, will fail if table has data
-status: text("status").notNull()
+```sql
+CREATE TABLE _ottabase_migrations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL UNIQUE,
+  executed_at INTEGER NOT NULL,
+  driver_type TEXT DEFAULT 'd1-drizzle'
+);
 ```
+
+### Checking Migration Status
+
+Navigate to `/migration-status` in your app to see:
+- All detected tables (core + app + packages)
+- Tables created vs. skipped
+- Columns added
+- Custom migrations run
+- Any errors
+
+## Production Deployment
+
+### Setting Up Migration Secret
+
+1. **In Cloudflare Dashboard** or via `wrangler`:
+```bash
+wrangler secret put MIGRATION_SECRET
+```
+
+2. **Set environment variable**:
+```bash
+export MIGRATION_SECRET="your-secret-here"
+```
+
+3. **Run migrations** with the secret:
+```bash
+curl -X POST https://your-app.workers.dev/api/ottaorm/init \
+  -H "Authorization: Bearer your-secret-here"
+```
+
+### Deployment Workflow
+
+1. **Deploy your app**:
+```bash
+pnpm deploy
+```
+
+2. **Run migrations** (after deployment):
+```bash
+curl -X POST https://your-app.workers.dev/api/ottaorm/init?secret=$MIGRATION_SECRET
+```
+
+3. **Verify** by checking `/migration-status`
+
+## FAQ
+
+### Q: Do I need to write SQL migrations?
+**A:** No! Tables are auto-created from your Models. Only write custom migrations for data seeding, indexes, or other special SQL.
+
+### Q: How do I add a new column?
+**A:** Just add it to your Model and run `/api/ottaorm/init`. It will be automatically added to existing tables.
+
+### Q: What about drizzle-kit?
+**A:** You can still use `drizzle-kit push` for schema changes, but `autoInit()` works without any CLI tools - perfect for serverless.
+
+### Q: Can I use this in local development?
+**A:** Yes! It works with both `wrangler dev` (local D1) and production Cloudflare D1.
+
+### Q: What if a migration fails?
+**A:** Check the `/migration-status` page for detailed error messages. Failed migrations won't be marked as complete and will retry next time.
+
+### Q: How do I rollback?
+**A:** Currently, there's no automatic rollback. For schema changes, you'd need to manually run SQL to reverse changes. For data migrations, implement a `down` function in your custom migration.
+
+## Best Practices
+
+1. **Test migrations locally first** with `wrangler dev`
+2. **Use version-prefixed names** for custom migrations: `0001_description`, `0002_description`
+3. **Check migration status** after deployment
+4. **Keep migrations idempotent** - use `INSERT OR IGNORE`, `CREATE TABLE IF NOT EXISTS`, etc.
+5. **Never edit executed migrations** - create a new migration instead
 
 ## Troubleshooting
 
-### Migration fails with "NOT NULL constraint"
-**Problem**: Added NOT NULL column without DEFAULT to table with existing data.
+### Tables not appearing
+- Check that the table is exported from `ottabase/db/schema.ts`
+- Verify the table name ends with `Table` (convention)
+- Check `/migration-status` for errors
 
-**Solution**: Add a DEFAULT value or use custom migration:
-```typescript
-{
-  name: "0003_add_status_column",
-  up: async (db) => {
-    await db.execute(`ALTER TABLE projects ADD COLUMN status TEXT DEFAULT 'active' NOT NULL`);
-  },
-}
-```
+### Package tables not created
+- Verify the package is enabled in `config.migrations.ts`
+- Check that the table is imported correctly
+- Look for errors in `/migration-status`
 
-### Need to rename/change column type
-**Problem**: Automated migrations can't change column types or rename columns.
+### Migrations running multiple times
+- Each migration should have a unique name
+- Check the `_ottabase_migrations` table for duplicate entries
+- Ensure migration names don't change after deployment
 
-**Solution**: Create custom migration to recreate table:
-```typescript
-{
-  name: "0004_recreate_users_table",
-  up: async (db) => {
-    // 1. Create new table
-    await db.execute(`CREATE TABLE users_new (...)`);
-    // 2. Copy data
-    await db.execute(`INSERT INTO users_new SELECT ... FROM users`);
-    // 3. Drop old table
-    await db.execute(`DROP TABLE users`);
-    // 4. Rename new table
-    await db.execute(`ALTER TABLE users_new RENAME TO users`);
-  },
-}
-```
+## Examples
 
-## Schema Structure
-
-The schema combines **core tables** (from `@ottabase/ottaorm`) + **app tables**:
-
-```typescript
-// ottabase/db/schema.ts
-
-// CORE TABLES (from @ottabase/ottaorm)
-export {
-  usersTable,
-  accountsTable,
-  sessionsTable,
-  postsTable,
-  tagsTable,
-} from "@ottabase/ottaorm";
-
-// APP-SPECIFIC TABLES
-export { todosTable } from "../models/Todo";
-export { projectsTable } from "../models/Project";
-```
-
-## Alternative: Manual Push (Advanced)
-
-For advanced use cases, you can still use `drizzle-kit push`:
-
-```bash
-# Push schema to remote D1
-pnpm db:push
-
-# Open Drizzle Studio
-pnpm db:studio
-```
-
-This requires setting these environment variables:
-```bash
-CLOUDFLARE_ACCOUNT_ID=your-account-id
-CLOUDFLARE_D1_DATABASE_ID=your-database-id
-CLOUDFLARE_API_TOKEN=your-api-token
-```
-
-## Benefits
-
-- ✅ **Zero-config** - No CLI commands needed
-- ✅ **Type-safe** - TypeScript schema = source of truth
-- ✅ **Auto-detection** - Creates tables & adds columns automatically
-- ✅ **Custom migrations** - For seeds, indexes, views
-- ✅ **Per-app** - Each app has its own schema
-- ✅ **Production-ready** - Secure with MIGRATION_SECRET
+See the following files for complete examples:
+- `ottabase/models/Todo.ts` - Simple app-specific model
+- `ottabase/models/Shortlink.ts` - Model from package
+- `ottabase/migrations/index.ts` - Custom migrations setup
+- `ottabase/config.migrations.ts` - Package configuration
