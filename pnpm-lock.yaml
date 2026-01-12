@@ -466,7 +466,7 @@ importers:
   apps/ottabase-template-app-tanstack:
     dependencies:
       '@auth/core':
-        specifier: ^0.34.0
+        specifier: 'catalog:'
         version: 0.34.3(nodemailer@7.0.12)
       '@hookform/resolvers':
         specifier: ^3.9.1

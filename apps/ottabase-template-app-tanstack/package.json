@@ -18,7 +18,7 @@
     "localflare": "localflare"
   },
   "dependencies": {
-    "@auth/core": "^0.34.0",
+    "@auth/core": "catalog:",
     "@hookform/resolvers": "^3.9.1",
     "@mantine/carousel": "^8.3.1",
     "@mantine/core": "^8.3.1",
