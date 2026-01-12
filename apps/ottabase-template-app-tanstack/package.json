@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --open",
     "dev:worker": "wrangler dev",
     "dev:full": "pnpm build && pnpm dev:worker",
     "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 vite build",
