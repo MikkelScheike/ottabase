@@ -5,6 +5,9 @@
 
   "name": "ottabase-template-app-tanstack",
   "compatibility_date": "2024-12-30",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
 
   // Main worker configuration
   // TanStack Router creates a single worker entry point
