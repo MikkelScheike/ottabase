@@ -223,6 +223,7 @@ export function createAuthConfig(
         },
       },
       ...options?.authConfig,
+      basePath: "/api/auth",
     },
   });
 
