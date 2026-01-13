@@ -1,6 +1,8 @@
-import { useState, useEffect } from "react";
-import { Link } from "@tanstack/react-router";
+import { api, isApiError } from "@/lib/api";
+import type { PaginatedResponse, Pagination } from "@/lib/api-types";
+import type { Shortlink } from "@ottabase/shortlinks";
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -13,51 +15,75 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
   TableRow,
-  Badge,
 } from "@ottabase/ui-shadcn";
-import { api, isApiError } from "@/lib/api";
-import { Plus, ExternalLink, Copy, Trash2, Edit, Link2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Copy,
+  Edit,
+  ExternalLink,
+  Link2,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ShortlinkForm } from "./components/ShortlinkForm";
-import type { Shortlink } from "@ottabase/shortlinks";
 
-interface ShortlinksResponse {
-  success: boolean;
-  data: Shortlink[];
-  total: number;
-}
+type ShortlinksResponse = PaginatedResponse<Shortlink>;
 
 export function ShortlinksPage() {
   const [shortlinks, setShortlinks] = useState<Shortlink[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingShortlink, setEditingShortlink] = useState<Shortlink | null>(null);
+  const [editingShortlink, setEditingShortlink] = useState<Shortlink | null>(
+    null,
+  );
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  const fetchShortlinks = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await api<ShortlinksResponse>("/api/shortlinks");
-      if (data.success && data.data) {
-        setShortlinks(data.data);
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
+
+  const fetchShortlinks = useCallback(
+    async (page: number = 1, itemsPerPage: number = 15) => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api<ShortlinksResponse>(
+          `/api/ottaorm/shortlinks?page=${page}&per_page=${itemsPerPage}`,
+        );
+        if (response.data) {
+          setShortlinks(response.data);
+          setPagination(response.pagination);
+          setCurrentPage(response.pagination.page);
+        }
+      } catch (err) {
+        setError(isApiError(err) ? err.message : "Failed to load shortlinks");
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      setError(isApiError(err) ? err.message : "Failed to load shortlinks");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+    [],
+  );
 
   useEffect(() => {
-    fetchShortlinks();
-  }, []);
+    fetchShortlinks(currentPage, perPage);
+  }, [fetchShortlinks, currentPage, perPage]);
 
   const handleCreate = () => {
     setEditingShortlink(null);
@@ -73,8 +99,8 @@ export function ShortlinksPage() {
     if (!confirm("Are you sure you want to delete this shortlink?")) return;
 
     try {
-      await api(`/api/shortlinks/${id}`, { method: "DELETE" });
-      await fetchShortlinks();
+      await api(`/api/ottaorm/shortlinks/${id}`, { method: "DELETE" });
+      await fetchShortlinks(currentPage, perPage);
     } catch (err) {
       setError(isApiError(err) ? err.message : "Failed to delete shortlink");
     }
@@ -83,7 +109,7 @@ export function ShortlinksPage() {
   const handleSuccess = async () => {
     setIsDialogOpen(false);
     setEditingShortlink(null);
-    await fetchShortlinks();
+    await fetchShortlinks(currentPage, perPage);
   };
 
   const copyToClipboard = async (text: string, id: string) => {
@@ -115,6 +141,39 @@ export function ShortlinksPage() {
     return new Date(expiryDate) < new Date();
   };
 
+  // Pagination handlers
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const goToFirstPage = () => {
+    goToPage(1);
+  };
+
+  const goToLastPage = () => {
+    if (pagination) {
+      goToPage(pagination.totalPages);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (pagination && currentPage < pagination.totalPages) {
+      goToPage(currentPage + 1);
+    }
+  };
+
+  const handlePerPageChange = (value: string) => {
+    const newPerPage = parseInt(value, 10);
+    setPerPage(newPerPage);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-4 py-12">
       {/* Header */}
@@ -122,7 +181,9 @@ export function ShortlinksPage() {
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <Link2 className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-semibold tracking-tight">Shortlinks</h1>
+            <h1 className="text-4xl font-semibold tracking-tight">
+              Shortlinks
+            </h1>
           </div>
           <p className="text-muted-foreground">
             Create and manage short URLs for easy sharing
@@ -169,7 +230,9 @@ export function ShortlinksPage() {
             <CardTitle className="text-sm font-medium">Total Links</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{shortlinks.length}</div>
+            <div className="text-2xl font-bold">
+              {pagination?.total ?? shortlinks.length}
+            </div>
           </CardContent>
         </Card>
         <Card>
@@ -197,10 +260,24 @@ export function ShortlinksPage() {
       {/* Shortlinks Table */}
       <Card>
         <CardHeader>
-          <CardTitle>Your Links</CardTitle>
-          <CardDescription>
-            Manage and track your shortlinks
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Your Links</CardTitle>
+              <CardDescription>
+                Manage and track your shortlinks
+              </CardDescription>
+            </div>
+            {pagination && (
+              <div className="text-sm text-muted-foreground">
+                Showing {(pagination.page - 1) * pagination.perPage + 1} -{" "}
+                {Math.min(
+                  pagination.page * pagination.perPage,
+                  pagination.total,
+                )}{" "}
+                of {pagination.total}
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -216,97 +293,219 @@ export function ShortlinksPage() {
               </Button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Short Code</TableHead>
-                    <TableHead>Destination</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>App</TableHead>
-                    <TableHead className="text-right">Clicks</TableHead>
-                    <TableHead>Expires</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {shortlinks.map((link) => (
-                    <TableRow key={link.id}>
-                      <TableCell className="font-mono">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{link.shortCode}</span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => copyToClipboard(getShortUrl(link.shortCode), link.id)}
+            <>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Short Code</TableHead>
+                      <TableHead>Destination</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>App</TableHead>
+                      <TableHead className="text-right">Clicks</TableHead>
+                      <TableHead>Expires</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shortlinks.map((link) => (
+                      <TableRow key={link.id}>
+                        <TableCell className="font-mono">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">
+                              {link.shortCode}
+                            </span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() =>
+                                copyToClipboard(
+                                  getShortUrl(link.shortCode),
+                                  link.id,
+                                )
+                              }
+                            >
+                              {copiedId === link.id ? (
+                                <span className="text-xs text-green-600">
+                                  ✓
+                                </span>
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                        <TableCell className="max-w-xs truncate">
+                          <a
+                            href={link.fullUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
                           >
-                            {copiedId === link.id ? (
-                              <span className="text-xs text-green-600">✓</span>
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate">
-                        <a
-                          href={link.fullUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-                        >
-                          <span className="truncate">{link.fullUrl}</span>
-                          <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                        </a>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {link.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{link.appName}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-mono">
-                        {link.clicks || 0}
-                      </TableCell>
-                      <TableCell>
-                        {isExpired(link.expiryDate) ? (
-                          <Badge variant="destructive">Expired</Badge>
-                        ) : link.expiryDate ? (
-                          <span className="text-sm text-muted-foreground">
-                            {formatDate(link.expiryDate)}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">Never</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
+                            <span className="truncate">{link.fullUrl}</span>
+                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                          </a>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {link.type}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{link.appName}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {link.clicks || 0}
+                        </TableCell>
+                        <TableCell>
+                          {isExpired(link.expiryDate) ? (
+                            <Badge variant="destructive">Expired</Badge>
+                          ) : link.expiryDate ? (
+                            <span className="text-sm text-muted-foreground">
+                              {formatDate(link.expiryDate)}
+                            </span>
+                          ) : (
+                            <span className="text-sm text-muted-foreground">
+                              Never
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              onClick={() => handleEdit(link)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                              onClick={() => handleDelete(link.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Pagination Controls */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="mt-6 flex items-center justify-between border-t pt-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Items per page:
+                    </span>
+                    <Select
+                      value={String(perPage)}
+                      onValueChange={handlePerPageChange}
+                    >
+                      <SelectTrigger className="w-20">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="5">5</SelectItem>
+                        <SelectItem value="10">10</SelectItem>
+                        <SelectItem value="15">15</SelectItem>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={goToFirstPage}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronsLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={goToPrevPage}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+
+                    {/* Page numbers */}
+                    <div className="flex items-center gap-1 px-2">
+                      {Array.from(
+                        { length: Math.min(5, pagination.totalPages) },
+                        (_, i) => {
+                          const pageNum = Math.max(
+                            1,
+                            Math.min(
+                              currentPage - 2 + i,
+                              pagination.totalPages - 4 + i,
+                            ),
+                          );
+                          const adjustedPageNum = Math.max(
+                            1,
+                            Math.min(pageNum, pagination.totalPages),
+                          );
+                          return adjustedPageNum;
+                        },
+                      )
+                        .filter((v, i, a) => a.indexOf(v) === i) // unique
+                        .slice(0, 5)
+                        .map((pageNum) => (
                           <Button
-                            variant="ghost"
+                            key={pageNum}
+                            variant={
+                              pageNum === currentPage ? "default" : "outline"
+                            }
                             size="sm"
                             className="h-8 w-8 p-0"
-                            onClick={() => handleEdit(link)}
+                            onClick={() =>
+                              pageNum !== currentPage && goToPage(pageNum)
+                            }
+                            disabled={pageNum === currentPage}
                           >
-                            <Edit className="h-4 w-4" />
+                            {pageNum}
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                            onClick={() => handleDelete(link.id)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                        ))}
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={goToNextPage}
+                      disabled={currentPage >= pagination.totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 w-8 p-0"
+                      onClick={goToLastPage}
+                      disabled={currentPage >= pagination.totalPages}
+                    >
+                      <ChevronsRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {pagination.totalPages}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>

@@ -1,6 +1,6 @@
 # @ottabase/ottaorm
 
-Laravel Eloquent-inspired ORM for Cloudflare D1 and SQLite. Fat model pattern with all logic in one place.
+An ORM for Cloudflare D1 and SQLite. Fat model pattern with all logic in one place.
 
 ## Features
 

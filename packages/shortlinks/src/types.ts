@@ -1,6 +1,6 @@
-import type { Shortlink, NewShortlink } from "./schema";
+import type { NewShortlink, Shortlink } from "./schema";
 
-export type { Shortlink, NewShortlink };
+export type { NewShortlink, Shortlink };
 
 /**
  * Shortlink type enum for categorization
@@ -12,7 +12,8 @@ export const ShortlinkTypes = {
   EXTERNAL: "external",
 } as const;
 
-export type ShortlinkType = typeof ShortlinkTypes[keyof typeof ShortlinkTypes];
+export type ShortlinkType =
+  (typeof ShortlinkTypes)[keyof typeof ShortlinkTypes];
 
 /**
  * Request payload for creating a new shortlink
@@ -46,10 +47,48 @@ export interface ShortlinkResponse {
 
 /**
  * Response for list operations
+ * @deprecated Use ShortlinksPaginatedResponse instead for new implementations
  */
 export interface ShortlinksListResponse {
   success: boolean;
   data?: Shortlink[];
   total?: number;
   error?: string;
+}
+
+// ============================================================
+// Pagination Types (Simplified)
+// ============================================================
+
+/**
+ * Pagination metadata
+ */
+export interface Pagination {
+  page: number;
+  perPage: number;
+  total: number;
+  totalPages: number;
+  next: string | null;
+  prev: string | null;
+}
+
+/**
+ * Paginated response for shortlinks
+ */
+export interface ShortlinksPaginatedResponse {
+  data: Shortlink[];
+  pagination: Pagination;
+}
+
+/**
+ * Query parameters for paginated shortlink requests
+ */
+export interface ShortlinksQueryParams {
+  page?: number;
+  per_page?: number;
+  sort?: string;
+  order?: "asc" | "desc";
+  appName?: string;
+  type?: ShortlinkType;
+  search?: string;
 }

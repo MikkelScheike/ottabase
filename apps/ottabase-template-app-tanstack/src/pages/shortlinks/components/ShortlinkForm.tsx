@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+import { api, isApiError } from "@/lib/api";
+import type { Shortlink } from "@ottabase/shortlinks";
+import { ShortlinkTypes } from "@ottabase/shortlinks";
 import {
   Button,
   Input,
@@ -9,9 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@ottabase/ui-shadcn";
-import { api, isApiError } from "@/lib/api";
-import { ShortlinkTypes } from "@ottabase/shortlinks";
-import type { Shortlink } from "@ottabase/shortlinks";
+import { useEffect, useState } from "react";
 
 interface ShortlinkFormProps {
   shortlink?: Shortlink | null;
@@ -19,7 +19,11 @@ interface ShortlinkFormProps {
   onCancel: () => void;
 }
 
-export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormProps) {
+export function ShortlinkForm({
+  shortlink,
+  onSuccess,
+  onCancel,
+}: ShortlinkFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -60,13 +64,13 @@ export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormP
 
       if (shortlink) {
         // Update existing shortlink
-        await api(`/api/shortlinks/${shortlink.id}`, {
+        await api(`/api/ottaorm/shortlinks/${shortlink.id}`, {
           method: "PATCH",
           body: payload,
         });
       } else {
         // Create new shortlink
-        await api("/api/shortlinks", {
+        await api("/api/ottaorm/shortlinks", {
           method: "POST",
           body: payload,
         });
@@ -106,7 +110,9 @@ export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormP
           type="url"
           placeholder="https://example.com/very/long/url"
           value={formData.fullUrl}
-          onChange={(e) => setFormData({ ...formData, fullUrl: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, fullUrl: e.target.value })
+          }
           required
           disabled={loading}
         />
@@ -124,7 +130,9 @@ export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormP
             id="shortCode"
             placeholder="my-link"
             value={formData.shortCode}
-            onChange={(e) => setFormData({ ...formData, shortCode: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, shortCode: e.target.value })
+            }
             required
             disabled={loading}
             className="flex-1"
@@ -172,7 +180,9 @@ export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormP
             id="appName"
             placeholder="default"
             value={formData.appName}
-            onChange={(e) => setFormData({ ...formData, appName: e.target.value })}
+            onChange={(e) =>
+              setFormData({ ...formData, appName: e.target.value })
+            }
             disabled={loading}
           />
         </div>
@@ -184,7 +194,9 @@ export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormP
           id="expiryDate"
           type="datetime-local"
           value={formData.expiryDate}
-          onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
+          onChange={(e) =>
+            setFormData({ ...formData, expiryDate: e.target.value })
+          }
           disabled={loading}
         />
         <p className="text-xs text-muted-foreground">
@@ -193,7 +205,12 @@ export function ShortlinkForm({ shortlink, onSuccess, onCancel }: ShortlinkFormP
       </div>
 
       <div className="flex justify-end gap-2 pt-4">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={loading}
+        >
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>

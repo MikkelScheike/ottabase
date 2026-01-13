@@ -20,6 +20,10 @@ import {
 } from "@ottabase/ottaorm";
 import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { jsonResponse } from "@ottabase/utils/http-response";
+import {
+  paginatedJsonResponse,
+  parsePaginationParams,
+} from "@ottabase/utils/pagination";
 import { getAllSchemas } from "./ottabase/db/schemas-helper";
 import { appMigrations } from "./ottabase/migrations";
 import { Shortlink } from "./ottabase/models/Shortlink";
@@ -143,10 +147,64 @@ export default {
       }
 
       // ============================================================
-      // Shortlink Management
+      // Generic OttaORM CRUD API
+      // ============================================================
+      // Handles all registered models via /api/ottaorm/{model}/{id?}
+      // GET    /api/ottaorm/shortlinks              - List all (paginated)
+      // GET    /api/ottaorm/shortlinks/123          - Get by ID
+      // POST   /api/ottaorm/shortlinks              - Create
+      // PATCH  /api/ottaorm/shortlinks/123          - Update
+      // DELETE /api/ottaorm/shortlinks/123          - Delete
+      // Query params: page, per_page, sort, order, where (JSON)
       // ============================================================
 
-      // List all shortlinks
+      if (url.pathname.startsWith("/api/ottaorm/")) {
+        if (!env.OBCF_D1) {
+          return errorResponse("D1 database binding not configured", 500, {
+            code: "CONFIG_ERROR",
+          });
+        }
+
+        // Initialize database connection and register models
+        registerConnection("default", createD1Driver(env.OBCF_D1));
+        registerModels([Shortlink, Todo, User, Post, Tag]);
+
+        // Parse the request into a CrudRequest
+        const crudRequest = await parseCrudRequest(
+          request,
+          url,
+          "/api/ottaorm",
+        );
+
+        if (!crudRequest) {
+          return errorResponse("Invalid CRUD request", 400, {
+            code: "INVALID_REQUEST",
+            hint: "Use /api/ottaorm/{model}/{id?} format",
+          });
+        }
+
+        // Handle the CRUD operation
+        const result = await handleCrud(crudRequest);
+
+        // Return response based on result
+        if (!result.success) {
+          return errorResponse(result.error || "Unknown error", result.status, {
+            code: result.code,
+            details: result.details,
+            hint: result.hint,
+            messages: result.messages,
+            fieldErrors: result.fieldErrors,
+          });
+        }
+
+        return jsonResponse(result.data, result.status);
+      }
+
+      // ============================================================
+      // Shortlink Management (Legacy - use /api/ottaorm/shortlinks instead)
+      // ============================================================
+
+      // List all shortlinks (paginated)
       if (url.pathname === "/api/shortlinks" && request.method === "GET") {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
@@ -156,31 +214,35 @@ export default {
 
         registerConnection("default", createD1Driver(env.OBCF_D1));
 
+        // Parse pagination params from query string (defaults applied automatically)
+        const { page, perPage, orderBy, order } = parsePaginationParams(
+          url.searchParams,
+        );
+
+        // Optional filters
         const appName = url.searchParams.get("appName");
         const type = url.searchParams.get("type");
 
-        let shortlinks;
-        if (appName) {
-          shortlinks = await Shortlink.byApp(appName, {
-            orderBy: "createdAt",
-            orderDirection: "desc",
-          });
-        } else if (type) {
-          shortlinks = await Shortlink.byType(type, {
-            orderBy: "createdAt",
-            orderDirection: "desc",
-          });
-        } else {
-          shortlinks = await Shortlink.all({
-            orderBy: "createdAt",
-            orderDirection: "desc",
-          });
-        }
+        // Build where conditions
+        const whereConditions: Record<string, any> = {};
+        if (appName) whereConditions.appName = appName;
+        if (type) whereConditions.type = type;
 
-        return jsonResponse({
-          success: true,
-          data: shortlinks.map((s) => s.toJson()),
-          total: shortlinks.length,
+        // Use OttaORM's paginate method
+        const paginationResult = await Shortlink.paginate(
+          page,
+          perPage,
+          Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
+          { orderBy, orderDirection: order },
+        );
+
+        // Return paginated response
+        return paginatedJsonResponse({
+          data: paginationResult.data.map((s) => s.toJson()),
+          total: paginationResult.total,
+          page: paginationResult.page,
+          perPage: paginationResult.perPage,
+          path: "/api/shortlinks",
         });
       }
 

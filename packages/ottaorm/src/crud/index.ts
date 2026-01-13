@@ -86,41 +86,66 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
 
     // GET without ID - list records
     if (method === "GET") {
+      const basePath = `/api/ottaorm/${entityName}`;
+
       // Check for pagination
       if (query?.page || query?.perPage) {
         const page = query.page || 1;
-        const perPage = query.perPage || 15;
-        const result = await Model.paginate(
-          page,
-          perPage,
-          query.where,
-          { orderBy: query.orderBy, orderDirection: query.orderDirection }
-        );
+        const perPage = Math.min(query.perPage || 15, 100); // Cap at 100
+        const result = await Model.paginate(page, perPage, query.where, {
+          orderBy: query.orderBy,
+          orderDirection: query.orderDirection,
+        });
+
+        const totalPages = Math.max(1, result.totalPages);
+        const currentPage = Math.min(Math.max(1, page), totalPages);
+
         return {
           success: true,
           data: {
-            [entityName]: result.data.map((r: any) => r.toJson()),
-            total: result.total,
-            page: result.page,
-            perPage: result.perPage,
-            totalPages: result.totalPages,
-            hasNextPage: result.hasNextPage,
-            hasPrevPage: result.hasPrevPage,
+            data: result.data.map((r: any) => r.toJson()),
+            pagination: {
+              page: currentPage,
+              perPage,
+              total: result.total,
+              totalPages,
+              next:
+                currentPage < totalPages
+                  ? `${basePath}?page=${currentPage + 1}&per_page=${perPage}`
+                  : null,
+              prev:
+                currentPage > 1
+                  ? `${basePath}?page=${currentPage - 1}&per_page=${perPage}`
+                  : null,
+            },
           },
           status: 200,
         };
       }
 
-      // Regular list
+      // Regular list (non-paginated)
       const records = await Model.where(query?.where || {}, {
         orderBy: query?.orderBy,
         orderDirection: query?.orderDirection,
         limit: query?.limit,
         offset: query?.offset,
       });
+
+      const total = records.length;
+
       return {
         success: true,
-        data: { [entityName]: records.map((r: any) => r.toJson()) },
+        data: {
+          data: records.map((r: any) => r.toJson()),
+          pagination: {
+            page: 1,
+            perPage: total,
+            total,
+            totalPages: 1,
+            next: null,
+            prev: null,
+          },
+        },
         status: 200,
       };
     }
@@ -176,14 +201,17 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const isD1Error = message.includes("D1_ERROR") || message.includes("SQLITE_ERROR");
+    const isD1Error =
+      message.includes("D1_ERROR") || message.includes("SQLITE_ERROR");
 
     return {
       success: false,
       error: message,
       code: isD1Error ? "DATABASE_ERROR" : "INTERNAL_SERVER_ERROR",
       messages: [message],
-      hint: isD1Error ? "Make sure your database tables are initialized and migrations are up to date." : undefined,
+      hint: isD1Error
+        ? "Make sure your database tables are initialized and migrations are up to date."
+        : undefined,
       status: 500,
     };
   }
@@ -220,7 +248,7 @@ function singularize(word: string): string {
 export async function parseCrudRequest(
   request: Request,
   url: URL,
-  basePath: string = "/api/ottaorm"
+  basePath: string = "/api/ottaorm",
 ): Promise<CrudRequest | null> {
   const path = url.pathname;
 
@@ -249,14 +277,20 @@ export async function parseCrudRequest(
       query.where = JSON.parse(whereParam);
     } catch (error) {
       // Log invalid JSON in "where" to aid debugging, but keep behavior lenient
-      console.warn('ottaorm: Ignoring invalid JSON in "where" query parameter:', whereParam, error);
+      console.warn(
+        'ottaorm: Ignoring invalid JSON in "where" query parameter:',
+        whereParam,
+        error,
+      );
     }
   }
 
-  const orderBy = url.searchParams.get("orderBy");
+  const orderBy =
+    url.searchParams.get("orderBy") || url.searchParams.get("sort");
   if (orderBy) query.orderBy = orderBy;
 
-  const orderDirection = url.searchParams.get("orderDirection");
+  const orderDirection =
+    url.searchParams.get("orderDirection") || url.searchParams.get("order");
   if (orderDirection === "asc" || orderDirection === "desc") {
     query.orderDirection = orderDirection;
   }
@@ -270,14 +304,20 @@ export async function parseCrudRequest(
   const page = url.searchParams.get("page");
   if (page) query.page = parseInt(page, 10);
 
-  const perPage = url.searchParams.get("perPage");
+  // Support both perPage and per_page
+  const perPage =
+    url.searchParams.get("perPage") || url.searchParams.get("per_page");
   if (perPage) query.perPage = parseInt(perPage, 10);
 
   // Parse body for POST/PATCH/PUT
   let body: Record<string, unknown> | undefined;
-  if (request.method === "POST" || request.method === "PATCH" || request.method === "PUT") {
+  if (
+    request.method === "POST" ||
+    request.method === "PATCH" ||
+    request.method === "PUT"
+  ) {
     try {
-      body = await request.json() as Record<string, unknown>;
+      body = (await request.json()) as Record<string, unknown>;
     } catch {
       body = {};
     }

@@ -1,15 +1,14 @@
 // ============================================================
 // @ottabase/ottaorm - Base Model (Fat Model Pattern)
 // ============================================================
-// Inspired by Laravel Eloquent - everything in one place
 // SQL-specific implementation using Drizzle ORM
 // ============================================================
 
-import { AbstractBaseModel, PaginationResult, ModelFieldType, ModelFields, ModelFieldDescriptor } from "./AbstractBaseModel";
-import { getConnection } from "../context";
 import type { DbDriver } from "@ottabase/db/drizzle";
-import { eq, and, or, desc, asc, like, gt, lt, gte, lte, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
+import { getConnection } from "../context";
+import { AbstractBaseModel, ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult } from "./AbstractBaseModel";
 
 export interface IModelConstructorParams {
   entity: string;
@@ -17,7 +16,7 @@ export interface IModelConstructorParams {
 }
 
 // Re-export types
-export type { ModelFieldType, ModelFieldDescriptor, ModelFields, PaginationResult };
+export type { ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult };
 
 /**
  * Type guard to check if a connection is a SQL driver
