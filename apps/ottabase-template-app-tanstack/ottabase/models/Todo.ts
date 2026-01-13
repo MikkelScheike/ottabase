@@ -2,8 +2,8 @@
 // Todo Model (App-specific)
 // ============================================================
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { BaseModel, IModelConstructorParams, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /**
  * Todo table schema
@@ -167,10 +167,7 @@ export class Todo extends BaseModel {
     },
   };
 
-  constructor(data: { [key: string]: any }) {
-    const params: IModelConstructorParams = { entity: Todo.entity, data };
-    super(params);
-  }
+
 
   // ============================================================
   // RELATIONSHIPS

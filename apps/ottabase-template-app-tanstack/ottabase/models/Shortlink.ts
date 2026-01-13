@@ -2,11 +2,14 @@
 // Shortlink Model (App-specific implementation of @ottabase/shortlinks)
 // ============================================================
 
-import { BaseModel, IModelConstructorParams, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import type {
+  NewShortlink,
+  Shortlink as ShortlinkType,
+} from "@ottabase/shortlinks";
 import { shortlinksTable, ShortlinkTypes } from "@ottabase/shortlinks";
-import type { Shortlink as ShortlinkType, NewShortlink } from "@ottabase/shortlinks";
 
-export type { ShortlinkType, NewShortlink };
+export type { NewShortlink, ShortlinkType };
 
 /**
  * Shortlink model - URL shortening service
@@ -250,11 +253,6 @@ export class Shortlink extends BaseModel {
     },
   };
 
-  constructor(data: { [key: string]: any }) {
-    const params: IModelConstructorParams = { entity: Shortlink.entity, data };
-    super(params);
-  }
-
   // ============================================================
   // QUERY HELPERS
   // ============================================================
@@ -284,10 +282,10 @@ export class Shortlink extends BaseModel {
 
     // Note: We'll need to filter expired ones after fetching
     // since Drizzle doesn't support complex date comparisons easily
-    const results = await this.where(query, {
+    const results = (await this.where(query, {
       orderBy: options?.orderBy || "createdAt",
       orderDirection: options?.orderDirection || "desc",
-    });
+    })) as Shortlink[];
 
     // Filter out expired links
     return results.filter((link) => !link.isExpired());
@@ -301,14 +299,14 @@ export class Shortlink extends BaseModel {
     options?: {
       orderBy?: string;
       orderDirection?: "asc" | "desc";
-    }
+    },
   ) {
     return this.where(
       { appName },
       {
         orderBy: options?.orderBy || "createdAt",
         orderDirection: options?.orderDirection || "desc",
-      }
+      },
     );
   }
 
@@ -320,14 +318,14 @@ export class Shortlink extends BaseModel {
     options?: {
       orderBy?: string;
       orderDirection?: "asc" | "desc";
-    }
+    },
   ) {
     return this.where(
       { type },
       {
         orderBy: options?.orderBy || "createdAt",
         orderDirection: options?.orderDirection || "desc",
-      }
+      },
     );
   }
 
