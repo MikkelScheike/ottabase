@@ -1062,7 +1062,7 @@ export default {
       }
 
       // ============================================================
-      // OttaORM demos
+      // OttaORM Init
       // ============================================================
 
       if (
@@ -1085,7 +1085,7 @@ export default {
         }
 
         // ============================================================
-        // AUTOMATED MIGRATIONS - No CLI Required!
+        // AUTOMATED MIGRATIONS
         // ============================================================
         // This automatically:
         // 1. Detects all tables from CORE schemas (@ottabase/ottaorm)
