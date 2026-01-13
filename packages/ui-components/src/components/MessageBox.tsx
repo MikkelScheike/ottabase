@@ -49,7 +49,7 @@ const Loading = ({
 }: {
   skeletonType?: SkeletonVariant;
   width?: string | number;
-}): JSX.Element => {
+}): React.JSX.Element => {
   // Helper function to process width - add px if numeric, otherwise use as is
   // Type guard for processing width values
   const processWidth = (width?: string | number): string => {
@@ -122,7 +122,7 @@ const Loading = ({
   );
 };
 
-const MessageIcon = ({ type }: { type: MessageTypes }): JSX.Element => {
+const MessageIcon = ({ type }: { type: MessageTypes }): React.JSX.Element => {
   const IconComponent = {
     info: IconInfoSquareRounded,
     error: IconSquareRoundedX,
@@ -181,7 +181,7 @@ const MessageBox = ({
   message,
   messageType = "info",
   width,
-}: MessageBoxProps): JSX.Element => {
+}: MessageBoxProps): React.JSX.Element => {
   if (isLoading) {
     return (
       <div className="flex h-full min-h-32 w-full flex-col items-center justify-center rounded-md p-8 text-center">

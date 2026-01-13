@@ -42,7 +42,7 @@ export const ProviderUIBase = ({
   preventFOUC = false,
   preventFOUCInsideIframe = false,
   fontFamilies,
-}: ProviderUIBaseProps): JSX.Element => {
+}: ProviderUIBaseProps): React.JSX.Element => {
   const mergedFontFamilies = {
     ...DEFAULT_FONT_FAMILIES,
     ...fontFamilies,
