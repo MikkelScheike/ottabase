@@ -119,7 +119,9 @@ describe('Vanilla Upload Utilities', () => {
       const sendSpy = vi.spyOn(xhr, 'send');
 
       // @ts-ignore
-      global.XMLHttpRequest = vi.fn(() => xhr);
+      global.XMLHttpRequest = vi.fn(function () {
+        return xhr;
+      });
 
       await uploadFile(file, {
         provider: 'cloudflare-images',
