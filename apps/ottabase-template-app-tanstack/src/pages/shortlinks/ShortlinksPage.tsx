@@ -32,6 +32,7 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
+  Code,
   Copy,
   Edit,
   ExternalLink,
@@ -124,6 +125,10 @@ export function ShortlinksPage() {
 
   const getShortUrl = (shortCode: string) => {
     return `${window.location.origin}/${shortCode}`;
+  };
+
+  const getExplicitUrl = (shortCode: string) => {
+    return `${window.location.origin}/shortlinks/go?code=${shortCode}`;
   };
 
   const formatDate = (dateString: string | Date | null) => {
@@ -311,27 +316,48 @@ export function ShortlinksPage() {
                     {shortlinks.map((link) => (
                       <TableRow key={link.id}>
                         <TableCell className="font-mono">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">
+                          <div className="flex items-center gap-1">
+                            <span className="font-medium mr-1">
                               {link.shortCode}
                             </span>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
+                              title="Copy Short URL"
                               onClick={() =>
                                 copyToClipboard(
                                   getShortUrl(link.shortCode),
-                                  link.id,
+                                  `${link.id}-short`,
                                 )
                               }
                             >
-                              {copiedId === link.id ? (
+                              {copiedId === `${link.id}-short` ? (
                                 <span className="text-xs text-green-600">
                                   ✓
                                 </span>
                               ) : (
                                 <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              title="Copy Explicit Link"
+                              onClick={() =>
+                                copyToClipboard(
+                                  getExplicitUrl(link.shortCode),
+                                  `${link.id}-explicit`,
+                                )
+                              }
+                            >
+                              {copiedId === `${link.id}-explicit` ? (
+                                <span className="text-xs text-green-600">
+                                  ✓
+                                </span>
+                              ) : (
+                                <Code className="h-3 w-3" />
                               )}
                             </Button>
                           </div>
