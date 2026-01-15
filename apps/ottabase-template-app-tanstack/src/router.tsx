@@ -17,6 +17,7 @@ import {
   Router,
   createBrowserHistory,
   lazyRouteComponent,
+  useLocation,
   useNavigate,
 } from "@tanstack/react-router";
 import { LogIn, LogOut } from "lucide-react";
@@ -25,6 +26,7 @@ import { useState } from "react";
 function RootLayout() {
   const { isAuthenticated, user, logout } = useSession();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleLogout = () => {
     logout();
@@ -43,10 +45,16 @@ function RootLayout() {
       ? user.email[0].toUpperCase()
       : "?";
 
+  // Check if we should use the wide layout
+  const isWideLayout = location.pathname.startsWith("/demo");
+  const containerClass = isWideLayout ? "max-w-[1400px]" : "max-w-5xl";
+
   return (
     <div className="min-h-screen bg-background font-sans">
       <header className="border-b">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+        <div
+          className={`mx-auto flex items-center justify-between px-4 py-3 ${containerClass}`}
+        >
           <div className="flex items-center gap-2">
             <Link to="/" className="font-semibold">
               {APP_META.appName}
@@ -115,7 +123,7 @@ function RootLayout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-10">
+      <main className={`mx-auto px-4 py-10 ${containerClass}`}>
         <Outlet />
       </main>
     </div>
@@ -192,9 +200,19 @@ const indexRoute = new Route({
   component: HomeRouteComponent,
 });
 
-const demoRoute = new Route({
+const demoLayoutRoute = new Route({
   getParentRoute: () => rootRoute,
   path: "/demo",
+  component: lazyRouteComponent(() =>
+    import("@/pages/demo/DemoLayout").then((m) => ({
+      default: m.DemoLayout,
+    })),
+  ),
+});
+
+const demoIndexRoute = new Route({
+  getParentRoute: () => demoLayoutRoute,
+  path: "/",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/DemoIndexPage").then((m) => ({
       default: m.DemoIndexPage,
@@ -203,8 +221,8 @@ const demoRoute = new Route({
 });
 
 const demoMantineRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/mantine",
+  getParentRoute: () => demoLayoutRoute,
+  path: "mantine",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/mantine/MantineDemoRoute").then((m) => ({
       default: m.MantineDemoRoute,
@@ -213,8 +231,8 @@ const demoMantineRoute = new Route({
 });
 
 const demoShadcnRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/shadcn",
+  getParentRoute: () => demoLayoutRoute,
+  path: "shadcn",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/shadcn/ShadcnDemoPage").then((m) => ({
       default: m.ShadcnDemoPage,
@@ -223,8 +241,8 @@ const demoShadcnRoute = new Route({
 });
 
 const demoOttaEditorRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/ottaeditor",
+  getParentRoute: () => demoLayoutRoute,
+  path: "ottaeditor",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/ottaeditor/OttaEditorDemoPage").then((m) => ({
       default: m.OttaEditorDemoPage,
@@ -233,8 +251,8 @@ const demoOttaEditorRoute = new Route({
 });
 
 const demoOttaOrmRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/ottaorm",
+  getParentRoute: () => demoLayoutRoute,
+  path: "ottaorm",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/ottaorm/OttaORMDemoPage").then((m) => ({
       default: m.OttaORMDemoPage,
@@ -243,8 +261,8 @@ const demoOttaOrmRoute = new Route({
 });
 
 const demoOttaFormsRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/ottaforms",
+  getParentRoute: () => demoLayoutRoute,
+  path: "ottaforms",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/ottaforms/OttaFormsDemoPage").then((m) => ({
       default: m.OttaFormsDemoPage,
@@ -253,8 +271,8 @@ const demoOttaFormsRoute = new Route({
 });
 
 const demoTimezoneRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/timezone",
+  getParentRoute: () => demoLayoutRoute,
+  path: "timezone",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/timezone/TimezoneDemoPage").then((m) => ({
       default: m.TimezoneDemoPage,
@@ -263,8 +281,8 @@ const demoTimezoneRoute = new Route({
 });
 
 const demoCloudflareRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareDemoIndexPage").then((m) => ({
       default: m.CloudflareDemoIndexPage,
@@ -273,8 +291,8 @@ const demoCloudflareRoute = new Route({
 });
 
 const demoCloudflareD1Route = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/d1",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/d1",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareD1DemoPage").then((m) => ({
       default: m.CloudflareD1DemoPage,
@@ -283,8 +301,8 @@ const demoCloudflareD1Route = new Route({
 });
 
 const demoCloudflareKVRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/kv",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/kv",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareKVDemoPage").then((m) => ({
       default: m.CloudflareKVDemoPage,
@@ -293,8 +311,8 @@ const demoCloudflareKVRoute = new Route({
 });
 
 const demoCloudflareR2Route = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/r2",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/r2",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareR2DemoPage").then((m) => ({
       default: m.CloudflareR2DemoPage,
@@ -303,18 +321,20 @@ const demoCloudflareR2Route = new Route({
 });
 
 const demoCloudflareFileUploadRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/file-upload",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/file-upload",
   component: lazyRouteComponent(() =>
-    import("@/pages/demo/cloudflare/CloudflareFileUploadDemoPage").then((m) => ({
-      default: m.CloudflareFileUploadDemoPage,
-    })),
+    import("@/pages/demo/cloudflare/CloudflareFileUploadDemoPage").then(
+      (m) => ({
+        default: m.CloudflareFileUploadDemoPage,
+      }),
+    ),
   ),
 });
 
 const demoCloudflareImagesRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/images",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/images",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareImagesDemoPage").then((m) => ({
       default: m.CloudflareImagesDemoPage,
@@ -323,8 +343,8 @@ const demoCloudflareImagesRoute = new Route({
 });
 
 const demoCloudflareHyperdriveRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/hyperdrive",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/hyperdrive",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareHyperdriveDemoPage").then(
       (m) => ({ default: m.CloudflareHyperdriveDemoPage }),
@@ -333,8 +353,8 @@ const demoCloudflareHyperdriveRoute = new Route({
 });
 
 const demoCloudflareQueuesRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/queues",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/queues",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareQueuesDemoPage").then((m) => ({
       default: m.CloudflareQueuesDemoPage,
@@ -343,8 +363,8 @@ const demoCloudflareQueuesRoute = new Route({
 });
 
 const demoCloudflareRateLimitingRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/rate-limiting",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/rate-limiting",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareRateLimitingDemoPage").then(
       (m) => ({ default: m.CloudflareRateLimitingDemoPage }),
@@ -353,8 +373,8 @@ const demoCloudflareRateLimitingRoute = new Route({
 });
 
 const demoCloudflareRealtimeRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/cloudflare/realtime",
+  getParentRoute: () => demoLayoutRoute,
+  path: "cloudflare/realtime",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/cloudflare/CloudflareRealtimeDemoPage").then((m) => ({
       default: m.CloudflareRealtimeDemoPage,
@@ -363,8 +383,8 @@ const demoCloudflareRealtimeRoute = new Route({
 });
 
 const demoApiRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/api",
+  getParentRoute: () => demoLayoutRoute,
+  path: "api",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/api/ApiDemoPage").then((m) => ({
       default: m.ApiDemoPage,
@@ -373,8 +393,8 @@ const demoApiRoute = new Route({
 });
 
 const demoThemingRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/theming",
+  getParentRoute: () => demoLayoutRoute,
+  path: "theming",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/theming/ThemingDemoPage").then((m) => ({
       default: m.ThemingDemoPage,
@@ -383,8 +403,8 @@ const demoThemingRoute = new Route({
 });
 
 const demoRendererRoute = new Route({
-  getParentRoute: () => rootRoute,
-  path: "/demo/renderer",
+  getParentRoute: () => demoLayoutRoute,
+  path: "renderer",
   component: lazyRouteComponent(() =>
     import("@/pages/demo/renderer/RendererDemoPage").then((m) => ({
       default: m.RendererDemoPage,
@@ -457,9 +477,8 @@ const adminRoute = new Route({
   ),
 });
 
-const routeTree = rootRoute.addChildren([
-  indexRoute,
-  demoRoute,
+demoLayoutRoute.addChildren([
+  demoIndexRoute,
   demoMantineRoute,
   demoShadcnRoute,
   demoOttaEditorRoute,
@@ -479,6 +498,11 @@ const routeTree = rootRoute.addChildren([
   demoApiRoute,
   demoThemingRoute,
   demoRendererRoute,
+]);
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  demoLayoutRoute,
   loginRoute,
   registerRoute,
   dashboardRoute,

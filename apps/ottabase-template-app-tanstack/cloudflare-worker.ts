@@ -6,9 +6,8 @@ import {
 import { createImagesClient } from "@ottabase/cf/images";
 import { createKVClient } from "@ottabase/cf/kv";
 import { createQueuesClient } from "@ottabase/cf/queues";
-import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { createR2Client } from "@ottabase/cf/r2";
-import { uploadFileToR2, uploadFileToCloudflareImages } from "@ottabase/ottaupload/server";
+import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import {
   Post,
@@ -20,6 +19,10 @@ import {
   registerConnection,
   registerModels,
 } from "@ottabase/ottaorm";
+import {
+  uploadFileToCloudflareImages,
+  uploadFileToR2,
+} from "@ottabase/ottaupload/server";
 import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { jsonResponse } from "@ottabase/utils/http-response";
 import {
@@ -600,16 +603,20 @@ export default {
                 return errorResponse(
                   "Cloudflare Images not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN",
                   500,
-                  { code: "CONFIG_ERROR" }
+                  { code: "CONFIG_ERROR" },
                 );
               }
 
-              const result = await uploadFileToCloudflareImages(file, {
-                accountId,
-                apiToken,
-              }, {
-                maxFileSize: 10 * 1024 * 1024, // 10MB max for images
-              });
+              const result = await uploadFileToCloudflareImages(
+                file,
+                {
+                  accountId,
+                  apiToken,
+                },
+                {
+                  maxFileSize: 10 * 1024 * 1024, // 10MB max for images
+                },
+              );
 
               if (result.success) {
                 return jsonResponse({
@@ -624,7 +631,7 @@ export default {
                 return errorResponse(
                   result.error || "Upload failed",
                   status,
-                  errorCode ? { code: errorCode } : undefined
+                  errorCode ? { code: errorCode } : undefined,
                 );
               }
             } else {
@@ -1267,6 +1274,56 @@ export default {
           });
         }
         return jsonResponse(result.data, { status: result.status });
+      }
+
+      // ============================================================
+      // Shortlink Explicit Redirect: /shortlinks/go?code=xyz
+      // ============================================================
+      if (url.pathname === "/shortlinks/go") {
+        if (!env.OBCF_D1) {
+          return errorResponse("D1 database binding not configured", 500, {
+            code: "CONFIG_ERROR",
+          });
+        }
+
+        const code =
+          url.searchParams.get("code") ||
+          url.searchParams.get("s") ||
+          url.searchParams.get("id");
+
+        if (!code) {
+          return errorResponse("Missing shortlink code", 400, {
+            hint: "Use /shortlinks/go?code=... or ?s=...",
+          });
+        }
+
+        registerConnection("default", createD1Driver(env.OBCF_D1));
+
+        try {
+          const shortlink = await Shortlink.findByCode(code);
+
+          if (!shortlink) {
+            return errorResponse("Shortlink not found", 404, {
+              code: "LINK_NOT_FOUND",
+            });
+          }
+
+          if (shortlink.isExpired()) {
+            return errorResponse("This shortlink has expired", 410, {
+              code: "LINK_EXPIRED",
+            });
+          }
+
+          // Track usage
+          shortlink.trackClick().catch((err) => {
+            console.error("Failed to track shortlink click:", err);
+          });
+
+          return Response.redirect(shortlink.get("fullUrl"), 302);
+        } catch (error) {
+          console.error("Shortlink explicit redirect error:", error);
+          return errorResponse("Failed to process shortlink", 500);
+        }
       }
 
       // ============================================================
