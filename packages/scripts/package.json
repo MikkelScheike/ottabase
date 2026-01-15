@@ -11,22 +11,10 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
-    "./schema": {
-      "types": "./dist/schema/concatenate.d.ts",
-      "import": "./dist/schema/concatenate.mjs",
-      "require": "./dist/schema/concatenate.js"
-    },
-    "./migrations": {
-      "types": "./dist/migrations/runner.d.ts",
-      "import": "./dist/migrations/runner.mjs",
-      "require": "./dist/migrations/runner.js"
-    }
+    "./schema": null,
+    "./migrations": null
   },
   "bin": {
-    "db-generate": "bin/db-generate.cjs",
-    "db-migrate": "bin/db-migrate.cjs",
-    "db-migrate:apply": "bin/db-migrate-apply.cjs",
-    "db-migrate:status": "bin/db-migrate-status.cjs",
     "cloudflare-setup": "bin/cloudflare-setup.cjs",
     "cloudflare-validate": "bin/cloudflare-validate.cjs"
   },
@@ -36,8 +24,8 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/index.ts src/schema/concatenate.ts src/migrations/runner.ts src/migrations/d1-executor.ts src/cli/db-generate.ts src/cli/db-migrate.ts src/cli/db-migrate-apply.ts src/cli/db-migrate-status.ts src/cli/cloudflare-setup.ts src/cli/cloudflare-validate.ts --format cjs,esm --dts --clean",
-    "dev": "tsup src/index.ts src/schema/concatenate.ts src/migrations/runner.ts src/migrations/d1-executor.ts src/cli/db-generate.ts src/cli/db-migrate.ts src/cli/db-migrate-apply.ts src/cli/db-migrate-status.ts src/cli/cloudflare-setup.ts src/cli/cloudflare-validate.ts --format cjs,esm --dts --watch",
+    "build": "tsup src/index.ts src/cli/cloudflare-setup.ts src/cli/cloudflare-validate.ts --format cjs,esm --dts --clean",
+    "dev": "tsup src/index.ts src/cli/cloudflare-setup.ts src/cli/cloudflare-validate.ts --format cjs,esm --dts --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
     "type-check": "tsc --noEmit",
@@ -46,9 +34,7 @@
   },
   "keywords": [
     "scripts",
-    "prisma",
     "cloudflare-d1",
-    "schema-generation",
     "monorepo"
   ],
   "author": "",

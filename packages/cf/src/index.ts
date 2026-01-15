@@ -30,8 +30,8 @@ export {
   createKVClient,
   type KVConfig,
   type KVGetOptions,
-  type KVPutOptions,
   type KVListOptions,
+  type KVPutOptions,
 } from "./kv";
 
 // R2 Storage
@@ -40,18 +40,18 @@ export {
   createR2Client,
   type R2Config,
   type R2GetOptions,
-  type R2PutOptions,
   type R2ListOptions,
+  type R2PutOptions,
 } from "./r2";
 
 // Images
 export {
   ImagesClient,
   createImagesClient,
-  type ImagesConfig,
+  type ImageDetails,
   type ImageUploadOptions,
   type ImageVariant,
-  type ImageDetails,
+  type ImagesConfig,
 } from "./images";
 
 // Hyperdrive
@@ -66,10 +66,10 @@ export {
   QueuesClient,
   createQueuesClient,
   processQueueBatch,
-  type QueuesConfig,
-  type QueueSendOptions,
-  type QueueMessage,
   type QueueHandler,
+  type QueueMessage,
+  type QueueSendOptions,
+  type QueuesConfig,
 } from "./queues";
 
 // Secrets
@@ -83,20 +83,9 @@ export {
 export {
   RateLimitingClient,
   createRateLimitingClient,
-  type RateLimitingConfig,
   type RateLimitOptions,
   type RateLimitResult,
+  type RateLimitingConfig,
 } from "./rate-limiting";
 
-// D1 Prisma Integration
-/* * /
-export {
-  createPrismaD1Client,
-  createPrismaD1ClientAsync,
-  createPrismaD1ClientSafe,
-  getPrismaD1Client,
-  isD1Database,
-  type PrismaD1ClientOptions,
-  type PrismaClientType,
-} from "./d1-prisma";
-/* */
+

@@ -81,7 +81,7 @@ export function requireAuth(session: Session | null): OttabaseSession {
  * const userId = getUserId(await auth());
  * if (userId) {
  *   // User is logged in
- *   const user = await prisma.user.findUnique({ where: { id: userId } });
+ *   // const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
  * }
  * ```
  */

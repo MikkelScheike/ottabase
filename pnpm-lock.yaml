@@ -42,9 +42,6 @@ catalogs:
     '@mantine/notifications':
       specifier: ^8.3.1
       version: 8.3.1
-    '@prisma/adapter-d1':
-      specifier: ^5.22.0
-      version: 5.22.0
     '@prisma/client':
       specifier: ^5.22.0
       version: 5.22.0
@@ -389,12 +386,6 @@ importers:
       '@ottabase/utils':
         specifier: workspace:*
         version: link:../../packages/utils
-      '@prisma/adapter-d1':
-        specifier: 'catalog:'
-        version: 5.22.0
-      '@prisma/client':
-        specifier: 'catalog:'
-        version: 5.22.0(prisma@5.22.0)
       critters:
         specifier: 'catalog:'
         version: 0.0.22
@@ -495,9 +486,6 @@ importers:
       postcss-preset-mantine:
         specifier: 'catalog:'
         version: 1.18.0(postcss@8.5.6)
-      prisma:
-        specifier: 'catalog:'
-        version: 5.22.0
       storybook:
         specifier: 'catalog:'
         version: 10.1.11(@testing-library/dom@10.4.1)(prettier@3.7.4)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
@@ -790,12 +778,6 @@ importers:
       '@cloudflare/workers-types':
         specifier: 'catalog:'
         version: 4.20251225.0
-      '@prisma/adapter-d1':
-        specifier: 'catalog:'
-        version: 5.22.0
-      '@prisma/client':
-        specifier: 'catalog:'
-        version: 5.22.0(prisma@5.22.0)
       '@types/node':
         specifier: 'catalog:'
         version: 20.19.28
@@ -2761,9 +2743,6 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@cloudflare/workers-types@4.20240614.0':
-    resolution: {integrity: sha512-fnV3uXD1Hpq5EWnY7XYb+smPcjzIoUFiZpTSV/Tk8qKL3H+w6IqcngZwXQBZ/2U/DwYkDilXHW3FfPhnyD7FZA==}
-
   '@cloudflare/workers-types@4.20251225.0':
     resolution: {integrity: sha512-ZZl0cNLFcsBRFKtMftKWOsfAybUYSeiTMzpQV1NlTVlByHAs1rGQt45Jw/qz8LrfHoq9PGTieSj9W350Gi4Pvg==}
 
@@ -4462,9 +4441,6 @@ packages:
   '@poppinss/exception@1.2.2':
     resolution: {integrity: sha512-m7bpKCD4QMlFCjA/nKTs23fuvoVFoA83brRKmObCUNmi/9tVu8Ve3w4YQAnJu4q3Tjf5fr685HYIC/IA2zHRSg==}
 
-  '@prisma/adapter-d1@5.22.0':
-    resolution: {integrity: sha512-sI1tRkvd0F+0Xde7La4FfW9dMEmY/lEnc0EkBc0eOs4AkJu1mJrXBmQorojrEPI0ys6MNVZao8cQoq/Nnyh9jg==}
-
   '@prisma/client@5.22.0':
     resolution: {integrity: sha512-M0SVXfyHnQREBKxCgyo7sffrKttwE6R8PMq330MIUF0pTwjUhLbW84pFDlf06B27XyCR++VtjugEnIHdr07SVA==}
     engines: {node: '>=16.13'}
@@ -4476,9 +4452,6 @@ packages:
 
   '@prisma/debug@5.22.0':
     resolution: {integrity: sha512-AUt44v3YJeggO2ZU5BkXI7M4hu9BF2zzH2iF2V5pyXT/lRTyWiElZ7It+bRH1EshoMRxHgpYg4VB6rCM+mG5jQ==}
-
-  '@prisma/driver-adapter-utils@5.22.0':
-    resolution: {integrity: sha512-Y8msGZl9unmVflXoqdxTejv99UD02Gp4VoIvkyw+YxNUIj7nRz35O7yf5D87qNmTiPMGCS1WjUucG9ZuNq8+tw==}
 
   '@prisma/engines-version@5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2':
     resolution: {integrity: sha512-2PTmxFR2yHW/eB3uqWtcgRcgAbG1rwG9ZriSvQw+nnb7c4uCr3RAcGMb6/zfE88SKlC1Nj2ziUvc96Z379mHgQ==}
@@ -13094,8 +13067,6 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20251210.0':
     optional: true
 
-  '@cloudflare/workers-types@4.20240614.0': {}
-
   '@cloudflare/workers-types@4.20251225.0': {}
 
   '@codexteam/icons@0.0.2': {}
@@ -14388,20 +14359,11 @@ snapshots:
 
   '@poppinss/exception@1.2.2': {}
 
-  '@prisma/adapter-d1@5.22.0':
-    dependencies:
-      '@cloudflare/workers-types': 4.20240614.0
-      '@prisma/driver-adapter-utils': 5.22.0
-
   '@prisma/client@5.22.0(prisma@5.22.0)':
     optionalDependencies:
       prisma: 5.22.0
 
   '@prisma/debug@5.22.0': {}
-
-  '@prisma/driver-adapter-utils@5.22.0':
-    dependencies:
-      '@prisma/debug': 5.22.0
 
   '@prisma/engines-version@5.22.0-44.605197351a3c8bdd595af2d2a9bc3025bca48ea2': {}
 

@@ -83,13 +83,7 @@ Add these **4 required secrets:**
 
 ## Step 4: Setup Database (Optional)
 
-If using a database:
-
-```bash
-cd apps/ottabase-template-app
-pnpm db:generate    # Generate Prisma schema
-pnpm db:migrate     # Create migrations
-```
+If using a database, ensure you have your migrations ready.
 
 **Note:** CI/CD automatically applies migrations to production. See [CLOUDFLARE_CONFIGURATION_GUIDE.md](CLOUDFLARE_CONFIGURATION_GUIDE.md) for details.
 
@@ -113,7 +107,6 @@ git push origin main
 
 Watch in GitHub Actions:
 - ✓ Build packages
-- ✓ Generate Prisma schema
 - ✓ Build application & worker bundle
 - ✓ Apply database migrations
 - ✓ Deploy to Cloudflare
@@ -199,7 +192,6 @@ wrangler queues list
 Defined in `.github/workflows/deploy.yml` - triggers on push to `main`:
 
 1. Build packages & app
-2. Generate Prisma schema
 3. Build Cloudflare Worker bundle
 4. Apply database migrations
 5. Deploy to Cloudflare Workers
@@ -233,7 +225,6 @@ See [CLOUDFLARE_CONFIGURATION_GUIDE.md](CLOUDFLARE_CONFIGURATION_GUIDE.md) for u
 - [ ] Validate: `pnpm cloudflare:validate`
 - [ ] Get credentials (Account ID, API Token, Resource IDs)
 - [ ] Add 4 GitHub secrets
-- [ ] Generate Prisma schema (if using database)
 - [ ] Push to main branch
 - [ ] Verify deployment
 

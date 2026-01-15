@@ -63,22 +63,8 @@
   "dependencies": {
     "@ottabase/config": "workspace:*"
   },
-  "peerDependencies": {
-    "@prisma/adapter-d1": ">=5.0.0",
-    "@prisma/client": ">=5.0.0"
-  },
-  "peerDependenciesMeta": {
-    "@prisma/adapter-d1": {
-      "optional": true
-    },
-    "@prisma/client": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
-    "@prisma/adapter-d1": "catalog:",
-    "@prisma/client": "catalog:",
     "@types/node": "catalog:",
     "typescript": "catalog:",
     "tsup": "catalog:"

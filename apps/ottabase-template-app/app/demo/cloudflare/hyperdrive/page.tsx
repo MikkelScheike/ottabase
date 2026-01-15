@@ -25,15 +25,24 @@ export default function HyperdriveDemoPage() {
             ☁️ Production-Only Feature
           </h3>
           <p className="mb-4 text-sm text-yellow-700">
-            <strong>Hyperdrive requires deployment to Cloudflare Workers.</strong> It accelerates connections to
-            remote databases (PostgreSQL, MySQL) using Cloudflare's connection pooling infrastructure.
-            Local development should connect directly to your database. Hyperdrive works with:
+            <strong>
+              Hyperdrive requires deployment to Cloudflare Workers.
+            </strong>{" "}
+            It accelerates connections to remote databases (PostgreSQL, MySQL)
+            using Cloudflare's connection pooling infrastructure. Local
+            development should connect directly to your database. Hyperdrive
+            works with:
           </p>
           <ul className="space-y-2 text-sm text-blue-700">
-            <li>• PostgreSQL: Amazon RDS, Google Cloud SQL, Neon, Supabase, etc.</li>
+            <li>
+              • PostgreSQL: Amazon RDS, Google Cloud SQL, Neon, Supabase, etc.
+            </li>
             <li>• MySQL: Amazon RDS, Google Cloud SQL, PlanetScale, etc.</li>
             <li>• Compatible with standard connection strings</li>
-            <li>• No code changes required - just point your connection string to Hyperdrive</li>
+            <li>
+              • No code changes required - just point your connection string to
+              Hyperdrive
+            </li>
           </ul>
         </div>
 
@@ -47,8 +56,9 @@ export default function HyperdriveDemoPage() {
                 🚀 Connection Pooling
               </h4>
               <p className="text-xs text-gray-600">
-                Reuses database connections across requests, eliminating the overhead
-                of creating new connections for every Worker invocation.
+                Reuses database connections across requests, eliminating the
+                overhead of creating new connections for every Worker
+                invocation.
               </p>
             </div>
 
@@ -57,8 +67,8 @@ export default function HyperdriveDemoPage() {
                 ⚡ Query Caching
               </h4>
               <p className="text-xs text-gray-600">
-                Automatically caches frequently-read queries at the edge, reducing
-                latency and database load.
+                Automatically caches frequently-read queries at the edge,
+                reducing latency and database load.
               </p>
             </div>
 
@@ -67,8 +77,8 @@ export default function HyperdriveDemoPage() {
                 🌍 Regional Performance
               </h4>
               <p className="text-xs text-gray-600">
-                Smart routing ensures queries are routed through the optimal Cloudflare
-                location closest to your database.
+                Smart routing ensures queries are routed through the optimal
+                Cloudflare location closest to your database.
               </p>
             </div>
 
@@ -77,8 +87,8 @@ export default function HyperdriveDemoPage() {
                 🔒 Security
               </h4>
               <p className="text-xs text-gray-600">
-                Connections to your database are encrypted. Credentials are stored
-                securely and never exposed to your application code.
+                Connections to your database are encrypted. Credentials are
+                stored securely and never exposed to your application code.
               </p>
             </div>
           </div>
@@ -94,7 +104,7 @@ export default function HyperdriveDemoPage() {
                 1. Create a Hyperdrive configuration
               </p>
               <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`# PostgreSQL example
+                {`# PostgreSQL example
 wrangler hyperdrive create my-postgres \\
   --connection-string="postgres://user:password@host:5432/database"
 
@@ -112,7 +122,7 @@ wrangler hyperdrive create my-mysql \\
                 2. Add binding to wrangler.jsonc
               </p>
               <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`"hyperdrive": [
+                {`"hyperdrive": [
   {
     "binding": "HYPERDRIVE",
     "id": "your-hyperdrive-id-here"
@@ -126,7 +136,7 @@ wrangler hyperdrive create my-mysql \\
                 3. Use in your Worker code
               </p>
               <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`import { createHyperdriveClient } from '@ottabase/cf/hyperdrive';
+                {`import { createHyperdriveClient } from '@ottabase/cf/hyperdrive';
 
 export async function GET(request: NextRequest) {
   const { env } = await getCloudflareContext();
@@ -160,34 +170,10 @@ export async function GET(request: NextRequest) {
           <div className="space-y-6">
             <div>
               <p className="mb-2 text-sm font-semibold text-gray-900">
-                Prisma (PostgreSQL)
-              </p>
-              <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`import { PrismaClient } from '@prisma/client';
-import { createHyperdriveClient } from '@ottabase/cf/hyperdrive';
-
-export async function onRequest(context) {
-  const hyperdrive = createHyperdriveClient({
-    hyperdrive: context.env.HYPERDRIVE
-  });
-
-  const prisma = new PrismaClient({
-    datasourceUrl: hyperdrive.getConnectionString()
-  });
-
-  const users = await prisma.user.findMany();
-
-  return new Response(JSON.stringify(users));
-}`}
-              </pre>
-            </div>
-
-            <div>
-              <p className="mb-2 text-sm font-semibold text-gray-900">
                 Drizzle ORM
               </p>
               <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`import { drizzle } from 'drizzle-orm/postgres-js';
+                {`import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { createHyperdriveClient } from '@ottabase/cf/hyperdrive';
 
@@ -211,7 +197,7 @@ export async function onRequest(context) {
                 Node.js pg driver (PostgreSQL)
               </p>
               <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`import { Client } from 'pg';
+                {`import { Client } from 'pg';
 import { createHyperdriveClient } from '@ottabase/cf/hyperdrive';
 
 export async function onRequest(context) {
@@ -237,7 +223,7 @@ export async function onRequest(context) {
                 mysql2 driver (MySQL)
               </p>
               <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`import mysql from 'mysql2/promise';
+                {`import mysql from 'mysql2/promise';
 import { createHyperdriveClient } from '@ottabase/cf/hyperdrive';
 
 export async function onRequest(context) {
@@ -265,30 +251,44 @@ export async function onRequest(context) {
           </h3>
           <ul className="space-y-3 text-sm text-gray-600">
             <li>
-              <span className="font-medium text-gray-900">• Connection Management:</span> Always
-              close connections after use. Hyperdrive pools connections, but you should still
-              properly clean up client connections.
+              <span className="font-medium text-gray-900">
+                • Connection Management:
+              </span>{" "}
+              Always close connections after use. Hyperdrive pools connections,
+              but you should still properly clean up client connections.
             </li>
             <li>
-              <span className="font-medium text-gray-900">• Read vs Write:</span> Hyperdrive is
-              optimized for read-heavy workloads. Write queries still benefit from connection
-              pooling but are not cached.
+              <span className="font-medium text-gray-900">
+                • Read vs Write:
+              </span>{" "}
+              Hyperdrive is optimized for read-heavy workloads. Write queries
+              still benefit from connection pooling but are not cached.
             </li>
             <li>
-              <span className="font-medium text-gray-900">• Cache Control:</span> Use prepared
-              statements for frequently executed queries to maximize cache hit rates.
+              <span className="font-medium text-gray-900">
+                • Cache Control:
+              </span>{" "}
+              Use prepared statements for frequently executed queries to
+              maximize cache hit rates.
             </li>
             <li>
-              <span className="font-medium text-gray-900">• Regional Routing:</span> Create
-              Hyperdrive configurations in the same region as your database for lowest latency.
+              <span className="font-medium text-gray-900">
+                • Regional Routing:
+              </span>{" "}
+              Create Hyperdrive configurations in the same region as your
+              database for lowest latency.
             </li>
             <li>
-              <span className="font-medium text-gray-900">• Error Handling:</span> Implement
-              proper error handling and retries for database operations.
+              <span className="font-medium text-gray-900">
+                • Error Handling:
+              </span>{" "}
+              Implement proper error handling and retries for database
+              operations.
             </li>
             <li>
-              <span className="font-medium text-gray-900">• Monitoring:</span> Use Cloudflare's
-              analytics to monitor Hyperdrive performance and cache hit rates.
+              <span className="font-medium text-gray-900">• Monitoring:</span>{" "}
+              Use Cloudflare's analytics to monitor Hyperdrive performance and
+              cache hit rates.
             </li>
           </ul>
         </div>
@@ -298,10 +298,11 @@ export async function onRequest(context) {
             Configuration Methods
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            The HyperdriveClient provides helper methods to access connection details:
+            The HyperdriveClient provides helper methods to access connection
+            details:
           </p>
           <pre className="overflow-x-auto rounded bg-gray-50 p-4 text-xs">
-{`const hyperdrive = createHyperdriveClient({ hyperdrive: env.HYPERDRIVE });
+            {`const hyperdrive = createHyperdriveClient({ hyperdrive: env.HYPERDRIVE });
 
 // Get full connection string
 const connString = hyperdrive.getConnectionString();
@@ -335,31 +336,47 @@ if (result.success) {
             <table className="w-full text-sm">
               <thead className="border-b border-gray-200">
                 <tr>
-                  <th className="pb-3 text-left font-medium text-gray-900">Scenario</th>
-                  <th className="pb-3 text-left font-medium text-gray-900">Without Hyperdrive</th>
-                  <th className="pb-3 text-left font-medium text-gray-900">With Hyperdrive</th>
+                  <th className="pb-3 text-left font-medium text-gray-900">
+                    Scenario
+                  </th>
+                  <th className="pb-3 text-left font-medium text-gray-900">
+                    Without Hyperdrive
+                  </th>
+                  <th className="pb-3 text-left font-medium text-gray-900">
+                    With Hyperdrive
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
                 <tr>
                   <td className="py-3 text-gray-600">Connection Setup</td>
                   <td className="py-3 text-gray-600">50-200ms per request</td>
-                  <td className="py-3 font-medium text-green-700">~0ms (pooled)</td>
+                  <td className="py-3 font-medium text-green-700">
+                    ~0ms (pooled)
+                  </td>
                 </tr>
                 <tr>
                   <td className="py-3 text-gray-600">Frequent Read Queries</td>
                   <td className="py-3 text-gray-600">100-500ms</td>
-                  <td className="py-3 font-medium text-green-700">~1-10ms (cached)</td>
+                  <td className="py-3 font-medium text-green-700">
+                    ~1-10ms (cached)
+                  </td>
                 </tr>
                 <tr>
                   <td className="py-3 text-gray-600">Geographic Latency</td>
                   <td className="py-3 text-gray-600">Varies widely</td>
-                  <td className="py-3 font-medium text-green-700">Optimized routing</td>
+                  <td className="py-3 font-medium text-green-700">
+                    Optimized routing
+                  </td>
                 </tr>
                 <tr>
                   <td className="py-3 text-gray-600">Database Load</td>
-                  <td className="py-3 text-gray-600">High (many connections)</td>
-                  <td className="py-3 font-medium text-green-700">Low (pooled + cached)</td>
+                  <td className="py-3 text-gray-600">
+                    High (many connections)
+                  </td>
+                  <td className="py-3 font-medium text-green-700">
+                    Low (pooled + cached)
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -371,12 +388,19 @@ if (result.success) {
             Implementation Notes
           </h3>
           <ul className="space-y-2 text-sm text-gray-600">
-            <li>• Uses @ottabase/cf Hyperdrive wrapper for type-safe operations</li>
+            <li>
+              • Uses @ottabase/cf Hyperdrive wrapper for type-safe operations
+            </li>
             <li>• Works with any PostgreSQL or MySQL database</li>
             <li>• Compatible with all standard database drivers and ORMs</li>
-            <li>• Not available in local dev - use environment-specific configuration</li>
+            <li>
+              • Not available in local dev - use environment-specific
+              configuration
+            </li>
             <li>• Connection strings are encrypted and never exposed</li>
-            <li>• Perfect for reducing database costs and improving response times</li>
+            <li>
+              • Perfect for reducing database costs and improving response times
+            </li>
           </ul>
         </div>
 
@@ -385,12 +409,19 @@ if (result.success) {
             Local Development Note
           </h3>
           <p className="text-sm text-yellow-700">
-            Hyperdrive is not available in local development with <code className="rounded bg-yellow-100 px-1">wrangler dev</code>.
+            Hyperdrive is not available in local development with{" "}
+            <code className="rounded bg-yellow-100 px-1">wrangler dev</code>.
             For local testing, you can:
           </p>
           <ul className="mt-2 space-y-1 text-sm text-yellow-700">
             <li>• Use a direct database connection string in development</li>
-            <li>• Use <code className="rounded bg-yellow-100 px-1">wrangler dev --remote</code> to test against real Hyperdrive</li>
+            <li>
+              • Use{" "}
+              <code className="rounded bg-yellow-100 px-1">
+                wrangler dev --remote
+              </code>{" "}
+              to test against real Hyperdrive
+            </li>
             <li>• Configure environment-specific connection logic</li>
           </ul>
         </div>

@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createOttabaseAuthConfig } from "../config";
-import * as authFeatureExports from "../db.feature";
 import * as providers from "../providers";
 
 describe("Auth Configuration", () => {
@@ -50,7 +49,9 @@ describe("Auth Configuration", () => {
           }),
         } as any,
         providers: [],
-        trustHost: true,
+        authConfig: {
+          trustHost: true,
+        },
       });
 
       expect(config).toBeDefined();
@@ -67,7 +68,9 @@ describe("Auth Configuration", () => {
           }),
         } as any,
         providers: [],
-        secret,
+        authConfig: {
+          secret,
+        },
       });
 
       expect(config).toBeDefined();
@@ -97,17 +100,6 @@ describe("Auth Configuration", () => {
       expect(typeof providers.createGitHubProvider).toBe("function");
       expect(typeof providers.createGoogleProvider).toBe("function");
       expect(typeof providers.createDiscordProvider).toBe("function");
-    });
-  });
-
-  describe("Auth Feature", () => {
-    it("should export auth feature for database registration", () => {
-      expect(authFeatureExports.authFeature).toBeDefined();
-      expect(typeof authFeatureExports.authFeature).toBe("object");
-    });
-
-    it("should export feature registration function", () => {
-      expect(typeof authFeatureExports.registerAuthFeature).toBe("function");
     });
   });
 });

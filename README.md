@@ -10,7 +10,7 @@ ottabase/
 │   ├── ottabase-template-app-tanstack/ # TanStack Router + Vite (recommended)
 │   └── ottabase-template-app/          # Next.js 15 + App Router (alternative)
 ├── packages/                          # Shared packages
-│   ├── db/                            # Database layer (Drizzle, Prisma)
+│   ├── db/                            # Database layer (Drizzle)
 │   ├── ottaorm/                       # Type-safe ORM for D1/SQLite
 │   ├── cf/                            # Cloudflare bindings (D1, KV, R2, Queues)
 │   ├── auth/                          # Auth.js integration
@@ -80,7 +80,7 @@ pnpm clean                  # Clean all build artifacts
 
 ### Database & ORM
 
-- **@ottabase/db** - Multi-ORM support (Drizzle, Prisma) with D1 adapters
+- **@ottabase/db** - Database layer with Drizzle adapters
 - **@ottabase/ottaorm** - Type-safe ORM with **automated migrations** for D1/SQLite
 - **@ottabase/cf** - Cloudflare bindings (D1, KV, R2, Queues, Rate Limiting)
 - **@ottabase/auth** - Auth.js v5 integration with D1 adapter
@@ -139,12 +139,14 @@ See [packages/ottaorm/README.md](./packages/ottaorm/README.md) for full details.
 **Quick Example:**
 
 ```tsx
-import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
+import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import { ProviderUIMantine } from '@ottabase/ui-mantine';
+import { usersTable } from '@ottabase/ottaorm';
 
 // Use D1 database
-const prisma = createPrismaD1Client(env.OBCF_D1);
-const users = await prisma.user.findMany();
+const driver = createD1Driver(env.OBCF_D1);
+const db = driver.getDb();
+const users = await db.select().from(usersTable);
 
 // UI Provider
 <ProviderUIMantine colorScheme="dark">
