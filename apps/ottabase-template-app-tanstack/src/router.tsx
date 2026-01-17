@@ -9,6 +9,7 @@ import {
   AvatarFallback,
   AvatarImage,
   Button,
+  Toaster,
 } from "@ottabase/ui-shadcn";
 import {
   Link,
@@ -52,6 +53,7 @@ function RootLayout() {
 
   return (
     <div className="min-h-screen bg-background font-sans">
+      <Toaster />
       <ReferralTracker />
       <header className="border-b">
         <div
