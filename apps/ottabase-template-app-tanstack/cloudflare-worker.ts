@@ -30,11 +30,11 @@ import {
   parsePaginationParams,
 } from "@ottabase/utils/pagination";
 import { getAllSchemas } from "./ottabase/db/schemas-helper";
+import { processReferralAttribution } from "./ottabase/helpers/referral-attribution";
 import { appMigrations } from "./ottabase/migrations";
 import { ReferralTracking } from "./ottabase/models/ReferralTracking";
 import { Shortlink } from "./ottabase/models/Shortlink";
 import { Todo } from "./ottabase/models/Todo";
-import { processReferralAttribution } from "./ottabase/helpers/referral-attribution";
 
 export { RealtimeActor };
 
@@ -165,7 +165,10 @@ export default {
       // Query params: page, per_page, sort, order, where (JSON)
       // ============================================================
 
-      if (url.pathname.startsWith("/api/ottaorm/")) {
+      if (
+        url.pathname.startsWith("/api/ottaorm/") &&
+        url.pathname !== "/api/ottaorm/init"
+      ) {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
             code: "CONFIG_ERROR",
@@ -398,7 +401,10 @@ export default {
       // ============================================================
 
       // Track referral click
-      if (url.pathname === "/api/referrals/track" && request.method === "POST") {
+      if (
+        url.pathname === "/api/referrals/track" &&
+        request.method === "POST"
+      ) {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
             code: "CONFIG_ERROR",
@@ -546,7 +552,9 @@ export default {
         }
 
         const stats = await ReferralTracking.getStats(userId);
-        const trackingRecords = await ReferralTracking.forUser(userId, { limit: 100 });
+        const trackingRecords = await ReferralTracking.forUser(userId, {
+          limit: 100,
+        });
 
         return jsonResponse({
           user: {
@@ -562,7 +570,10 @@ export default {
       }
 
       // Update referral username
-      if (url.pathname === "/api/referrals/username" && request.method === "PUT") {
+      if (
+        url.pathname === "/api/referrals/username" &&
+        request.method === "PUT"
+      ) {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
             code: "CONFIG_ERROR",
@@ -582,7 +593,9 @@ export default {
         }
 
         // Validate username format
-        const { validateReferralUsername } = await import("@ottabase/referrals");
+        const { validateReferralUsername } = await import(
+          "@ottabase/referrals"
+        );
         const validation = validateReferralUsername(body.referralUsername);
 
         if (!validation.valid) {
@@ -592,7 +605,9 @@ export default {
         }
 
         // Check if username is already taken
-        const existing = await User.findByReferralUsername(body.referralUsername);
+        const existing = await User.findByReferralUsername(
+          body.referralUsername,
+        );
         if (existing && existing.get("id") !== body.userId) {
           return errorResponse("Username already taken", 400, {
             code: "USERNAME_TAKEN",
@@ -615,7 +630,10 @@ export default {
       }
 
       // List tracking records (with filters and pagination)
-      if (url.pathname === "/api/referrals/tracking" && request.method === "GET") {
+      if (
+        url.pathname === "/api/referrals/tracking" &&
+        request.method === "GET"
+      ) {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
             code: "CONFIG_ERROR",
@@ -632,7 +650,11 @@ export default {
         }
 
         const { page, perPage } = parsePaginationParams(url.searchParams);
-        const status = url.searchParams.get("status") as "pending" | "completed" | "invalid" | null;
+        const status = url.searchParams.get("status") as
+          | "pending"
+          | "completed"
+          | "invalid"
+          | null;
 
         const offset = (page - 1) * perPage;
         const trackingRecords = await ReferralTracking.forUser(userId, {
@@ -715,7 +737,7 @@ export default {
           console.error("Registration error:", error);
           return errorResponse(
             error instanceof Error ? error.message : "Registration failed",
-            500
+            500,
           );
         }
       }
@@ -1517,10 +1539,13 @@ export default {
       // OttaORM Init
       // ============================================================
 
+      console.log("[DEBUG] Checking init route:", url.pathname, request.method);
+
       if (
         url.pathname === "/api/ottaorm/init" &&
         (request.method === "GET" || request.method === "POST")
       ) {
+        console.log("[DEBUG] Init route matched!");
         if (!env.OBCF_D1) {
           return errorResponse("D1 database not configured", 500, {
             code: "CONFIG_ERROR",
@@ -1579,7 +1604,7 @@ export default {
         registerConnection("default", createD1Driver(env.OBCF_D1));
 
         // Register all models for dynamic lookup
-        registerModels([User, Post, Tag, Todo, Shortlink]);
+        registerModels([User, Post, Tag, Todo, Shortlink, ReferralTracking]);
 
         // Parse the request into a CrudRequest
         const crudRequest = await parseCrudRequest(
