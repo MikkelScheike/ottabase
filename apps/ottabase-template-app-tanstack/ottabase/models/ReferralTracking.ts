@@ -3,14 +3,14 @@
 // ============================================================
 
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
-import type {
-  ReferralTracking as ReferralTrackingType,
-  ReferralTrackingInsert,
-} from "@ottabase/referrals";
-import { referralTrackingTable } from "@ottabase/referrals/schema";
 import { User } from "@ottabase/ottaorm/models";
+import type {
+  ReferralTrackingInsert,
+  ReferralTracking as ReferralTrackingType,
+} from "@ottabase/referrals";
+import { referralTrackingTable } from "@ottabase/referrals";
 
-export type { ReferralTrackingType, ReferralTrackingInsert };
+export type { ReferralTrackingInsert, ReferralTrackingType };
 
 /**
  * ReferralTracking model - Tracks referral clicks and conversions

@@ -4,21 +4,27 @@
  * Handles referral code storage, expiry, and tracking.
  */
 
-import { api } from "./api";
 import { REFERRALS_CONFIG } from "@/ottabase/config/app.config";
+import { api } from "./api";
 
 // Local storage keys
 const REFERRAL_CODE_KEY = "ottabase_referralCode";
 const REFERRAL_TIMESTAMP_KEY = "ottabase_referralTimestamp";
 
-// Calculate expiry based on config
-const REFERRAL_EXPIRY_MS = REFERRALS_CONFIG.expiryDays * 24 * 60 * 60 * 1000;
+// Calculate expiry based on config (with fallback)
+const getReferralExpiryMs = () => {
+  try {
+    return (REFERRALS_CONFIG?.expiryDays || 90) * 24 * 60 * 60 * 1000;
+  } catch {
+    return 90 * 24 * 60 * 60 * 1000; // Default to 90 days
+  }
+};
 
 /**
  * Check if a referral timestamp has expired based on app config
  */
 function isReferralExpired(timestamp: number): boolean {
-  return Date.now() - timestamp > REFERRAL_EXPIRY_MS;
+  return Date.now() - timestamp > getReferralExpiryMs();
 }
 
 /**
@@ -92,17 +98,18 @@ export function clearStoredReferralCode(): void {
  */
 export async function trackReferralClick(
   referralCode: string,
-  meta?: Record<string, any>
+  meta?: Record<string, any>,
 ): Promise<boolean> {
   try {
-    const response = await api("/api/referrals/track", {
+    const response: Response = await api("/api/referrals/track", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         referralCode,
-        referer: typeof document !== "undefined" ? document.referrer : undefined,
+        referer:
+          typeof document !== "undefined" ? document.referrer : undefined,
         meta: {
           ...meta,
           utm: extractUtmParams(),
@@ -122,7 +129,6 @@ export async function trackReferralClick(
   }
 }
 
-
 /**
  * Extract UTM parameters from URL
  */
@@ -133,7 +139,13 @@ export function extractUtmParams(): Record<string, string> {
     const params = new URLSearchParams(window.location.search);
     const utm: Record<string, string> = {};
 
-    const utmKeys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
+    const utmKeys = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+    ];
 
     utmKeys.forEach((key) => {
       const value = params.get(key);
@@ -185,9 +197,9 @@ export function getReferralExpiryInfo(): {
   }
 
   const timestampNum = parseInt(timestamp, 10);
-  const expiresAt = new Date(timestampNum + REFERRAL_EXPIRY_MS);
+  const expiresAt = new Date(timestampNum + getReferralExpiryMs());
   const daysRemaining = Math.ceil(
-    (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24),
   );
   const expired = isReferralExpired(timestampNum);
 

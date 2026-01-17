@@ -6,7 +6,7 @@ import {
   CardTitle,
 } from "@ottabase/ui-shadcn";
 import { Link } from "@tanstack/react-router";
-import { Activity, Database } from "lucide-react";
+import { Activity, Database, UserPlus } from "lucide-react";
 
 export function AdminIndexPage() {
   const adminLinks = [
@@ -16,6 +16,14 @@ export function AdminIndexPage() {
         "Check database schema status, view migration history, and initialize tables.",
       href: "/migration-status",
       icon: Database,
+      disabled: false,
+    },
+    {
+      title: "Referral Tracking",
+      description:
+        "View referral statistics, manage usernames, and track conversions.",
+      href: "/admin/referrals",
+      icon: UserPlus,
       disabled: false,
     },
     {

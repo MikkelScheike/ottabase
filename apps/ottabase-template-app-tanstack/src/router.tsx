@@ -495,6 +495,17 @@ const adminRoute = new Route({
   ),
 });
 
+// Admin Referrals route
+const adminReferralsRoute = new Route({
+  getParentRoute: () => rootRoute,
+  path: "/admin/referrals",
+  component: lazyRouteComponent(() =>
+    import("@/pages/admin/AdminReferralsPage").then((m) => ({
+      default: m.AdminReferralsPage,
+    })),
+  ),
+});
+
 demoLayoutRoute.addChildren([
   demoIndexRoute,
   demoMantineRoute,
@@ -528,6 +539,7 @@ const routeTree = rootRoute.addChildren([
   migrationStatusRoute,
   referralsRoute,
   adminRoute,
+  adminReferralsRoute,
 ]);
 
 const browserHistory = createBrowserHistory();

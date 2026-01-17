@@ -11,8 +11,8 @@
 // ============================================================
 
 import type { Migration } from "@ottabase/ottaorm";
-import { shortlinksTable } from "@ottabase/shortlinks/schema";
-import { referralTrackingTable } from "@ottabase/referrals/schema";
+import { referralTrackingTable } from "@ottabase/referrals";
+import { shortlinksTable } from "@ottabase/shortlinks";
 
 /**
  * 1. REGISTRY

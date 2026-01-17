@@ -16,7 +16,7 @@ Referral system package for Ottabase. Provides schema, validation, and types for
 ### Schema
 
 ```typescript
-import { referralTrackingTable } from "@ottabase/referrals/schema";
+import { referralTrackingTable } from "@ottabase/referrals";
 ```
 
 ### Validation

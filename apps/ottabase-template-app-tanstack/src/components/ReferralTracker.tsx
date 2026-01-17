@@ -10,20 +10,20 @@
  * - expiryDays: How long stored referral codes are valid
  */
 
-import { useEffect, useRef } from "react";
 import {
+  cleanReferralFromUrl,
   getStoredReferralCode,
   storeReferralCode,
   trackReferralClick,
-  cleanReferralFromUrl,
 } from "@/lib/referrals";
 import { REFERRALS_CONFIG } from "@/ottabase/config/app.config";
+import { useEffect, useRef } from "react";
 
 export function ReferralTracker() {
   const hasTracked = useRef(false);
 
   // Check if referral system is enabled
-  if (!REFERRALS_CONFIG.enabled) {
+  if (!REFERRALS_CONFIG?.enabled) {
     return null;
   }
 
@@ -47,11 +47,11 @@ export function ReferralTracker() {
     if (existingCode) {
       console.log(
         "Already have a stored referral code (first-touch wins):",
-        existingCode
+        existingCode,
       );
 
       // Optionally track the click (even though code won't be stored)
-      if (REFERRALS_CONFIG.trackClicks) {
+      if (REFERRALS_CONFIG?.trackClicks) {
         trackReferralClick(referralCode).catch((error) => {
           console.error("Failed to track referral click:", error);
         });
@@ -66,7 +66,7 @@ export function ReferralTracker() {
     storeReferralCode(referralCode);
 
     // Optionally track the click in database
-    if (REFERRALS_CONFIG.trackClicks) {
+    if (REFERRALS_CONFIG?.trackClicks) {
       trackReferralClick(referralCode)
         .then((success) => {
           if (success) {
@@ -77,7 +77,9 @@ export function ReferralTracker() {
           console.error("Failed to track referral click:", error);
         });
     } else {
-      console.log("Click tracking disabled - referral code stored for conversion tracking only");
+      console.log(
+        "Click tracking disabled - referral code stored for conversion tracking only",
+      );
     }
 
     // Clean URL (remove ref parameter)
