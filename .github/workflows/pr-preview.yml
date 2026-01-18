@@ -167,10 +167,7 @@ jobs:
       - name: Compute preview worker name
         id: preview-name
         run: |
-          BASE_NAME="${{ matrix.config.workerName }}"
-          if [ -z "$BASE_NAME" ] || [ "$BASE_NAME" = "null" ]; then
-            BASE_NAME="${{ matrix.folder }}"
-          fi
+          BASE_NAME="${{ matrix.config.workerName || matrix.folder }}"
           echo "preview-name=${BASE_NAME}-pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
 
       - name: Load app configuration
