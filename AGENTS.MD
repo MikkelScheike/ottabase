@@ -1,286 +1,428 @@
 # Agents & Architecture
 
-This is a monorepo which uses **Turbo** for efficient build orchestration and contains shared packages and standalone applications.
+Monorepo using **pnpm workspaces** + **Turborepo**. TanStack Router + Vite app with Cloudflare Workers deployment.
 
-## 📁 Core Structure
+## Structure
 
-```text
+```
 ottabase/
-├── apps/           # Standalone, independent applications
-└── packages/       # Shared code and utilities
+├── apps/
+│   └── ottabase-template-app-tanstack/  # Primary app (TanStack + Workers)
+└── packages/                            # Shared code
 ```
 
-## 💻 Applications (`/apps`)
+## Local Development
 
-Independent applications that can be deployed separately:
+- **OS**: Windows 11
+- **Terminal**: Command Prompt (cmd) - avoid PowerShell due to path issues
+- **Runtime**: Node.js 24+
+- **Package Manager**: pnpm with workspaces
+- **Build**: Turborepo
 
-- **`ottabase-template-app`** - Template Next.js 15+ Application with shared package integration (Default App Template)
+```bash
+pnpm build:pkg    # Build packages first
+pnpm dev          # Vite + Wrangler dev
+```
 
-## 📦 Shared Packages (`/packages`)
+## Core Concepts
 
-IMPORTANT NOTE: Packages need to be generic, reusable, optimized, and well-documented. React/React DOM dependencies are allowed as peer dependencies. Next.js-specific functionality should be added to the Ottabase Template App.
+### OttaORM: Fat Model System
 
-Reusable code shared across applications:
+**Central to the codebase.** All data models inherit from `BaseModel`. Each model is self-contained with:
 
-### Local development note
+- Drizzle table schema
+- Type casting
+- Field metadata (UI config, validation)
+- Relationships (belongsTo, hasMany, hasOne, belongsToMany)
+- Custom methods
 
-Local development is on Windows 11. Use Command Prompt (cmd) for terminal to avoid path issues (Default would be PowerShell which has issues with some scripts). Nodejs 24 and pnpm with workspace support are used.
+```typescript
+import { BaseModel } from "@ottabase/ottaorm";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
-### Core Packages
+export const todosTable = sqliteTable("todos", {
+  id: text("id").primaryKey(),
+  title: text("title").notNull(),
+  completed: integer("completed", { mode: "boolean" }).default(false),
+  userId: text("user_id"),
+});
 
-- **`@ottabase/config`** - Application configuration utilities
-- **`@ottabase/state`** - State management with providers
-- **`@ottabase/ui-core`** - UI components and theming system
-- **`@ottabase/hello-world`** - Example component package
+export class Todo extends BaseModel {
+  static entity = "todos";
+  static table = todosTable;
+  static primaryKey = "id";
+  
+  static casts = {
+    completed: "boolean" as const,
+  };
 
-### Package Details
+  async user() {
+    const { User } = await import("@ottabase/ottaorm");
+    return this.belongsTo(User, "userId");
+  }
 
-| Package       | Purpose           | Key Features                      |
-| ------------- | ----------------- | --------------------------------- |
-| `config`      | App configuration | Type-safe config creation         |
-| `state`       | State management  | Global state with React providers |
-| `ui`          | UI components     | Tailwind CSS, themes, providers   |
-| `hello-world` | Example package   | Sample React component            |
+  async toggle() {
+    this.set("completed", !this.get("completed"));
+    return this.save();
+  }
+}
+```
 
-## 🛠 Build System
 
-- **Turbo** - Monorepo build orchestration
-- **pnpm** - Package manager with workspace support
-- **TypeScript** - Type safety across all packages
+### Schema Collection (3 Sources)
 
-## 🎯 Development
+Tables are collected from 3 sources for auto-migrations:
 
-Each app in `/apps` can:
+```typescript
+// ottabase/db/schemas-helper.ts
+export function getAllSchemas() {
+  // 1. CORE - from @ottabase/ottaorm (users, posts, auth tables)
+  const coreTables = { usersTable, postsTable, sessionsTable, ... };
 
-- Import and use any package from `/packages`
-- Be developed and deployed independently
-- Share common utilities and components
+  // 2. APP - app-specific models
+  const appTables = { todosTable };
 
-Each package in `/packages` provides:
+  // 3. PACKAGES - enabled packages (shortlinks, referrals)
+  const packageTables = getEnabledPackageTables();
 
-- Reusable functionality across multiple apps
-- Type definitions and full TypeScript support
-- Consistent APIs and patterns
-- Documentation in README.md describing usage
-- Framework-agnostic design (React allowed as peer dep)
+  return { ...coreTables, ...appTables, ...packageTables };
+}
+```
 
-## 📋 Dependency Management
+### Model Registry (for CRUD API)
 
-This monorepo uses a sophisticated dependency management strategy for maximum deduplication and efficiency:
+Register models for dynamic lookup by entity name:
 
-### 🎯 pnpm Catalog System
+```typescript
+import { registerModels, User, Post, Tag } from "@ottabase/ottaorm";
+import { Todo } from "./models/Todo";
+import { Shortlink } from "./models/Shortlink";
 
-All shared dependencies are managed through **pnpm's catalog feature** defined in [`pnpm-workspace.yaml`](pnpm-workspace.yaml:5):
+// Register all models for /api/ottaorm/{entity} CRUD
+registerModels([User, Post, Tag, Todo, Shortlink]);
+```
 
-- **Centralized versions**: Common dependencies like [`react`](pnpm-workspace.yaml:25), [`typescript`](pnpm-workspace.yaml:29), [`@mantine/core`](pnpm-workspace.yaml:8) are defined once in the catalog
-- **Catalog references**: Packages use `"catalog:"` specifier instead of version numbers (e.g., [`"react": "catalog:"`](apps/ottabase-template-app/package.json:14))
-- **Version consistency**: Ensures all packages use identical versions of shared dependencies
+Then generic CRUD works: `GET /api/ottaorm/todos`, `POST /api/ottaorm/shortlinks`, etc.
 
-### 🔗 Workspace Dependencies
+### Auto-Migrations
 
-Internal packages use [`workspace:*`](apps/ottabase-template-app/package.json:16) protocol:
+Tables created/updated automatically:
+
+```bash
+curl -X POST http://localhost:3004/api/ottaorm/init
+```
+
+**Capabilities:**
+- ✅ Create new tables
+- ✅ Add columns to existing tables
+- ⚠️ New NOT NULL columns need DEFAULT values
+- ❌ Cannot rename/drop columns (use custom migration)
+
+### Client Hooks
+
+TanStack Query hooks generated from models:
+
+```typescript
+// ottabase/hooks/useTodo.ts
+import { createModelHooks } from "@ottabase/ottaorm/client";
+
+export const {
+  useList: useTodos,
+  useDetail: useTodo,
+  useCreate: useCreateTodo,
+  useUpdate: useUpdateTodo,
+  useDelete: useDeleteTodo,
+  useInfiniteList: useTodosInfinite,
+} = createModelHooks<TodoType>({ entity: "todos" });
+```
+
+## Package Guide
+
+### @ottabase/ottaorm
+
+Fat model ORM. Core models: User, Post, Tag, Account, Session.
+
+```typescript
+import { 
+  BaseModel, 
+  setDriver,
+  autoInit,
+  collectTableSchemas,
+  User, Post, Tag
+} from "@ottabase/ottaorm";
+```
+
+### @ottabase/db
+
+D1 database driver.
+
+```typescript
+import { createD1Driver } from "@ottabase/db/drizzle-d1";
+
+const driver = createD1Driver(env.OBCF_D1);
+setDriver(driver);
+```
+
+### @ottabase/cf
+
+Cloudflare service wrappers.
+
+```typescript
+import { createD1Client } from "@ottabase/cf/d1";
+import { createKVClient } from "@ottabase/cf/kv";
+import { createR2Client } from "@ottabase/cf/r2";
+import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
+```
+
+### @ottabase/auth
+
+Auth.js v5 with D1.
+
+```typescript
+import { createOttabaseAuthConfig, createGoogleProvider } from "@ottabase/auth";
+
+const config = createOttabaseAuthConfig({
+  d1: env.OBCF_D1,
+  providers: [createGoogleProvider(env)],
+});
+```
+
+### @ottabase/state
+
+Global state (Jotai).
+
+```typescript
+import { createDefaultAppState } from "@ottabase/state";
+
+const { appStateAtom, atoms } = createDefaultAppState();
+export const { themeAtom, userAtom, scaleAtom } = atoms;
+```
+
+### @ottabase/utils
+
+Utilities with tree-shakeable imports.
+
+```typescript
+import { toUTC, formatInUserTimezone } from "@ottabase/utils/timezone";
+import { makeSlug, isValidUrl } from "@ottabase/utils/url";
+import { changeCase, isEmail } from "@ottabase/utils/string";
+```
+
+### @ottabase/ottaupload
+
+File uploads to R2 or Cloudflare Images.
+
+```typescript
+// Client
+import { FileUploader, useFileUpload } from "@ottabase/ottaupload/client";
+
+// Server
+import { uploadFileToR2 } from "@ottabase/ottaupload/server";
+```
+
+### @ottabase/cf-realtime
+
+WebSocket pub/sub (Pusher alternative).
+
+```typescript
+// Client
+import { RealtimeClient } from "@ottabase/cf-realtime";
+client.subscribe("channel", (event, data) => {});
+
+// Server
+import { RealtimeBroadcaster } from "@ottabase/cf-realtime/server";
+await broadcaster.send("channel", "event", { data });
+```
+
+## Adding a New Package with Model
+
+When a package provides its own database table:
+
+### 1. Package: Export schema only
+
+```typescript
+// packages/mypackage/src/schema.ts
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
+
+export const myTable = sqliteTable("mytable", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+});
+```
+
+### 2. App: Create model
+
+```typescript
+// apps/my-app/ottabase/models/MyModel.ts
+import { BaseModel } from "@ottabase/ottaorm";
+import { myTable } from "@ottabase/mypackage/schema";
+
+export class MyModel extends BaseModel {
+  static entity = "mytable";
+  static table = myTable;
+  static primaryKey = "id";
+  
+  // App-specific logic here
+}
+```
+
+### 3. App: Register in schema
+
+```typescript
+// ottabase/db/schema.ts
+export { myTable } from "@ottabase/mypackage/schema";
+```
+
+### 4. App: Create hooks
+
+```typescript
+// ottabase/hooks/useMyModel.ts
+import { createModelHooks } from "@ottabase/ottaorm/client";
+
+export const {
+  useList,
+  useCreate,
+  useUpdate,
+  useDelete,
+} = createModelHooks({ entity: "mytable" });
+```
+
+### 5. Run migrations
+
+```bash
+curl -X POST http://localhost:3004/api/ottaorm/init
+```
+
+## Dependency Rules
+
+### Adding New Dependencies
+
+**Decision flow:**
+
+1. **Will multiple packages/apps use this?** → Add to `pnpm-workspace.yaml` catalog
+2. **Only one package/app needs it?** → Add directly to that package's `package.json`
+3. **Is it a framework/runtime dep for a shared package?** → Add as `peerDependency`
+
+### When to Use Catalog (pnpm-workspace.yaml)
+
+Add to catalog when:
+- ✅ Used by 2+ packages/apps (react, typescript, drizzle-orm)
+- ✅ Core framework libraries (mantine, tanstack, jotai)
+- ✅ Shared tooling (tsup, vitest, eslint)
+
+```yaml
+# pnpm-workspace.yaml
+catalog:
+  react: ^19.1.0
+  typescript: ~5.8.4
+  drizzle-orm: ^0.44.2
+```
+
+Then reference in package.json:
 
 ```json
-"@ottabase/ui-core": "workspace:*",
-"@ottabase/config": "workspace:*",
-"@ottabase/state": "workspace:*"
+{ "react": "catalog:" }
 ```
 
-This creates symlinks to local packages during development and resolves to proper versions during publishing.
+### When to Use Local (package.json only)
 
-### 🎨 Peer Dependencies Strategy
+Add locally when:
+- ✅ Package-specific utility (e.g., `editorjs` only in `ottaeditor`)
+- ✅ App-specific tool not needed elsewhere
+- ✅ Experimental/testing before promoting to catalog
 
-Shared packages declare external dependencies as **peerDependencies** to avoid duplication:
+```bash
+# Add to specific package
+pnpm add --filter @ottabase/ottaeditor @editorjs/editorjs
 
-- [`@ottabase/hello-world`](packages/hello-world/package.json:27): Declares `react` and `react-dom` as peers
-- [`@ottabase/state`](packages/state/package.json:35): Declares `jotai` as peer dependency
-- [`@ottabase/ui-core`](packages/ui-core/package.json:44): Declares `mantine` dependencies as peers
+# Add to specific app
+pnpm add --filter @ottabase/template-app-tanstack some-package
+```
 
-### 📦 Package-Specific Lock Files
+### Workspace Protocol
 
-**✅ RESOLVED**: Package-specific lock files have been removed to maintain monorepo consistency.
+Internal packages always use `workspace:*`:
 
-### ✅ Best Practices for Contributors
+```json
+{ "@ottabase/ottaorm": "workspace:*" }
+```
 
-1. **Use catalog references**: Always use `"catalog:"` for shared dependencies
-2. **Workspace protocol**: Use `"workspace:*"` for internal package dependencies
-3. **Peer dependencies**: Declare framework dependencies as peers in shared packages
-4. **Single lock file**: Maintain only the root [`pnpm-lock.yaml`](pnpm-lock.yaml:1) - remove package-specific lock files
-5. **Version updates**: Update versions only in [`pnpm-workspace.yaml`](pnpm-workspace.yaml:5) catalog section
-6. Ensure the dependency needs to be added to root `pnpm-workspace.yaml` before adding it to catalog. Sometimes it could be better to add it in the package alone as it might not be used by apps directly.
+### Peer Dependencies
 
-This strategy ensures:
+Shared packages declare framework deps as peers to avoid duplication:
 
-- **Zero duplication** of common dependencies across packages
-- **Consistent versions** throughout the monorepo
-- **Efficient installs** with PNPM's content-addressable storage
-- **Type safety** with shared TypeScript configurations
+```json
+{
+  "peerDependencies": {
+    "react": "catalog:",
+    "drizzle-orm": "catalog:"
+  }
+}
+```
+
+### Adding to Catalog Steps
+
+```bash
+# 1. Add to pnpm-workspace.yaml catalog section
+# 2. Add to root package.json if needed for scripts
+pnpm add -w new-package
+
+# 3. Reference in consuming package.json
+{ "new-package": "catalog:" }
+
+# 4. Install
+pnpm install
+```
+
+## File Locations
+
+| Purpose | Location |
+|---------|----------|
+| Models | `apps/*/ottabase/models/` |
+| Schema | `apps/*/ottabase/db/schema.ts` |
+| Client hooks | `apps/*/ottabase/hooks/` or `src/ottabase/hooks/` |
+| Migrations | `apps/*/ottabase/migrations/` |
+| API routes | `apps/*/cloudflare-worker.ts` |
+| Pages | `apps/*/src/pages/` |
+
+## Anti-Patterns
+
+❌ Circular deps between packages  
+❌ Direct file imports across package boundaries  
+❌ Framework-specific code in generic packages  
+❌ Package-specific lock files  
+❌ Implicit dependencies  
+❌ Missing type definitions  
+❌ Models without `static entity` and `static table`  
+
+## Commands Reference
+
+```bash
+# Dev
+pnpm dev                          # All apps
+pnpm dev:worker                   # Worker only
+
+# Build
+pnpm build                        # Everything
+pnpm build:pkg                    # Packages only
+pnpm build --filter=@ottabase/ui-mantine
+
+# Test
+pnpm test
+pnpm test --filter=@ottabase/ottaorm
+
+# Quality
+pnpm lint
+pnpm type-check
+
+# Docs
+pnpm storybook
+```
+
+## VS Code
+
+Install recommended extensions in `.vscode/extensions.json` for Prettier format-on-save.
 
 ---
-
-#### Local Development Environment
-
-- OS: Windows 11
-- Default Terminal: Command Prompt (cmd)
-- Disk: Dev Drive (ReFS)
-- Runtime: Nodejs 24
-- Package Manager: pnpm (workspace-enabled)
-- Language: TypeScript
-- Styling: Tailwind, Mantine, shadcn, Tremor
-- Code Quality: ESLint, Prettier
-- Build System: Turbo
-- Documentation: Storybook
-
-##### DEV NOTES
-
-- To keep formatting on save consistent with Prettier, for VS Code, ensure to add the recommended plugins (under `.vscode\extensions.json`)
-
----
-
-## 🏆 Monorepo Best Practices
-
-Industry-standard patterns for scalable monorepo architecture with Turborepo.
-
-### Package Design Principles
-
-#### 1. Single Responsibility
-
-- Each package should solve one problem well
-- Avoid "kitchen sink" packages with unrelated functionality
-- Clear, focused purpose documented in README
-
-#### 2. Zero Framework Lock-in
-
-- Packages should be framework-agnostic where possible
-- Use peer dependencies for framework code (React, Vue, etc.)
-- Separate business logic from framework-specific implementations
-
-#### 3. Explicit Dependencies
-
-- Declare all dependencies explicitly in package.json
-- Use peer dependencies for shared frameworks
-- Avoid implicit dependencies through hoisting
-
-#### 4. Public API Surface
-
-- Export only what consumers need via `index.ts`
-- Use atomic exports for tree-shaking (`/component-name`)
-- Version public APIs carefully (semver)
-
-### Build & Performance
-
-#### 1. Incremental Builds
-
-- Leverage Turborepo's caching (`turbo.json`)
-- Configure proper `outputs` for each task
-- Use `dependsOn` to define task dependencies
-
-#### 2. Efficient Bundling
-
-- Dual ESM/CJS output for compatibility
-- Generate TypeScript declarations (`.d.ts`)
-- Enable tree-shaking with `sideEffects: false`
-
-#### 3. Development Experience
-
-- Watch mode for packages during development
-- Fast refresh support for UI components
-- Parallel builds where possible
-
-### Dependency Management
-
-#### 1. Version Consistency
-
-- Use pnpm catalog for shared dependencies
-- Single source of truth for versions
-- Automated dependency updates (Renovate/Dependabot)
-
-#### 2. Minimal Duplication
-
-- Peer dependencies for frameworks
-- Workspace protocol for internal packages
-- Content-addressable storage (pnpm)
-
-#### 3. Security & Updates
-
-- Regular dependency audits (`pnpm audit`)
-- Pinned versions in catalog
-- Test updates before merging
-
-### Code Quality
-
-#### 1. Consistent Standards
-
-- Shared ESLint/Prettier configs from root
-- TypeScript strict mode enabled
-- Pre-commit hooks (husky/lint-staged)
-
-#### 2. Testing Strategy
-
-- Unit tests in each package
-- Integration tests in apps
-- E2E tests for critical flows
-
-#### 3. Documentation
-
-- README with usage examples
-- TSDoc comments for public APIs
-- CHANGELOG for version history
-
-### Application Architecture
-
-#### 1. App Independence
-
-- Apps should be independently deployable
-- Share code via packages, not direct imports
-- Each app owns its routing/layouts
-
-#### 2. Feature Composition
-
-- Compose features from generic packages
-- App-specific code stays in app
-- Next.js specifics in template app only
-
-#### 3. Configuration
-
-- Environment-based config per app
-- Shared config package for defaults
-- Type-safe configuration objects
-
-### Scaling Strategies
-
-#### 1. Package Granularity
-
-- Start coarse, split when needed
-- Monitor bundle impact of packages
-- Avoid premature abstraction
-
-#### 2. Team Ownership
-
-- Clear CODEOWNERS for packages
-- Package maintainer responsibilities
-- Cross-team coordination for shared packages
-
-#### 3. CI/CD Optimization
-
-- Affected package detection
-- Parallel test/build execution
-- Cached remote builds (Turborepo Remote Cache)
-
-### Anti-Patterns to Avoid
-
-❌ **Circular dependencies** between packages
-❌ **Direct file imports** across package boundaries
-❌ **Framework-specific code** in generic packages
-❌ **Massive barrel exports** hurting tree-shaking
-❌ **Implicit peer dependencies** causing version conflicts
-❌ **Package-specific lock files** in monorepo
-❌ **Tight coupling** between apps and packages
-❌ **Missing type definitions** for package exports
-
-### References
-
-- [Turborepo Best Practices](https://turbo.build/repo/docs/handbook)
-- [pnpm Workspace Guide](https://pnpm.io/workspaces)
 
 🕊️
