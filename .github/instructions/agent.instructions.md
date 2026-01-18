@@ -325,12 +325,25 @@ pnpm storybook
 
 ## Agent Workflow Checklist
 
-1. Review this file and `AGENTS.MD` before making changes
-2. Install dependencies with `pnpm install` if needed; never use other package managers
-3. Build packages first with `pnpm build:pkg` if working with shared code
-4. Run `pnpm lint`, `pnpm type-check` after code changes
-5. When adding dependencies, follow the decision flow above
-6. Validate changes don't break the TanStack template app
+1. **Review documentation first** - Read this file and `AGENTS.MD` before making changes to confirm architecture and dependency rules.
+2. **Install dependencies** with `pnpm install` if needed; never use npm or yarn.
+3. **Build packages first** with `pnpm build:pkg` when working with shared code.
+4. **For code changes**, run quality checks:
+   - `pnpm lint` - Lint all packages
+   - `pnpm type-check` - TypeScript validation
+   - `pnpm test` - Run tests (use `--filter` to scope: `pnpm test --filter=@ottabase/ottaorm`)
+5. **When adding dependencies**, follow the decision flow:
+   - Multiple packages/apps will use it → Add to `pnpm-workspace.yaml` catalog first, then reference as `"catalog:"`
+   - Single package/app only → Add directly to that package's `package.json`
+   - Internal packages → Use `"workspace:*"`
+6. **Validate shared changes** don't break `apps/ottabase-template-app-tanstack`:
+   - Build the app: `pnpm build --filter=ottabase-template-app-tanstack`
+   - Run dev: `pnpm dev` and test affected features
+7. **For model changes**, ensure:
+   - Model has `static entity` and `static table`
+   - Table is exported in `ottabase/db/schema.ts`
+   - Model is registered with `registerModels()` if CRUD API needed
+   - Run `curl -X POST http://localhost:3004/api/ottaorm/init` to apply migrations
 
 ## Anti-Patterns
 
