@@ -1,12 +1,12 @@
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
-import { Search, X, ChevronDown, Loader2, Check } from "lucide-react";
 import { clsx } from "clsx";
+import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 // Output format - always standardized with id and name
 export interface OttaSelectItem extends Record<string, any> {
@@ -16,6 +16,13 @@ export interface OttaSelectItem extends Record<string, any> {
 
 // Input can be any object with id and name/label/title
 export type OttaSelectInputItem = Record<string, any>;
+
+// Custom renderer props passed to renderItem
+export interface ItemRendererProps {
+  item: OttaSelectItem;
+  isSelected: boolean;
+  isFocused: boolean;
+}
 
 export interface OttaSelectProps {
   // Mode configuration
@@ -41,6 +48,26 @@ export interface OttaSelectProps {
   header?: React.ReactNode;
   footer?: React.ReactNode;
 
+  // Custom rendering
+  /**
+   * Custom renderer for dropdown items.
+   * Example: (props) => <div>{props.item.flag} {props.item.name}</div>
+   */
+  renderItem?: (props: ItemRendererProps) => React.ReactNode;
+
+  /**
+   * Custom renderer for the selected value display in the trigger button.
+   * For single mode, receives the selected item. For multiple mode, receives the first item.
+   * Example: (item) => <div>{item.flag} {item.name}</div>
+   */
+  renderValue?: (item: OttaSelectItem) => React.ReactNode;
+
+  /**
+   * Custom renderer for selected chips in multiple mode.
+   * If not provided, defaults to showing item.name.
+   */
+  renderChip?: (item: OttaSelectItem) => React.ReactNode;
+
   // Styling
   className?: string;
   dropdownClassName?: string;
@@ -50,6 +77,13 @@ export interface OttaSelectProps {
   emptyMessage?: string;
   loadingMessage?: string;
   errorMessage?: string;
+
+  /**
+   * Show selected items at the top of the dropdown list.
+   * Useful when using pagination where selected items might not be in current page.
+   * Default: true
+   */
+  showSelectedFirst?: boolean;
 }
 
 // Helper function to normalize input items to standard format
@@ -82,12 +116,16 @@ export function OttaSelect({
   clearable = true,
   header,
   footer,
+  renderItem,
+  renderValue,
+  renderChip,
   className,
   dropdownClassName,
   maxDisplayItems = 100,
   emptyMessage = "No options found",
   loadingMessage = "Loading...",
   errorMessage = "Error loading options",
+  showSelectedFirst = true,
 }: OttaSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -145,25 +183,63 @@ export function OttaSelect({
     return Array.isArray(value) ? value : [value];
   }, [value]);
 
-  // Merge selected items with available items (selected items always visible)
+  // Create a set of selected IDs for fast lookup
+  const selectedIds = useMemo(() => {
+    return new Set(selectedItems.map((item) => item.id));
+  }, [selectedItems]);
+
+  // Merge selected items with available items
+  // Selected items are ALWAYS included, even if not in current API response (pagination case)
   const allItems = useMemo(() => {
     const itemsSource = fetchCollection ? fetchedItems : normalizedStaticItems;
     const itemsMap = new Map<string, OttaSelectItem>();
+    const selectedNotInSource: OttaSelectItem[] = [];
 
-    // Add selected items first (they should always be visible)
+    // First pass: identify selected items not in source
     selectedItems.forEach((item) => {
-      itemsMap.set(item.id, item);
-    });
-
-    // Add available items
-    itemsSource.forEach((item) => {
-      if (!itemsMap.has(item.id)) {
-        itemsMap.set(item.id, item);
+      const inSource = itemsSource.some(
+        (sourceItem) => sourceItem.id === item.id,
+      );
+      if (!inSource) {
+        selectedNotInSource.push(item);
       }
     });
 
+    // Build the items list
+    if (showSelectedFirst) {
+      // Add all selected items first (including those not in current page)
+      selectedItems.forEach((item) => {
+        itemsMap.set(item.id, item);
+      });
+
+      // Then add remaining items from source (excluding already added selected ones)
+      itemsSource.forEach((item) => {
+        if (!itemsMap.has(item.id)) {
+          itemsMap.set(item.id, item);
+        }
+      });
+    } else {
+      // Add items from source first
+      itemsSource.forEach((item) => {
+        itemsMap.set(item.id, item);
+      });
+
+      // Ensure selected items not in source are still included (append at end)
+      selectedNotInSource.forEach((item) => {
+        if (!itemsMap.has(item.id)) {
+          itemsMap.set(item.id, item);
+        }
+      });
+    }
+
     return Array.from(itemsMap.values());
-  }, [normalizedStaticItems, fetchedItems, selectedItems, fetchCollection]);
+  }, [
+    normalizedStaticItems,
+    fetchedItems,
+    selectedItems,
+    fetchCollection,
+    showSelectedFirst,
+  ]);
 
   // Filter items based on search query (client-side filtering for static items)
   const filteredItems = useMemo(() => {
@@ -178,11 +254,11 @@ export function OttaSelect({
   }, [allItems, searchQuery, fetchCollection, maxDisplayItems]);
 
   // Check if item is selected
-  const isSelected = useCallback(
+  const isItemSelected = useCallback(
     (item: OttaSelectItem) => {
-      return selectedItems.some((selected) => selected.id === item.id);
+      return selectedIds.has(item.id);
     },
-    [selectedItems],
+    [selectedIds],
   );
 
   // Handle item selection
@@ -195,8 +271,8 @@ export function OttaSelect({
         setIsOpen(false);
         setSearchQuery("");
       } else {
-        const isItemSelected = isSelected(item);
-        if (isItemSelected) {
+        const isSelected = isItemSelected(item);
+        if (isSelected) {
           const newValue = selectedItems.filter(
             (selected) => selected.id !== item.id,
           );
@@ -206,7 +282,7 @@ export function OttaSelect({
         }
       }
     },
-    [mode, onChange, selectedItems, isSelected],
+    [mode, onChange, selectedItems, isItemSelected],
   );
 
   // Handle clear
@@ -306,18 +382,45 @@ export function OttaSelect({
     setFocusedIndex(-1);
   }, [filteredItems]);
 
-  // Get display text
-  const displayText = useMemo(() => {
+  // Get display text/content
+  const displayContent = useMemo(() => {
     if (mode === "single") {
-      return selectedItems[0]?.name || placeholder;
+      if (selectedItems.length === 0) {
+        return (
+          <span className="text-gray-500 dark:text-gray-400">
+            {placeholder}
+          </span>
+        );
+      }
+      if (renderValue) {
+        return renderValue(selectedItems[0]);
+      }
+      return selectedItems[0].name;
     }
 
-    if (selectedItems.length === 0) return placeholder;
-    if (selectedItems.length === 1) return selectedItems[0].name;
+    // Multiple mode
+    if (selectedItems.length === 0) {
+      return (
+        <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
+      );
+    }
+    if (selectedItems.length === 1) {
+      if (renderValue) {
+        return renderValue(selectedItems[0]);
+      }
+      return selectedItems[0].name;
+    }
     return `${selectedItems.length} items selected`;
-  }, [mode, selectedItems, placeholder]);
+  }, [mode, selectedItems, placeholder, renderValue]);
 
   const hasValue = selectedItems.length > 0;
+
+  // Default item renderer
+  const defaultRenderItem = useCallback((props: ItemRendererProps) => {
+    return <span className="truncate flex-1">{props.item.name}</span>;
+  }, []);
+
+  const itemRenderer = renderItem || defaultRenderItem;
 
   return (
     <div
@@ -345,10 +448,9 @@ export function OttaSelect({
           "transition-colors duration-150",
           "flex items-center justify-between gap-2",
           disabled && "cursor-not-allowed",
-          !hasValue && "text-gray-500 dark:text-gray-400",
         )}
       >
-        <span className="truncate flex-1">{displayText}</span>
+        <span className="truncate flex-1">{displayContent}</span>
 
         <div className="flex items-center gap-1 flex-shrink-0">
           {clearable && hasValue && !disabled && (
@@ -440,7 +542,7 @@ export function OttaSelect({
             ) : (
               <div className="py-1">
                 {filteredItems.map((item, index) => {
-                  const selected = isSelected(item);
+                  const selected = isItemSelected(item);
                   const focused = index === focusedIndex;
 
                   return (
@@ -459,7 +561,11 @@ export function OttaSelect({
                           "bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50",
                       )}
                     >
-                      <span className="truncate flex-1">{item.name}</span>
+                      {itemRenderer({
+                        item,
+                        isSelected: selected,
+                        isFocused: focused,
+                      })}
                       {selected && (
                         <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                       )}

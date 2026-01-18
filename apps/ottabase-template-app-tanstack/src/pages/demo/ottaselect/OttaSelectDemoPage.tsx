@@ -2,7 +2,11 @@
  * OttaSelect Demo Page
  * Demonstrates @ottabase/ottaselect component
  */
-import { OttaSelect, type OttaSelectItem } from "@ottabase/ottaselect";
+import {
+  OttaSelect,
+  type ItemRendererProps,
+  type OttaSelectItem,
+} from "@ottabase/ottaselect";
 import {
   Badge,
   Button,
@@ -17,48 +21,136 @@ import { useState } from "react";
 
 // Sample data with various formats
 const fruitsAndVegetables = [
-  { id: "1", name: "Apple", category: "Fruit", color: "Red", price: 2.99 },
-  { id: "2", name: "Banana", category: "Fruit", color: "Yellow", price: 1.99 },
+  {
+    id: "1",
+    name: "Apple",
+    category: "Fruit",
+    color: "Red",
+    price: 2.99,
+    emoji: "🍎",
+  },
+  {
+    id: "2",
+    name: "Banana",
+    category: "Fruit",
+    color: "Yellow",
+    price: 1.99,
+    emoji: "🍌",
+  },
   {
     id: "3",
     name: "Carrot",
     category: "Vegetable",
     color: "Orange",
     price: 0.99,
+    emoji: "🥕",
   },
-  { id: "4", name: "Durian", category: "Fruit", color: "Green", price: 12.99 },
+  {
+    id: "4",
+    name: "Durian",
+    category: "Fruit",
+    color: "Green",
+    price: 12.99,
+    emoji: "🍈",
+  },
   {
     id: "5",
     name: "Eggplant",
     category: "Vegetable",
     color: "Purple",
     price: 3.49,
+    emoji: "🍆",
   },
-  { id: "6", name: "Fig", category: "Fruit", color: "Purple", price: 4.99 },
-  { id: "7", name: "Grapes", category: "Fruit", color: "Green", price: 3.99 },
-  { id: "8", name: "Honeydew", category: "Fruit", color: "Green", price: 5.49 },
+  {
+    id: "6",
+    name: "Fig",
+    category: "Fruit",
+    color: "Purple",
+    price: 4.99,
+    emoji: "🫐",
+  },
+  {
+    id: "7",
+    name: "Grapes",
+    category: "Fruit",
+    color: "Green",
+    price: 3.99,
+    emoji: "🍇",
+  },
+  {
+    id: "8",
+    name: "Honeydew",
+    category: "Fruit",
+    color: "Green",
+    price: 5.49,
+    emoji: "🍈",
+  },
 ];
 
 const countries = [
-  { id: "us", label: "United States", code: "US", population: 331000000 },
-  { id: "uk", label: "United Kingdom", code: "GB", population: 67000000 },
-  { id: "jp", label: "Japan", code: "JP", population: 126000000 },
-  { id: "de", label: "Germany", code: "DE", population: 83000000 },
-  { id: "fr", label: "France", code: "FR", population: 67000000 },
-  { id: "in", label: "India", code: "IN", population: 1400000000 },
+  {
+    id: "us",
+    label: "United States",
+    code: "US",
+    flag: "🇺🇸",
+    population: 331000000,
+  },
+  {
+    id: "uk",
+    label: "United Kingdom",
+    code: "GB",
+    flag: "🇬🇧",
+    population: 67000000,
+  },
+  { id: "jp", label: "Japan", code: "JP", flag: "🇯🇵", population: 126000000 },
+  { id: "de", label: "Germany", code: "DE", flag: "🇩🇪", population: 83000000 },
+  { id: "fr", label: "France", code: "FR", flag: "🇫🇷", population: 67000000 },
+  { id: "in", label: "India", code: "IN", flag: "🇮🇳", population: 1400000000 },
+  { id: "br", label: "Brazil", code: "BR", flag: "🇧🇷", population: 213000000 },
+  { id: "ca", label: "Canada", code: "CA", flag: "🇨🇦", population: 38000000 },
 ];
 
 const users = [
-  { id: "u1", title: "John Doe", email: "john@example.com", role: "Admin" },
-  { id: "u2", title: "Jane Smith", email: "jane@example.com", role: "Editor" },
-  { id: "u3", title: "Bob Wilson", email: "bob@example.com", role: "Viewer" },
+  {
+    id: "u1",
+    title: "John Doe",
+    email: "john@example.com",
+    role: "Admin",
+    avatar: "👨‍💼",
+  },
+  {
+    id: "u2",
+    title: "Jane Smith",
+    email: "jane@example.com",
+    role: "Editor",
+    avatar: "👩‍💻",
+  },
+  {
+    id: "u3",
+    title: "Bob Wilson",
+    email: "bob@example.com",
+    role: "Viewer",
+    avatar: "👨‍🔧",
+  },
   {
     id: "u4",
     title: "Alice Brown",
     email: "alice@example.com",
     role: "Editor",
+    avatar: "👩‍🎨",
   },
 ];
+
+// Simulated paginated API - returns only first 3 items
+const simulatePaginatedAPI = async (
+  search: string,
+): Promise<typeof countries> => {
+  await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate network delay
+  const filtered = countries.filter((c) =>
+    c.label.toLowerCase().includes(search.toLowerCase()),
+  );
+  return filtered.slice(0, 3); // Only return first 3 items (simulating pagination)
+};
 
 export function OttaSelectDemoPage() {
   // Single select states
@@ -72,6 +164,48 @@ export function OttaSelectDemoPage() {
   const [multiFruits, setMultiFruits] = useState<OttaSelectItem[] | null>(null);
   const [multiCountries, setMultiCountries] = useState<OttaSelectItem[] | null>(
     null,
+  );
+
+  // Pagination demo - pre-select items that won't be in API response
+  const [paginatedSelection, setPaginatedSelection] = useState<
+    OttaSelectItem[] | null
+  >([
+    { id: "in", name: "India", flag: "🇮🇳", code: "IN" }, // This won't be in first 3 results
+    { id: "br", name: "Brazil", flag: "🇧🇷", code: "BR" },
+  ]);
+
+  // Custom Renderers
+  const CountryRenderer = ({ item }: ItemRendererProps) => (
+    <div className="flex items-center gap-2 flex-1">
+      <span className="text-lg">{item.flag}</span>
+      <span className="truncate">{item.name}</span>
+      <span className="text-xs text-muted-foreground ml-auto">{item.code}</span>
+    </div>
+  );
+
+  const FruitRenderer = ({ item }: ItemRendererProps) => (
+    <div className="flex items-center gap-2 flex-1">
+      <span>{item.emoji}</span>
+      <span className="truncate">{item.name}</span>
+      <span className="text-xs px-1.5 py-0.5 rounded bg-muted">
+        {item.category}
+      </span>
+    </div>
+  );
+
+  const UserRenderer = ({ item }: ItemRendererProps) => (
+    <div className="flex items-center gap-2 flex-1">
+      <span className="text-lg">{item.avatar}</span>
+      <div className="flex flex-col flex-1 min-w-0">
+        <span className="truncate font-medium">{item.name}</span>
+        <span className="text-xs text-muted-foreground truncate">
+          {item.email}
+        </span>
+      </div>
+      <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+        {item.role}
+      </span>
+    </div>
   );
 
   return (
@@ -94,31 +228,24 @@ export function OttaSelectDemoPage() {
           </h1>
         </div>
         <p className="max-w-3xl text-muted-foreground">
-          A flexible select component with standardized output. Accepts any
-          object format with <code className="bg-muted px-1 rounded">id</code>{" "}
-          and
-          <code className="bg-muted px-1 rounded">name</code>/
-          <code className="bg-muted px-1 rounded">label</code>/
-          <code className="bg-muted px-1 rounded">title</code> properties.
+          A flexible select component with custom rendering, pagination support,
+          and standardized output format.
         </p>
       </div>
 
-      {/* Single Select Examples */}
+      {/* Basic Usage */}
       <Card>
         <CardHeader>
-          <CardTitle>🔘 Single Select</CardTitle>
+          <CardTitle>🔘 Basic Usage</CardTitle>
           <CardDescription>
-            Select one item from a list. Works with various data formats.
+            Simple single and multi-select without custom rendering. Just pass
+            your data and go!
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* With name property */}
+          {/* Simple single select */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Objects with{" "}
-              <code className="bg-muted px-1 rounded text-xs">name</code>{" "}
-              property:
-            </label>
+            <label className="text-sm font-medium">Single Select:</label>
             <OttaSelect
               mode="single"
               items={fruitsAndVegetables}
@@ -126,7 +253,7 @@ export function OttaSelectDemoPage() {
               onChange={(value) =>
                 setSingleFruit(value as OttaSelectItem | null)
               }
-              placeholder="Select a fruit or vegetable..."
+              placeholder="Pick a fruit or vegetable..."
             />
             {singleFruit && (
               <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
@@ -135,13 +262,40 @@ export function OttaSelectDemoPage() {
             )}
           </div>
 
-          {/* With label property */}
+          {/* Simple multi select */}
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Objects with{" "}
-              <code className="bg-muted px-1 rounded text-xs">label</code>{" "}
-              property:
-            </label>
+            <label className="text-sm font-medium">Multi Select:</label>
+            <OttaSelect
+              mode="multiple"
+              items={fruitsAndVegetables}
+              value={multiFruits}
+              onChange={(value) =>
+                setMultiFruits(value as OttaSelectItem[] | null)
+              }
+              placeholder="Pick multiple items..."
+            />
+            {multiFruits && multiFruits.length > 0 && (
+              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto max-h-32">
+                {JSON.stringify(multiFruits, null, 2)}
+              </pre>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Custom Renderer Examples */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🎨 Custom Item Renderers</CardTitle>
+          <CardDescription>
+            Use <code className="bg-muted px-1 rounded">renderItem</code> to
+            display custom content like flags, avatars, or badges.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Country with flag */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Countries with flags:</label>
             <OttaSelect
               mode="single"
               items={countries}
@@ -150,6 +304,13 @@ export function OttaSelectDemoPage() {
                 setSingleCountry(value as OttaSelectItem | null)
               }
               placeholder="Select a country..."
+              renderItem={CountryRenderer}
+              renderValue={(item) => (
+                <span className="flex items-center gap-2">
+                  <span>{item.flag}</span>
+                  <span>{item.name}</span>
+                </span>
+              )}
             />
             {singleCountry && (
               <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
@@ -158,12 +319,33 @@ export function OttaSelectDemoPage() {
             )}
           </div>
 
-          {/* With title property */}
+          {/* Fruits with emoji and category */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
-              Objects with{" "}
-              <code className="bg-muted px-1 rounded text-xs">title</code>{" "}
-              property:
+              Fruits with emoji and category:
+            </label>
+            <OttaSelect
+              mode="single"
+              items={fruitsAndVegetables}
+              value={singleFruit}
+              onChange={(value) =>
+                setSingleFruit(value as OttaSelectItem | null)
+              }
+              placeholder="Select a fruit..."
+              renderItem={FruitRenderer}
+              renderValue={(item) => (
+                <span className="flex items-center gap-2">
+                  <span>{item.emoji}</span>
+                  <span>{item.name}</span>
+                </span>
+              )}
+            />
+          </div>
+
+          {/* Users with avatar and role */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Users with avatar, email, and role:
             </label>
             <OttaSelect
               mode="single"
@@ -173,45 +355,30 @@ export function OttaSelectDemoPage() {
                 setSingleUser(value as OttaSelectItem | null)
               }
               placeholder="Select a user..."
+              renderItem={UserRenderer}
+              renderValue={(item) => (
+                <span className="flex items-center gap-2">
+                  <span>{item.avatar}</span>
+                  <span>{item.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    ({item.role})
+                  </span>
+                </span>
+              )}
             />
-            {singleUser && (
-              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto">
-                {JSON.stringify(singleUser, null, 2)}
-              </pre>
-            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Multi Select Examples */}
+      {/* Multi Select with Custom Rendering */}
       <Card>
         <CardHeader>
-          <CardTitle>☑️ Multi Select</CardTitle>
-          <CardDescription>Select multiple items from a list.</CardDescription>
+          <CardTitle>☑️ Multi Select with Custom Rendering</CardTitle>
+          <CardDescription>
+            Custom renderers work with multi-select too.
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Multi select fruits */}
-          <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Select multiple fruits:
-            </label>
-            <OttaSelect
-              mode="multiple"
-              items={fruitsAndVegetables}
-              value={multiFruits}
-              onChange={(value) =>
-                setMultiFruits(value as OttaSelectItem[] | null)
-              }
-              placeholder="Select fruits and vegetables..."
-            />
-            {multiFruits && multiFruits.length > 0 && (
-              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto max-h-48">
-                {JSON.stringify(multiFruits, null, 2)}
-              </pre>
-            )}
-          </div>
-
-          {/* Multi select countries */}
           <div className="space-y-2">
             <label className="text-sm font-medium">
               Select multiple countries:
@@ -224,11 +391,84 @@ export function OttaSelectDemoPage() {
                 setMultiCountries(value as OttaSelectItem[] | null)
               }
               placeholder="Select countries..."
+              renderItem={CountryRenderer}
             />
             {multiCountries && multiCountries.length > 0 && (
-              <pre className="bg-muted p-3 rounded-lg text-xs overflow-x-auto max-h-48">
-                {JSON.stringify(multiCountries, null, 2)}
-              </pre>
+              <div className="flex flex-wrap gap-2 mt-2">
+                {multiCountries.map((country) => (
+                  <span
+                    key={country.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-muted rounded-full text-sm"
+                  >
+                    {country.flag} {country.name}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Select multiple fruits:
+            </label>
+            <OttaSelect
+              mode="multiple"
+              items={fruitsAndVegetables}
+              value={multiFruits}
+              onChange={(value) =>
+                setMultiFruits(value as OttaSelectItem[] | null)
+              }
+              placeholder="Select fruits..."
+              renderItem={FruitRenderer}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Pagination Handling */}
+      <Card>
+        <CardHeader>
+          <CardTitle>📄 Pagination Support</CardTitle>
+          <CardDescription>
+            Selected items persist even when not in current API page. The{" "}
+            <code className="bg-muted px-1 rounded">showSelectedFirst</code>{" "}
+            prop ensures selected items are always visible at the top.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm">
+            <strong>Demo:</strong> This select uses a simulated API that only
+            returns the first 3 countries. India and Brazil are pre-selected but
+            won't appear in the API response. Notice they still appear at the
+            top of the dropdown!
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Countries (API returns only first 3):
+            </label>
+            <OttaSelect
+              mode="multiple"
+              fetchCollection={simulatePaginatedAPI}
+              value={paginatedSelection}
+              onChange={(value) =>
+                setPaginatedSelection(value as OttaSelectItem[] | null)
+              }
+              placeholder="Select countries..."
+              renderItem={CountryRenderer}
+              showSelectedFirst={true}
+            />
+            {paginatedSelection && paginatedSelection.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {paginatedSelection.map((country) => (
+                  <span
+                    key={country.id}
+                    className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary rounded-full text-sm"
+                  >
+                    {country.flag} {country.name}
+                  </span>
+                ))}
+              </div>
             )}
           </div>
         </CardContent>
@@ -245,39 +485,49 @@ export function OttaSelectDemoPage() {
             <li className="flex items-start gap-2">
               <span className="text-green-500">✓</span>
               <span>
+                <strong>Custom Item Renderer:</strong> Pass{" "}
+                <code className="bg-muted px-1 rounded">renderItem</code> to
+                display flags, avatars, badges, etc.
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500">✓</span>
+              <span>
+                <strong>Custom Value Renderer:</strong> Pass{" "}
+                <code className="bg-muted px-1 rounded">renderValue</code> to
+                customize the selected value display
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500">✓</span>
+              <span>
+                <strong>Pagination Support:</strong> Selected items persist even
+                when not in current API response
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500">✓</span>
+              <span>
+                <strong>Selected First:</strong>{" "}
+                <code className="bg-muted px-1 rounded">showSelectedFirst</code>{" "}
+                keeps selected items at top
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="text-green-500">✓</span>
+              <span>
                 <strong>Flexible Input:</strong> Accepts objects with{" "}
                 <code className="bg-muted px-1 rounded">name</code>,{" "}
                 <code className="bg-muted px-1 rounded">label</code>, or{" "}
-                <code className="bg-muted px-1 rounded">title</code> properties
+                <code className="bg-muted px-1 rounded">title</code>
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-green-500">✓</span>
               <span>
-                <strong>Standardized Output:</strong> Always returns{" "}
-                <code className="bg-muted px-1 rounded">OttaSelectItem</code>{" "}
-                with consistent shape
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500">✓</span>
-              <span>
-                <strong>Single & Multi Mode:</strong> Toggle between selecting
-                one or multiple items
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500">✓</span>
-              <span>
-                <strong>Searchable:</strong> Built-in search/filter
-                functionality
-              </span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500">✓</span>
-              <span>
-                <strong>Preserves Data:</strong> Original object properties are
-                preserved in output
+                <strong>Async Loading:</strong> Built-in support for{" "}
+                <code className="bg-muted px-1 rounded">fetchCollection</code>{" "}
+                with loading states
               </span>
             </li>
           </ul>
@@ -288,29 +538,38 @@ export function OttaSelectDemoPage() {
       <Card>
         <CardHeader>
           <CardTitle>📖 Usage</CardTitle>
-          <CardDescription>How to use OttaSelect in your app</CardDescription>
+          <CardDescription>How to use custom renderers</CardDescription>
         </CardHeader>
         <CardContent>
           <pre className="bg-muted p-4 rounded-lg overflow-x-auto text-sm">
-            {`import { OttaSelect, type OttaSelectItem } from "@ottabase/ottaselect";
-import { useState } from "react";
+            {`import { OttaSelect, type ItemRendererProps } from "@ottabase/ottaselect";
 
-// Your data (any format with id + name/label/title)
-const items = [
-  { id: "1", name: "Apple", color: "Red" },
-  { id: "2", name: "Banana", color: "Yellow" },
+const countries = [
+  { id: "us", name: "United States", flag: "🇺🇸" },
+  { id: "uk", name: "United Kingdom", flag: "🇬🇧" },
 ];
 
+// Custom renderer with flag
+const CountryRenderer = ({ item }: ItemRendererProps) => (
+  <div className="flex items-center gap-2">
+    <span>{item.flag}</span>
+    <span>{item.name}</span>
+  </div>
+);
+
 function MyComponent() {
-  const [selected, setSelected] = useState<OttaSelectItem | null>(null);
+  const [selected, setSelected] = useState(null);
 
   return (
     <OttaSelect
-      mode="single"          // or "multiple"
-      items={items}
+      mode="single"
+      items={countries}
       value={selected}
-      onChange={(value) => setSelected(value as OttaSelectItem | null)}
-      placeholder="Select an item..."
+      onChange={setSelected}
+      renderItem={CountryRenderer}
+      renderValue={(item) => (
+        <span>{item.flag} {item.name}</span>
+      )}
     />
   );
 }`}
