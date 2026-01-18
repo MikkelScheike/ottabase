@@ -147,12 +147,12 @@ export function createAuthConfig(
   }
 
   // Configure email provider (magic link)
-  if (env.RESEND_API_KEY) {
-    providers.push(createResendProvider(env));
-    if (verbose) console.log("✅ Magic Link via Resend enabled");
-  } else if (env.EMAIL_SERVER && env.EMAIL_FROM) {
+  if (env.EMAIL_SERVER && env.EMAIL_FROM) {
     providers.push(createNodemailerProvider(env));
     if (verbose) console.log("✅ Magic Link via SMTP enabled");
+  } else if (env.EMAIL_RESEND_API_KEY) {
+    providers.push(createResendProvider(env));
+    if (verbose) console.log("✅ Magic Link via Resend enabled");
   } else if (verbose) {
     console.warn("⚠️  Magic Link not configured");
   }

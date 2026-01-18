@@ -265,7 +265,7 @@ const socialProviders = getConfiguredSocialProviders(process.env);
 
 // Check if magic link is available
 const canUseMagicLink = isEmailProviderConfigured(process.env);
-// Returns: true if RESEND_API_KEY or EMAIL_SERVER is set
+// Returns: true if EMAIL_RESEND_API_KEY or EMAIL_SERVER is set
 ```
 
 ### Individual Components
@@ -422,7 +422,7 @@ import { createResendProvider } from "@ottabase/auth";
 const emailProvider = createResendProvider(env, {
   from: "noreply@yourdomain.com",
 });
-// Requires: RESEND_API_KEY env var
+// Requires: EMAIL_RESEND_API_KEY env var
 ```
 
 #### Using Nodemailer (SMTP)
@@ -560,7 +560,7 @@ AUTH0_CLIENT_SECRET=your_client_secret
 AUTH0_ISSUER=https://your-domain.auth0.com
 
 # Email Provider - Resend (optional)
-RESEND_API_KEY=your_resend_api_key
+EMAIL_RESEND_API_KEY=your_resend_api_key
 
 # Email Provider - Nodemailer/SMTP (optional)
 EMAIL_SERVER=smtp://user:password@smtp.example.com:587

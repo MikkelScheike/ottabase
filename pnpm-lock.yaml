@@ -135,6 +135,9 @@ catalogs:
     eslint-plugin-storybook:
       specifier: ^10.1.11
       version: 10.1.11
+    handlebars:
+      specifier: ^4.7.8
+      version: 4.7.8
     jotai:
       specifier: ^2.16.2
       version: 2.16.2
@@ -543,6 +546,9 @@ importers:
       '@ottabase/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@ottabase/email':
+        specifier: workspace:*
+        version: link:../../packages/email
       '@ottabase/forms':
         specifier: workspace:*
         version: link:../../packages/forms
@@ -719,6 +725,9 @@ importers:
       '@ottabase/cf':
         specifier: workspace:*
         version: link:../cf
+      '@ottabase/email':
+        specifier: workspace:*
+        version: link:../email
       '@ottabase/ui-shadcn':
         specifier: workspace:*
         version: link:../ui-shadcn
@@ -851,6 +860,34 @@ importers:
       prisma:
         specifier: 'catalog:'
         version: 5.22.0
+      rimraf:
+        specifier: 'catalog:'
+        version: 6.1.2
+      tsup:
+        specifier: 'catalog:'
+        version: 8.5.1(@swc/core@1.13.5)(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.1)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/email:
+    dependencies:
+      handlebars:
+        specifier: 'catalog:'
+        version: 4.7.8
+      nodemailer:
+        specifier: 'catalog:'
+        version: 7.0.12
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 20.19.28
+      '@types/nodemailer':
+        specifier: 'catalog:'
+        version: 7.0.5
+      eslint:
+        specifier: 'catalog:'
+        version: 9.39.2(jiti@2.6.1)
       rimraf:
         specifier: 'catalog:'
         version: 6.1.2
@@ -7969,6 +8006,11 @@ packages:
     resolution: {integrity: sha512-ax7ZYomf6jqPTQ4+XCpUGyXKHk5WweS+e05MBO4/y3WJ5RkmPXNKvX+bx1behVILVwr6JSQvZAku021CHPXG3Q==}
     engines: {node: '>=10'}
 
+  handlebars@4.7.8:
+    resolution: {integrity: sha512-vafaFqs8MZkRrSX7sFVUdo3ap/eNiLnb4IakshzvP56X5Nr1iGKAIqdX6tMlm6HcNRIkr6AxO5jFEoJzzpT8aQ==}
+    engines: {node: '>=0.4.7'}
+    hasBin: true
+
   happy-dom@20.1.0:
     resolution: {integrity: sha512-ebvqjBqzenBk2LjzNEAzoj7yhw7rW/R2/wVevMu6Mrq3MXtcI/RUz4+ozpcOcqVLEWPqLfg2v9EAU7fFXZUUJw==}
     engines: {node: '>=20.0.0'}
@@ -10422,6 +10464,11 @@ packages:
   ufo@1.6.1:
     resolution: {integrity: sha512-9a4/uxlTWJ4+a5i0ooc1rU7C7YOw3wT+UGqdeNNHWnOF9qcMBgLRS+4IYUqbczewFx4mLEig6gawh7X6mFlEkA==}
 
+  uglify-js@3.19.3:
+    resolution: {integrity: sha512-v3Xu+yuwBXisp6QYTcH4UbH+xYJXqnq2m/LtQVWKWzYc1iehYnLixoQDN9FH6/j9/oybfd6W9Ghwkl8+UMKTKQ==}
+    engines: {node: '>=0.8.0'}
+    hasBin: true
+
   unbox-primitive@1.1.0:
     resolution: {integrity: sha512-nWJ91DjeOkej/TA8pXQ3myruKpKEYgqvpw9lz4OPHj/NWFNluYrjbz9j01CJ8yKQd2g4jFoOkINCTW2I5LEEyw==}
     engines: {node: '>= 0.4'}
@@ -10820,6 +10867,9 @@ packages:
   word-wrap@1.2.5:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
+
+  wordwrap@1.0.0:
+    resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
 
   workerd@1.20250718.0:
     resolution: {integrity: sha512-kqkIJP/eOfDlUyBzU7joBg+tl8aB25gEAGqDap+nFWb+WHhnooxjGHgxPBy3ipw2hnShPFNOQt5lFRxbwALirg==}
@@ -18666,6 +18716,15 @@ snapshots:
     dependencies:
       duplexer: 0.1.2
 
+  handlebars@4.7.8:
+    dependencies:
+      minimist: 1.2.8
+      neo-async: 2.6.2
+      source-map: 0.6.1
+      wordwrap: 1.0.0
+    optionalDependencies:
+      uglify-js: 3.19.3
+
   happy-dom@20.1.0:
     dependencies:
       '@types/node': 20.19.28
@@ -21588,6 +21647,9 @@ snapshots:
 
   ufo@1.6.1: {}
 
+  uglify-js@3.19.3:
+    optional: true
+
   unbox-primitive@1.1.0:
     dependencies:
       call-bound: 1.0.4
@@ -22056,6 +22118,8 @@ snapshots:
       stackback: 0.0.2
 
   word-wrap@1.2.5: {}
+
+  wordwrap@1.0.0: {}
 
   workerd@1.20250718.0:
     optionalDependencies:

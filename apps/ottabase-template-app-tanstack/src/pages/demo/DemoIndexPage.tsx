@@ -176,6 +176,21 @@ export function DemoIndexPage() {
               </Button>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Email Templates</CardTitle>
+              <CardDescription>
+                Preview Handlebars email templates and replacement data with the
+                @ottabase/email package
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button asChild variant="outline" className="w-full">
+                <Link to="/demo/email">View Email Demo</Link>
+              </Button>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="mt-2 rounded-lg border bg-muted/50 p-6">

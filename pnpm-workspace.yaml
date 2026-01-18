@@ -48,6 +48,7 @@ catalog:
   drizzle-orm: ^0.38.3
   eslint: ^9.39.2
   eslint-plugin-storybook: ^10.1.11
+  handlebars: ^4.7.8
   highlight.js: ^11.11.1
   jotai: ^2.16.2
   localflare: ^0.1.2

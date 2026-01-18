@@ -14,14 +14,14 @@ const PROVIDER_CONFIG: Record<string, { name: string; order: number }> = {
 
 /**
  * Auto-detect configured social providers from environment variables
- * 
+ *
  * @param env - Environment variables
  * @returns Array of social providers that are configured
- * 
+ *
  * @example
  * ```typescript
  * import { getConfiguredSocialProviders } from "@ottabase/auth/components";
- * 
+ *
  * const providers = getConfiguredSocialProviders(process.env);
  * // Returns providers that have credentials configured
  * ```
@@ -85,7 +85,7 @@ export function getConfiguredSocialProviders(env: ProviderEnv): SocialProvider[]
  * Check if credentials provider is configured
  * Always returns true since credentials don't require env vars,
  * but validation logic should be provided by the app
- * 
+ *
  * @returns true
  */
 export function isCredentialsConfigured(): boolean {
@@ -94,21 +94,21 @@ export function isCredentialsConfigured(): boolean {
 
 /**
  * Check if email (magic link) provider is configured
- * 
+ *
  * @param env - Environment variables
  * @returns true if either Resend or Nodemailer is configured
- * 
+ *
  * @example
  * ```typescript
  * import { isEmailProviderConfigured } from "@ottabase/auth/components";
- * 
+ *
  * const showMagicLink = isEmailProviderConfigured(process.env);
  * ```
  */
 export function isEmailProviderConfigured(env: ProviderEnv): boolean {
     // Check for Resend
-    if (env.RESEND_API_KEY) {
-        return true;
+    if (env.EMAIL_RESEND_API_KEY) {
+      return true;
     }
 
     // Check for Nodemailer/SMTP
@@ -121,16 +121,16 @@ export function isEmailProviderConfigured(env: ProviderEnv): boolean {
 
 /**
  * Get login configuration based on environment variables
- * 
+ *
  * @param env - Environment variables
  * @returns Configuration object for login components
- * 
+ *
  * @example
  * ```typescript
  * import { getLoginConfig } from "@ottabase/auth/components";
- * 
+ *
  * const config = getLoginConfig(process.env);
- * 
+ *
  * <LoginForm
  *   socialProviders={config.socialProviders}
  *   showCredentials={config.showCredentials}

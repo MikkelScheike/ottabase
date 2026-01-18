@@ -6,6 +6,7 @@ import {
   Cloud,
   Code,
   Database,
+  Mail,
   FileText,
   Layout,
   List,
@@ -35,6 +36,7 @@ const DEMO_LINKS: DemoLinkProps[] = [
   { to: "/demo/timezone", icon: Clock, label: "Timezone Utils" },
   { to: "/demo/api", icon: Zap, label: "API Client" },
   { to: "/demo/renderer", icon: Code, label: "Content Renderer" },
+  { to: "/demo/email", icon: Mail, label: "Email Templates" },
 ];
 
 export function DemoLayout() {

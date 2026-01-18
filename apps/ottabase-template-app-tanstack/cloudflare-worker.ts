@@ -10,6 +10,12 @@ import { createR2Client } from "@ottabase/cf/r2";
 import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import {
+  createResendMailer,
+  sendTemplatedEmail,
+  type TemplateContent,
+  type TemplateVariables,
+} from "@ottabase/email";
+import {
   Post,
   Tag,
   User,
@@ -35,6 +41,7 @@ import { appMigrations } from "./ottabase/migrations";
 import { ReferralTracking } from "./ottabase/models/ReferralTracking";
 import { Shortlink } from "./ottabase/models/Shortlink";
 import { Todo } from "./ottabase/models/Todo";
+import { registerAppEmailTemplates } from "./src/email/templates";
 
 export { RealtimeActor };
 
@@ -151,6 +158,76 @@ export default {
           name: "ottabase-template-app-tanstack",
           timestamp: Date.now(),
         });
+      }
+
+      if (url.pathname === "/api/email/test" && request.method === "POST") {
+        const body = await readJson<{
+          recipients?: string[];
+          template?: string;
+          emailType?: string;
+          subject?: string;
+          content?: TemplateContent;
+          variables?: TemplateVariables;
+        }>(request);
+
+        if (!env.EMAIL_SERVER && !env.EMAIL_RESEND_API_KEY) {
+          return errorResponse(
+            "EMAIL_SERVER or EMAIL_RESEND_API_KEY must be configured",
+            400,
+            {
+              code: "CONFIG_ERROR",
+            },
+          );
+        }
+
+        const from = env.EMAIL_FROM || "noreply@example.com";
+        const recipients = body.recipients || [];
+
+        if (!recipients.length) {
+          return errorResponse("Recipients list is required", 400, {
+            code: "VALIDATION_ERROR",
+          });
+        }
+
+        registerAppEmailTemplates();
+
+        const mailer = env.EMAIL_SERVER
+          ? await (async () => {
+              const { createNodemailerMailer } =
+                await import("@ottabase/email/providers/nodemailer");
+              return createNodemailerMailer({ server: env.EMAIL_SERVER });
+            })()
+          : createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY });
+        const results = await Promise.all(
+          recipients.map(async (email) => {
+            const response = await sendTemplatedEmail(mailer, {
+              from,
+              to: email,
+              template: body.template || "default",
+              subject: body.subject || "Test Email",
+              variables: body.variables,
+              content: body.content || {
+                header: "Test Email",
+                body: "<p>Hello from Ottabase.</p>",
+                footer: "<p>Sent from /api/email/test</p>",
+              },
+            });
+
+            return {
+              email,
+              ok: response.success,
+            };
+          }),
+        );
+
+        return jsonResponse(
+          {
+            ok: true,
+            emailType: body.emailType,
+            results,
+          },
+          200,
+        );
       }
 
       // ============================================================

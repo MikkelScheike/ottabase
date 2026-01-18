@@ -61,7 +61,7 @@ export function LoginPage() {
 
     if (!hasMagicLink) {
       newWarnings.push(
-        "Magic Link not configured. Set RESEND_API_KEY or EMAIL_SERVER + EMAIL_FROM",
+        "Magic Link not configured. Set EMAIL_RESEND_API_KEY or EMAIL_SERVER + EMAIL_FROM",
       );
     }
 

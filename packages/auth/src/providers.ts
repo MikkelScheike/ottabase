@@ -11,14 +11,17 @@
 //
 // ============================================================
 
-import Google from "@auth/core/providers/google";
-import GitHub from "@auth/core/providers/github";
-import Discord from "@auth/core/providers/discord";
-import AzureAd from "@auth/core/providers/azure-ad";
 import Auth0 from "@auth/core/providers/auth0";
+import AzureAd from "@auth/core/providers/azure-ad";
 import Credentials from "@auth/core/providers/credentials";
-import Resend from "@auth/core/providers/resend";
+import Discord from "@auth/core/providers/discord";
+import GitHub from "@auth/core/providers/github";
+import Google from "@auth/core/providers/google";
 import Nodemailer from "@auth/core/providers/nodemailer";
+import Resend from "@auth/core/providers/resend";
+import type { TemplateContent, TemplateVariables } from "@ottabase/email";
+import { sendTemplatedEmail } from "@ottabase/email/mailer";
+import { createResendMailer } from "@ottabase/email/providers/resend";
 
 
 /**
@@ -49,7 +52,7 @@ export interface ProviderEnv {
   AUTH0_ISSUER?: string;
 
   // Email (Magic Link) - Resend
-  RESEND_API_KEY?: string;
+  EMAIL_RESEND_API_KEY?: string;
 
   // Email (Magic Link) - Nodemailer/SMTP
   EMAIL_SERVER?: string; // smtp://user:pass@smtp.example.com:587
@@ -343,11 +346,11 @@ export function autoConfigureProviders(env: ProviderEnv) {
  *   const user = await db.user.findUnique({
  *     where: { email: credentials.email }
  *   });
- *   
+ *
  *   if (!user || !await bcrypt.compare(credentials.password, user.password)) {
  *     return null;
  *   }
- *   
+ *
  *   return { id: user.id, email: user.email, name: user.name };
  * });
  * ```
@@ -397,7 +400,7 @@ export function createCustomCredentialsProvider(config: {
  * Create an Email provider for magic link authentication using Resend
  *
  * Requires environment variable:
- * - RESEND_API_KEY
+ * - EMAIL_RESEND_API_KEY
  *
  * @param env - Environment variables
  * @param options - Email provider options
@@ -416,11 +419,52 @@ export function createResendProvider(
   env: ProviderEnv,
   options?: {
     from?: string;
+    template?: string;
+    subject?: string;
+    appName?: string;
+    content?: TemplateContent;
+    variables?: TemplateVariables;
   },
 ) {
+  const from = options?.from || env.EMAIL_FROM || "noreply@example.com";
+  const mailer = createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY || "" });
+
   return Resend({
-    apiKey: env.RESEND_API_KEY,
-    from: options?.from || env.EMAIL_FROM || "noreply@example.com",
+    apiKey: env.EMAIL_RESEND_API_KEY,
+    from,
+    async sendVerificationRequest({ identifier, url, expires }) {
+      const appName = options?.appName || "Ottabase";
+      const expiresAt = expires ? expires.toISOString() : "";
+      const subject = options?.subject || `Sign in to ${appName}`;
+
+      const content: TemplateContent = options?.content || {
+        header: `Sign in to ${appName}`,
+        body:
+          "<p>Hello,</p>" +
+          "<p>Click the link below to sign in:</p>" +
+          '<p><a href="{{url}}">Sign in</a></p>',
+        footer: "<p>This link expires at {{expiresAt}}.</p>",
+      };
+
+      const result = await sendTemplatedEmail(mailer, {
+        from,
+        to: identifier,
+        template: options?.template || "default",
+        subject,
+        variables: {
+          url,
+          email: identifier,
+          appName,
+          expiresAt,
+          ...options?.variables,
+        },
+        content,
+      });
+
+      if (!result.success) {
+        throw new Error(result.error || "Failed to send login email");
+      }
+    },
   });
 }
 
