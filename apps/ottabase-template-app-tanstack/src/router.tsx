@@ -279,6 +279,16 @@ const demoOttaFormsRoute = new Route({
   ),
 });
 
+const demoOttaSelectRoute = new Route({
+  getParentRoute: () => demoLayoutRoute,
+  path: "ottaselect",
+  component: lazyRouteComponent(() =>
+    import("@/pages/demo/ottaselect/OttaSelectDemoPage").then((m) => ({
+      default: m.OttaSelectDemoPage,
+    })),
+  ),
+});
+
 const demoTimezoneRoute = new Route({
   getParentRoute: () => demoLayoutRoute,
   path: "timezone",
@@ -525,6 +535,7 @@ demoLayoutRoute.addChildren([
   demoOttaEditorRoute,
   demoOttaOrmRoute,
   demoOttaFormsRoute,
+  demoOttaSelectRoute,
   demoTimezoneRoute,
   demoCloudflareRoute,
   demoCloudflareD1Route,
