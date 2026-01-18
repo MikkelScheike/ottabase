@@ -1,93 +1,85 @@
 import { atom } from "jotai";
-import type { AppGlobalState, AppStateConfig, BaseUser } from "./types";
+import type { AppState, AppStateConfig, BaseUser } from "./types";
 
 /**
- * Creates a centralized Jotai atom for the entire application's global state.
- * This function promotes a simple, scalable, and developer-friendly state management pattern.
+ * Default state values
+ */
+const DEFAULT_STATE: Omit<AppState, "appName"> = {
+  theme: "light",
+  user: null,
+  isAuthenticated: false,
+  sidebarOpen: true,
+  sidebarCollapsed: false,
+  scale: 1.0,
+  isLoading: false,
+};
+
+/**
+ * Creates a centralized Jotai atom for the application's global state.
  *
- * @param config Configuration options for the app state, including the initial state.
- * @returns An object containing the main `appStateAtom` and convenient "lensed" atoms
- *          for accessing and updating individual state properties without re-rendering
- *          unrelated components.
+ * @example
+ * ```typescript
+ * // In your app's state file (e.g., src/ottabase/state/appState.ts)
+ * import { createAppState } from "@ottabase/state";
+ *
+ * const { appStateAtom, atoms } = createAppState({ appName: "My App" });
+ *
+ * export const { themeAtom, userAtom, sidebarOpenAtom, scaleAtom } = atoms;
+ * export { appStateAtom };
+ * ```
  */
 export function createAppState<TUser extends BaseUser = BaseUser>(
-  config: AppStateConfig<TUser> = {},
+  config: AppStateConfig<TUser>,
 ) {
-  const { initialState = {} } = config;
+  const { appName, initialState = {} } = config;
+
+  // Main state atom
+  const appStateAtom = atom<AppState<TUser>>({
+    appName,
+    ...DEFAULT_STATE,
+    ...initialState,
+  } as AppState<TUser>);
 
   /**
-   * The single source of truth for the application's global state.
-   * It is created with a default state, which is then merged with any
-   * `initialState` provided via the configuration.
+   * Creates a derived atom that focuses on a specific property.
+   * Components using these atoms only re-render when that property changes.
    */
-  const appStateAtom = atom<AppGlobalState<TUser>>({
-    theme: "light", // Default, will be hydrated by `useThemeManager`
-    scale: 1.0,
-    user: null,
-    isMobileSidebarOpen: false,
-    isDesktopSidebarOpen: true,
-    cursorTheme: "default",
-    selectionColor: {
-      foreground: "#FFF",
-      background: "#3A3A3A",
-    },
-    layoutProvider: "mantine",
-    layoutPreset: "app",
-    ...initialState, // User-provided initial state overrides defaults
-  });
-
-  /**
-   * Creates a derived atom that focuses on a specific property of the main `appStateAtom`.
-   * This is an efficient way to interact with a slice of the state. Components
-   * using these derived atoms will only re-render when that specific slice changes.
-   * This implementation uses only the core `jotai` library.
-   */
-  const createLensedAtom = <K extends keyof AppGlobalState<TUser>>(key: K) =>
+  const createAtom = <K extends keyof AppState<TUser>>(key: K) =>
     atom(
       (get) => get(appStateAtom)[key],
-      (get, set, newValue: AppGlobalState<TUser>[K]) => {
-        const currentState = get(appStateAtom);
-        set(appStateAtom, { ...currentState, [key]: newValue });
+      (get, set, newValue: AppState<TUser>[K]) => {
+        set(appStateAtom, { ...get(appStateAtom), [key]: newValue });
       },
     );
 
-  // Create lensed atoms for common, top-level properties for convenience.
-  const themeAtom = createLensedAtom("theme");
-  const scaleAtom = createLensedAtom("scale");
-  const userAtom = createLensedAtom("user");
-  const isMobileSidebarOpenAtom = createLensedAtom("isMobileSidebarOpen");
-  const isDesktopSidebarOpenAtom = createLensedAtom("isDesktopSidebarOpen");
+  // Pre-created atoms for common properties
+  const themeAtom = createAtom("theme");
+  const userAtom = createAtom("user");
+  const isAuthenticatedAtom = createAtom("isAuthenticated");
+  const sidebarOpenAtom = createAtom("sidebarOpen");
+  const sidebarCollapsedAtom = createAtom("sidebarCollapsed");
+  const scaleAtom = createAtom("scale");
+  const isLoadingAtom = createAtom("isLoading");
 
   return {
-    /** The main atom containing the entire global state. */
+    /** The main atom containing entire global state */
     appStateAtom,
-    /** A function to create a focused atom for any property of the global state. */
-    createLensedAtom,
-    /** Pre-created lensed atoms for common properties, for convenience. */
+
+    /** Function to create a focused atom for any property */
+    createAtom,
+
+    /** Pre-created atoms for common properties */
     atoms: {
       themeAtom,
-      scaleAtom,
       userAtom,
-      isMobileSidebarOpenAtom,
-      isDesktopSidebarOpenAtom,
+      isAuthenticatedAtom,
+      sidebarOpenAtom,
+      sidebarCollapsedAtom,
+      scaleAtom,
+      isLoadingAtom,
     },
   };
 }
 
-/**
- * A default app state factory for convenience. It creates a state instance
- * with sensible defaults.
- * @returns A new app state instance with default initial values.
- */
-export function createDefaultAppState() {
-  return createAppState({
-    initialState: {
-      theme: "light",
-      scale: 1.0,
-      isDesktopSidebarOpen: true,
-      isMobileSidebarOpen: false,
-      layoutProvider: "mantine",
-      layoutPreset: "app",
-    },
-  });
-}
+// Re-export types
+export type { AppState, AppStateConfig, BaseUser, Theme } from "./types";

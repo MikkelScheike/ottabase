@@ -1,10 +1,17 @@
 import { appConfig } from "@/ottabase/config/app.config";
+import { themeAtom } from "@/ottabase/state/appState";
 import { ProviderUIMantine } from "@ottabase/ui-mantine";
-import { useAtomValue } from "jotai";
-import {
-    mantineThemePresetAtom,
-    themeAtom,
-} from "@/ottabase/state/appGlobalState";
+import { atom, useAtomValue } from "jotai";
+
+// Mantine theme preset (local to this demo component)
+export type MantineThemePreset =
+  | "mantine-shadcn"
+  | "mantine-vercel"
+  | "mantine-ant"
+  | "mantine-stripe";
+
+export const mantineThemePresetAtom =
+  atom<MantineThemePreset>("mantine-shadcn");
 
 export function MantineLayout({ children }: { children: React.ReactNode }) {
     const globalTheme = useAtomValue(themeAtom);

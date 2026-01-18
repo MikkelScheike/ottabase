@@ -9,6 +9,7 @@ import {
   FileText,
   Layout,
   Palette,
+  Settings,
   Type,
   Upload,
   Zap,
@@ -21,6 +22,7 @@ interface DemoLinkProps {
 }
 
 const DEMO_LINKS: DemoLinkProps[] = [
+  { to: "/demo/state", icon: Settings, label: "State Management" },
   { to: "/demo/mantine", icon: Layout, label: "Mantine UI" },
   { to: "/demo/shadcn", icon: Palette, label: "shadcn/ui" },
   { to: "/demo/ottaeditor", icon: Type, label: "OttaEditor" },

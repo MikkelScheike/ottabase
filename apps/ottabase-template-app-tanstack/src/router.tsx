@@ -44,8 +44,8 @@ function RootLayout() {
           .join("")
           .toUpperCase()
       : user?.email && user.email.length > 0
-      ? user.email[0].toUpperCase()
-      : "?";
+        ? user.email[0].toUpperCase()
+        : "?";
 
   // Check if we should use the wide layout
   const isWideLayout = location.pathname.startsWith("/demo");
@@ -411,6 +411,16 @@ const demoThemingRoute = new Route({
   ),
 });
 
+const demoStateRoute = new Route({
+  getParentRoute: () => demoLayoutRoute,
+  path: "state",
+  component: lazyRouteComponent(() =>
+    import("@/pages/demo/state/StateDemoPage").then((m) => ({
+      default: m.StateDemoPage,
+    })),
+  ),
+});
+
 const demoRendererRoute = new Route({
   getParentRoute: () => demoLayoutRoute,
   path: "renderer",
@@ -528,6 +538,7 @@ demoLayoutRoute.addChildren([
   demoCloudflareRealtimeRoute,
   demoApiRoute,
   demoThemingRoute,
+  demoStateRoute,
   demoRendererRoute,
 ]);
 

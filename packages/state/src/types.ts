@@ -1,53 +1,42 @@
-// Base types that can be extended by apps
-export type CursorTheme = "default" | "retro" | "modern" | "minimal";
+/**
+ * @ottabase/state - Type Definitions
+ * Simple, essential global state types for Ottabase apps
+ */
 
-export interface TextSelectionColor {
-  foreground: string;
-  background: string;
-}
-
-export type SupportedLayout =
-  | "app"
-  | "dashboard"
-  | "landing"
-  | "auth"
-  | "minimal";
-export type LayoutProvider = "mantine" | "tailwind";
-export type LayoutPresetType =
-  | "app"
-  | "dashboard"
-  | "admin"
-  | "blog"
-  | "ecommerce";
+// Theme type
+export type Theme = "light" | "dark";
 
 // Base user interface - apps can extend this
 export interface BaseUser {
-  id?: string;
-  email?: string;
-  name?: string;
-  image?: string;
-  role?: string;
+  id: string;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
 }
 
 // Core app global state interface
-export interface AppGlobalState<TUser extends BaseUser = BaseUser> {
-  theme: "light" | "dark";
-  scale: number;
-  isMobileSidebarOpen: boolean;
-  isDesktopSidebarOpen: boolean;
-  user: null | TUser;
-  layout?: SupportedLayout;
-  routeContext?: any; // Current route for global context
-  coreModule?: string;
-  currentModule?: string;
-  cursorTheme: CursorTheme;
-  selectionColor: TextSelectionColor;
-  layoutProvider: LayoutProvider;
-  layoutPreset: LayoutPresetType;
+export interface AppState<TUser extends BaseUser = BaseUser> {
+  // App identity
+  appName: string;
+
+  // Theme
+  theme: Theme;
+
+  // User
+  user: TUser | null;
+  isAuthenticated: boolean;
+
+  // UI State
+  sidebarOpen: boolean;
+  sidebarCollapsed: boolean;
+  scale: number; // UI magnification factor (1.0 = 100%)
+
+  // Loading states
+  isLoading: boolean;
 }
 
-// Configuration options for creating app state
+// Configuration for creating app state
 export interface AppStateConfig<TUser extends BaseUser = BaseUser> {
-  initialState?: Partial<AppGlobalState<TUser>>;
-  coreModule?: string;
+  appName: string;
+  initialState?: Partial<Omit<AppState<TUser>, "appName">>;
 }

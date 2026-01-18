@@ -1,8 +1,8 @@
-import { themeAtom } from "@/ottabase/state/appGlobalState";
+import { themeAtom } from "@/ottabase/state/appState";
+import type { WritableAtom } from "jotai";
 import { useAtom } from "jotai";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
-import type { WritableAtom } from "jotai";
 
 type Theme = "light" | "dark";
 type ThemeAtomType = WritableAtom<Theme, [Theme], void>;

@@ -7,7 +7,7 @@
 //
 // ============================================================
 
-import { userAtom } from "@/ottabase/state/appGlobalState";
+import { userAtom } from "@/ottabase/state/appState";
 import {
   useSession as useAuthSession,
   type UseSessionOptions,
