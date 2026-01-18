@@ -5,8 +5,8 @@
  * Outputs a JSON array of app package names for GitHub Actions matrix
  */
 
-import { readFileSync, readdirSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { existsSync, readFileSync, readdirSync } from "fs";
+import { dirname, join } from "path";
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -15,15 +15,20 @@ const appsDir = join(rootDir, 'apps');
 
 const DEFAULT_CONFIG = {
   deployable: true,
-  appType: 'nextjs',
-  buildCommand: 'build',
-  workerBuildCommand: 'build:worker',
-  outputDirectory: '.open-next',
-  verifyPaths: ['.open-next'],
-  wranglerConfig: 'wrangler.jsonc',
-  wranglerEnv: 'production',
-  healthCheckPath: '/',
-  requiresSecrets: ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'],
+  appType: "tanstack",
+  buildCommand: "build",
+  workerBuildCommand: null,
+  outputDirectory: "dist",
+  verifyPaths: ["dist", "cloudflare-worker.ts"],
+  wranglerConfig: "wrangler.jsonc",
+  wranglerEnv: "production",
+  healthCheckPath: "/",
+  requiresSecrets: [
+    "CLOUDFLARE_API_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
+    "D1_DATABASE_ID",
+    "KV_NAMESPACE_ID",
+  ],
 };
 
 function discoverApps() {
@@ -120,3 +125,20 @@ const matrixOutput = {
 
 // Write to stdout (this is what gets captured by GitHub Actions)
 console.log(JSON.stringify(matrixOutput));
+
+/*
+Sample cloudflare-config.json structure for Next.js apps with OpenNext:
+[DO NOT DELETE - USED AS REFERENCE]
+const DEFAULT_CONFIG = {
+  deployable: true,
+  appType: 'nextjs',
+  buildCommand: 'build',
+  workerBuildCommand: 'build:worker',
+  outputDirectory: '.open-next',
+  verifyPaths: ['.open-next'],
+  wranglerConfig: 'wrangler.jsonc',
+  wranglerEnv: 'production',
+  healthCheckPath: '/',
+  requiresSecrets: ['CLOUDFLARE_API_TOKEN', 'CLOUDFLARE_ACCOUNT_ID'],
+};
+*/

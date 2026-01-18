@@ -11,9 +11,9 @@
     },
     "appType": {
       "type": "string",
-      "enum": ["nextjs", "react", "remix", "vite", "custom"],
+      "enum": ["tanstack", "nextjs", "react", "remix", "vite", "custom"],
       "description": "Type of application framework",
-      "default": "nextjs"
+      "default": "tanstack"
     },
     "workerName": {
       "type": "string",
@@ -25,19 +25,19 @@
       "default": "build"
     },
     "workerBuildCommand": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "pnpm script to build the Cloudflare Worker bundle",
-      "default": "build:worker"
+      "default": null
     },
     "outputDirectory": {
       "type": "string",
       "description": "Directory containing worker build output",
-      "default": ".open-next"
+      "default": "dist"
     },
     "assetsDirectory": {
-      "type": "string",
+      "type": ["string", "null"],
       "description": "Directory containing static assets for the worker",
-      "default": ".open-next/assets"
+      "default": null
     },
     "verifyPaths": {
       "type": "array",
@@ -45,7 +45,7 @@
         "type": "string"
       },
       "description": "Paths to verify exist after build",
-      "default": [".open-next"]
+      "default": ["dist", "cloudflare-worker.ts"]
     },
     "wranglerConfig": {
       "type": "string",

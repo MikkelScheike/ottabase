@@ -1,7 +1,7 @@
 {
   "$schema": "../../schemas/cloudflare-config.schema.json",
   "deployable": true,
-  "appType": "vite",
+  "appType": "tanstack",
   "workerName": "ottabase-template-app-tanstack",
   "buildCommand": "build",
   "workerBuildCommand": "",
