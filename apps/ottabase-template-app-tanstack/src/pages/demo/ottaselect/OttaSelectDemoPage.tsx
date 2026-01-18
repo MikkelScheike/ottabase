@@ -85,6 +85,22 @@ const fruitsAndVegetables = [
     price: 5.49,
     emoji: "🍈",
   },
+  {
+    id: "9",
+    name: "Pineapple",
+    category: "Fruit",
+    color: "Yellow",
+    price: 4.99,
+    emoji: "🍍",
+  },
+  {
+    id: "10",
+    name: "Pen",
+    category: "Stationery",
+    color: "Blue",
+    price: 0.99,
+    emoji: "🖊️",
+  },
 ];
 
 const countries = [
@@ -444,9 +460,23 @@ export function OttaSelectDemoPage() {
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium">
-              Countries (API returns only first 3):
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">
+                Countries (API returns only first 3):
+              </label>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setPaginatedSelection([
+                    { id: "in", name: "India", flag: "🇮🇳", code: "IN" },
+                    { id: "br", name: "Brazil", flag: "🇧🇷", code: "BR" },
+                  ])
+                }
+              >
+                Reset Demo
+              </Button>
+            </div>
             <OttaSelect
               mode="multiple"
               fetchCollection={simulatePaginatedAPI}

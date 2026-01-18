@@ -3,6 +3,7 @@ import { Check, ChevronDown, Loader2, Search, X } from "lucide-react";
 import React, {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -84,6 +85,13 @@ export interface OttaSelectProps {
    * Default: true
    */
   showSelectedFirst?: boolean;
+
+  /**
+   * For multiple mode: show selected items as chips instead of "N items selected".
+   * Chips will overflow with "+N more" when space runs out.
+   * Default: true
+   */
+  showChips?: boolean;
 }
 
 // Helper function to normalize input items to standard format
@@ -100,6 +108,47 @@ const normalizeItem = (item: OttaSelectInputItem): OttaSelectItem => {
     id,
     name: String(name),
   };
+};
+
+// Chip component for multi-select display
+const Chip = ({
+  item,
+  renderChip,
+  onRemove,
+  disabled,
+}: {
+  item: OttaSelectItem;
+  renderChip?: (item: OttaSelectItem) => React.ReactNode;
+  onRemove?: (e: React.MouseEvent, item: OttaSelectItem) => void;
+  disabled?: boolean;
+}) => {
+  return (
+    <span
+      className={clsx(
+        "inline-flex items-center gap-1 px-2 py-0.5 text-sm",
+        "bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200",
+        "rounded-md whitespace-nowrap"
+      )}
+    >
+      {renderChip ? renderChip(item) : item.name}
+      {onRemove && !disabled && (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => onRemove(e, item)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onRemove(e as any, item);
+            }
+          }}
+          className="ml-0.5 hover:bg-blue-200 dark:hover:bg-blue-800 rounded-full p-0.5 transition-colors cursor-pointer"
+        >
+          <X className="w-3 h-3" />
+        </span>
+      )}
+    </span>
+  );
 };
 
 export function OttaSelect({
@@ -126,6 +175,7 @@ export function OttaSelect({
   loadingMessage = "Loading...",
   errorMessage = "Error loading options",
   showSelectedFirst = true,
+  showChips = true,
 }: OttaSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -134,10 +184,13 @@ export function OttaSelect({
   const [error, setError] = useState<string | null>(null);
   const [fetchedItems, setFetchedItems] = useState<OttaSelectItem[]>([]);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [visibleChipCount, setVisibleChipCount] = useState<number | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const chipsContainerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
 
   // Normalize static items
   const normalizedStaticItems = useMemo(() => {
@@ -261,6 +314,20 @@ export function OttaSelect({
     [selectedIds],
   );
 
+  // Handle removing a chip
+  const handleRemoveChip = useCallback(
+    (e: React.MouseEvent, item: OttaSelectItem) => {
+      e.stopPropagation();
+      if (!onChange) return;
+
+      const newValue = selectedItems.filter(
+        (selected) => selected.id !== item.id,
+      );
+      onChange(newValue.length > 0 ? newValue : null);
+    },
+    [onChange, selectedItems],
+  );
+
   // Handle item selection
   const handleSelect = useCallback(
     (item: OttaSelectItem) => {
@@ -382,6 +449,62 @@ export function OttaSelect({
     setFocusedIndex(-1);
   }, [filteredItems]);
 
+  // Calculate how many chips can fit
+  useLayoutEffect(() => {
+    if (mode !== "multiple" || !showChips || selectedItems.length === 0) {
+      setVisibleChipCount(null);
+      return;
+    }
+
+    const calculateVisibleChips = () => {
+      if (!chipsContainerRef.current || !measureRef.current) return;
+
+      const containerWidth = chipsContainerRef.current.offsetWidth;
+      // Reserve space for "+N more" badge and some padding
+      const reservedWidth = 70;
+      const availableWidth = containerWidth - reservedWidth;
+
+      let usedWidth = 0;
+      let count = 0;
+      const gap = 4; // gap between chips
+
+      // Measure each chip
+      const measureContainer = measureRef.current;
+      measureContainer.innerHTML = "";
+
+      for (const item of selectedItems) {
+        // Create a temporary chip to measure
+        const chipEl = document.createElement("span");
+        chipEl.className =
+          "inline-flex items-center gap-1 px-2 py-0.5 text-sm rounded-md whitespace-nowrap";
+        chipEl.textContent = item.name;
+        measureContainer.appendChild(chipEl);
+
+        const chipWidth = chipEl.offsetWidth + (count > 0 ? gap : 0);
+
+        if (usedWidth + chipWidth <= availableWidth) {
+          usedWidth += chipWidth;
+          count++;
+        } else {
+          break;
+        }
+      }
+
+      // Show at least 1 chip if there's any selection
+      setVisibleChipCount(Math.max(1, count));
+    };
+
+    calculateVisibleChips();
+
+    // Recalculate on resize
+    const resizeObserver = new ResizeObserver(calculateVisibleChips);
+    if (chipsContainerRef.current) {
+      resizeObserver.observe(chipsContainerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
+  }, [mode, showChips, selectedItems]);
+
   // Get display text/content
   const displayContent = useMemo(() => {
     if (mode === "single") {
@@ -404,6 +527,39 @@ export function OttaSelect({
         <span className="text-gray-500 dark:text-gray-400">{placeholder}</span>
       );
     }
+
+    // Show chips mode
+    if (showChips) {
+      const visibleItems =
+        visibleChipCount !== null
+          ? selectedItems.slice(0, visibleChipCount)
+          : selectedItems;
+      const hiddenCount = selectedItems.length - visibleItems.length;
+
+      return (
+        <div
+          ref={chipsContainerRef}
+          className="flex items-center gap-1 flex-1 overflow-hidden"
+        >
+          {visibleItems.map((item) => (
+            <Chip
+              key={item.id}
+              item={item}
+              renderChip={renderChip}
+              onRemove={handleRemoveChip}
+              disabled={disabled}
+            />
+          ))}
+          {hiddenCount > 0 && (
+            <span className="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+              +{hiddenCount} more
+            </span>
+          )}
+        </div>
+      );
+    }
+
+    // Fallback to text display
     if (selectedItems.length === 1) {
       if (renderValue) {
         return renderValue(selectedItems[0]);
@@ -411,7 +567,17 @@ export function OttaSelect({
       return selectedItems[0].name;
     }
     return `${selectedItems.length} items selected`;
-  }, [mode, selectedItems, placeholder, renderValue]);
+  }, [
+    mode,
+    selectedItems,
+    placeholder,
+    renderValue,
+    renderChip,
+    showChips,
+    visibleChipCount,
+    handleRemoveChip,
+    disabled,
+  ]);
 
   const hasValue = selectedItems.length > 0;
 
@@ -432,13 +598,20 @@ export function OttaSelect({
       )}
       onKeyDown={handleKeyDown}
     >
+      {/* Hidden measure container */}
+      <div
+        ref={measureRef}
+        className="absolute -left-[9999px] flex items-center gap-1"
+        aria-hidden="true"
+      />
+
       {/* Trigger Button */}
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={clsx(
-          "w-full px-3 py-2 text-left",
+          "w-full px-3 py-2 text-left min-h-[42px]",
           "bg-white dark:bg-gray-800",
           "border border-gray-300 dark:border-gray-600",
           "text-gray-900 dark:text-gray-100",
@@ -450,7 +623,9 @@ export function OttaSelect({
           disabled && "cursor-not-allowed",
         )}
       >
-        <span className="truncate flex-1">{displayContent}</span>
+        <span className={clsx("flex-1", mode === "single" && "truncate")}>
+          {displayContent}
+        </span>
 
         <div className="flex items-center gap-1 flex-shrink-0">
           {clearable && hasValue && !disabled && (
