@@ -1,4 +1,5 @@
 import { handleAuthRequest } from "@ottabase/auth/backend";
+import { getLoginConfig } from "@ottabase/auth/components";
 import {
   RealtimeActor,
   RealtimeBroadcaster,
@@ -151,6 +152,21 @@ export default {
   async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
     try {
       const url = new URL(request.url);
+      const origin = request.headers.get("Origin") || "*";
+      const authCorsHeaders = {
+        "Access-Control-Allow-Origin": origin,
+        "Access-Control-Allow-Credentials": "true",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Vary": "Origin",
+      };
+
+      if (url.pathname.startsWith("/api/") && request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: authCorsHeaders,
+        });
+      }
 
       if (url.pathname === "/api/health") {
         return Response.json({
@@ -158,6 +174,21 @@ export default {
           name: "ottabase-template-app-tanstack",
           timestamp: Date.now(),
         });
+      }
+
+      if (url.pathname === "/api/auth/config" && request.method === "GET") {
+        const config = getLoginConfig(env as any);
+        const response = jsonResponse(
+          {
+            ...config,
+            authSecretConfigured: !!env.AUTH_SECRET,
+          },
+          200,
+        );
+        Object.entries(authCorsHeaders).forEach(([key, value]) => {
+          response.headers.set(key, value);
+        });
+        return response;
       }
 
       if (url.pathname === "/api/email/test" && request.method === "POST") {
@@ -825,7 +856,11 @@ export default {
       // Handles all Auth.js routes: /api/auth/signin, /api/auth/signout,
       // /api/auth/session, /api/auth/callback/*, etc.
       if (url.pathname.startsWith("/api/auth/")) {
-        return handleAuthRequest(request, env as any);
+        const response = await handleAuthRequest(request, env as any);
+        Object.entries(authCorsHeaders).forEach(([key, value]) => {
+          response.headers.set(key, value);
+        });
+        return response;
       }
 
       // ============================================================

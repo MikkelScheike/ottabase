@@ -108,7 +108,7 @@ export function isCredentialsConfigured(): boolean {
 export function isEmailProviderConfigured(env: ProviderEnv): boolean {
     // Check for Resend
     if (env.EMAIL_RESEND_API_KEY) {
-      return true;
+        return true;
     }
 
     // Check for Nodemailer/SMTP

@@ -68,6 +68,7 @@ export async function signInWithCredentials(
   },
 ): Promise<AuthResponse> {
   const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+  const csrfToken = await getCsrfToken(options?.clientOptions);
 
   try {
     const response = await fetch(`${baseUrl}/callback/credentials`, {
@@ -75,8 +76,10 @@ export async function signInWithCredentials(
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({
         ...credentials,
+        csrfToken,
         redirect: options?.redirect ?? false,
         callbackUrl: options?.redirectTo ?? "/dashboard",
       }),
@@ -160,6 +163,7 @@ export async function sendMagicLink(
   },
 ): Promise<AuthResponse> {
   const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+  const csrfToken = await getCsrfToken(options?.clientOptions);
 
   try {
     const response = await fetch(`${baseUrl}/signin/email`, {
@@ -167,8 +171,10 @@ export async function sendMagicLink(
       headers: {
         "Content-Type": "application/json",
       },
+      credentials: "include",
       body: JSON.stringify({
         email,
+        csrfToken,
         callbackUrl: options?.redirectTo ?? "/dashboard",
       }),
     });
@@ -287,7 +293,9 @@ export async function getCsrfToken(
   const baseUrl = options?.baseUrl ?? defaultOptions.baseUrl;
 
   try {
-    const response = await fetch(`${baseUrl}/csrf`);
+    const response = await fetch(`${baseUrl}/csrf`, {
+      credentials: "include",
+    });
     if (!response.ok) return null;
 
     try {

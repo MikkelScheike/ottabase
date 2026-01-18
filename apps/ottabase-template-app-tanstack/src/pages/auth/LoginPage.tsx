@@ -14,7 +14,7 @@ import {
 } from "@ottabase/ui-shadcn";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,17 +26,42 @@ export function LoginPage() {
 
   // Auto-detect configured providers from env
   // This will check process.env for OAuth provider credentials
-  const loginConfig = useMemo(
-    () => getLoginConfig(import.meta.env || {}),
-    [],
+  const [loginConfig, setLoginConfig] = useState(
+    () =>
+      ({
+        ...getLoginConfig({} as any),
+        authSecretConfigured: false,
+      }) as ReturnType<typeof getLoginConfig> & { authSecretConfigured: boolean },
   );
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadConfig = async () => {
+      try {
+        const response = await fetch("/api/auth/config");
+        if (!response.ok) return;
+        const config = (await response.json()) as ReturnType<
+          typeof getLoginConfig
+        > & { authSecretConfigured: boolean };
+        if (mounted) setLoginConfig(config);
+      } catch {
+        // ignore
+      }
+    };
+
+    loadConfig();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Check for missing configuration and show warnings
   useEffect(() => {
     const newWarnings: string[] = [];
 
     // Check for AUTH_SECRET
-    if (!import.meta.env.VITE_AUTH_SECRET_CONFIGURED) {
+    if (!loginConfig.authSecretConfigured) {
       newWarnings.push(
         "AUTH_SECRET not configured - using default (insecure for production)",
       );
@@ -61,7 +86,7 @@ export function LoginPage() {
 
     if (!hasMagicLink) {
       newWarnings.push(
-        "Magic Link not configured. Set EMAIL_RESEND_API_KEY or EMAIL_SERVER + EMAIL_FROM",
+        "Magic Link not configured. Set EMAIL_SERVER + EMAIL_FROM or EMAIL_RESEND_API_KEY in the worker environment.",
       );
     }
 
