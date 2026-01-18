@@ -9,8 +9,8 @@
 
 export {
   getCsrfToken,
-  getSessionClient as getSession,
-  isAuthenticatedClient as isAuthenticated,
+  getSession,
+  isAuthenticated,
   sendMagicLink,
   signInWithCredentials,
   signInWithProvider,
@@ -20,3 +20,4 @@ export {
   type AuthSession,
   type SignInCredentials,
 } from "@ottabase/auth/client";
+
