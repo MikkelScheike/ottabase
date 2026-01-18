@@ -1,15 +1,12 @@
 {
   "$schema": "../../schemas/cloudflare-config.schema.json",
   "deployable": true,
-  "appType": "tanstack",
+  "appType": "vite",
   "workerName": "ottabase-template-app-tanstack",
   "buildCommand": "build",
-  "workerBuildCommand": null,
+  "workerBuildCommand": "",
   "outputDirectory": "dist",
-  "verifyPaths": [
-    "dist",
-    "cloudflare-worker.ts"
-  ],
+  "verifyPaths": ["dist", "cloudflare-worker.ts"],
   "wranglerConfig": "wrangler.jsonc",
   "wranglerEnv": "production",
   "healthCheckPath": "/",
