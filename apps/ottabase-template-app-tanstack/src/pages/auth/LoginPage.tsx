@@ -14,7 +14,7 @@ import {
 } from "@ottabase/ui-shadcn";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { AlertCircle, CheckCircle2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -26,7 +26,10 @@ export function LoginPage() {
 
   // Auto-detect configured providers from env
   // This will check process.env for OAuth provider credentials
-  const loginConfig = getLoginConfig(import.meta.env || {});
+  const loginConfig = useMemo(
+    () => getLoginConfig(import.meta.env || {}),
+    [],
+  );
 
   // Check for missing configuration and show warnings
   useEffect(() => {
