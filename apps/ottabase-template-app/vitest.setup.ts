@@ -43,9 +43,6 @@ vi.mock("next/image", () => ({
 
 // Mock Cloudflare Bindings for worker context
 beforeAll(() => {
-  // Mock environment variables
-  process.env.NODE_ENV = "test";
-
   // Mock global fetch for tests
   global.fetch = vi.fn();
 

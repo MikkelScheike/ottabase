@@ -44,9 +44,6 @@ export const {
 // Export main atom and factory
 export { appStateAtom, createAtom };
 
-// Re-export types
-export type { AppUser };
-
 /*
     USAGE EXAMPLES
     ----------------------------------------------------------------
