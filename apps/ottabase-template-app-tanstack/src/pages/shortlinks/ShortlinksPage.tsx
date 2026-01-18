@@ -32,10 +32,8 @@ import {
   ChevronRight,
   ChevronsLeft,
   ChevronsRight,
-  Code,
   Copy,
   Edit,
-  ExternalLink,
   Link2,
   Plus,
   Trash2,
@@ -305,6 +303,7 @@ export function ShortlinksPage() {
                     <TableRow>
                       <TableHead>Short Code</TableHead>
                       <TableHead>Destination</TableHead>
+                      <TableHead>Link</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead>App</TableHead>
                       <TableHead className="text-right">Clicks</TableHead>
@@ -315,24 +314,25 @@ export function ShortlinksPage() {
                   <TableBody>
                     {shortlinks.map((link) => (
                       <TableRow key={link.id}>
+                        {/* Short Code + Copy */}
                         <TableCell className="font-mono">
                           <div className="flex items-center gap-1">
-                            <span className="font-medium mr-1">
+                            <span className="font-medium">
                               {link.shortCode}
                             </span>
                             <Button
                               variant="ghost"
                               size="sm"
                               className="h-6 w-6 p-0"
-                              title="Copy Short URL"
+                              title="Copy Short Code"
                               onClick={() =>
                                 copyToClipboard(
-                                  getShortUrl(link.shortCode),
-                                  `${link.id}-short`,
+                                  link.shortCode,
+                                  `${link.id}-code`,
                                 )
                               }
                             >
-                              {copiedId === `${link.id}-short` ? (
+                              {copiedId === `${link.id}-code` ? (
                                 <span className="text-xs text-green-600">
                                   ✓
                                 </span>
@@ -340,50 +340,92 @@ export function ShortlinksPage() {
                                 <Copy className="h-3 w-3" />
                               )}
                             </Button>
+                          </div>
+                        </TableCell>
+
+                        {/* Destination URL + Copy */}
+                        <TableCell className="max-w-[200px]">
+                          <div className="flex items-center gap-1">
+                            <a
+                              href={link.fullUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="truncate text-sm text-muted-foreground hover:text-foreground"
+                              title={link.fullUrl}
+                            >
+                              {link.fullUrl}
+                            </a>
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-6 w-6 p-0"
-                              title="Copy Explicit Link"
+                              className="h-6 w-6 p-0 flex-shrink-0"
+                              title="Copy Destination URL"
                               onClick={() =>
-                                copyToClipboard(
-                                  getExplicitUrl(link.shortCode),
-                                  `${link.id}-explicit`,
-                                )
+                                copyToClipboard(link.fullUrl, `${link.id}-dest`)
                               }
                             >
-                              {copiedId === `${link.id}-explicit` ? (
+                              {copiedId === `${link.id}-dest` ? (
                                 <span className="text-xs text-green-600">
                                   ✓
                                 </span>
                               ) : (
-                                <Code className="h-3 w-3" />
+                                <Copy className="h-3 w-3" />
                               )}
                             </Button>
                           </div>
                         </TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          <a
-                            href={link.fullUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-                          >
-                            <span className="truncate">{link.fullUrl}</span>
-                            <ExternalLink className="h-3 w-3 flex-shrink-0" />
-                          </a>
+
+                        {/* Redirect Link + Copy */}
+                        <TableCell className="max-w-[180px]">
+                          <div className="flex items-center gap-1">
+                            <a
+                              href={getExplicitUrl(link.shortCode)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="truncate text-sm text-primary hover:underline"
+                              title={getExplicitUrl(link.shortCode)}
+                            >
+                              {getExplicitUrl(link.shortCode)}
+                            </a>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0 flex-shrink-0"
+                              title="Copy Redirect URL"
+                              onClick={() =>
+                                copyToClipboard(
+                                  getExplicitUrl(link.shortCode),
+                                  `${link.id}-link`,
+                                )
+                              }
+                            >
+                              {copiedId === `${link.id}-link` ? (
+                                <span className="text-xs text-green-600">
+                                  ✓
+                                </span>
+                              ) : (
+                                <Copy className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="capitalize">
-                            {link.type}
-                          </Badge>
+
+                        {/* Type - simple text */}
+                        <TableCell className="text-sm text-muted-foreground capitalize">
+                          {link.type}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{link.appName}</Badge>
+
+                        {/* App - simple text */}
+                        <TableCell className="text-sm text-muted-foreground">
+                          {link.appName}
                         </TableCell>
+
+                        {/* Clicks */}
                         <TableCell className="text-right font-mono">
                           {link.clicks || 0}
                         </TableCell>
+
+                        {/* Expires */}
                         <TableCell>
                           {isExpired(link.expiryDate) ? (
                             <Badge variant="destructive">Expired</Badge>
@@ -397,6 +439,8 @@ export function ShortlinksPage() {
                             </span>
                           )}
                         </TableCell>
+
+                        {/* Actions */}
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
                             <Button
