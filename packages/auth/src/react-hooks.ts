@@ -17,7 +17,7 @@
 
 import { atom, useAtom, type Getter } from "jotai";
 import { atomWithStorage } from "jotai/utils";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import {
   signOut as authSignOut,
   getSession as getAuthSession,
@@ -140,14 +140,17 @@ export function useSession(options?: UseSessionOptions) {
   /**
    * Manually set session (e.g., after successful login)
    */
-  const login = (newSession: Session) => {
-    setSession(newSession);
-  };
+  const login = useCallback(
+    (newSession: Session) => {
+      setSession(newSession);
+    },
+    [setSession],
+  );
 
   /**
    * Sign out and clear session
    */
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       // Sign out from backend
       await authSignOut({
@@ -160,24 +163,27 @@ export function useSession(options?: UseSessionOptions) {
       // Clear local session regardless
       setSession(null);
     }
-  };
+  }, [options?.baseUrl, setSession]);
 
   /**
    * Update user fields in session
    */
-  const updateUser = (updatedUser: Partial<User>) => {
-    if (session) {
-      setSession({
-        ...session,
-        user: { ...session.user, ...updatedUser },
-      });
-    }
-  };
+  const updateUser = useCallback(
+    (updatedUser: Partial<User>) => {
+      if (session) {
+        setSession({
+          ...session,
+          user: { ...session.user, ...updatedUser },
+        });
+      }
+    },
+    [session, setSession],
+  );
 
   /**
    * Refresh session from backend
    */
-  const refreshSession = async () => {
+  const refreshSession = useCallback(async () => {
     setIsLoading(true);
     try {
       const backendSession = await getAuthSession({
@@ -194,14 +200,16 @@ export function useSession(options?: UseSessionOptions) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [options?.baseUrl, setSession, setIsLoading]);
+
+  const user = session?.user ?? null;
 
   return {
     /** Current session (null if not authenticated) */
     session,
 
     /** Current user (null if not authenticated) */
-    user: session?.user ?? null,
+    user,
 
     /** Whether user is authenticated and session is valid */
     isAuthenticated,
