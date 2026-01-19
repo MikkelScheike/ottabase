@@ -2,6 +2,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ReferralTracker } from "@/components/ReferralTracker";
 import { api, isApiError } from "@/lib/api";
 import { useSession } from "@/lib/auth";
+import { ThemeSwitcher } from "@/ottabase/components/ThemeSwitcher";
 import { APP_META } from "@/ottabase/config/app.config";
 import { DarkModeToggle } from "@ottabase/ui-components/dark-mode-toggle";
 import {
@@ -91,6 +92,7 @@ function RootLayout() {
               </>
             )}
 
+            <ThemeSwitcher />
             <DarkModeToggle type="button" title="Toggle dark/light mode" />
 
             {isAuthenticated ? (
