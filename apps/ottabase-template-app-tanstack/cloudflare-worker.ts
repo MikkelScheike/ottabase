@@ -6,7 +6,20 @@ import {
 } from "@ottabase/cf-realtime/server";
 import { createImagesClient } from "@ottabase/cf/images";
 import { createKVClient } from "@ottabase/cf/kv";
-import { createQueuesClient } from "@ottabase/cf/queues";
+import { dispatch, dispatchBatch } from "@ottabase/queue";
+import {
+  queueHandler,
+  getQueueStats,
+  getRecentProcessedJobs,
+  getFailedJobs,
+  incrementDispatchStats,
+  getDLQJobs,
+  getDLQJob,
+  deleteDLQJob,
+  retryDLQJob,
+  retryAllDLQJobs,
+  purgeDLQ,
+} from "./ottabase/queue";
 import { createR2Client } from "@ottabase/cf/r2";
 import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
@@ -1357,20 +1370,73 @@ export default {
             });
           }
 
-          const body = await readJson<{ message?: unknown; batch?: unknown[] }>(
-            request,
-          );
-          const queue = createQueuesClient({ queue: env.OBCF_QUEUE });
+          const body = await readJson<{
+            type?: string;
+            payload?: unknown;
+            message?: { action?: string; userId?: string; data?: unknown };
+            batch?: Array<{ action?: string; userId?: string; data?: unknown }>;
+            delay?: number;
+          }>(request);
 
-          if (Array.isArray(body.batch)) {
-            const messages = body.batch.map((msg) => ({ body: msg }));
-            const result = await queue.sendBatch(messages);
+          // New dispatch API: { type, payload, delay? }
+          if (body.type && body.payload !== undefined) {
+            const result = await dispatch(
+              env.OBCF_QUEUE,
+              body.type,
+              body.payload,
+              body.delay ? { delay: body.delay } : undefined
+            );
+
             if (!result.success) {
-              return errorResponse("Failed to send batch", 500, {
+              return errorResponse("Failed to dispatch job", 500, {
                 details: result.error.message,
               });
             }
 
+            // Store in KV for demo display
+            if (env.OBCF_KV) {
+              try {
+                const kv = createKVClient({ namespace: env.OBCF_KV as any });
+                const key = `queue:message:${Date.now()}`;
+                await kv.put(
+                  key,
+                  JSON.stringify({
+                    action: body.type,
+                    data: body.payload,
+                    sentAt: new Date().toISOString(),
+                    type: "single",
+                  }),
+                  { expirationTtl: 3600 }
+                );
+              } catch {
+                // ignore
+              }
+            }
+
+            // Increment dispatch stats
+            await incrementDispatchStats(env, body.type);
+
+            return jsonResponse({
+              success: true,
+              message: `Job dispatched: ${body.type}`,
+            });
+          }
+
+          // Legacy batch API for demo compatibility
+          if (Array.isArray(body.batch)) {
+            const jobs = body.batch.map((msg) => ({
+              type: msg.action || "batch-task",
+              payload: { userId: msg.userId, data: msg.data, ...msg },
+            }));
+
+            const result = await dispatchBatch(env.OBCF_QUEUE, jobs);
+            if (!result.success) {
+              return errorResponse("Failed to dispatch batch", 500, {
+                details: result.error.message,
+              });
+            }
+
+            // Store in KV for demo display
             if (env.OBCF_KV) {
               try {
                 const kv = createKVClient({ namespace: env.OBCF_KV as any });
@@ -1384,7 +1450,7 @@ export default {
                       sentAt: new Date().toISOString(),
                       type: "batch",
                     }),
-                    { expirationTtl: 3600 },
+                    { expirationTtl: 3600 }
                   );
                 }
               } catch {
@@ -1392,21 +1458,39 @@ export default {
               }
             }
 
+            // Increment dispatch stats for each job type
+            const jobTypeCounts = jobs.reduce(
+              (acc, job) => {
+                acc[job.type] = (acc[job.type] || 0) + 1;
+                return acc;
+              },
+              {} as Record<string, number>
+            );
+            for (const [jobType, count] of Object.entries(jobTypeCounts)) {
+              await incrementDispatchStats(env, jobType, count);
+            }
+
             return jsonResponse({
               success: true,
-              message: `Sent ${body.batch.length} messages to queue`,
+              message: `Dispatched ${body.batch.length} jobs to queue`,
               count: body.batch.length,
             });
           }
 
+          // Legacy single message API for demo compatibility
           if (body.message) {
-            const result = await queue.send(body.message);
+            const msg = body.message;
+            const jobType = msg.action || "batch-task";
+            const payload = { userId: msg.userId, data: msg.data, action: msg.action };
+
+            const result = await dispatch(env.OBCF_QUEUE, jobType, payload);
             if (!result.success) {
-              return errorResponse("Failed to send message", 500, {
+              return errorResponse("Failed to dispatch job", 500, {
                 details: result.error.message,
               });
             }
 
+            // Store in KV for demo display
             if (env.OBCF_KV) {
               try {
                 const kv = createKVClient({ namespace: env.OBCF_KV as any });
@@ -1414,24 +1498,30 @@ export default {
                 await kv.put(
                   key,
                   JSON.stringify({
-                    ...(body.message as any),
+                    ...(msg as any),
                     sentAt: new Date().toISOString(),
                     type: "single",
                   }),
-                  { expirationTtl: 3600 },
+                  { expirationTtl: 3600 }
                 );
               } catch {
                 // ignore
               }
             }
 
+            // Increment dispatch stats
+            await incrementDispatchStats(env, jobType);
+
             return jsonResponse({
               success: true,
-              message: "Message sent to queue",
+              message: "Job dispatched to queue",
             });
           }
 
-          return errorResponse("Either message or batch is required", 400);
+          return errorResponse(
+            "Either { type, payload } or { message } or { batch } is required",
+            400
+          );
         }
 
         if (request.method === "GET") {
@@ -1471,6 +1561,172 @@ export default {
         return errorResponse("Method not allowed", 405, {
           code: "METHOD_NOT_ALLOWED",
         });
+      }
+
+      // Admin Queue Management: /api/admin/queues
+      if (url.pathname === "/api/admin/queues" || url.pathname.startsWith("/api/admin/queues/")) {
+        // Get queue stats and overview
+        if (url.pathname === "/api/admin/queues" && request.method === "GET") {
+          const stats = await getQueueStats(env);
+
+          // Get pending messages count from KV
+          let pendingCount = 0;
+          if (env.OBCF_KV) {
+            const kv = createKVClient({ namespace: env.OBCF_KV as any });
+            const listResult = await kv.list({ prefix: "queue:message:" });
+            if (listResult.success) {
+              pendingCount = listResult.data.keys.length;
+            }
+          }
+
+          // Registered handlers info
+          const registeredHandlers = [
+            { type: "send-email", description: "Send email notifications" },
+            { type: "process-order", description: "Process order transactions" },
+            { type: "generate-report", description: "Generate reports asynchronously" },
+            { type: "sync-data", description: "Synchronize data between systems" },
+            { type: "batch-task", description: "Generic batch processing task" },
+          ];
+
+          return jsonResponse({
+            stats,
+            pendingCount,
+            registeredHandlers,
+            queueBinding: env.OBCF_QUEUE ? "configured" : "not configured",
+          });
+        }
+
+        // Get recent processed jobs
+        if (url.pathname === "/api/admin/queues/processed" && request.method === "GET") {
+          const limit = parseInt(url.searchParams.get("limit") || "50");
+          const jobs = await getRecentProcessedJobs(env, Math.min(limit, 100));
+          return jsonResponse({ jobs });
+        }
+
+        // Get failed jobs
+        if (url.pathname === "/api/admin/queues/failed" && request.method === "GET") {
+          const limit = parseInt(url.searchParams.get("limit") || "50");
+          const jobs = await getFailedJobs(env, Math.min(limit, 100));
+          return jsonResponse({ jobs });
+        }
+
+        // Get pending (dispatched but not processed) jobs
+        if (url.pathname === "/api/admin/queues/pending" && request.method === "GET") {
+          if (!env.OBCF_KV) {
+            return errorResponse("KV binding not configured", 500, {
+              code: "CONFIG_ERROR",
+            });
+          }
+
+          const kv = createKVClient({ namespace: env.OBCF_KV as any });
+          const limit = parseInt(url.searchParams.get("limit") || "50");
+          const listResult = await kv.list({ prefix: "queue:message:", limit: Math.min(limit, 100) });
+
+          if (!listResult.success) {
+            return errorResponse("Failed to list pending jobs", 500);
+          }
+
+          const jobs: any[] = [];
+          for (const key of listResult.data.keys) {
+            const result = await kv.get(key.name);
+            if (result.success && result.data) {
+              try {
+                const message = JSON.parse(result.data as string);
+                jobs.push({ key: key.name, ...message });
+              } catch {
+                // ignore
+              }
+            }
+          }
+
+          jobs.sort(
+            (a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime()
+          );
+
+          return jsonResponse({ jobs });
+        }
+
+        // Reset queue stats (for testing/admin purposes)
+        if (url.pathname === "/api/admin/queues/reset-stats" && request.method === "POST") {
+          if (!env.OBCF_KV) {
+            return errorResponse("KV binding not configured", 500, {
+              code: "CONFIG_ERROR",
+            });
+          }
+
+          const kv = createKVClient({ namespace: env.OBCF_KV as any });
+          await kv.put("queue:stats", JSON.stringify({
+            totalDispatched: 0,
+            totalProcessed: 0,
+            totalFailed: 0,
+            totalDLQ: 0,
+            byJobType: {},
+            lastUpdated: new Date().toISOString(),
+          }));
+
+          return jsonResponse({ success: true, message: "Stats reset" });
+        }
+
+        // ================================================================
+        // Dead Letter Queue (DLQ) Endpoints
+        // ================================================================
+
+        // List DLQ jobs with pagination
+        if (url.pathname === "/api/admin/queues/dlq" && request.method === "GET") {
+          const limit = parseInt(url.searchParams.get("limit") || "50");
+          const cursor = url.searchParams.get("cursor") || undefined;
+          const result = await getDLQJobs(env, Math.min(limit, 100), cursor);
+          return jsonResponse(result);
+        }
+
+        // Retry all DLQ jobs
+        if (url.pathname === "/api/admin/queues/dlq/retry-all" && request.method === "POST") {
+          const result = await retryAllDLQJobs(env);
+          return jsonResponse(result);
+        }
+
+        // Purge all DLQ jobs
+        if (url.pathname === "/api/admin/queues/dlq" && request.method === "DELETE") {
+          const deleted = await purgeDLQ(env);
+          return jsonResponse({ success: true, deleted });
+        }
+
+        // Handle individual DLQ job operations: /api/admin/queues/dlq/:id
+        const dlqJobMatch = url.pathname.match(/^\/api\/admin\/queues\/dlq\/([^/]+)$/);
+        if (dlqJobMatch) {
+          const jobId = dlqJobMatch[1];
+
+          // Get single DLQ job
+          if (request.method === "GET") {
+            const job = await getDLQJob(env, jobId);
+            if (!job) {
+              return errorResponse("Job not found", 404, { code: "NOT_FOUND" });
+            }
+            return jsonResponse({ job });
+          }
+
+          // Delete DLQ job
+          if (request.method === "DELETE") {
+            const deleted = await deleteDLQJob(env, jobId);
+            if (!deleted) {
+              return errorResponse("Job not found", 404, { code: "NOT_FOUND" });
+            }
+            return jsonResponse({ success: true });
+          }
+        }
+
+        // Retry single DLQ job: /api/admin/queues/dlq/:id/retry
+        const dlqRetryMatch = url.pathname.match(/^\/api\/admin\/queues\/dlq\/([^/]+)\/retry$/);
+        if (dlqRetryMatch && request.method === "POST") {
+          const jobId = dlqRetryMatch[1];
+          const result = await retryDLQJob(env, jobId);
+          if (!result.success) {
+            return errorResponse(result.error || "Retry failed", 400, { code: "RETRY_FAILED" });
+          }
+          return jsonResponse({ success: true, message: "Job re-queued" });
+        }
+
+        return errorResponse("Not found", 404, { code: "NOT_FOUND" });
       }
 
       // Rate limiting: /api/cloudflare/rate-limiting
@@ -1874,4 +2130,8 @@ export default {
       );
     }
   },
+
+  // Queue consumer handler
+  // Processes jobs from the Cloudflare Queue using registered handlers
+  queue: queueHandler,
 };
