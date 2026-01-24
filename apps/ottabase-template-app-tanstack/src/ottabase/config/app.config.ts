@@ -6,10 +6,12 @@ import {
 
 export const appConfig = createAppConfig({
   appName: "Ottabase Template App (TanStack)",
+  appId: "ottabase-template-app",
   defaults: {
     meta: {
       author: "@thinkdj",
-      description: "A minimal TanStack + Cloudflare Workers template app in the Ottabase monorepo",
+      description:
+        "A minimal TanStack + Cloudflare Workers template app in the Ottabase monorepo",
       keywords:
         "Ottabase, TanStack Router, TanStack Query, Vite, Tailwind, Shadcn, Cloudflare Workers, TypeScript, React",
       companyName: "Ottabase",
@@ -76,7 +78,8 @@ export const UI_DEBOUNCE_MS = appConfig.ui.debounceMs;
 // CrudHub
 export const CRUDHUB_API_BASE_URL = appConfig.features.crudHub.apiBaseUrl;
 export const CRUDHUB_URL_BASE = appConfig.features.crudHub.urlBase;
-export const CRUDHUB_URL_BASE_LISTING = appConfig.features.crudHub.urlBaseListing;
+export const CRUDHUB_URL_BASE_LISTING =
+  appConfig.features.crudHub.urlBaseListing;
 
 // Model
 export const MODEL_DEFAULT_REL_KEY = appConfig.model.defaultRelKey;
@@ -106,6 +109,7 @@ export const THEME_COLORS = appConfig.theme.colors;
 export default appConfig;
 
 // Export commonly used values
+export const APP_ID = appConfig.appId;
 export const APP_NAME = APP_META.appName;
 export const APP_TITLE = APP_META.title;
 export const APP_DESCRIPTION = APP_META.description;

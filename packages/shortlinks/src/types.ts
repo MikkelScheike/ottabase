@@ -22,7 +22,7 @@ export interface CreateShortlinkRequest {
   fullUrl: string;
   shortCode: string;
   type?: ShortlinkType;
-  appName?: string;
+  appId?: string;
   expiryDate?: Date | null;
 }
 
@@ -88,7 +88,7 @@ export interface ShortlinksQueryParams {
   per_page?: number;
   sort?: string;
   order?: "asc" | "desc";
-  appName?: string;
+  appId?: string;
   type?: ShortlinkType;
   search?: string;
 }

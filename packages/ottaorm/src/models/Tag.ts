@@ -2,16 +2,24 @@
 // @ottabase/ottaorm - Tag Model
 // ============================================================
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { BaseModel, IModelConstructorParams, ModelFields } from "../base/BaseModel";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  BaseModel,
+  IModelConstructorParams,
+  ModelFields,
+} from "../base/BaseModel";
 
 /**
  * Tag table schema
  */
 export const tagsTable = sqliteTable("tags", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),

@@ -56,7 +56,6 @@ export class Shortlink extends BaseModel {
 
   protected static defaults = {
     type: ShortlinkTypes.REDIRECT,
-    appName: "default",
     clicks: 0,
   };
 
@@ -146,23 +145,21 @@ export class Shortlink extends BaseModel {
         colWidth: 120,
       },
     },
-    appName: {
+    appId: {
       type: "string",
-      editable: true,
+      editable: false,
       filterable: true,
       sortable: true,
       uiConfig: {
-        label: "App Name",
-        description: "Application identifier for multi-tenant support",
-        defaultValue: "default",
+        label: "App ID",
+        description: "Auto-set when scopeByAppId is enabled",
       },
       formConfig: {
-        visible: true,
-        fieldType: "input",
+        visible: false,
       },
       tableConfig: {
         visible: true,
-        colWidth: 120,
+        colWidth: 150,
       },
     },
     expiryDate: {
@@ -269,15 +266,15 @@ export class Shortlink extends BaseModel {
    * Find active (non-expired) shortlinks
    */
   static async active(options?: {
-    appName?: string;
+    appId?: string;
     orderBy?: string;
     orderDirection?: "asc" | "desc";
   }) {
     const now = new Date();
     const query: any = {};
 
-    if (options?.appName) {
-      query.appName = options.appName;
+    if (options?.appId) {
+      query.appId = options.appId;
     }
 
     // Note: We'll need to filter expired ones after fetching
@@ -292,17 +289,17 @@ export class Shortlink extends BaseModel {
   }
 
   /**
-   * Get shortlinks by app name
+   * Get shortlinks by app ID
    */
   static async byApp(
-    appName: string,
+    appId: string,
     options?: {
       orderBy?: string;
       orderDirection?: "asc" | "desc";
     },
   ) {
     return this.where(
-      { appName },
+      { appId },
       {
         orderBy: options?.orderBy || "createdAt",
         orderDirection: options?.orderDirection || "desc",

@@ -191,6 +191,44 @@ createTodo.mutate({ title: "New Todo" });
 | `@ottabase/referrals` | Referral tracking system |
 | `@ottabase/cf-realtime` | WebSocket pub/sub (Durable Objects) |
 
+## Multi-App Database Sharing
+
+Multiple apps can share a single database using the optional `appId` column.
+
+### How It Works
+
+| Mode | `scopeByAppId` | `appId` column | Behavior |
+|------|----------------|----------------|----------|
+| **Default** | `false` | `null` | Single app, no filtering |
+| **Multi-app** | `true` | `"my-app"` | Auto-inject/filter by `appId` |
+
+### Configuration
+
+```typescript
+import { createAppConfig } from '@ottabase/config';
+
+const config = createAppConfig({
+  appId: 'my-unique-app-id',
+  defaults: {
+    features: { scopeByAppId: true }  // Enable appId scoping
+  }
+});
+```
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_ID` | `"ottabase-template-app"` | Unique app identifier |
+| `SCOPE_BY_APP_ID` | `"false"` | Enable appId scoping for DB |
+
+### Schema Support
+
+All models include a nullable `appId` column:
+- `@ottabase/ottaorm` models (User, Session, Account, Post, Tag, etc.)
+- `@ottabase/shortlinks` schema
+- `@ottabase/referrals` schema
+
 ## Creating New Apps
 
 ```bash

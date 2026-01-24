@@ -2,20 +2,33 @@
 // @ottabase/ottaorm - Post Model
 // ============================================================
 
-import { sqliteTable, text, integer, primaryKey } from "drizzle-orm/sqlite-core";
-import { BaseModel, IModelConstructorParams, ModelFields } from "../base/BaseModel";
+import {
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
+import {
+  BaseModel,
+  IModelConstructorParams,
+  ModelFields,
+} from "../base/BaseModel";
 
 /**
  * Post table schema
  */
 export const postsTable = sqliteTable("posts", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   title: text("title").notNull(),
   slug: text("slug").notNull().unique(),
   content: text("content"),
   excerpt: text("excerpt"),
   published: integer("published", { mode: "boolean" }).default(false).notNull(),
   authorId: text("author_id"),
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),

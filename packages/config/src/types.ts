@@ -62,6 +62,8 @@ export interface PaginationConfig {
 }
 
 export interface AppConfig {
+  /** Unique app identifier for multi-app database sharing */
+  appId: string;
   meta: AppMeta;
   uiFramework: SupportedUIFramework;
 
@@ -92,6 +94,8 @@ export interface AppConfig {
 
   // Feature Configuration
   features: {
+    /** Scope database queries/inserts by appId (for multi-app DB sharing) */
+    scopeByAppId: boolean;
     spotlight: SpotlightConfig;
     crudHub: CrudHubConfig;
     auth: AuthConfig;
@@ -106,6 +110,8 @@ export interface AppConfig {
 
 export interface ConfigOptions {
   appName?: string;
+  /** Unique app identifier for multi-app database sharing */
+  appId?: string;
   defaults?: {
     meta?: Partial<AppMeta>;
     uiFramework?: SupportedUIFramework;
@@ -114,6 +120,8 @@ export interface ConfigOptions {
     storage?: Partial<AppConfig["storage"]>;
     api?: Partial<AppConfig["api"]>;
     features?: {
+      /** Scope database queries/inserts by appId */
+      scopeByAppId?: boolean;
       spotlight?: Partial<SpotlightConfig>;
       crudHub?: Partial<CrudHubConfig>;
       auth?: Partial<AuthConfig>;

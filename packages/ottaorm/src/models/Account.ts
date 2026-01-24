@@ -2,14 +2,20 @@
 // @ottabase/ottaorm - Account Model (NextAuth)
 // ============================================================
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { BaseModel, IModelConstructorParams, ModelFields } from "../base/BaseModel";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  BaseModel,
+  IModelConstructorParams,
+  ModelFields,
+} from "../base/BaseModel";
 
 /**
  * Account table schema (NextAuth)
  */
 export const accountsTable = sqliteTable("accounts", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   userId: text("user_id").notNull(),
   type: text("type").notNull(), // oauth, email, credentials
   provider: text("provider").notNull(), // google, github, etc.
@@ -21,6 +27,8 @@ export const accountsTable = sqliteTable("accounts", {
   scope: text("scope"),
   idToken: text("id_token"),
   sessionState: text("session_state"),
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),

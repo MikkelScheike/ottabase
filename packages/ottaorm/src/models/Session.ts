@@ -15,6 +15,8 @@ export const sessionsTable = sqliteTable("sessions", {
   sessionToken: text("session_token").notNull().unique(),
   userId: text("user_id").notNull(),
   expires: text("expires").notNull(), // ISO 8601 date string
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),

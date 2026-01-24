@@ -21,8 +21,8 @@ export const shortlinksTable = sqliteTable("shortlinks", {
   // Type of link (e.g., "redirect", "tracking", "internal")
   type: text("type").notNull().default("redirect"),
 
-  // App identifier for multi-tenant support
-  appName: text("app_name").notNull().default("default"),
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
 
   // Optional expiry timestamp
   expiryDate: integer("expiry_date", { mode: "timestamp" }),

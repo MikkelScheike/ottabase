@@ -1,23 +1,23 @@
 // Export types
 export type {
-  SupportedUIFramework,
-  AppMeta,
   AppConfig,
-  ConfigOptions,
-  ThemeColors,
-  SpotlightConfig,
-  UILayout,
-  CrudHubConfig,
+  AppMeta,
   AuthConfig,
+  ConfigOptions,
+  CrudHubConfig,
   PaginationConfig,
+  SpotlightConfig,
+  SupportedUIFramework,
+  ThemeColors,
+  UILayout,
 } from "./types";
 
 // Export main functions
 export {
   createAppConfig,
   createStorageKey,
-  getCurrentYear,
   createThemeColors,
+  getCurrentYear,
 } from "./createAppConfig";
 
 // Import for internal use
@@ -25,6 +25,7 @@ import type { SupportedUIFramework, ThemeColors } from "./types";
 
 // Export constants and defaults
 export const DEFAULT_UI_FRAMEWORK: SupportedUIFramework = "mantine";
+export const DEFAULT_APP_ID = "ottabase-template-app";
 
 export const DEFAULT_THEME_COLORS: ThemeColors = {
   primary: [
@@ -97,8 +98,10 @@ export const STORAGE_KEYS = {
   PAGINATION_SIZE: "pagination-size",
 } as const;
 
-// Common environment variable keys
 export const ENV_KEYS = {
+  // App Identity
+  APP_ID: "APP_ID",
+
   // App Meta
   APP_NAME: "APP_NAME",
   APP_TITLE: "APP_TITLE",

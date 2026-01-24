@@ -2,7 +2,11 @@
 // @ottabase/ottaorm - Log Model (MongoDB Example)
 // ============================================================
 
-import { MongoBaseModel, IMongoModelConstructorParams, ModelFields } from '../base/MongoBaseModel';
+import {
+  IMongoModelConstructorParams,
+  ModelFields,
+  MongoBaseModel,
+} from "../base/MongoBaseModel";
 
 /**
  * Log model - MongoDB example
@@ -47,45 +51,44 @@ import { MongoBaseModel, IMongoModelConstructorParams, ModelFields } from '../ba
  * ```
  */
 export class Log extends MongoBaseModel {
-
   static entity = "logs";
-  static connection = "mongodb";  // Use MongoDB connection
+  static connection = "mongodb"; // Use MongoDB connection
   static primaryKey = "_id";
 
   static casts = {
-    timestamp: 'date' as const,
-    metadata: 'json' as const,
+    timestamp: "date" as const,
+    metadata: "json" as const,
   };
 
   static defaults = {
     timestamp: () => new Date(),
-    level: 'info',
+    level: "info",
   };
 
   // Fields metadata (for UI generation, not validation)
   protected static fields: ModelFields = {
     _id: {
-      type: 'id',
+      type: "id",
       primaryKey: true,
       editable: false,
       uiConfig: {
-        label: 'ID',
+        label: "ID",
       },
       tableConfig: {
         visible: false,
       },
     },
     level: {
-      type: 'string',
+      type: "string",
       editable: true,
       filterable: true,
       uiConfig: {
-        label: 'Level',
-        description: 'Log level (info, warn, error)',
+        label: "Level",
+        description: "Log level (info, warn, error)",
       },
       formConfig: {
         visible: true,
-        fieldType: 'select',
+        fieldType: "select",
         order: 1,
       },
       tableConfig: {
@@ -95,16 +98,16 @@ export class Log extends MongoBaseModel {
       },
     },
     message: {
-      type: 'string',
+      type: "string",
       editable: true,
       searchable: true,
       uiConfig: {
-        label: 'Message',
-        description: 'Log message',
+        label: "Message",
+        description: "Log message",
       },
       formConfig: {
         visible: true,
-        fieldType: 'textarea',
+        fieldType: "textarea",
         order: 2,
       },
       tableConfig: {
@@ -113,16 +116,16 @@ export class Log extends MongoBaseModel {
       },
     },
     userId: {
-      type: 'string',
+      type: "string",
       editable: true,
       filterable: true,
       uiConfig: {
-        label: 'User ID',
-        description: 'ID of the user who triggered this log',
+        label: "User ID",
+        description: "ID of the user who triggered this log",
       },
       formConfig: {
         visible: true,
-        fieldType: 'input',
+        fieldType: "input",
         order: 3,
       },
       tableConfig: {
@@ -132,15 +135,15 @@ export class Log extends MongoBaseModel {
       },
     },
     metadata: {
-      type: 'json',
+      type: "json",
       editable: true,
       uiConfig: {
-        label: 'Metadata',
-        description: 'Additional log data',
+        label: "Metadata",
+        description: "Additional log data",
       },
       formConfig: {
         visible: true,
-        fieldType: 'json',
+        fieldType: "json",
         order: 4,
       },
       tableConfig: {
@@ -148,12 +151,12 @@ export class Log extends MongoBaseModel {
       },
     },
     timestamp: {
-      type: 'datetime',
+      type: "datetime",
       editable: false,
       sortable: true,
       uiConfig: {
-        label: 'Timestamp',
-        description: 'When this log was created',
+        label: "Timestamp",
+        description: "When this log was created",
       },
       tableConfig: {
         visible: true,
@@ -181,13 +184,16 @@ export class Log extends MongoBaseModel {
   static async errors(options?: {
     limit?: number;
     orderBy?: string;
-    orderDirection?: 'asc' | 'desc';
+    orderDirection?: "asc" | "desc";
   }) {
-    return this.where({ level: 'error' }, {
-      orderBy: options?.orderBy || 'timestamp',
-      orderDirection: options?.orderDirection || 'desc',
-      limit: options?.limit
-    });
+    return this.where(
+      { level: "error" },
+      {
+        orderBy: options?.orderBy || "timestamp",
+        orderDirection: options?.orderDirection || "desc",
+        limit: options?.limit,
+      },
+    );
   }
 
   /**
@@ -199,13 +205,16 @@ export class Log extends MongoBaseModel {
   static async warnings(options?: {
     limit?: number;
     orderBy?: string;
-    orderDirection?: 'asc' | 'desc';
+    orderDirection?: "asc" | "desc";
   }) {
-    return this.where({ level: 'warn' }, {
-      orderBy: options?.orderBy || 'timestamp',
-      orderDirection: options?.orderDirection || 'desc',
-      limit: options?.limit
-    });
+    return this.where(
+      { level: "warn" },
+      {
+        orderBy: options?.orderBy || "timestamp",
+        orderDirection: options?.orderDirection || "desc",
+        limit: options?.limit,
+      },
+    );
   }
 
   /**
@@ -215,16 +224,22 @@ export class Log extends MongoBaseModel {
    * @param options - Query options
    * @returns Array of log instances for the user
    */
-  static async forUser(userId: string, options?: {
-    limit?: number;
-    orderBy?: string;
-    orderDirection?: 'asc' | 'desc';
-  }) {
-    return this.where({ userId }, {
-      orderBy: options?.orderBy || 'timestamp',
-      orderDirection: options?.orderDirection || 'desc',
-      limit: options?.limit
-    });
+  static async forUser(
+    userId: string,
+    options?: {
+      limit?: number;
+      orderBy?: string;
+      orderDirection?: "asc" | "desc";
+    },
+  ) {
+    return this.where(
+      { userId },
+      {
+        orderBy: options?.orderBy || "timestamp",
+        orderDirection: options?.orderDirection || "desc",
+        limit: options?.limit,
+      },
+    );
   }
 
   /**
@@ -236,9 +251,9 @@ export class Log extends MongoBaseModel {
    */
   static async logError(message: string, metadata?: any) {
     return this.create({
-      level: 'error',
+      level: "error",
       message,
-      metadata: metadata || {}
+      metadata: metadata || {},
     });
   }
 
@@ -251,9 +266,9 @@ export class Log extends MongoBaseModel {
    */
   static async logInfo(message: string, metadata?: any) {
     return this.create({
-      level: 'info',
+      level: "info",
       message,
-      metadata: metadata || {}
+      metadata: metadata || {},
     });
   }
 
@@ -266,9 +281,9 @@ export class Log extends MongoBaseModel {
    */
   static async logWarn(message: string, metadata?: any) {
     return this.create({
-      level: 'warn',
+      level: "warn",
       message,
-      metadata: metadata || {}
+      metadata: metadata || {},
     });
   }
 
@@ -287,7 +302,7 @@ export class Log extends MongoBaseModel {
     const cutoff = new Date(Date.now() - hours * 60 * 60 * 1000);
 
     const where: any = {
-      timestamp: { $gte: cutoff }
+      timestamp: { $gte: cutoff },
     };
 
     if (options?.level) {
@@ -295,9 +310,9 @@ export class Log extends MongoBaseModel {
     }
 
     return this.where(where, {
-      orderBy: 'timestamp',
-      orderDirection: 'desc',
-      limit: options?.limit || 100
+      orderBy: "timestamp",
+      orderDirection: "desc",
+      limit: options?.limit || 100,
     });
   }
 }

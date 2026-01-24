@@ -2,20 +2,28 @@
 // @ottabase/ottaorm - User Model
 // ============================================================
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { BaseModel, IModelConstructorParams, ModelFields } from "../base/BaseModel";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  BaseModel,
+  IModelConstructorParams,
+  ModelFields,
+} from "../base/BaseModel";
 
 /**
  * User table schema
  */
 export const usersTable = sqliteTable("users", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text("name"),
   email: text("email").notNull().unique(),
   image: text("image"),
   // Referral fields
   referralUsername: text("referral_username").unique(),
   referredById: text("referred_by_id"),
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),

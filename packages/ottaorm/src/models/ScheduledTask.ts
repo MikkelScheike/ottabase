@@ -3,14 +3,20 @@
 // DB-driven cron scheduler (like Laravel's scheduler)
 // ============================================================
 
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
-import { BaseModel, IModelConstructorParams, ModelFields } from "../base/BaseModel";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  BaseModel,
+  IModelConstructorParams,
+  ModelFields,
+} from "../base/BaseModel";
 
 /**
  * ScheduledTask table schema
  */
 export const scheduledTasksTable = sqliteTable("scheduled_tasks", {
-  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
   name: text("name").notNull(),
   description: text("description"),
   // Cron expression (e.g., "0 0 * * *" for daily at midnight)
@@ -37,6 +43,8 @@ export const scheduledTasksTable = sqliteTable("scheduled_tasks", {
   runCount: integer("run_count").notNull().default(0),
   // Fail count
   failCount: integer("fail_count").notNull().default(0),
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),

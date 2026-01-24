@@ -15,6 +15,8 @@ export const verificationTokensTable = sqliteTable(
     identifier: text("identifier").notNull(), // email or other identifier
     token: text("token").notNull(),
     expires: text("expires").notNull(), // ISO 8601 date string
+    // App identifier for multi-app database sharing (nullable, opt-in)
+    appId: text("app_id"),
   },
   (table) => ({
     pk: primaryKey({ columns: [table.identifier, table.token] }),

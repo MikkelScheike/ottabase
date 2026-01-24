@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /**
  * Referral Tracking Table
@@ -9,7 +9,9 @@ import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 export const referralTrackingTable = sqliteTable(
   "referral_tracking",
   {
-    id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
 
     // Referrer information
     userId: text("user_id").notNull(), // The user who owns the referral code
@@ -46,13 +48,21 @@ export const referralTrackingTable = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
     conversionAt: integer("conversion_at", { mode: "timestamp" }),
+
+    // App identifier for multi-app database sharing (nullable, opt-in)
+    appId: text("app_id"),
   },
   (table) => ({
     userIdIdx: index("referral_tracking_user_id_idx").on(table.userId),
-    referredUserIdIdx: index("referral_tracking_referred_user_id_idx").on(table.referredUserId),
-    referralCodeIdx: index("referral_tracking_referral_code_idx").on(table.referralCode),
+    referredUserIdIdx: index("referral_tracking_referred_user_id_idx").on(
+      table.referredUserId,
+    ),
+    referralCodeIdx: index("referral_tracking_referral_code_idx").on(
+      table.referralCode,
+    ),
     statusIdx: index("referral_tracking_status_idx").on(table.status),
-  })
+    appIdIdx: index("referral_tracking_app_id_idx").on(table.appId),
+  }),
 );
 
 export type ReferralTracking = typeof referralTrackingTable.$inferSelect;

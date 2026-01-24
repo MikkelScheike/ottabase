@@ -5,7 +5,7 @@ A reusable shortlink management system designed for Cloudflare infrastructure.
 ## Features
 
 - 🔗 URL shortening with custom identifiers
-- 🎯 Multi-tenant support via `appName` field
+- 🎯 Multi-app database sharing via opt-in `appId` column
 - ⏰ Optional expiry dates
 - 📊 Click tracking and analytics
 - 🏗️ Built on Drizzle ORM for Cloudflare D1
@@ -39,7 +39,7 @@ The package exports a `shortlinksTable` Drizzle schema with the following fields
 - `fullUrl` - Destination URL
 - `shortCode` - Unique short identifier
 - `type` - Link type (redirect, tracking, internal, external)
-- `appName` - App identifier for multi-tenant support
+- `appId` - Nullable app identifier (auto-set when `scopeByAppId: true` in config)
 - `expiryDate` - Optional expiry timestamp
 - `clicks` - Click counter
 - `lastClickedAt` - Last click timestamp

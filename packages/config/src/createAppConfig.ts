@@ -14,8 +14,9 @@ import {
 export function createAppConfig(options: ConfigOptions = {}): AppConfig {
   const {
     appName = "Ottabase App",
+    appId = "ottabase-template-app",
     defaults = {},
-    envPrefix = "NEXT_PUBLIC_",
+    envPrefix = "", // No prefix by default (Cloudflare/TanStack compatible)
   } = options;
 
   // Helper function to get environment variable with fallback
@@ -107,6 +108,7 @@ export function createAppConfig(options: ConfigOptions = {}): AppConfig {
 
   // Create complete app configuration
   const config: AppConfig = {
+    appId: getEnv("APP_ID", appId),
     meta,
     uiFramework: getEnv(
       "UI_FRAMEWORK",
@@ -165,6 +167,10 @@ export function createAppConfig(options: ConfigOptions = {}): AppConfig {
     },
 
     features: {
+      scopeByAppId: getBoolEnv(
+        "SCOPE_BY_APP_ID",
+        defaults.features?.scopeByAppId ?? false,
+      ),
       spotlight: {
         enabled: getBoolEnv(
           "SPOTLIGHT_ENABLED",

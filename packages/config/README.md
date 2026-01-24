@@ -4,7 +4,7 @@ Shared configuration utilities for Ottabase applications with environment variab
 
 ## Features
 
-- **Environment Variable Support**: Automatically reads from `NEXT_PUBLIC_*` environment variables
+- **Environment Variable Support**: Automatically reads from set environment variables
 - **Type-Safe Configuration**: Full TypeScript support with strict typing
 - **Flexible Defaults**: Override defaults per app or use global defaults
 - **Storage Utilities**: Helper functions for consistent storage key naming
@@ -23,13 +23,24 @@ pnpm add @ottabase/config
 ```typescript
 import { createAppConfig } from '@ottabase/config';
 
-// Create config with defaults
+// Create config with defaults (single-app mode)
 const config = createAppConfig({
   appName: 'My Awesome App',
+  appId: 'my-awesome-app',
 });
 
-console.log(config.meta.appName); // "My Awesome App" or NEXT_PUBLIC_APP_NAME
-console.log(config.uiFramework); // "mantine" or NEXT_PUBLIC_UI_FRAMEWORK
+// For multi-app database sharing, enable the feature flag
+const multiAppConfig = createAppConfig({
+  appName: 'My Awesome App',
+  appId: 'my-awesome-app',
+  defaults: {
+    features: { scopeByAppId: true }
+  }
+});
+// IMP NOTE: Use the same `appId` for multi-app database sharing of Core Models
+
+console.log(config.features.scopeByAppId); // false (default)
+console.log(config.appId); // "my-awesome-app"
 ```
 
 ### With Custom Defaults
@@ -55,35 +66,32 @@ const config = createAppConfig({
 
 ### Environment Variables
 
-The package automatically reads from these environment variables:
+The package reads environment variables with optional prefix (default: no prefix):
 
 ```bash
+# App Identity
+APP_ID="my-app"           # Unique identifier for multi-app database sharing
+SCOPE_BY_APP_ID="true"    # Enable appId scoping for DB queries
+
 # App Meta
-NEXT_PUBLIC_APP_NAME="My App"
-NEXT_PUBLIC_APP_TITLE="My App Title"
-NEXT_PUBLIC_APP_DESCRIPTION="App description"
-NEXT_PUBLIC_APP_LOGO_URL="/custom-logo.png"
-NEXT_PUBLIC_APP_AUTHOR="Your Name"
-NEXT_PUBLIC_APP_KEYWORDS="react,nextjs,typescript"
-NEXT_PUBLIC_APP_ROBOTS="index,follow"
-NEXT_PUBLIC_APP_COPYRIGHT_TEXT="© 2024 Your Company"
-NEXT_PUBLIC_APP_COMPANY_NAME="Your Company"
+APP_NAME="My App"
+APP_TITLE="My App Title"
+APP_DESCRIPTION="App description"
+APP_LOGO_URL="/custom-logo.png"
+APP_AUTHOR="Your Name"
+APP_KEYWORDS="react,tanstack,typescript"
+APP_ROBOTS="index,follow"
+APP_COPYRIGHT_TEXT="© 2024 Your Company"
+APP_COMPANY_NAME="Your Company"
 
 # UI Framework
-NEXT_PUBLIC_UI_FRAMEWORK="mantine" # mantine | shadcn | chakra | mui
-
-# Features
-NEXT_PUBLIC_FEATURE_DARK_MODE="true"
-NEXT_PUBLIC_FEATURE_ANALYTICS="false"
-NEXT_PUBLIC_FEATURE_NOTIFICATIONS="true"
-
-# API Configuration
-NEXT_PUBLIC_API_BASE_URL="/api/v1"
-NEXT_PUBLIC_API_TIMEOUT="15000"
+UI_FRAMEWORK="mantine"    # mantine | shadcn | chakra | mui
 
 # Storage
-NEXT_PUBLIC_STORAGE_PREFIX="my-app"
+STORAGE_PREFIX="my-app"
 ```
+
+> **Note**: Use `envPrefix` option if you need prefixed vars (e.g., for Vite: `envPrefix: "VITE_"`).
 
 ### Storage Utilities
 

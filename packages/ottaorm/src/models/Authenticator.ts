@@ -20,6 +20,8 @@ export const authenticatorsTable = sqliteTable("authenticators", {
   credentialDeviceType: text("credential_device_type").notNull(),
   credentialBackedUp: integer("credential_backed_up").notNull(), // SQLite boolean (0 or 1)
   transports: text("transports"), // Comma-separated list
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => new Date())
     .notNull(),
