@@ -2226,55 +2226,86 @@ export default {
       const dbTableMatch = url.pathname.match(
         /^\/api\/admin\/db\/tables\/([a-zA-Z0-9_]+)$/,
       );
-      if (dbTableMatch && request.method === "GET") {
+      if (dbTableMatch) {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500);
         }
-
         const tableName = dbTableMatch[1];
-        const { page = 1, perPage = 25 } = parsePaginationParams(
-          url.searchParams,
-        );
-        const offset = (page - 1) * perPage;
 
-        try {
-          // Get table info (columns)
-          const columnsResult = await env.OBCF_D1.prepare(
-            `PRAGMA table_info("${tableName}")`,
-          ).all();
-          const columns = columnsResult.results;
-
-          // Get total count
-          const countResult = await env.OBCF_D1.prepare(
-            `SELECT count(*) as total FROM "${tableName}"`,
-          ).first();
-          const total = (countResult as any)?.total || 0;
-
-          // Get rows
-          // Note: NOT SECURE for public facing apps, but okay for admin internal use if properly protected
-          // We validate tableName via regex in the route match above
-          const rowsResult = await env.OBCF_D1.prepare(
-            `SELECT * FROM "${tableName}" LIMIT ? OFFSET ?`,
-          )
-            .bind(perPage, offset)
-            .all();
-
-          return jsonResponse({
-            tableName,
-            columns,
-            rows: rowsResult.results,
-            pagination: {
-              page,
-              perPage,
-              total,
-              totalPages: Math.ceil(total / perPage),
-            },
-          });
-        } catch (e) {
-          return errorResponse(
-            e instanceof Error ? e.message : "Failed to fetch table data",
-            500,
+        // GET: Fetch table data
+        if (request.method === "GET") {
+          const { page = 1, perPage = 25 } = parsePaginationParams(
+            url.searchParams,
           );
+          const offset = (page - 1) * perPage;
+
+          try {
+            // Get table info (columns)
+            const columnsResult = await env.OBCF_D1.prepare(
+              `PRAGMA table_info("${tableName}")`,
+            ).all();
+            const columns = columnsResult.results;
+
+            // Get total count
+            const countResult = await env.OBCF_D1.prepare(
+              `SELECT count(*) as total FROM "${tableName}"`,
+            ).first();
+            const total = (countResult as any)?.total || 0;
+
+            // Get rows
+            // Note: NOT SECURE for public facing apps, but okay for admin internal use if properly protected
+            // We validate tableName via regex in the route match above
+            const rowsResult = await env.OBCF_D1.prepare(
+              `SELECT * FROM "${tableName}" LIMIT ? OFFSET ?`,
+            )
+              .bind(perPage, offset)
+              .all();
+
+            return jsonResponse({
+              tableName,
+              columns,
+              rows: rowsResult.results,
+              pagination: {
+                page,
+                perPage,
+                total,
+                totalPages: Math.ceil(total / perPage),
+              },
+            });
+          } catch (e) {
+            return errorResponse(
+              e instanceof Error ? e.message : "Failed to fetch table data",
+              500,
+            );
+          }
+        }
+
+        // DELETE: Drop table
+        if (request.method === "DELETE") {
+          try {
+            // Verify table exists first
+            const tableExists = await env.OBCF_D1.prepare(
+              `SELECT name FROM sqlite_schema WHERE type='table' AND name = ?`,
+            )
+              .bind(tableName)
+              .first();
+
+            if (!tableExists) {
+              return errorResponse("Table not found", 404);
+            }
+
+            await env.OBCF_D1.prepare(`DROP TABLE "${tableName}"`).run();
+
+            return jsonResponse({
+              success: true,
+              message: `Table ${tableName} dropped successfully`,
+            });
+          } catch (e) {
+            return errorResponse(
+              e instanceof Error ? e.message : "Failed to drop table",
+              500,
+            );
+          }
         }
       }
 

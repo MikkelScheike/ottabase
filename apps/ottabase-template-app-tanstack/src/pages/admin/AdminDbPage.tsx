@@ -87,6 +87,28 @@ export function AdminDbPage() {
     },
   });
 
+  // Delete table mutation
+  const deleteTableMutation = useMutation({
+    mutationFn: async (tableName: string) => {
+      return api(`/api/admin/db/tables/${tableName}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      toast.success("Table dropped successfully");
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "db", "tables"],
+      });
+      navigate({
+        to: "/admin/db",
+        search: { table: "", page: 1, perPage: 25 },
+      });
+    },
+    onError: (err) => {
+      toast.error(isApiError(err) ? err.message : "Failed to drop table");
+    },
+  });
+
   const handleTableSelect = (tableName: string) => {
     navigate({
       to: "/admin/db",
@@ -96,8 +118,20 @@ export function AdminDbPage() {
 
   const handlePageChange = (newPage: number) => {
     navigate({
-      search: (prev) => ({ ...prev, page: newPage }),
+      search: { ...search, page: newPage },
     });
+  };
+
+  const handleDropTable = () => {
+    if (!selectedTable) return;
+
+    if (
+      confirm(
+        `Are you sure you want to DROP the table "${selectedTable}"? This action CANNOT be undone and will delete ALL data in this table.`,
+      )
+    ) {
+      deleteTableMutation.mutate(selectedTable);
+    }
   };
 
   const handleDelete = (row: Record<string, any>) => {
@@ -196,6 +230,15 @@ export function AdminDbPage() {
                       : `${tableData?.pagination.total || 0} rows`}
                   </CardDescription>
                 </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleDropTable}
+                  disabled={deleteTableMutation.status === "pending"}
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Drop Table
+                </Button>
               </CardHeader>
               <CardContent>
                 {tableLoading ? (
