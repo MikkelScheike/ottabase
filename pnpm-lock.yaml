@@ -552,6 +552,9 @@ importers:
       '@ottabase/forms':
         specifier: workspace:*
         version: link:../../packages/forms
+      '@ottabase/ottablog':
+        specifier: workspace:*
+        version: link:../../packages/ottablog
       '@ottabase/ottaeditor':
         specifier: workspace:*
         version: link:../../packages/ottaeditor

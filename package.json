@@ -14,7 +14,7 @@
     "dev:pkg": "turbo dev --filter=@ottabase/*",
     "build": "turbo build --filter=./packages/*... --filter=@ottabase/ottabase-template-app-tanstack...",
     "build:app": "turbo build --filter=@ottabase/ottabase-template-app-tanstack...",
-    "build:pkg": "turbo build --filter=./packages/*... --concurrency=100%",
+    "build:pkg": "turbo build --filter=./packages/*...",
     "lint": "turbo lint",
     "type-check": "turbo type-check",
     "clean": "turbo clean",
