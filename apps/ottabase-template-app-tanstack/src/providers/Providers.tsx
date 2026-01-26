@@ -8,6 +8,8 @@ import {
     ProviderNextThemes,
 } from "@/ottabase/providers";
 import { ThemeManager } from "@/ottabase/providers/ThemeManager";
+import { ZoomManager } from "@/ottabase/providers/ZoomManager";
+import { SidebarStateManager } from "@/ottabase/providers/SidebarStateManager";
 import { ThemeProvider } from "@/ottabase/providers/ProviderTheme";
 import { ProviderState } from "@ottabase/state";
 import { ProviderCodeHighlight } from "@ottabase/ui-code-highlight";
@@ -36,6 +38,8 @@ export function Providers({ children }: { children: React.ReactNode }) {
                         <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
                             <ThemeProvider>
                                 <ThemeManager />
+                                <ZoomManager />
+                                <SidebarStateManager />
                                 <ShadcnProviders enableThemeProvider={false} enableToaster>
                                     <ProviderCodeHighlight>{children}</ProviderCodeHighlight>
                                 </ShadcnProviders>

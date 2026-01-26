@@ -6,11 +6,18 @@ import type { AppState, AppStateConfig, BaseUser } from "./types";
  */
 const DEFAULT_STATE: Omit<AppState, "appName"> = {
   theme: "light",
+  themeInfo: {
+    name: "default",
+  },
   user: null,
   isAuthenticated: false,
-  sidebarOpen: true,
-  sidebarCollapsed: false,
+  sidebarState: {
+    isOpen: true,
+    isCollapsed: false,
+    width: 250, // Default sidebar width in pixels
+  },
   scale: 1.0,
+  zoom: 1.0,
   isLoading: false,
 };
 
@@ -54,11 +61,12 @@ export function createAppState<TUser extends BaseUser = BaseUser>(
 
   // Pre-created atoms for common properties
   const themeAtom = createAtom("theme");
+  const themeInfoAtom = createAtom("themeInfo");
   const userAtom = createAtom("user");
   const isAuthenticatedAtom = createAtom("isAuthenticated");
-  const sidebarOpenAtom = createAtom("sidebarOpen");
-  const sidebarCollapsedAtom = createAtom("sidebarCollapsed");
+  const sidebarStateAtom = createAtom("sidebarState");
   const scaleAtom = createAtom("scale");
+  const zoomAtom = createAtom("zoom");
   const isLoadingAtom = createAtom("isLoading");
 
   return {
@@ -71,15 +79,16 @@ export function createAppState<TUser extends BaseUser = BaseUser>(
     /** Pre-created atoms for common properties */
     atoms: {
       themeAtom,
+      themeInfoAtom,
       userAtom,
       isAuthenticatedAtom,
-      sidebarOpenAtom,
-      sidebarCollapsedAtom,
+      sidebarStateAtom,
       scaleAtom,
+      zoomAtom,
       isLoadingAtom,
     },
   };
 }
 
 // Re-export types
-export type { AppState, AppStateConfig, BaseUser, Theme } from "./types";
+export type { AppState, AppStateConfig, BaseUser, Theme, ThemeInfo, SidebarState } from "./types";
