@@ -4,22 +4,47 @@
  * OttaORM model for blog posts using @ottabase/ottablog schema.
  * Supports multiple content types, SEO, hero images, and OttaEditor content.
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
 import {
-  postsTable,
-  CONTENT_TYPES,
-  POST_STATUSES,
+  postTagsTable as blogPostTagsTable,
   calculateReadingTime,
+  CONTENT_TYPES,
   extractExcerpt,
   generateSlug,
+  POST_STATUSES,
+  postsTable,
   type ContentType,
-  type PostStatus,
   type EditorJSData,
+  type PostStatus,
 } from "@ottabase/ottablog";
+import { BaseModel, ModelFields } from "@ottabase/ottaorm";
 
 export type BlogPostType = typeof postsTable.$inferSelect;
 export type NewBlogPostType = typeof postsTable.$inferInsert;
 
+/**
+ * BlogPost Model - Fat Model Pattern
+ *
+ * The definitive, extensible base model for Blog Posts.
+ * Supports multiple content types, SEO, hero images, ID-based versioning, and OttaEditor content.
+ *
+ * @example
+ * ```typescript
+ * import { BlogPost } from "./BlogPost";
+ *
+ * // Create a post
+ * const post = await BlogPost.createWithSlug("My Blog Post", {
+ *   content: { ... },
+ *   authorId: "user-123"
+ * });
+ *
+ * // Publish
+ * await post.publish();
+ *
+ * // Fetch with author and tags
+ * const author = await post.author();
+ * const tags = await post.tags();
+ * ```
+ */
 export class BlogPost extends BaseModel {
   static entity = "blog_posts";
   static table = postsTable;
@@ -134,7 +159,7 @@ export class BlogPost extends BaseModel {
       },
       formConfig: {
         visible: true,
-        fieldType: "editor", // Custom field type for OttaEditor
+        fieldType: "editor" as any, // Custom field type for OttaEditor
       },
       tableConfig: {
         visible: false,
@@ -156,7 +181,7 @@ export class BlogPost extends BaseModel {
         options: Object.entries(CONTENT_TYPES).map(([value, { label }]) => ({
           label,
           value,
-        })),
+        })) as any,
       },
       tableConfig: {
         visible: true,
@@ -179,7 +204,7 @@ export class BlogPost extends BaseModel {
         options: Object.entries(POST_STATUSES).map(([value, { label }]) => ({
           label,
           value,
-        })),
+        })) as any,
       },
       tableConfig: {
         visible: true,
@@ -245,7 +270,7 @@ export class BlogPost extends BaseModel {
       },
       formConfig: {
         visible: true,
-        fieldType: "upload", // Custom field type for image upload
+        fieldType: "upload" as any, // Custom field type for image upload
       },
       tableConfig: {
         visible: false,
@@ -275,7 +300,7 @@ export class BlogPost extends BaseModel {
       },
       formConfig: {
         visible: true,
-        fieldType: "editor",
+        fieldType: "editor" as any,
       },
       tableConfig: {
         visible: false,
@@ -290,7 +315,7 @@ export class BlogPost extends BaseModel {
       },
       formConfig: {
         visible: true,
-        fieldType: "editor",
+        fieldType: "editor" as any,
       },
       tableConfig: {
         visible: false,
@@ -629,6 +654,57 @@ export class BlogPost extends BaseModel {
       orderDirection: "asc",
       limit: options?.limit,
     });
+  }
+
+  // ============================================================
+  // RELATIONSHIPS
+  // ============================================================
+
+  /**
+   * Get the author of this post (BelongsTo User)
+   */
+  async author(select?: string[]) {
+    // Dynamic import to avoid circular dependency
+    // Note: Adjust the import path to where your User model is located
+    const { User } = await import("@ottabase/ottaorm/models");
+
+    return this.belongsTo(User as any, "authorId", {
+      select: select || undefined,
+    });
+  }
+
+  /**
+   * Get tags for this post (BelongsToMany BlogTag via blogPostTagsTable)
+   */
+  async tags(options?: {
+    select?: string[];
+    orderBy?: string;
+    orderDirection?: "asc" | "desc";
+    withPivot?: string[];
+  }) {
+    // Dynamic import
+    const { BlogTag } = await import("./BlogTag");
+
+    return this.belongsToMany(BlogTag, blogPostTagsTable, {
+      foreignKey: "postId",
+      otherKey: "tagId",
+      ...options,
+    });
+  }
+
+  // ============================================================
+  // STATIC HELPERS
+  // ============================================================
+
+  /**
+   * Create post with auto-generated slug from title
+   * @param title The post title
+   * @param data Additional data
+   */
+  static async createWithSlug(title: string, data?: Record<string, any>) {
+    // Generate slug using the helper from ottablog
+    const slug = generateSlug(title);
+    return this.create({ title, slug, ...data });
   }
 
   // ==================== Instance Methods ====================
