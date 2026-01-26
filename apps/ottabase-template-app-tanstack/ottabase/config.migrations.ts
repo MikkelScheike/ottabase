@@ -11,6 +11,14 @@
 // ============================================================
 
 import type { Migration } from "@ottabase/ottaorm";
+import {
+  categoriesTable,
+  postTagsTable,
+  postVersionsTable,
+  postsTable,
+  seriesTable,
+  tagsTable,
+} from "@ottabase/ottablog";
 import { referralTrackingTable } from "@ottabase/referrals";
 import { shortlinksTable } from "@ottabase/shortlinks";
 
@@ -19,6 +27,17 @@ import { shortlinksTable } from "@ottabase/shortlinks";
  * Map package names to their table definitions and optional migrations.
  */
 const PACKAGE_REGISTRY = {
+  ottablog: {
+    tables: {
+      seriesTable,
+      categoriesTable,
+      tagsTable,
+      postsTable,
+      postTagsTable,
+      postVersionsTable,
+    },
+    migrations: [] as Migration[],
+  },
   shortlinks: {
     tables: { shortlinksTable },
     migrations: [] as Migration[], // Add package-specific migrations here if any
@@ -37,6 +56,7 @@ const PACKAGE_REGISTRY = {
 export type MigrationPackageName = keyof typeof PACKAGE_REGISTRY;
 
 export const migrationConfig: Record<MigrationPackageName, boolean> = {
+  ottablog: true,
   shortlinks: true,
   referrals: true,
 };

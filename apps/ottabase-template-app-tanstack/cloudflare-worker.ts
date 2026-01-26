@@ -26,6 +26,15 @@ import {
   registerModels,
 } from "@ottabase/ottaorm";
 import {
+  BlogCategory,
+  BlogPost,
+  BlogPostVersion,
+  BlogSeries,
+  BlogTag,
+} from "@ottabase/ottablog";
+import { ReferralTracking } from "@ottabase/referrals";
+import { Shortlink } from "@ottabase/shortlinks";
+import {
   uploadFileToCloudflareImages,
   uploadFileToR2,
 } from "@ottabase/ottaupload/server";
@@ -39,13 +48,6 @@ import {
 import { getAllSchemas } from "./ottabase/db/schemas-helper";
 import { processReferralAttribution } from "./ottabase/helpers/referral-attribution";
 import { appMigrations } from "./ottabase/migrations";
-import { BlogCategory } from "./ottabase/models/BlogCategory";
-import { BlogPost } from "./ottabase/models/BlogPost";
-import { BlogPostVersion } from "./ottabase/models/BlogPostVersion";
-import { BlogSeries } from "./ottabase/models/BlogSeries";
-import { BlogTag } from "./ottabase/models/BlogTag";
-import { ReferralTracking } from "./ottabase/models/ReferralTracking";
-import { Shortlink } from "./ottabase/models/Shortlink";
 import { Todo } from "./ottabase/models/Todo";
 import {
   deleteDLQJob,

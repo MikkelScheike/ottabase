@@ -116,28 +116,23 @@ In any app in the monorepo:
 
 ```typescript
 // ottabase/db/schema.ts
-export { shortlinksTable } from "@ottabase/shortlinks/schema";
+export { shortlinksTable } from "@ottabase/shortlinks";
 ```
 
-### 3. Create ORM Model
+### 3. Register ORM Model
 
 ```typescript
-// ottabase/models/Shortlink.ts
-import { BaseModel } from "@ottabase/ottaorm";
-import { shortlinksTable } from "@ottabase/shortlinks";
+import { Shortlink } from "@ottabase/shortlinks";
+import { registerModels } from "@ottabase/ottaorm";
 
-export class Shortlink extends BaseModel {
-  static entity = "shortlinks";
-  static table = shortlinksTable;
-  // ... see implementation
-}
+registerModels([Shortlink]);
 ```
 
 ### 4. Add Backend Endpoints
 
 ```typescript
 // cloudflare-worker.ts
-import { Shortlink } from "./ottabase/models/Shortlink";
+import { Shortlink } from "@ottabase/shortlinks";
 
 // In fetch handler:
 // 1. Add CRUD endpoints for /api/shortlinks

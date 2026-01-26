@@ -7,10 +7,6 @@
     ".": {
       "types": "./src/index.ts",
       "default": "./src/index.ts"
-    },
-    "./schema": {
-      "types": "./src/schema.ts",
-      "default": "./src/schema.ts"
     }
   },
   "scripts": {
@@ -20,6 +16,9 @@
   },
   "peerDependencies": {
     "drizzle-orm": "catalog:"
+  },
+  "dependencies": {
+    "@ottabase/ottaorm": "workspace:*"
   },
   "devDependencies": {
     "drizzle-orm": "catalog:",

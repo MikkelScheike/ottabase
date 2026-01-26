@@ -85,7 +85,7 @@ The column will be automatically added! ✅
 
 **Step 1:** Edit `ottabase/config.migrations.ts`
 ```typescript
-import { shortlinksTable } from "@ottabase/shortlinks/schema";
+import { shortlinksTable } from "@ottabase/shortlinks";
 import { myNewPackageTable } from "@ottabase/my-new-package/schema";
 
 const PACKAGE_REGISTRY = {

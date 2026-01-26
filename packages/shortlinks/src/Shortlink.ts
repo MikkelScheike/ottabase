@@ -1,45 +1,58 @@
 // ============================================================
-// Shortlink Model (App-specific implementation of @ottabase/shortlinks)
+// Shortlink Model (Fat Model)
 // ============================================================
 
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
-import type {
-  NewShortlink,
-  Shortlink as ShortlinkType,
-} from "@ottabase/shortlinks";
-import { shortlinksTable, ShortlinkTypes } from "@ottabase/shortlinks";
+import { sql } from "drizzle-orm";
+import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { ShortlinkTypes } from "./types";
 
-export type { NewShortlink, ShortlinkType };
+/**
+ * Shortlinks table schema for URL shortening service
+ *
+ * Supports multiple apps using the same database via appId field
+ * Enables custom short codes and optional expiry dates
+ */
+export const shortlinksTable = sqliteTable("shortlinks", {
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+
+  // The full destination URL
+  fullUrl: text("full_url").notNull(),
+
+  // The short identifier (e.g., "gh" in go.example.com/gh)
+  shortCode: text("short_code").notNull().unique(),
+
+  // Type of link (e.g., "redirect", "tracking", "internal")
+  type: text("type").notNull().default("redirect"),
+
+  // App identifier for multi-app database sharing (nullable, opt-in)
+  appId: text("app_id"),
+
+  // Optional expiry timestamp
+  expiryDate: integer("expiry_date", { mode: "timestamp" }),
+
+  // Analytics
+  clicks: integer("clicks").notNull().default(0),
+  lastClickedAt: integer("last_clicked_at", { mode: "timestamp" }),
+
+  // Metadata
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`),
+
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .default(sql`(unixepoch())`)
+    .$onUpdate(() => new Date()),
+});
+
+export type ShortlinkRecord = typeof shortlinksTable.$inferSelect;
+export type NewShortlinkRecord = typeof shortlinksTable.$inferInsert;
 
 /**
  * Shortlink model - URL shortening service
- *
- * @example
- * ```typescript
- * import { Shortlink } from "./models/Shortlink";
- * import { setDriver } from "@ottabase/ottaorm";
- *
- * setDriver(createD1Driver(env.DB));
- *
- * // Create shortlink
- * const link = await Shortlink.create({
- *   fullUrl: "https://github.com/ottabase",
- *   shortCode: "gh",
- *   type: "redirect",
- *   appName: "myapp"
- * });
- *
- * // Find by short code
- * const found = await Shortlink.findByCode("gh");
- *
- * // Track click
- * await found.trackClick();
- *
- * // Check if expired
- * if (found.isExpired()) {
- *   console.log("Link has expired");
- * }
- * ```
  */
 export class Shortlink extends BaseModel {
   static entity = "shortlinks";
@@ -224,28 +237,8 @@ export class Shortlink extends BaseModel {
         label: "Updated",
       },
       tableConfig: {
-        visible: false,
-      },
-    },
-  };
-
-  protected static validationRules = {
-    fullUrl: {
-      rules: "required|url",
-      fieldName: "Full URL",
-      messages: {
-        required: "URL is required",
-        url: "Must be a valid URL",
-      },
-    },
-    shortCode: {
-      rules: "required|alpha_dash|min:2|max:50",
-      fieldName: "Short Code",
-      messages: {
-        required: "Short code is required",
-        alpha_dash: "Only letters, numbers, dashes and underscores allowed",
-        min: "Minimum 2 characters",
-        max: "Maximum 50 characters",
+        visible: true,
+        colWidth: 150,
       },
     },
   };
@@ -255,43 +248,20 @@ export class Shortlink extends BaseModel {
   // ============================================================
 
   /**
-   * Find a shortlink by its short code
+   * Find a shortlink by short code
    */
-  static async findByCode(shortCode: string): Promise<Shortlink | null> {
-    const results = await this.where({ shortCode });
-    return results.length > 0 ? results[0] : null;
+  static async findByCode(code: string, options?: { appId?: string }) {
+    const query: Record<string, unknown> = { shortCode: code };
+    if (options?.appId) query.appId = options.appId;
+
+    const results = await this.where(query);
+    return results.length > 0 ? (results[0] as Shortlink) : null;
   }
 
   /**
-   * Find active (non-expired) shortlinks
+   * Get all shortlinks for a specific app
    */
-  static async active(options?: {
-    appId?: string;
-    orderBy?: string;
-    orderDirection?: "asc" | "desc";
-  }) {
-    const now = new Date();
-    const query: any = {};
-
-    if (options?.appId) {
-      query.appId = options.appId;
-    }
-
-    // Note: We'll need to filter expired ones after fetching
-    // since Drizzle doesn't support complex date comparisons easily
-    const results = (await this.where(query, {
-      orderBy: options?.orderBy || "createdAt",
-      orderDirection: options?.orderDirection || "desc",
-    })) as Shortlink[];
-
-    // Filter out expired links
-    return results.filter((link) => !link.isExpired());
-  }
-
-  /**
-   * Get shortlinks by app ID
-   */
-  static async byApp(
+  static async forApp(
     appId: string,
     options?: {
       orderBy?: string;
@@ -307,40 +277,12 @@ export class Shortlink extends BaseModel {
     );
   }
 
-  /**
-   * Get shortlinks by type
-   */
-  static async byType(
-    type: string,
-    options?: {
-      orderBy?: string;
-      orderDirection?: "asc" | "desc";
-    },
-  ) {
-    return this.where(
-      { type },
-      {
-        orderBy: options?.orderBy || "createdAt",
-        orderDirection: options?.orderDirection || "desc",
-      },
-    );
-  }
-
   // ============================================================
   // INSTANCE METHODS
   // ============================================================
 
   /**
-   * Check if the shortlink has expired
-   */
-  isExpired(): boolean {
-    const expiryDate = this.get("expiryDate");
-    if (!expiryDate) return false;
-    return new Date() > new Date(expiryDate);
-  }
-
-  /**
-   * Track a click on this shortlink
+   * Track a click (increment count + update lastClickedAt)
    */
   async trackClick() {
     const currentClicks = this.get("clicks") || 0;
@@ -350,29 +292,11 @@ export class Shortlink extends BaseModel {
   }
 
   /**
-   * Get the full short URL (requires baseUrl)
+   * Check if shortlink is expired
    */
-  getShortUrl(baseUrl: string): string {
-    return `${baseUrl}/${this.get("shortCode")}`;
-  }
-
-  /**
-   * Update expiry date
-   */
-  async setExpiry(date: Date | null) {
-    this.set("expiryDate", date);
-    return this.save();
-  }
-
-  /**
-   * Get analytics summary
-   */
-  getAnalytics() {
-    return {
-      clicks: this.get("clicks") || 0,
-      lastClicked: this.get("lastClickedAt"),
-      isExpired: this.isExpired(),
-      created: this.get("createdAt"),
-    };
+  isExpired(): boolean {
+    const expiryDate = this.get("expiryDate") as Date | null;
+    if (!expiryDate) return false;
+    return expiryDate.getTime() < Date.now();
   }
 }

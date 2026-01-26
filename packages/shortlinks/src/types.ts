@@ -1,6 +1,6 @@
-import type { NewShortlink, Shortlink } from "./schema";
+import type { NewShortlinkRecord, ShortlinkRecord } from "./Shortlink";
 
-export type { NewShortlink, Shortlink };
+export type { NewShortlinkRecord, ShortlinkRecord };
 
 /**
  * Shortlink type enum for categorization
@@ -41,7 +41,7 @@ export interface UpdateShortlinkRequest {
  */
 export interface ShortlinkResponse {
   success: boolean;
-  data?: Shortlink;
+  data?: ShortlinkRecord;
   error?: string;
 }
 
@@ -51,7 +51,7 @@ export interface ShortlinkResponse {
  */
 export interface ShortlinksListResponse {
   success: boolean;
-  data?: Shortlink[];
+  data?: ShortlinkRecord[];
   total?: number;
   error?: string;
 }
@@ -76,7 +76,7 @@ export interface Pagination {
  * Paginated response for shortlinks
  */
 export interface ShortlinksPaginatedResponse {
-  data: Shortlink[];
+  data: ShortlinkRecord[];
   pagination: Pagination;
 }
 

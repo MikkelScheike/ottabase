@@ -28,17 +28,23 @@
  * ```
  */
 
-// Schema exports
+// Models + schema exports (fat models)
 export {
+  BlogSeries,
   seriesTable,
+  BlogCategory,
   categoriesTable,
+  BlogTag,
   tagsTable,
+  BlogPost,
   postsTable,
+  BlogPostTag,
   postTagsTable,
+  BlogPostVersion,
   postVersionsTable,
-} from "./schema";
+} from "./models";
 
-// Type exports from schema
+// Type exports from models
 export type {
   Series,
   NewSeries,
@@ -52,7 +58,17 @@ export type {
   NewPostTag,
   PostVersion,
   NewPostVersion,
-} from "./schema";
+  BlogSeriesType,
+  NewBlogSeriesType,
+  BlogCategoryType,
+  NewBlogCategoryType,
+  BlogTagType,
+  NewBlogTagType,
+  BlogPostType,
+  NewBlogPostType,
+  BlogPostVersionType,
+  NewBlogPostVersionType,
+} from "./models";
 
 // Type exports
 export type {

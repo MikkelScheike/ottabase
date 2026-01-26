@@ -1,5 +1,5 @@
 import { api, isApiError } from "@/lib/api";
-import type { Shortlink } from "@ottabase/shortlinks";
+import type { ShortlinkRecord } from "@ottabase/shortlinks";
 import { ShortlinkTypes } from "@ottabase/shortlinks";
 import {
   Button,
@@ -14,7 +14,7 @@ import {
 import { useEffect, useState } from "react";
 
 interface ShortlinkFormProps {
-  shortlink?: Shortlink | null;
+  shortlink?: ShortlinkRecord | null;
   onSuccess: () => void;
   onCancel: () => void;
 }

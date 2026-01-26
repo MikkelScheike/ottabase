@@ -19,6 +19,12 @@ Referral system package for Ottabase. Provides schema, validation, and types for
 import { referralTrackingTable } from "@ottabase/referrals";
 ```
 
+### Model
+
+```typescript
+import { ReferralTracking } from "@ottabase/referrals";
+```
+
 ### Validation
 
 ```typescript
@@ -49,9 +55,12 @@ if (!result.valid) {
 ## Integration
 
 This package should be integrated with:
+
 1. User model (add `referralUsername` and `referredById` fields)
 2. Signup flow (attribute new users to referrers)
 3. Frontend (tracking component, dashboard)
 4. API routes (tracking, stats, username management)
+
+
 
 See the TanStack app implementation for a complete example.

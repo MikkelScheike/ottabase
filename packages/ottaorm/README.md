@@ -64,6 +64,7 @@ export class Todo extends BaseModel {
 // ottabase/db/schema.ts
 export { usersTable, postsTable } from "@ottabase/ottaorm";  // Core tables
 export { todosTable } from "../models/Todo";                  // Your tables
+export { shortlinksTable } from "@ottabase/shortlinks";       // Package tables
 ```
 
 ### 3. Initialize Database

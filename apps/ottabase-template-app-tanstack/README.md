@@ -54,6 +54,7 @@ export class Todo extends BaseModel {
 ```typescript
 // ottabase/db/schema.ts
 export { todosTable } from "../models/Todo";
+export { shortlinksTable } from "@ottabase/shortlinks";
 ```
 
 #### 3. Initialize
@@ -61,6 +62,8 @@ export { todosTable } from "../models/Todo";
 curl -X POST http://localhost:3004/api/ottaorm/init
 # ✅ Table created automatically!
 ```
+
+Package models live in their packages (e.g. `@ottabase/shortlinks`, `@ottabase/ottablog`) and are registered directly via `registerModels()`.
 
 See [ottabase/migrations/README.md](./ottabase/migrations/README.md) for details.
 

@@ -1,7 +1,7 @@
 import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import { clearAllConnections, registerConnection } from "@ottabase/ottaorm";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Shortlink } from "../../ottabase/models/Shortlink";
+import { Shortlink } from "@ottabase/shortlinks";
 
 describe("Shortlink Model", () => {
   const toRawRows = (rows: any[]) => rows.map((row) => Object.values(row));

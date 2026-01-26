@@ -133,7 +133,7 @@ That's it! The table will be automatically created.
 
 1. **Enable the package** in `ottabase/config.migrations.ts`:
 ```typescript
-import { shortlinksTable } from "@ottabase/shortlinks/schema";
+import { shortlinksTable } from "@ottabase/shortlinks";
 import { shortlinkMigrations } from "@ottabase/shortlinks/migrations";
 
 const PACKAGE_REGISTRY = {
@@ -299,6 +299,6 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init?secret=$MIGRATION_SEC
 
 See the following files for complete examples:
 - `ottabase/models/Todo.ts` - Simple app-specific model
-- `ottabase/models/Shortlink.ts` - Model from package
+- `@ottabase/shortlinks` package - Shortlinks model in package
 - `ottabase/migrations/index.ts` - Custom migrations setup
 - `ottabase/config.migrations.ts` - Package configuration

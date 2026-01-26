@@ -5,7 +5,64 @@
  * Perfect for multi-part tutorials, article series, or themed content.
  */
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
-import { seriesTable, generateSlug } from "@ottabase/ottablog";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { generateSlug } from "../types";
+
+/**
+ * Series table - group related posts into a series
+ */
+export const seriesTable = sqliteTable(
+  "blog_series",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+
+    // Series title
+    title: text("title").notNull(),
+
+    // URL-friendly slug
+    slug: text("slug").notNull(),
+
+    // Series description
+    description: text("description"),
+
+    // Cover image for the series
+    coverImage: text("cover_image", { mode: "json" }).$type<{
+      url: string;
+      alt?: string;
+    }>(),
+
+    // Whether the series is complete or ongoing
+    isComplete: integer("is_complete", { mode: "boolean" })
+      .notNull()
+      .default(false),
+
+    // Display order in series listings
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    // App identifier for multi-app database sharing
+    appId: text("app_id"),
+
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("blog_series_slug_idx").on(table.slug),
+    index("blog_series_app_id_idx").on(table.appId),
+  ],
+);
+
+export type Series = typeof seriesTable.$inferSelect;
+export type NewSeries = typeof seriesTable.$inferInsert;
 
 export type BlogSeriesType = typeof seriesTable.$inferSelect;
 export type NewBlogSeriesType = typeof seriesTable.$inferInsert;
@@ -212,28 +269,11 @@ export class BlogSeries extends BaseModel {
   }
 
   /**
-   * Get ongoing series only
-   */
-  static async ongoing(options?: {
-    appId?: string;
-    orderBy?: string;
-    orderDirection?: "asc" | "desc";
-  }) {
-    const query: Record<string, unknown> = { isComplete: false };
-    if (options?.appId) query.appId = options.appId;
-
-    return this.where(query, {
-      orderBy: options?.orderBy || "sortOrder",
-      orderDirection: options?.orderDirection || "asc",
-    });
-  }
-
-  /**
    * Find series by slug
    */
   static async findBySlug(
     slug: string,
-    options?: { appId?: string }
+    options?: { appId?: string },
   ): Promise<BlogSeries | null> {
     const query: Record<string, unknown> = { slug };
     if (options?.appId) query.appId = options.appId;
@@ -252,28 +292,5 @@ export class BlogSeries extends BaseModel {
     if (title && !this.get("slug")) {
       this.set("slug", generateSlug(title));
     }
-  }
-
-  /**
-   * Mark series as complete
-   */
-  async markComplete() {
-    this.set("isComplete", true);
-    return this.save();
-  }
-
-  /**
-   * Mark series as ongoing
-   */
-  async markOngoing() {
-    this.set("isComplete", false);
-    return this.save();
-  }
-
-  /**
-   * Check if series is complete
-   */
-  isSeriesComplete(): boolean {
-    return Boolean(this.get("isComplete"));
   }
 }

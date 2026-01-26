@@ -1,3 +1,3 @@
-export { shortlinksTable } from "./schema";
-export type { Shortlink, NewShortlink } from "./schema";
+export { Shortlink, shortlinksTable } from "./Shortlink";
+export type { NewShortlinkRecord, ShortlinkRecord } from "./Shortlink";
 export * from "./types";

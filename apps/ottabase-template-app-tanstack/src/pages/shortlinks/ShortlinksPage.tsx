@@ -1,6 +1,6 @@
 import { api, isApiError } from "@/lib/api";
 import type { PaginatedResponse, Pagination } from "@/lib/api-types";
-import type { Shortlink } from "@ottabase/shortlinks";
+import type { ShortlinkRecord } from "@ottabase/shortlinks";
 import {
   Badge,
   Button,
@@ -41,16 +41,15 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { ShortlinkForm } from "./components/ShortlinkForm";
 
-type ShortlinksResponse = PaginatedResponse<Shortlink>;
+type ShortlinksResponse = PaginatedResponse<ShortlinkRecord>;
 
 export function ShortlinksPage() {
-  const [shortlinks, setShortlinks] = useState<Shortlink[]>([]);
+  const [shortlinks, setShortlinks] = useState<ShortlinkRecord[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingShortlink, setEditingShortlink] = useState<Shortlink | null>(
-    null,
-  );
+  const [editingShortlink, setEditingShortlink] =
+    useState<ShortlinkRecord | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Pagination state
@@ -89,7 +88,7 @@ export function ShortlinksPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (shortlink: Shortlink) => {
+  const handleEdit = (shortlink: ShortlinkRecord) => {
     setEditingShortlink(shortlink);
     setIsDialogOpen(true);
   };

@@ -4,7 +4,45 @@
  * OttaORM model for blog tags.
  */
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
-import { tagsTable, generateSlug } from "@ottabase/ottablog";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { generateSlug } from "../types";
+
+/**
+ * Tags table - flexible content labeling
+ */
+export const tagsTable = sqliteTable(
+  "blog_tags",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+
+    // Tag name
+    name: text("name").notNull(),
+
+    // URL-friendly slug
+    slug: text("slug").notNull(),
+
+    // Optional color for UI display (hex)
+    color: text("color"),
+
+    // App identifier for multi-app database sharing
+    appId: text("app_id"),
+
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("blog_tags_slug_idx").on(table.slug),
+    index("blog_tags_app_id_idx").on(table.appId),
+  ],
+);
+
+export type Tag = typeof tagsTable.$inferSelect;
+export type NewTag = typeof tagsTable.$inferInsert;
 
 export type BlogTagType = typeof tagsTable.$inferSelect;
 export type NewBlogTagType = typeof tagsTable.$inferInsert;
@@ -121,7 +159,7 @@ export class BlogTag extends BaseModel {
    */
   static async findBySlug(
     slug: string,
-    options?: { appId?: string }
+    options?: { appId?: string },
   ): Promise<BlogTag | null> {
     const query: Record<string, unknown> = { slug };
     if (options?.appId) query.appId = options.appId;
@@ -138,14 +176,14 @@ export class BlogTag extends BaseModel {
     options?: {
       orderBy?: string;
       orderDirection?: "asc" | "desc";
-    }
+    },
   ) {
     return this.where(
       { appId },
       {
         orderBy: options?.orderBy || "name",
         orderDirection: options?.orderDirection || "asc",
-      }
+      },
     );
   }
 

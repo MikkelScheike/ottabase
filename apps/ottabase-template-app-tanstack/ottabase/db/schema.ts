@@ -26,6 +26,16 @@ import {
   usersTable,
   verificationTokensTable,
 } from "@ottabase/ottaorm";
+import {
+  categoriesTable as blogCategoriesTable,
+  postTagsTable as blogPostTagsTable,
+  postVersionsTable as blogPostVersionsTable,
+  postsTable as blogPostsTable,
+  seriesTable as blogSeriesTable,
+  tagsTable as blogTagsTable,
+} from "@ottabase/ottablog";
+import { referralTrackingTable } from "@ottabase/referrals";
+import { shortlinksTable } from "@ottabase/shortlinks";
 
 export {
   accountsTable,
@@ -42,6 +52,20 @@ export {
 // APP-SPECIFIC TABLES
 // ============================================================
 export { todosTable } from "../models/Todo";
+
+// ============================================================
+// PACKAGE TABLES (from enabled packages)
+// ============================================================
+export {
+  blogCategoriesTable,
+  blogPostTagsTable,
+  blogPostVersionsTable,
+  blogPostsTable,
+  blogSeriesTable,
+  blogTagsTable,
+  referralTrackingTable,
+  shortlinksTable,
+};
 
 // ============================================================
 // DYNAMIC PACKAGE TABLES (Configured in config.migrations.ts)

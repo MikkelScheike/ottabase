@@ -19,16 +19,16 @@ pnpm add @ottabase/shortlinks
 
 ## Usage
 
-### Import Schema
+### Import Model + Schema
 
 ```typescript
-import { shortlinksTable } from "@ottabase/shortlinks/schema";
+import { Shortlink, shortlinksTable } from "@ottabase/shortlinks";
 ```
 
 ### Import Types
 
 ```typescript
-import type { Shortlink, CreateShortlinkRequest } from "@ottabase/shortlinks";
+import type { ShortlinkRecord, CreateShortlinkRequest } from "@ottabase/shortlinks";
 ```
 
 ## Database Schema
@@ -50,7 +50,7 @@ The package exports a `shortlinksTable` Drizzle schema with the following fields
 
 ```typescript
 import { drizzle } from "drizzle-orm/d1";
-import { shortlinksTable } from "@ottabase/shortlinks/schema";
+import { shortlinksTable } from "@ottabase/shortlinks";
 
 // Create a shortlink
 await db.insert(shortlinksTable).values({

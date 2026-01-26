@@ -6,7 +6,7 @@
  */
 
 import { User } from "@ottabase/ottaorm/models";
-import { ReferralTracking } from "../models/ReferralTracking";
+import { ReferralTracking } from "@ottabase/referrals";
 
 export interface ReferralAttributionOptions {
   newUserId: string;

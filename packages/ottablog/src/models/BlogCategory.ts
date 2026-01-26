@@ -4,7 +4,57 @@
  * OttaORM model for blog categories with hierarchy support.
  */
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
-import { categoriesTable, generateSlug } from "@ottabase/ottablog";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { generateSlug } from "../types";
+
+/**
+ * Categories table - hierarchical content organization
+ */
+export const categoriesTable = sqliteTable(
+  "blog_categories",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+
+    // Category name
+    name: text("name").notNull(),
+
+    // URL-friendly slug
+    slug: text("slug").notNull(),
+
+    // Optional description
+    description: text("description"),
+
+    // Parent category for hierarchy (null = root category)
+    parentId: text("parent_id"),
+
+    // Display order within parent
+    sortOrder: integer("sort_order").notNull().default(0),
+
+    // App identifier for multi-app database sharing
+    appId: text("app_id"),
+
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("blog_categories_slug_idx").on(table.slug),
+    index("blog_categories_app_id_idx").on(table.appId),
+    index("blog_categories_parent_id_idx").on(table.parentId),
+  ],
+);
+
+export type Category = typeof categoriesTable.$inferSelect;
+export type NewCategory = typeof categoriesTable.$inferInsert;
 
 export type BlogCategoryType = typeof categoriesTable.$inferSelect;
 export type NewBlogCategoryType = typeof categoriesTable.$inferInsert;
@@ -182,7 +232,7 @@ export class BlogCategory extends BaseModel {
       appId?: string;
       orderBy?: string;
       orderDirection?: "asc" | "desc";
-    }
+    },
   ) {
     const query: Record<string, unknown> = { parentId };
     if (options?.appId) query.appId = options.appId;
@@ -198,7 +248,7 @@ export class BlogCategory extends BaseModel {
    */
   static async findBySlug(
     slug: string,
-    options?: { appId?: string }
+    options?: { appId?: string },
   ): Promise<BlogCategory | null> {
     const query: Record<string, unknown> = { slug };
     if (options?.appId) query.appId = options.appId;
@@ -217,31 +267,5 @@ export class BlogCategory extends BaseModel {
     if (name && !this.get("slug")) {
       this.set("slug", generateSlug(name));
     }
-  }
-
-  /**
-   * Check if category is root (has no parent)
-   */
-  isRoot(): boolean {
-    return !this.get("parentId");
-  }
-
-  /**
-   * Get parent category
-   */
-  async parent(): Promise<BlogCategory | null> {
-    const parentId = this.get("parentId") as string | null;
-    if (!parentId) return null;
-
-    const parent = await BlogCategory.find(parentId);
-    return parent as BlogCategory | null;
-  }
-
-  /**
-   * Get child categories
-   */
-  async children(): Promise<BlogCategory[]> {
-    const id = this.get("id") as string;
-    return BlogCategory.children(id) as Promise<BlogCategory[]>;
   }
 }

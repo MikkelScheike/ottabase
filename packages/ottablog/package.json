@@ -8,10 +8,6 @@
       "types": "./src/index.ts",
       "default": "./src/index.ts"
     },
-    "./schema": {
-      "types": "./src/schema.ts",
-      "default": "./src/schema.ts"
-    },
     "./renderer": {
       "types": "./src/components/BlogRenderer.tsx",
       "default": "./src/components/BlogRenderer.tsx"
@@ -25,9 +21,11 @@
   "peerDependencies": {
     "drizzle-orm": "catalog:",
     "react": "^18 || ^19",
+    "@ottabase/ottaorm": "workspace:*",
     "@ottabase/ottarenderer": "workspace:*"
   },
   "dependencies": {
+    "@ottabase/ottaorm": "workspace:*",
     "@ottabase/ottarenderer": "workspace:*"
   },
   "devDependencies": {

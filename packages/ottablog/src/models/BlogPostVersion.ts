@@ -5,7 +5,85 @@
  * Stores snapshots of post content on each save for version tracking.
  */
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
-import { postVersionsTable } from "@ottabase/ottablog";
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { postsTable } from "./BlogPost";
+
+/**
+ * Post Versions table - content versioning history
+ */
+export const postVersionsTable = sqliteTable(
+  "blog_post_versions",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+
+    // Reference to the post
+    postId: text("post_id")
+      .notNull()
+      .references(() => postsTable.id, { onDelete: "cascade" }),
+
+    // Version number (auto-incremented per post)
+    versionNumber: integer("version_number").notNull(),
+
+    // Snapshot of content at this version
+    title: text("title").notNull(),
+    content: text("content", { mode: "json" }).$type<{
+      time?: number;
+      blocks: Array<{
+        id?: string;
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+      version?: string;
+    }>(),
+    excerpt: text("excerpt"),
+    privateNotes: text("private_notes", { mode: "json" }).$type<{
+      time?: number;
+      blocks: Array<{
+        id?: string;
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+      version?: string;
+    }>(),
+    footnotes: text("footnotes", { mode: "json" }).$type<{
+      time?: number;
+      blocks: Array<{
+        id?: string;
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+      version?: string;
+    }>(),
+
+    // Word count at this version
+    wordCount: integer("word_count"),
+
+    // Who made this change (optional)
+    changedBy: text("changed_by"),
+
+    // Optional change note/reason
+    changeNote: text("change_note"),
+
+    // When this version was created
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("blog_post_versions_post_id_idx").on(table.postId),
+    index("blog_post_versions_version_number_idx").on(
+      table.postId,
+      table.versionNumber,
+    ),
+    index("blog_post_versions_created_at_idx").on(table.createdAt),
+  ],
+);
+
+export type PostVersion = typeof postVersionsTable.$inferSelect;
+export type NewPostVersion = typeof postVersionsTable.$inferInsert;
 
 export type BlogPostVersionType = typeof postVersionsTable.$inferSelect;
 export type NewBlogPostVersionType = typeof postVersionsTable.$inferInsert;
@@ -171,7 +249,7 @@ export class BlogPostVersion extends BaseModel {
       orderBy?: string;
       orderDirection?: "asc" | "desc";
       limit?: number;
-    }
+    },
   ) {
     return this.where(
       { postId },
@@ -179,7 +257,7 @@ export class BlogPostVersion extends BaseModel {
         orderBy: options?.orderBy || "versionNumber",
         orderDirection: options?.orderDirection || "desc",
         limit: options?.limit,
-      }
+      },
     );
   }
 
@@ -196,7 +274,7 @@ export class BlogPostVersion extends BaseModel {
    */
   static async getVersion(
     postId: string,
-    versionNumber: number
+    versionNumber: number,
   ): Promise<BlogPostVersion | null> {
     const results = await this.where({ postId, versionNumber });
     return results.length > 0 ? (results[0] as BlogPostVersion) : null;
@@ -222,71 +300,22 @@ export class BlogPostVersion extends BaseModel {
       privateNotes?: unknown;
       footnotes?: unknown;
       wordCount?: number | null;
+      changedBy?: string | null;
+      changeNote?: string | null;
     },
-    options?: {
-      changedBy?: string;
-      changeNote?: string;
-    }
-  ): Promise<BlogPostVersion> {
+  ) {
     const versionNumber = await this.getNextVersionNumber(postId);
-
     return this.create({
       postId,
       versionNumber,
       title: postData.title,
-      content: postData.content || null,
-      excerpt: postData.excerpt || null,
-      privateNotes: postData.privateNotes || null,
-      footnotes: postData.footnotes || null,
-      wordCount: postData.wordCount || null,
-      changedBy: options?.changedBy || null,
-      changeNote: options?.changeNote || null,
-    }) as Promise<BlogPostVersion>;
-  }
-
-  /**
-   * Prune old versions, keeping only the most recent N
-   */
-  static async pruneVersions(postId: string, keepCount: number): Promise<number> {
-    if (keepCount < 1) return 0;
-
-    const allVersions = await this.forPost(postId, {
-      orderBy: "versionNumber",
-      orderDirection: "desc",
+      content: postData.content,
+      excerpt: postData.excerpt,
+      privateNotes: postData.privateNotes,
+      footnotes: postData.footnotes,
+      wordCount: postData.wordCount,
+      changedBy: postData.changedBy,
+      changeNote: postData.changeNote,
     });
-
-    const versionsToDelete = allVersions.slice(keepCount);
-    let deletedCount = 0;
-
-    for (const version of versionsToDelete) {
-      const id = version.get("id") as string;
-      await this.delete(id);
-      deletedCount++;
-    }
-
-    return deletedCount;
-  }
-
-  // ==================== Instance Methods ====================
-
-  /**
-   * Get the version number
-   */
-  getVersionNumber(): number {
-    return this.get("versionNumber") as number;
-  }
-
-  /**
-   * Get formatted version label (e.g., "v1", "v2")
-   */
-  getVersionLabel(): string {
-    return `v${this.getVersionNumber()}`;
-  }
-
-  /**
-   * Get the post ID this version belongs to
-   */
-  getPostId(): string {
-    return this.get("postId") as string;
   }
 }

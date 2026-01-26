@@ -225,9 +225,10 @@ const config = createAppConfig({
 ### Schema Support
 
 All models include a nullable `appId` column:
-- `@ottabase/ottaorm` models (User, Session, Account, Post, Tag, etc.)
-- `@ottabase/shortlinks` schema
-- `@ottabase/referrals` schema
+
+- `@ottabase/ottaorm` core models (User, Session, Account, Post, Tag, etc.)
+- `@ottabase/shortlinks` fat model
+- `@ottabase/referrals` fat model
 
 ## Creating New Apps
 
@@ -238,36 +239,34 @@ cd apps/my-app
 # Delete src/pages/demo/
 ```
 
-## Package with Model Pattern
+## Package Fat Model Pattern
 
-When a package exports its own table (like `@ottabase/shortlinks`):
+When a package owns its tables (like `@ottabase/shortlinks`), the model and schema live together in the package.
 
-### 1. Package exports table
+### 1. Package exports fat model
 
 ```typescript
-// packages/shortlinks/src/schema.ts
+// packages/shortlinks/src/Shortlink.ts
 export const shortlinksTable = sqliteTable("shortlinks", { ... });
-```
-
-### 2. App creates model
-
-```typescript
-// apps/my-app/ottabase/models/Shortlink.ts
-import { BaseModel } from "@ottabase/ottaorm";
-import { shortlinksTable } from "@ottabase/shortlinks/schema";
 
 export class Shortlink extends BaseModel {
   static entity = "shortlinks";
   static table = shortlinksTable;
-  // Add app-specific methods...
 }
 ```
 
-### 3. Export in schema
+### 2. App registers model
+
+```typescript
+import { Shortlink } from "@ottabase/shortlinks";
+registerModels([Shortlink]);
+```
+
+### 3. Export table in schema
 
 ```typescript
 // ottabase/db/schema.ts
-export { shortlinksTable } from "@ottabase/shortlinks/schema";
+export { shortlinksTable } from "@ottabase/shortlinks";
 ```
 
 ### 4. Create hooks

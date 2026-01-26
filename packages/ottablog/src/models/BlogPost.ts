@@ -4,46 +4,180 @@
  * OttaORM model for blog posts using @ottabase/ottablog schema.
  * Supports multiple content types, SEO, hero images, and OttaEditor content.
  */
+import { sql } from "drizzle-orm";
+import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { BaseModel, ModelFields } from "@ottabase/ottaorm";
 import {
-  postTagsTable as blogPostTagsTable,
   calculateReadingTime,
   CONTENT_TYPES,
   extractExcerpt,
   generateSlug,
   POST_STATUSES,
-  postsTable,
   type ContentType,
   type EditorJSData,
   type PostStatus,
-} from "@ottabase/ottablog";
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+} from "../types";
+
+/**
+ * Posts table - main content storage
+ */
+export const postsTable = sqliteTable(
+  "blog_posts",
+  {
+    id: text("id")
+      .primaryKey()
+      .$defaultFn(() => crypto.randomUUID()),
+
+    // Post title
+    title: text("title").notNull(),
+
+    // URL-friendly slug (unique per appId)
+    slug: text("slug").notNull(),
+
+    // Short excerpt/summary (auto-generated or manual)
+    excerpt: text("excerpt"),
+
+    // Main content as EditorJS JSON
+    content: text("content", { mode: "json" }).$type<{
+      time?: number;
+      blocks: Array<{
+        id?: string;
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+      version?: string;
+    }>(),
+
+    // Content type: blog, changelog, docs, news, announcement
+    contentType: text("content_type").notNull().default("blog"),
+
+    // Publication status: draft, published, archived, scheduled
+    status: text("status").notNull().default("draft"),
+
+    // Category reference
+    categoryId: text("category_id"),
+
+    // Series reference (for multi-part content)
+    seriesId: text("series_id"),
+
+    // Order within the series (1, 2, 3, etc.)
+    seriesOrder: integer("series_order"),
+
+    // Hero/featured image as JSON
+    heroImage: text("hero_image", { mode: "json" }).$type<{
+      url: string;
+      alt?: string;
+      caption?: string;
+      cfImageId?: string;
+      width?: number;
+      height?: number;
+      focalPoint?: { x: number; y: number };
+    }>(),
+
+    // SEO metadata as JSON
+    seoMeta: text("seo_meta", { mode: "json" }).$type<{
+      title?: string;
+      description?: string;
+      keywords?: string[];
+      canonicalUrl?: string;
+      ogImage?: string;
+      ogType?: string;
+      twitterCard?: string;
+      noIndex?: boolean;
+      noFollow?: boolean;
+    }>(),
+
+    // Private notes (author-only, not shown publicly) - EditorJS JSON format
+    privateNotes: text("private_notes", { mode: "json" }).$type<{
+      time?: number;
+      blocks: Array<{
+        id?: string;
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+      version?: string;
+    }>(),
+
+    // Public footnotes/endnotes - EditorJS JSON format
+    footnotes: text("footnotes", { mode: "json" }).$type<{
+      time?: number;
+      blocks: Array<{
+        id?: string;
+        type: string;
+        data: Record<string, unknown>;
+      }>;
+      version?: string;
+    }>(),
+
+    // Author information
+    authorId: text("author_id"),
+    authorName: text("author_name"),
+    authorEmail: text("author_email"),
+    authorAvatar: text("author_avatar"),
+
+    // Reading time estimate (stored for performance)
+    readingTimeMinutes: integer("reading_time_minutes"),
+    wordCount: integer("word_count"),
+
+    // Featured/pinned post
+    isFeatured: integer("is_featured", { mode: "boolean" })
+      .notNull()
+      .default(false),
+
+    // Allow comments
+    allowComments: integer("allow_comments", { mode: "boolean" })
+      .notNull()
+      .default(true),
+
+    // View count
+    viewCount: integer("view_count").notNull().default(0),
+
+    // Scheduled publish date (for scheduled posts)
+    publishAt: integer("publish_at", { mode: "timestamp" }),
+
+    // Actual publish date (editorial/display date)
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+
+    // When post was actually made live (system timestamp)
+    postedAt: integer("posted_at", { mode: "timestamp" }),
+
+    // App identifier for multi-app database sharing
+    appId: text("app_id"),
+
+    // Version retention setting (null = keep all, 1-10 = keep last N versions)
+    maxVersionsToKeep: integer("max_versions_to_keep"),
+
+    // Timestamps
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`)
+      .$onUpdate(() => new Date()),
+  },
+  (table) => [
+    index("blog_posts_slug_idx").on(table.slug),
+    index("blog_posts_status_idx").on(table.status),
+    index("blog_posts_content_type_idx").on(table.contentType),
+    index("blog_posts_category_id_idx").on(table.categoryId),
+    index("blog_posts_series_id_idx").on(table.seriesId),
+    index("blog_posts_author_id_idx").on(table.authorId),
+    index("blog_posts_app_id_idx").on(table.appId),
+    index("blog_posts_published_at_idx").on(table.publishedAt),
+    index("blog_posts_is_featured_idx").on(table.isFeatured),
+  ],
+);
+
+export type Post = typeof postsTable.$inferSelect;
+export type NewPost = typeof postsTable.$inferInsert;
 
 export type BlogPostType = typeof postsTable.$inferSelect;
 export type NewBlogPostType = typeof postsTable.$inferInsert;
 
 /**
  * BlogPost Model - Fat Model Pattern
- *
- * The definitive, extensible base model for Blog Posts.
- * Supports multiple content types, SEO, hero images, ID-based versioning, and OttaEditor content.
- *
- * @example
- * ```typescript
- * import { BlogPost } from "./BlogPost";
- *
- * // Create a post
- * const post = await BlogPost.createWithSlug("My Blog Post", {
- *   content: { ... },
- *   authorId: "user-123"
- * });
- *
- * // Publish
- * await post.publish();
- *
- * // Fetch with author and tags
- * const author = await post.author();
- * const tags = await post.tags();
- * ```
  */
 export class BlogPost extends BaseModel {
   static entity = "blog_posts";
@@ -159,7 +293,7 @@ export class BlogPost extends BaseModel {
       },
       formConfig: {
         visible: true,
-        fieldType: "editor" as any, // Custom field type for OttaEditor
+        fieldType: "editor" as any,
       },
       tableConfig: {
         visible: false,
@@ -258,7 +392,8 @@ export class BlogPost extends BaseModel {
         fieldType: "number",
       },
       tableConfig: {
-        visible: false,
+        visible: true,
+        colWidth: 120,
       },
     },
     heroImage: {
@@ -266,11 +401,11 @@ export class BlogPost extends BaseModel {
       editable: true,
       uiConfig: {
         label: "Hero Image",
-        description: "Featured image for the post",
+        description: "Featured image",
       },
       formConfig: {
         visible: true,
-        fieldType: "upload" as any, // Custom field type for image upload
+        fieldType: "image",
       },
       tableConfig: {
         visible: false,
@@ -280,8 +415,8 @@ export class BlogPost extends BaseModel {
       type: "json",
       editable: true,
       uiConfig: {
-        label: "SEO Settings",
-        description: "Search engine optimization metadata",
+        label: "SEO Metadata",
+        description: "SEO and social media metadata",
       },
       formConfig: {
         visible: true,
@@ -296,7 +431,6 @@ export class BlogPost extends BaseModel {
       editable: true,
       uiConfig: {
         label: "Private Notes",
-        description: "Author-only notes (not shown publicly)",
       },
       formConfig: {
         visible: true,
@@ -311,7 +445,6 @@ export class BlogPost extends BaseModel {
       editable: true,
       uiConfig: {
         label: "Footnotes",
-        description: "Public footnotes/endnotes",
       },
       formConfig: {
         visible: true,
@@ -329,7 +462,8 @@ export class BlogPost extends BaseModel {
         label: "Author ID",
       },
       formConfig: {
-        visible: false,
+        visible: true,
+        fieldType: "select",
       },
       tableConfig: {
         visible: false,
@@ -338,18 +472,15 @@ export class BlogPost extends BaseModel {
     authorName: {
       type: "string",
       editable: true,
-      searchable: true,
       uiConfig: {
-        label: "Author",
-        description: "Author name",
+        label: "Author Name",
       },
       formConfig: {
         visible: true,
         fieldType: "input",
       },
       tableConfig: {
-        visible: true,
-        colWidth: 150,
+        visible: false,
       },
     },
     authorEmail: {
@@ -359,7 +490,8 @@ export class BlogPost extends BaseModel {
         label: "Author Email",
       },
       formConfig: {
-        visible: false,
+        visible: true,
+        fieldType: "input",
       },
       tableConfig: {
         visible: false,
@@ -372,10 +504,35 @@ export class BlogPost extends BaseModel {
         label: "Author Avatar",
       },
       formConfig: {
-        visible: false,
+        visible: true,
+        fieldType: "input",
       },
       tableConfig: {
         visible: false,
+      },
+    },
+    readingTimeMinutes: {
+      type: "number",
+      editable: false,
+      sortable: true,
+      uiConfig: {
+        label: "Reading Time",
+      },
+      tableConfig: {
+        visible: true,
+        colWidth: 120,
+      },
+    },
+    wordCount: {
+      type: "number",
+      editable: false,
+      sortable: true,
+      uiConfig: {
+        label: "Word Count",
+      },
+      tableConfig: {
+        visible: true,
+        colWidth: 120,
       },
     },
     isFeatured: {
@@ -385,7 +542,7 @@ export class BlogPost extends BaseModel {
       sortable: true,
       uiConfig: {
         label: "Featured",
-        description: "Pin to top of listings",
+        description: "Pin this post",
         defaultValue: false,
       },
       formConfig: {
@@ -394,14 +551,16 @@ export class BlogPost extends BaseModel {
       },
       tableConfig: {
         visible: true,
-        colWidth: 80,
+        colWidth: 120,
       },
     },
     allowComments: {
       type: "boolean",
       editable: true,
+      filterable: true,
       uiConfig: {
         label: "Allow Comments",
+        description: "Enable comments",
         defaultValue: true,
       },
       formConfig: {
@@ -409,7 +568,8 @@ export class BlogPost extends BaseModel {
         fieldType: "boolean",
       },
       tableConfig: {
-        visible: false,
+        visible: true,
+        colWidth: 150,
       },
     },
     viewCount: {
@@ -419,35 +579,17 @@ export class BlogPost extends BaseModel {
       uiConfig: {
         label: "Views",
       },
-      formConfig: {
-        visible: false,
-      },
       tableConfig: {
         visible: true,
         colWidth: 80,
       },
     },
-    readingTimeMinutes: {
-      type: "number",
-      editable: false,
-      uiConfig: {
-        label: "Reading Time",
-      },
-      formConfig: {
-        visible: false,
-      },
-      tableConfig: {
-        visible: true,
-        colWidth: 100,
-      },
-    },
-    publishedAt: {
+    publishAt: {
       type: "date",
       editable: true,
       sortable: true,
       uiConfig: {
-        label: "Publish Date",
-        description: "When to display as published",
+        label: "Publish At",
       },
       formConfig: {
         visible: true,
@@ -458,16 +600,54 @@ export class BlogPost extends BaseModel {
         colWidth: 150,
       },
     },
+    publishedAt: {
+      type: "date",
+      editable: true,
+      sortable: true,
+      uiConfig: {
+        label: "Published At",
+      },
+      tableConfig: {
+        visible: true,
+        colWidth: 150,
+      },
+    },
+    postedAt: {
+      type: "date",
+      editable: false,
+      sortable: true,
+      uiConfig: {
+        label: "Posted At",
+      },
+      tableConfig: {
+        visible: false,
+      },
+    },
+    appId: {
+      type: "string",
+      editable: false,
+      filterable: true,
+      uiConfig: {
+        label: "App ID",
+        description: "Auto-set when scopeByAppId is enabled",
+      },
+      formConfig: {
+        visible: false,
+      },
+      tableConfig: {
+        visible: false,
+      },
+    },
     maxVersionsToKeep: {
       type: "number",
       editable: true,
       uiConfig: {
-        label: "Version History",
-        description: "Number of versions to keep (empty = keep all)",
+        label: "Max Versions",
+        description: "Max versions to retain",
       },
       formConfig: {
         visible: true,
-        fieldType: "select",
+        fieldType: "number",
       },
       tableConfig: {
         visible: false,
@@ -510,17 +690,33 @@ export class BlogPost extends BaseModel {
     },
   };
 
-  // ==================== Query Scopes ====================
+  // ============================================================
+  // QUERY HELPERS
+  // ============================================================
 
   /**
-   * Get published posts
+   * Find a post by slug (unique per appId)
+   */
+  static async findBySlug(
+    slug: string,
+    options?: { appId?: string },
+  ): Promise<BlogPost | null> {
+    const query: Record<string, unknown> = { slug };
+    if (options?.appId) query.appId = options.appId;
+
+    const results = await this.where(query);
+    return results.length > 0 ? (results[0] as BlogPost) : null;
+  }
+
+  /**
+   * Get all published posts
    */
   static async published(options?: {
     contentType?: ContentType;
     appId?: string;
+    limit?: number;
     orderBy?: string;
     orderDirection?: "asc" | "desc";
-    limit?: number;
   }) {
     const query: Record<string, unknown> = { status: "published" };
     if (options?.contentType) query.contentType = options.contentType;
@@ -534,34 +730,16 @@ export class BlogPost extends BaseModel {
   }
 
   /**
-   * Get draft posts
-   */
-  static async drafts(options?: {
-    appId?: string;
-    orderBy?: string;
-    orderDirection?: "asc" | "desc";
-  }) {
-    const query: Record<string, unknown> = { status: "draft" };
-    if (options?.appId) query.appId = options.appId;
-
-    return this.where(query, {
-      orderBy: options?.orderBy || "updatedAt",
-      orderDirection: options?.orderDirection || "desc",
-    });
-  }
-
-  /**
    * Get featured posts
    */
   static async featured(options?: {
+    status?: PostStatus;
     contentType?: ContentType;
     appId?: string;
     limit?: number;
   }) {
-    const query: Record<string, unknown> = {
-      status: "published",
-      isFeatured: true,
-    };
+    const query: Record<string, unknown> = { isFeatured: true };
+    if (options?.status) query.status = options.status;
     if (options?.contentType) query.contentType = options.contentType;
     if (options?.appId) query.appId = options.appId;
 
@@ -570,44 +748,6 @@ export class BlogPost extends BaseModel {
       orderDirection: "desc",
       limit: options?.limit,
     });
-  }
-
-  /**
-   * Get posts by content type
-   */
-  static async byContentType(
-    contentType: ContentType,
-    options?: {
-      status?: PostStatus;
-      appId?: string;
-      orderBy?: string;
-      orderDirection?: "asc" | "desc";
-      limit?: number;
-    }
-  ) {
-    const query: Record<string, unknown> = { contentType };
-    if (options?.status) query.status = options.status;
-    if (options?.appId) query.appId = options.appId;
-
-    return this.where(query, {
-      orderBy: options?.orderBy || "publishedAt",
-      orderDirection: options?.orderDirection || "desc",
-      limit: options?.limit,
-    });
-  }
-
-  /**
-   * Find post by slug
-   */
-  static async findBySlug(
-    slug: string,
-    options?: { appId?: string }
-  ): Promise<BlogPost | null> {
-    const query: Record<string, unknown> = { slug };
-    if (options?.appId) query.appId = options.appId;
-
-    const results = await this.where(query);
-    return results.length > 0 ? (results[0] as BlogPost) : null;
   }
 
   /**
@@ -621,7 +761,7 @@ export class BlogPost extends BaseModel {
       orderBy?: string;
       orderDirection?: "asc" | "desc";
       limit?: number;
-    }
+    },
   ) {
     const query: Record<string, unknown> = { categoryId };
     if (options?.status) query.status = options.status;
@@ -643,7 +783,7 @@ export class BlogPost extends BaseModel {
       status?: PostStatus;
       appId?: string;
       limit?: number;
-    }
+    },
   ) {
     const query: Record<string, unknown> = { seriesId };
     if (options?.status) query.status = options.status;
@@ -664,9 +804,7 @@ export class BlogPost extends BaseModel {
    * Get the author of this post (BelongsTo User)
    */
   async author(select?: string[]) {
-    // Dynamic import to avoid circular dependency
-    // Note: Adjust the import path to where your User model is located
-    const { User } = await import("@ottabase/ottaorm/models");
+    const { User } = await import("@ottabase/ottaorm");
 
     return this.belongsTo(User as any, "authorId", {
       select: select || undefined,
@@ -674,7 +812,7 @@ export class BlogPost extends BaseModel {
   }
 
   /**
-   * Get tags for this post (BelongsToMany BlogTag via blogPostTagsTable)
+   * Get tags for this post (BelongsToMany BlogTag via postTagsTable)
    */
   async tags(options?: {
     select?: string[];
@@ -682,10 +820,10 @@ export class BlogPost extends BaseModel {
     orderDirection?: "asc" | "desc";
     withPivot?: string[];
   }) {
-    // Dynamic import
     const { BlogTag } = await import("./BlogTag");
+    const { postTagsTable } = await import("./BlogPostTag");
 
-    return this.belongsToMany(BlogTag, blogPostTagsTable, {
+    return this.belongsToMany(BlogTag, postTagsTable, {
       foreignKey: "postId",
       otherKey: "tagId",
       ...options,
@@ -698,11 +836,8 @@ export class BlogPost extends BaseModel {
 
   /**
    * Create post with auto-generated slug from title
-   * @param title The post title
-   * @param data Additional data
    */
   static async createWithSlug(title: string, data?: Record<string, any>) {
-    // Generate slug using the helper from ottablog
     const slug = generateSlug(title);
     return this.create({ title, slug, ...data });
   }
@@ -758,21 +893,11 @@ export class BlogPost extends BaseModel {
    */
   updateReadingStats() {
     const content = this.get("content") as EditorJSData | null;
-    if (content && content.blocks) {
-      const stats = calculateReadingTime(content);
-      this.set("readingTimeMinutes", stats.minutes);
-      this.set("wordCount", stats.words);
-    }
-  }
+    if (!content) return;
 
-  /**
-   * Auto-generate excerpt from content if not set
-   */
-  generateExcerpt(maxLength = 160) {
-    const content = this.get("content") as EditorJSData | null;
-    if (content && content.blocks && !this.get("excerpt")) {
-      this.set("excerpt", extractExcerpt(content, maxLength));
-    }
+    const readingTime = calculateReadingTime(content);
+    this.set("readingTimeMinutes", readingTime.minutes);
+    this.set("wordCount", readingTime.words);
   }
 
   /**
@@ -786,33 +911,13 @@ export class BlogPost extends BaseModel {
   }
 
   /**
-   * Prepare post for saving (auto-generate fields)
+   * Auto-generate excerpt from content if not set
    */
-  prepareForSave() {
-    this.generateSlug();
-    this.generateExcerpt();
-    this.updateReadingStats();
-  }
+  generateExcerpt() {
+    const content = this.get("content") as EditorJSData | null;
+    if (!content || this.get("excerpt")) return;
 
-  /**
-   * Check if post is published
-   */
-  isPublished(): boolean {
-    return this.get("status") === "published";
-  }
-
-  /**
-   * Check if post is draft
-   */
-  isDraft(): boolean {
-    return this.get("status") === "draft";
-  }
-
-  /**
-   * Get formatted reading time
-   */
-  getFormattedReadingTime(): string {
-    const minutes = this.get("readingTimeMinutes") || 0;
-    return minutes <= 1 ? "1 min read" : `${minutes} min read`;
+    const excerpt = extractExcerpt(content);
+    this.set("excerpt", excerpt);
   }
 }
