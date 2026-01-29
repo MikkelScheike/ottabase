@@ -2,11 +2,12 @@ import "./styles.css";
 
 import AdvancedImageBlock from "./components/AdvancedImage/AdvancedImage";
 import Checklist from "./components/Checklist";
-import List from "./components/List";
-import Table from "./components/Table";
 import Code from "./components/Code";
-import Warning from "./components/Warning";
+import List from "./components/List";
 import Quote from "./components/Quote";
+import Spoiler from "./components/Spoiler";
+import Table from "./components/Table";
+import Warning from "./components/Warning";
 
 export const customRenderers = {
     checklist: Checklist,
@@ -18,6 +19,7 @@ export const customRenderers = {
     code: Code,
     warning: Warning,
     quote: Quote,
+    spoiler: Spoiler,
 }
 
 export const blockClass = "cdc-content-block";
@@ -78,6 +80,9 @@ export const defaultEJSRConfigs = {
     },
     warning: {
         className: `${blockClass} cdc-content-warning`
+    },
+    spoiler: {
+        className: `${blockClass} cdc-content-spoiler`
     },
 };
 

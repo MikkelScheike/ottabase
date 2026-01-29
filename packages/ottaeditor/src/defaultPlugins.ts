@@ -14,6 +14,7 @@ import Raw from "@editorjs/raw";
 import Table from "@editorjs/table";
 import Underline from "@editorjs/underline";
 import Warning from "@editorjs/warning";
+import SpoilerTool from "./tools/SpoilerTool/SpoilerTool";
 import type { OttaEditorPlugin } from "./types";
 
 /**
@@ -35,6 +36,7 @@ export const DEFAULT_PLUGIN_NAMES = {
   MARKER: 'Marker',
   UNDERLINE: 'underline',
   INLINE_CODE: 'inlineCode',
+  SPOILER: 'spoiler',
 } as const;
 
 /**
@@ -145,6 +147,13 @@ export const defaultPlugins: OttaEditorPlugin[] = [
     tool: InlineCode as any,
     config: {},
   },
+  {
+    name: DEFAULT_PLUGIN_NAMES.SPOILER,
+    tool: SpoilerTool as any,
+    config: {
+      placeholder: "Enter spoiler text...",
+    } as any,
+  },
 ];
 
 /**
@@ -176,19 +185,19 @@ export function getDefaultPlugins(
  * Re-export all default plugins for custom usage
  */
 export {
-  CheckList,
-  CodeTool,
-  Delimiter,
-  Embed,
-  Header,
-  InlineCode,
-  LinkTool,
-  Marker,
-  NestedList,
-  Paragraph,
-  Quote,
-  Raw,
-  Table,
-  Underline,
-  Warning,
+    CheckList,
+    CodeTool,
+    Delimiter,
+    Embed,
+    Header,
+    InlineCode,
+    LinkTool,
+    Marker,
+    NestedList,
+    Paragraph,
+    Quote,
+    Raw, SpoilerTool, Table,
+    Underline,
+    Warning
 };
+
