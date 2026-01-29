@@ -8,6 +8,7 @@ Edge-friendly email templating + mailer helpers for Ottabase.
 - Template registry + rendering helpers
 - Mailer abstraction for providers
 - Resend provider (fetch-based, edge-safe)
+- AWS SES provider (HTTP API, edge-safe)
 - Cloudflare provider stub (pluggable transport)
 
 ## Install
@@ -104,6 +105,43 @@ const mailer = createCloudflareMailer({
   },
 });
 ```
+
+## AWS SES
+
+Use AWS SES HTTP API (works in Cloudflare Workers):
+
+```ts
+import { createSESMailer } from "@ottabase/email/providers/ses";
+import { sendTemplatedEmail } from "@ottabase/email/mailer";
+
+const mailer = createSESMailer({
+  accessKeyId: env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+  region: "us-east-1", // optional, defaults to us-east-1
+});
+
+await sendTemplatedEmail(mailer, {
+  from: "noreply@example.com",
+  to: "user@example.com",
+  template: "default",
+  subject: "Welcome",
+  variables: { name: "User" },
+  content: {
+    header: "Welcome",
+    body: "<p>Hello {{name}}!</p>",
+  },
+});
+```
+
+**Setup:**
+1. Create AWS IAM user with `ses:SendEmail` permission
+2. Add credentials to your Cloudflare Worker environment:
+   - `AWS_ACCESS_KEY_ID`
+   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_REGION` (optional, defaults to us-east-1)
+3. Verify your sending domain/email in SES console
+
+**Note:** SES uses HTTP API (not SMTP), so it works perfectly in Cloudflare Workers without any Node.js dependencies.
 
 ## Nodemailer (SMTP)
 

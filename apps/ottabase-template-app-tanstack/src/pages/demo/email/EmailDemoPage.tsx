@@ -1,23 +1,27 @@
 import { registerAppEmailTemplates } from "@/email/templates";
 import { listEmailTemplates, renderEmail } from "@ottabase/email";
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-  Textarea,
+    Alert,
+    AlertDescription,
+    AlertTitle,
+    Badge,
+    Button,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    Input,
+    Label,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+    Textarea,
 } from "@ottabase/ui-shadcn";
 import { Link } from "@tanstack/react-router";
+import { AlertCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 registerAppEmailTemplates();
@@ -107,6 +111,18 @@ export function EmailDemoPage() {
     | { state: "success"; results: Array<{ email: string; ok: boolean }> }
     | { state: "error"; message: string }
   >({ state: "idle" });
+  const [selectedProvider, setSelectedProvider] = useState<
+    "auto" | "resend" | "ses" | "nodemailer"
+  >("auto");
+  const [providers, setProviders] = useState<{
+    resend?: { available: boolean; required: string[]; optional: string[] };
+    ses?: { available: boolean; required: string[]; optional: string[] };
+    nodemailer?: {
+      available: boolean;
+      required: string[];
+      optional: string[];
+    };
+  }>({});
 
   const selectedType = useMemo(
     () => EMAIL_TYPES.find((type) => type.id === emailType) || EMAIL_TYPES[0],
@@ -120,6 +136,13 @@ export function EmailDemoPage() {
     setBodyText(selectedType.content.body);
     setFooterText(selectedType.content.footer || "");
   }, [selectedType]);
+
+  useEffect(() => {
+    fetch("/api/email/providers")
+      .then((res) => res.json())
+      .then((data) => setProviders(data))
+      .catch(() => {});
+  }, []);
 
   const contentDraft = useMemo(
     () => ({
@@ -190,6 +213,7 @@ export function EmailDemoPage() {
           subject: subjectText,
           content: contentDraft,
           variables: parsedVariables,
+          provider: selectedProvider,
         }),
       });
 
@@ -360,6 +384,46 @@ export function EmailDemoPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label>Email Provider</Label>
+            <Select
+              value={selectedProvider}
+              onValueChange={(value) =>
+                setSelectedProvider(
+                  value as "auto" | "resend" | "ses" | "nodemailer",
+                )
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="auto">Auto (use first available)</SelectItem>
+                <SelectItem value="resend">Resend</SelectItem>
+                <SelectItem value="ses">AWS SES</SelectItem>
+                <SelectItem value="nodemailer">Nodemailer (SMTP)</SelectItem>
+              </SelectContent>
+            </Select>
+            {selectedProvider !== "auto" &&
+              providers[selectedProvider] &&
+              !providers[selectedProvider]?.available && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Provider not configured</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    Missing required environment variables:{" "}
+                    {providers[selectedProvider]?.required.join(", ")}
+                  </AlertDescription>
+                </Alert>
+              )}
+            {selectedProvider !== "auto" &&
+              providers[selectedProvider]?.available && (
+                <Badge variant="outline" className="text-xs">
+                  ✓ Configured and ready
+                </Badge>
+              )}
+          </div>
+
+          <div className="space-y-2">
             <Label>Recipients (CSV)</Label>
             <Textarea
               value={recipientCsv}
@@ -370,7 +434,12 @@ export function EmailDemoPage() {
 
           <Button
             onClick={handleSendTest}
-            disabled={sendStatus.state === "sending"}
+            disabled={
+              sendStatus.state === "sending" ||
+              (selectedProvider !== "auto" &&
+                providers[selectedProvider] &&
+                !providers[selectedProvider]?.available)
+            }
           >
             {sendStatus.state === "sending" ? "Sending…" : "Send Test Email"}
           </Button>
@@ -396,26 +465,82 @@ export function EmailDemoPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Email Sending Configuration</CardTitle>
+          <CardTitle>Email Provider Configuration</CardTitle>
           <CardDescription>
-            Cloudflare Workers use the Resend API for test sends in this demo.
+            Configure one or more email providers via environment variables.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            Set <strong>EMAIL_SERVER</strong> (SMTP URL) and{" "}
-            <strong>EMAIL_FROM</strong> to send via Nodemailer. If SMTP is not
-            configured, set <strong>EMAIL_RESEND_API_KEY</strong> and{" "}
-            <strong>EMAIL_FROM</strong> to send via Resend.
-          </p>
-          <p>
-            The demo endpoint lives at <strong>/api/email/test</strong> and
-            renders templates using @ottabase/email before sending.
-          </p>
-          <p>
-            For production, swap in a Cloudflare-native mailer by implementing a
-            custom provider and wiring it in the worker.
-          </p>
+        <CardContent className="space-y-4 text-sm">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>Resend</strong> (HTTP API - Edge Compatible)
+              </div>
+              {providers.resend?.available ? (
+                <Badge variant="outline">✓ Configured</Badge>
+              ) : (
+                <Badge variant="destructive">Not configured</Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Required: <code>EMAIL_RESEND_API_KEY</code>
+              <br />
+              Optional: <code>EMAIL_FROM</code>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>AWS SES</strong> (HTTP API - Edge Compatible)
+              </div>
+              {providers.ses?.available ? (
+                <Badge variant="outline">✓ Configured</Badge>
+              ) : (
+                <Badge variant="destructive">Not configured</Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Required: <code>AWS_ACCESS_KEY_ID</code>,{" "}
+              <code>AWS_SECRET_ACCESS_KEY</code>
+              <br />
+              Optional: <code>AWS_REGION</code>, <code>EMAIL_FROM</code>
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <strong>Nodemailer</strong> (SMTP - Node.js only)
+              </div>
+              {providers.nodemailer?.available ? (
+                <Badge variant="outline">✓ Configured</Badge>
+              ) : (
+                <Badge variant="destructive">Not configured</Badge>
+              )}
+            </div>
+            <p className="text-muted-foreground text-xs">
+              Required: <code>EMAIL_SERVER</code> (SMTP URL)
+              <br />
+              Optional: <code>EMAIL_FROM</code>
+              <br />
+              <span className="text-yellow-600 dark:text-yellow-400">
+                ⚠️ Note: Nodemailer requires Node.js and won't work in
+                Cloudflare Workers
+              </span>
+            </p>
+          </div>
+
+          <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-xs dark:border-blue-800 dark:bg-blue-950">
+            <p className="font-semibold text-blue-900 dark:text-blue-100">
+              Edge Compatibility
+            </p>
+            <p className="mt-1 text-blue-700 dark:text-blue-300">
+              Resend and AWS SES use HTTP APIs and work perfectly in Cloudflare
+              Workers. Nodemailer uses SMTP (TCP sockets) and only works in
+              Node.js environments.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>

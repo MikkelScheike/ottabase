@@ -11,6 +11,7 @@ import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import {
     createResendMailer,
+    createSESMailer,
     sendTemplatedEmail,
     type TemplateContent,
     type TemplateVariables,
@@ -256,6 +257,30 @@ export default {
         return response;
       }
 
+      // Check available email providers
+      if (url.pathname === "/api/email/providers" && request.method === "GET") {
+        const providers = {
+          resend: {
+            available: !!env.EMAIL_RESEND_API_KEY,
+            required: ["EMAIL_RESEND_API_KEY"],
+            optional: ["EMAIL_FROM"],
+          },
+          ses: {
+            available:
+              !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY),
+            required: ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"],
+            optional: ["AWS_REGION", "EMAIL_FROM"],
+          },
+          nodemailer: {
+            available: !!env.EMAIL_SERVER,
+            required: ["EMAIL_SERVER"],
+            optional: ["EMAIL_FROM"],
+          },
+        };
+
+        return jsonResponse(providers);
+      }
+
       if (url.pathname === "/api/email/test" && request.method === "POST") {
         const body = await readJson<{
           recipients?: string[];
@@ -264,17 +289,8 @@ export default {
           subject?: string;
           content?: TemplateContent;
           variables?: TemplateVariables;
+          provider?: "auto" | "resend" | "ses" | "nodemailer";
         }>(request);
-
-        if (!env.EMAIL_SERVER && !env.EMAIL_RESEND_API_KEY) {
-          return errorResponse(
-            "EMAIL_SERVER or EMAIL_RESEND_API_KEY must be configured",
-            400,
-            {
-              code: "CONFIG_ERROR",
-            },
-          );
-        }
 
         const from = env.EMAIL_FROM || "noreply@example.com";
         const recipients = body.recipients || [];
@@ -287,13 +303,66 @@ export default {
 
         registerAppEmailTemplates();
 
-        const mailer = env.EMAIL_SERVER
-          ? await (async () => {
-              const { createNodemailerMailer } =
-                await import("@ottabase/email/providers/nodemailer");
-              return createNodemailerMailer({ server: env.EMAIL_SERVER });
-            })()
-          : createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY });
+        let mailer;
+        const selectedProvider = body.provider || "auto";
+
+        if (selectedProvider === "nodemailer" || selectedProvider === "auto") {
+          if (env.EMAIL_SERVER) {
+            const { createNodemailerMailer } =
+              await import("@ottabase/email/providers/nodemailer");
+            mailer = createNodemailerMailer({ server: env.EMAIL_SERVER });
+          } else if (selectedProvider === "nodemailer") {
+            return errorResponse(
+              "EMAIL_SERVER must be configured for Nodemailer provider",
+              400,
+              {
+                code: "CONFIG_ERROR",
+              },
+            );
+          }
+        }
+
+        if (!mailer && (selectedProvider === "ses" || selectedProvider === "auto")) {
+          if (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) {
+            mailer = createSESMailer({
+              accessKeyId: env.AWS_ACCESS_KEY_ID,
+              secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+              region: env.AWS_REGION || "us-east-1",
+            });
+          } else if (selectedProvider === "ses") {
+            return errorResponse(
+              "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be configured for SES provider",
+              400,
+              {
+                code: "CONFIG_ERROR",
+              },
+            );
+          }
+        }
+
+        if (!mailer && (selectedProvider === "resend" || selectedProvider === "auto")) {
+          if (env.EMAIL_RESEND_API_KEY) {
+            mailer = createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY });
+          } else if (selectedProvider === "resend") {
+            return errorResponse(
+              "EMAIL_RESEND_API_KEY must be configured for Resend provider",
+              400,
+              {
+                code: "CONFIG_ERROR",
+              },
+            );
+          }
+        }
+
+        if (!mailer) {
+          return errorResponse(
+            "No email provider configured. Set EMAIL_SERVER, EMAIL_RESEND_API_KEY, or AWS SES credentials",
+            400,
+            {
+              code: "CONFIG_ERROR",
+            },
+          );
+        }
         const results = await Promise.all(
           recipients.map(async (email) => {
             const response = await sendTemplatedEmail(mailer, {

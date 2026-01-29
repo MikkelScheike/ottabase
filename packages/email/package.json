@@ -44,6 +44,11 @@
       "types": "./dist/providers/nodemailer.d.ts",
       "import": "./dist/providers/nodemailer.mjs",
       "require": "./dist/providers/nodemailer.js"
+    },
+    "./providers/ses": {
+      "types": "./dist/providers/ses.d.ts",
+      "import": "./dist/providers/ses.mjs",
+      "require": "./dist/providers/ses.js"
     }
   },
   "files": [
@@ -55,7 +60,9 @@
     "dev": "tsup --watch",
     "clean": "rimraf dist",
     "lint": "eslint src --ext .ts",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage"
   },
   "keywords": [
     "email",
@@ -78,6 +85,7 @@
     "eslint": "catalog:",
     "rimraf": "catalog:",
     "tsup": "catalog:",
-    "typescript": "catalog:"
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
