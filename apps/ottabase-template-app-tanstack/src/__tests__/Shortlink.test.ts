@@ -1,29 +1,9 @@
-import { createD1Driver } from '@ottabase/db/drizzle-d1';
-import { clearAllConnections, registerConnection } from "@ottabase/ottaorm";
-import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Shortlink } from "@ottabase/shortlinks";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("Shortlink Model", () => {
-  const toRawRows = (rows: any[]) => rows.map((row) => Object.values(row));
-  const createStatement = (rawResult: any[]) => ({
-    bind: vi.fn().mockReturnThis(),
-    raw: vi.fn().mockResolvedValue(toRawRows(rawResult)),
-    all: vi.fn().mockResolvedValue({ results: rawResult, success: true }),
-    first: vi.fn().mockResolvedValue(rawResult[0] ?? null),
-    run: vi.fn().mockResolvedValue({
-      success: true,
-      meta: { changes: rawResult.length },
-    }),
-  });
-
   beforeEach(() => {
-    const d1Mock = (global as any).OBCF_D1;
     vi.clearAllMocks();
-
-    d1Mock.prepare.mockImplementation(() => createStatement([]));
-
-    clearAllConnections();
-    registerConnection("default", createD1Driver(d1Mock));
   });
 
   it("should define valid fields", () => {
@@ -32,30 +12,29 @@ describe("Shortlink Model", () => {
   });
 
   it("should create a shortlink instance", async () => {
-    const d1Mock = (global as any).OBCF_D1;
-    const now = Math.floor(Date.now() / 1000);
-    const createdRow = {
-      id: "123",
-      fullUrl: "https://example.com",
-      shortCode: "ex",
-      type: "redirect",
-      appName: "test",
-      expiryDate: null,
-      clicks: 0,
-      lastClickedAt: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    d1Mock.prepare.mockImplementation((sql: string) =>
-      /insert/i.test(sql) ? createStatement([createdRow]) : createStatement([]),
+    vi.spyOn(Shortlink, "create").mockResolvedValue(
+      new Shortlink({
+        entity: Shortlink.entity,
+        data: {
+          id: "123",
+          fullUrl: "https://example.com",
+          shortCode: "ex",
+          type: "redirect",
+          appId: "test",
+          expiryDate: null,
+          clicks: 0,
+          lastClickedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      } as any),
     );
 
     const link = await Shortlink.create({
       fullUrl: "https://example.com",
       shortCode: "ex",
       type: "redirect",
-      appName: "test",
+      appId: "test",
     });
 
     expect(link).toBeDefined();
@@ -63,23 +42,22 @@ describe("Shortlink Model", () => {
   });
 
   it("should find by code", async () => {
-    const d1Mock = (global as any).OBCF_D1;
-    const now = Math.floor(Date.now() / 1000);
-    const row = {
-      id: "123",
-      fullUrl: "https://github.com",
-      shortCode: "gh",
-      type: "redirect",
-      appName: "test",
-      expiryDate: null,
-      clicks: 0,
-      lastClickedAt: null,
-      createdAt: now,
-      updatedAt: now,
-    };
-
-    d1Mock.prepare.mockImplementation((sql: string) =>
-      /select/i.test(sql) ? createStatement([row]) : createStatement([]),
+    vi.spyOn(Shortlink, "findByCode").mockResolvedValue(
+      new Shortlink({
+        entity: Shortlink.entity,
+        data: {
+          id: "123",
+          fullUrl: "https://github.com",
+          shortCode: "gh",
+          type: "redirect",
+          appId: "test",
+          expiryDate: null,
+          clicks: 0,
+          lastClickedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      } as any),
     );
 
     const link = await Shortlink.findByCode("gh");

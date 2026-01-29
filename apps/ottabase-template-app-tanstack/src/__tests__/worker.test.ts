@@ -1,3 +1,4 @@
+import { Shortlink } from '@ottabase/shortlinks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../../cloudflare-worker';
 
@@ -71,7 +72,7 @@ describe('Cloudflare Worker API', () => {
       const payload = {
         fullUrl: "https://google.com",
         shortCode: "goog",
-        appName: "test",
+        appId: "test",
       };
 
       // Mock findByCode (return null = not found)
@@ -83,24 +84,24 @@ describe('Cloudflare Worker API', () => {
       // 1. check unique (select ... where shortCode = ?) -> returns []
       // 2. insert -> returns success
 
-      const now = Math.floor(Date.now() / 1000);
-      const createdRow = {
-        id: "1",
-        fullUrl: payload.fullUrl,
-        shortCode: payload.shortCode,
-        type: "redirect",
-        appName: payload.appName,
-        expiryDate: null,
-        clicks: 0,
-        lastClickedAt: null,
-        createdAt: now,
-        updatedAt: now,
-      };
-      env.OBCF_D1.prepare.mockImplementation((sql: string) =>
-        /insert/i.test(sql)
-          ? createStatement([createdRow])
-          : createStatement([]),
-      );
+      const shortlinkResult = new Shortlink({
+        entity: Shortlink.entity,
+        data: {
+          id: "1",
+          fullUrl: payload.fullUrl,
+          shortCode: payload.shortCode,
+          type: "redirect",
+          appId: payload.appId,
+          expiryDate: null,
+          clicks: 0,
+          lastClickedAt: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      } as any);
+      const createSpy = vi
+        .spyOn(Shortlink, "create")
+        .mockResolvedValue(shortlinkResult);
 
       const resp = await worker.fetch(
         createRequest("/api/ottaorm/shortlinks", "POST", payload),
@@ -111,6 +112,7 @@ describe('Cloudflare Worker API', () => {
       expect(resp.status).toBe(201);
       const data = (await resp.json()) as any;
       expect(data.shortlink?.shortCode).toBe("goog");
+      createSpy.mockRestore();
     });
   });
 
