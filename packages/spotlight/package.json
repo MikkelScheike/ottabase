@@ -46,6 +46,11 @@
 		"react": "catalog:",
 		"react-dom": "catalog:"
 	},
+	"peerDependenciesMeta": {
+		"@ottabase/api": {
+			"optional": true
+		}
+	},
 	"devDependencies": {
 		"@types/node": "catalog:",
 		"@types/react": "catalog:",

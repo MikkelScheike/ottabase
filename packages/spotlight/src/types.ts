@@ -15,9 +15,20 @@ export interface SpotlightConfig {
 	shortcuts?: string[];
 	placeholder?: string;
 	emptyMessage?: string;
-	onSearch?: (query: string) => Promise<SpotlightResult[]> | SpotlightResult[];
+	loadingMessage?: string;
+	errorMessage?: string;
+	onSearch?: (query: string, signal?: AbortSignal) => Promise<SpotlightResult[]> | SpotlightResult[];
 	renderResult?: (result: SpotlightResult, index: number, isSelected: boolean) => ReactNode;
+	renderLoading?: () => ReactNode;
+	renderEmpty?: () => ReactNode;
+	renderError?: (error: Error) => ReactNode;
 	maxResults?: number;
+	searchDebounceMs?: number;
+	minQueryLength?: number;
+	onQueryChange?: (query: string) => void;
+	onResultSelect?: (result: SpotlightResult) => void;
+	onOpenChange?: (open: boolean) => void;
+	defaultResults?: SpotlightResult[];
 }
 
 export interface SpotlightContextValue {
@@ -30,4 +41,5 @@ export interface SpotlightProps extends SpotlightConfig {
 	open?: boolean;
 	onOpenChange?: (open: boolean) => void;
 	className?: string;
+	overlayClassName?: string;
 }

@@ -14,6 +14,7 @@ export default defineConfig({
 	external: [
 		"@ottabase/ui-shadcn",
 		"@ottabase/config",
+		"@ottabase/api",
 		"@radix-ui/react-dialog",
 		"@tabler/icons-react",
 		"react",

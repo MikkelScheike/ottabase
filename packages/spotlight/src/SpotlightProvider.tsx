@@ -29,9 +29,20 @@ export function SpotlightProvider({
 	shortcuts = ["/"],
 	onSearch,
 	renderResult,
+	renderLoading,
+	renderEmpty,
+	renderError,
 	placeholder,
 	emptyMessage,
+	loadingMessage,
+	errorMessage,
 	maxResults,
+	searchDebounceMs,
+	minQueryLength,
+	onQueryChange,
+	onResultSelect,
+	onOpenChange,
+	defaultResults,
 }: SpotlightProviderProps) {
 	const [open, setOpen] = useState(false);
 
@@ -72,23 +83,39 @@ export function SpotlightProvider({
 		return () => window.removeEventListener("keydown", handleKeyDown);
 	}, [enabled, shortcuts, toggle]);
 
-	const contextValue = {
-		open,
-		setOpen,
-		toggle,
-	};
+	const contextValue = React.useMemo(
+		() => ({
+			open,
+			setOpen,
+			toggle,
+		}),
+		[open, toggle]
+	);
 
 	return (
 		<SpotlightContext.Provider value={contextValue}>
 			{children}
 			<Spotlight
 				open={open}
-				onOpenChange={setOpen}
+				onOpenChange={(newOpen) => {
+					setOpen(newOpen);
+					onOpenChange?.(newOpen);
+				}}
 				onSearch={onSearch}
 				renderResult={renderResult}
+				renderLoading={renderLoading}
+				renderEmpty={renderEmpty}
+				renderError={renderError}
 				placeholder={placeholder}
 				emptyMessage={emptyMessage}
+				loadingMessage={loadingMessage}
+				errorMessage={errorMessage}
 				maxResults={maxResults}
+				searchDebounceMs={searchDebounceMs}
+				minQueryLength={minQueryLength}
+				onQueryChange={onQueryChange}
+				onResultSelect={onResultSelect}
+				defaultResults={defaultResults}
 			/>
 		</SpotlightContext.Provider>
 	);
