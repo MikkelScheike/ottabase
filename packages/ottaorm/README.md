@@ -587,34 +587,41 @@ The package includes these core models (in `@ottabase/ottaorm`):
 
 - **User** - Users with name, email, image
 - **Account** - OAuth provider accounts (NextAuth)
-- **Post** - Blog posts with title, slug, content, author
 - **Tag** - Tags with name and slug
-- **Post_Tags** - Many-to-many pivot table for posts and tags
 - **Session** - User sessions
 - **VerificationToken** - Email verification tokens
 - **Authenticator** - WebAuthn/Passkey credentials
+
+**Note:** The Post model has been moved to `@ottabase/ottablog` as a comprehensive blog/content management model with enhanced features.
 
 ## Architecture
 
 ```
 @ottabase/ottaorm (CORE)
-├── User, Post, Tag, Account (Models)
+├── User, Tag, Account (Models)
 ├── Auto-migration system
 └── Base model & utilities
+
+@ottabase/ottablog (CONTENT)
+├── Post, PostCategory, PostVersion, PostSeries (Models)
+├── Tag system with type support
+└── Content management utilities
 
 Your App
 ├── ottabase/
 │   ├── models/Todo.ts           # App-specific models
-│   ├── db/schema.ts             # Core + app tables
+│   ├── db/schema.ts             # Core + blog + app tables
 │   └── migrations/index.ts      # Custom migrations
 └── /api/ottaorm/init            # Auto-creates everything!
 ```
 
 **Core + Per-App Architecture:**
-- Core models exported from `@ottabase/ottaorm`
+- Core models exported from `@ottabase/ottaorm` (User, Account, Tag, etc.)
+- Blog/Content models exported from `@ottabase/ottablog` (Post, PostCategory, etc.)
 - Each app defines its own models in `ottabase/models/`
-- Schema combines core + app tables
+- Schema combines core + blog + app tables
 - Migrations run per-app against separate databases
+- Type column on categories/tags enables multi-content-type support
 
 ## Complete Example: API Route
 

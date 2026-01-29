@@ -80,6 +80,9 @@
       "path": "./packages/db"
     },
     {
+      "path": "./packages/ottaorm"
+    },
+    {
       "path": "./packages/scripts"
     },
     {

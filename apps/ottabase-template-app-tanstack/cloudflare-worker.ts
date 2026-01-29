@@ -17,6 +17,13 @@ import {
 } from "@ottabase/email";
 import {
   Post,
+  PostCategory,
+  PostSeries,
+  PostTag,
+  PostTagLink,
+  PostVersion,
+} from "@ottabase/ottablog";
+import {
   Tag,
   User,
   autoInit,
@@ -25,20 +32,14 @@ import {
   registerConnection,
   registerModels,
 } from "@ottabase/ottaorm";
-import {
-  BlogCategory,
-  BlogPost,
-  BlogPostVersion,
-  BlogSeries,
-  BlogTag,
-} from "@ottabase/ottablog";
-import { ReferralTracking } from "@ottabase/referrals";
-import { Shortlink } from "@ottabase/shortlinks";
+import { ScheduledTask } from "@ottabase/ottaorm/models";
 import {
   uploadFileToCloudflareImages,
   uploadFileToR2,
 } from "@ottabase/ottaupload/server";
 import { dispatch, dispatchBatch } from "@ottabase/queue";
+import { ReferralTracking } from "@ottabase/referrals";
+import { Shortlink } from "@ottabase/shortlinks";
 import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { jsonResponse } from "@ottabase/utils/http-response";
 import {
@@ -140,6 +141,19 @@ async function simulateRateLimit(env: CloudflareEnv, key: string) {
   };
 }
 
+
+function initAdminCron(env: CloudflareEnv): Response | null {
+  if (!env.OBCF_D1) {
+    return errorResponse("D1 database binding not configured", 500, {
+      code: "CONFIG_ERROR",
+    });
+  }
+
+  registerConnection("default", createD1Driver(env.OBCF_D1));
+  registerModels([ScheduledTask]);
+  return null;
+}
+
 async function checkMigrationAuth(
   request: Request,
   env: CloudflareEnv,
@@ -180,6 +194,27 @@ export default {
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         Vary: "Origin",
       };
+
+      // Register database connection and models for ALL /api/ottaorm/* routes
+      // This ensures models are available before any route handler is invoked
+      if (url.pathname.startsWith("/api/ottaorm/")) {
+        if (env.OBCF_D1) {
+          registerConnection("default", createD1Driver(env.OBCF_D1));
+          registerModels([
+            Shortlink,
+            Todo,
+            User,
+            Post,
+            PostTag,
+            PostTagLink,
+            Tag,
+            ReferralTracking,
+            PostCategory,
+            PostSeries,
+            PostVersion,
+          ]);
+        }
+      }
 
       if (url.pathname.startsWith("/api/") && request.method === "OPTIONS") {
         return new Response(null, {
@@ -282,6 +317,139 @@ export default {
       }
 
       // ============================================================
+      // Admin Cron API
+      // ============================================================
+
+      // List tasks and stats
+      if (url.pathname === "/api/admin/cron" && request.method === "GET") {
+        const initErr = initAdminCron(env);
+        if (initErr) return initErr;
+
+        // Get all tasks
+        const tasks = await ScheduledTask.all();
+
+        // Calculate stats
+        const activeCount = tasks.filter((t) => t.get("isActive")).length;
+        const totalRuns = tasks.reduce(
+          (sum, t) => sum + ((t.get("runCount") as number) || 0),
+          0,
+        );
+        const totalFails = tasks.reduce(
+          (sum, t) => sum + ((t.get("failCount") as number) || 0),
+          0,
+        );
+
+        // Get registered handlers (mock for now, would come from registry)
+        const registeredHandlers = [
+          "cleanup:sessions",
+          "cleanup:temp-files",
+          "email:send-queue",
+          "backup:database",
+          "analytics:aggregate",
+        ];
+
+        return jsonResponse({
+          tasks: tasks.map((t) => t.toJson()),
+          registeredHandlers,
+          stats: {
+            total: tasks.length,
+            active: activeCount,
+            totalRuns,
+            totalFails,
+          },
+        });
+      }
+
+      // Create task
+      if (url.pathname === "/api/admin/cron" && request.method === "POST") {
+        const initErr = initAdminCron(env);
+        if (initErr) return initErr;
+
+        const body = await readJson<{
+          name?: string;
+          description?: string;
+          schedule?: string;
+          taskType?: string;
+          task?: string;
+          payload?: string;
+          isActive?: boolean;
+        }>(request);
+
+        if (!body.name || !body.schedule || !body.task) {
+          return errorResponse("name, schedule, and task are required", 400, {
+            code: "VALIDATION_ERROR",
+          });
+        }
+
+        try {
+          const newTask = await ScheduledTask.create({
+            name: body.name,
+            description: body.description,
+            schedule: body.schedule,
+            taskType: body.taskType || "handler",
+            task: body.task,
+            payload: body.payload || null,
+            isActive: body.isActive ?? true,
+          });
+
+          return jsonResponse(newTask.toJson(), 201);
+        } catch (error) {
+          return errorResponse(
+            error instanceof Error ? error.message : "Failed to create task",
+            400,
+            { code: "VALIDATION_ERROR" },
+          );
+        }
+      }
+
+      // Handle specific task operations
+      const cronTaskMatch = url.pathname.match(/^\/api\/admin\/cron\/(.+)$/);
+      if (cronTaskMatch) {
+        const initErr = initAdminCron(env);
+        if (initErr) return initErr;
+
+        const taskId = cronTaskMatch[1];
+        const isToggle = taskId.endsWith("/toggle");
+        const isRun = taskId.endsWith("/run");
+
+        // Clean ID if it has action suffix
+        const cleanId = isToggle
+          ? taskId.replace("/toggle", "")
+          : isRun
+            ? taskId.replace("/run", "")
+            : taskId;
+
+        const task = await ScheduledTask.find(cleanId);
+
+        if (!task) {
+          return errorResponse("Task not found", 404);
+        }
+
+        // Toggle active status
+        if (isToggle && request.method === "POST") {
+          await task.toggle();
+          return jsonResponse({ success: true, task: task.toJson() });
+        }
+
+        // Run task manually
+        if (isRun && request.method === "POST") {
+          await task.markRunning();
+          // In a real implementation, this would dispatch the task immediately
+          // For now, we'll just acknowledge the request
+          return jsonResponse({
+            success: true,
+            message: "Task execution started",
+            task: task.toJson(),
+          });
+        }
+
+        // Delete task
+        if (request.method === "DELETE" && !isToggle && !isRun) {
+          await ScheduledTask.delete(cleanId);
+          return jsonResponse({ success: true, message: "Task deleted" });
+        }
+      }
+
       // Generic OttaORM CRUD API
       // ============================================================
       // Handles all registered models via /api/ottaorm/{model}/{id?}
@@ -303,22 +471,7 @@ export default {
           });
         }
 
-        // Initialize database connection and register models
-        registerConnection("default", createD1Driver(env.OBCF_D1));
-        registerModels([
-          Shortlink,
-          Todo,
-          User,
-          Post,
-          Tag,
-          ReferralTracking,
-          BlogPost,
-          BlogCategory,
-          BlogTag,
-          BlogSeries,
-          BlogPostVersion,
-        ]);
-
+        // Connection and models are already registered at the top of fetch()
         // Parse the request into a CrudRequest
         const crudRequest = await parseCrudRequest(
           request,
@@ -2026,59 +2179,6 @@ export default {
         });
 
         return jsonResponse(result);
-      }
-
-      // ============================================================
-      // Generic CRUD handler for all registered models
-      // Handles: /api/ottaorm/{model} and /api/ottaorm/{model}/{id}
-      // ============================================================
-      if (
-        url.pathname.startsWith("/api/ottaorm/") &&
-        !url.pathname.startsWith("/api/ottaorm/init")
-      ) {
-        if (!env.OBCF_D1)
-          return errorResponse("D1 database not configured", 500, {
-            code: "CONFIG_ERROR",
-          });
-        registerConnection("default", createD1Driver(env.OBCF_D1));
-
-        // Register all models for dynamic lookup
-        registerModels([
-          User,
-          Post,
-          Tag,
-          Todo,
-          Shortlink,
-          ReferralTracking,
-          BlogPost,
-          BlogCategory,
-          BlogTag,
-          BlogSeries,
-          BlogPostVersion,
-        ]);
-
-        // Parse the request into a CrudRequest
-        const crudRequest = await parseCrudRequest(
-          request,
-          url,
-          "/api/ottaorm",
-        );
-        if (!crudRequest) {
-          return errorResponse("Invalid request path", 400);
-        }
-
-        // Handle the CRUD operation
-        const result = await handleCrud(crudRequest);
-        if (!result.success) {
-          return errorResponse(result.error!, result.status, {
-            code: result.code,
-            details: result.details,
-            hint: result.hint,
-            messages: result.messages,
-            fieldErrors: result.fieldErrors,
-          });
-        }
-        return jsonResponse(result.data, { status: result.status });
       }
 
       // ============================================================

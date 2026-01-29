@@ -1,7 +1,7 @@
 /**
- * BlogCategory Model
+ * PostCategory Model
  *
- * OttaORM model for blog categories with hierarchy support.
+ * OttaORM model for post categories with hierarchy support.
  */
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
@@ -12,7 +12,7 @@ import { generateSlug } from "../types";
  * Categories table - hierarchical content organization
  */
 export const categoriesTable = sqliteTable(
-  "blog_categories",
+  "categories",
   {
     id: text("id")
       .primaryKey()
@@ -36,6 +36,9 @@ export const categoriesTable = sqliteTable(
     // App identifier for multi-app database sharing
     appId: text("app_id"),
 
+    // Content type this category applies to (post, news, docs, etc.)
+    type: text("type").notNull().default("post"),
+
     // Timestamps
     createdAt: integer("created_at", { mode: "timestamp" })
       .notNull()
@@ -47,20 +50,38 @@ export const categoriesTable = sqliteTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    index("blog_categories_slug_idx").on(table.slug),
-    index("blog_categories_app_id_idx").on(table.appId),
-    index("blog_categories_parent_id_idx").on(table.parentId),
+    // Lookup by slug with type filtering
+    index("categories_slug_type_idx").on(table.slug, table.type),
+
+    // Multi-tenant with type: appId + type for filtering categories by content type
+    index("categories_app_id_type_idx").on(table.appId, table.type),
+
+    // Hierarchy traversal: parentId + sortOrder for getting children ordered
+    index("categories_parent_id_sort_order_idx").on(
+      table.parentId,
+      table.sortOrder,
+    ),
+
+    // Root categories: parentId + appId + type + sortOrder
+    index("categories_parent_id_app_id_type_idx").on(
+      table.parentId,
+      table.appId,
+      table.type,
+    ),
+
+    // Type filtering single index for flexibility
+    index("categories_type_idx").on(table.type),
   ],
 );
 
 export type Category = typeof categoriesTable.$inferSelect;
 export type NewCategory = typeof categoriesTable.$inferInsert;
 
-export type BlogCategoryType = typeof categoriesTable.$inferSelect;
-export type NewBlogCategoryType = typeof categoriesTable.$inferInsert;
+export type PostCategoryType = typeof categoriesTable.$inferSelect;
+export type NewPostCategoryType = typeof categoriesTable.$inferInsert;
 
-export class BlogCategory extends BaseModel {
-  static entity = "blog_categories";
+export class PostCategory extends BaseModel {
+  static entity = "categories";
   static table = categoriesTable;
   static primaryKey = "id";
 
@@ -180,6 +201,24 @@ export class BlogCategory extends BaseModel {
         colWidth: 100,
       },
     },
+    type: {
+      type: "string",
+      editable: true,
+      filterable: true,
+      uiConfig: {
+        label: "Type",
+        description: "Content type (post, news, docs, etc.)",
+        defaultValue: "post",
+      },
+      formConfig: {
+        visible: true,
+        fieldType: "input",
+      },
+      tableConfig: {
+        visible: true,
+        colWidth: 100,
+      },
+    },
     createdAt: {
       type: "date",
       editable: false,
@@ -249,12 +288,12 @@ export class BlogCategory extends BaseModel {
   static async findBySlug(
     slug: string,
     options?: { appId?: string },
-  ): Promise<BlogCategory | null> {
+  ): Promise<PostCategory | null> {
     const query: Record<string, unknown> = { slug };
     if (options?.appId) query.appId = options.appId;
 
     const results = await this.where(query);
-    return results.length > 0 ? (results[0] as BlogCategory) : null;
+    return results.length > 0 ? (results[0] as PostCategory) : null;
   }
 
   // ==================== Instance Methods ====================

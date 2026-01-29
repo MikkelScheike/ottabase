@@ -1,32 +1,37 @@
-export { BlogSeries, seriesTable } from "./BlogSeries";
+// Series exports
+export { PostSeries, seriesTable } from "./PostSeries";
 export type {
-  Series,
+  NewPostSeriesType,
   NewSeries,
-  BlogSeriesType,
-  NewBlogSeriesType,
-} from "./BlogSeries";
+  PostSeriesType,
+  Series,
+} from "./PostSeries";
 
-export { BlogCategory, categoriesTable } from "./BlogCategory";
+// Category exports
+export { categoriesTable, PostCategory } from "./PostCategory";
 export type {
   Category,
   NewCategory,
-  BlogCategoryType,
-  NewBlogCategoryType,
-} from "./BlogCategory";
+  NewPostCategoryType,
+  PostCategoryType,
+} from "./PostCategory";
 
-export { BlogTag, tagsTable } from "./BlogTag";
-export type { Tag, NewTag, BlogTagType, NewBlogTagType } from "./BlogTag";
+// Post exports
+export { Post, postsTable } from "./Post";
+export type { NewPost, NewPostType, PostType } from "./Post";
 
-export { BlogPost, postsTable } from "./BlogPost";
-export type { Post, NewPost, BlogPostType, NewBlogPostType } from "./BlogPost";
+// PostTag exports (blog-specific tag entity)
+export { PostTag, postTagsTable } from "./PostTag";
+export type { NewPostTagType, PostTagType } from "./PostTag";
 
-export { BlogPostTag, postTagsTable } from "./BlogPostTag";
-export type { PostTag, NewPostTag } from "./BlogPostTag";
+// PostTagLink exports (junction table for Post <-> PostTag)
+export { PostTagLink, postTagLinksTable } from "./PostTagLink";
+export type { NewPostTagLinkType, PostTagLinkType } from "./PostTagLink";
 
-export { BlogPostVersion, postVersionsTable } from "./BlogPostVersion";
+// PostVersion exports
+export { PostVersion, postVersionsTable } from "./PostVersion";
 export type {
-  PostVersion,
   NewPostVersion,
-  BlogPostVersionType,
-  NewBlogPostVersionType,
-} from "./BlogPostVersion";
+  NewPostVersionType,
+  PostVersionType,
+} from "./PostVersion";

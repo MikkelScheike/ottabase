@@ -4,8 +4,6 @@
  * OttaORM model for blog posts using @ottabase/ottablog schema.
  * Supports multiple content types, SEO, hero images, and OttaEditor content.
  */
-import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
 import {
   calculateReadingTime,
@@ -17,170 +15,28 @@ import {
   type EditorJSData,
   type PostStatus,
 } from "../types";
+import { PostTag } from "./PostTag";
+import { postTagLinksTable } from "./PostTagLink";
 
 /**
  * Posts table - main content storage
  */
-export const postsTable = sqliteTable(
-  "blog_posts",
-  {
-    id: text("id")
-      .primaryKey()
-      .$defaultFn(() => crypto.randomUUID()),
+/**
+ * Posts table definition moved to PostTable.ts to avoid circular connection
+ */
+import { postsTable } from "./tables/PostTable";
+export { postsTable };
 
-    // Post title
-    title: text("title").notNull(),
-
-    // URL-friendly slug (unique per appId)
-    slug: text("slug").notNull(),
-
-    // Short excerpt/summary (auto-generated or manual)
-    excerpt: text("excerpt"),
-
-    // Main content as EditorJS JSON
-    content: text("content", { mode: "json" }).$type<{
-      time?: number;
-      blocks: Array<{
-        id?: string;
-        type: string;
-        data: Record<string, unknown>;
-      }>;
-      version?: string;
-    }>(),
-
-    // Content type: blog, changelog, docs, news, announcement
-    contentType: text("content_type").notNull().default("blog"),
-
-    // Publication status: draft, published, archived, scheduled
-    status: text("status").notNull().default("draft"),
-
-    // Category reference
-    categoryId: text("category_id"),
-
-    // Series reference (for multi-part content)
-    seriesId: text("series_id"),
-
-    // Order within the series (1, 2, 3, etc.)
-    seriesOrder: integer("series_order"),
-
-    // Hero/featured image as JSON
-    heroImage: text("hero_image", { mode: "json" }).$type<{
-      url: string;
-      alt?: string;
-      caption?: string;
-      cfImageId?: string;
-      width?: number;
-      height?: number;
-      focalPoint?: { x: number; y: number };
-    }>(),
-
-    // SEO metadata as JSON
-    seoMeta: text("seo_meta", { mode: "json" }).$type<{
-      title?: string;
-      description?: string;
-      keywords?: string[];
-      canonicalUrl?: string;
-      ogImage?: string;
-      ogType?: string;
-      twitterCard?: string;
-      noIndex?: boolean;
-      noFollow?: boolean;
-    }>(),
-
-    // Private notes (author-only, not shown publicly) - EditorJS JSON format
-    privateNotes: text("private_notes", { mode: "json" }).$type<{
-      time?: number;
-      blocks: Array<{
-        id?: string;
-        type: string;
-        data: Record<string, unknown>;
-      }>;
-      version?: string;
-    }>(),
-
-    // Public footnotes/endnotes - EditorJS JSON format
-    footnotes: text("footnotes", { mode: "json" }).$type<{
-      time?: number;
-      blocks: Array<{
-        id?: string;
-        type: string;
-        data: Record<string, unknown>;
-      }>;
-      version?: string;
-    }>(),
-
-    // Author information
-    authorId: text("author_id"),
-    authorName: text("author_name"),
-    authorEmail: text("author_email"),
-    authorAvatar: text("author_avatar"),
-
-    // Reading time estimate (stored for performance)
-    readingTimeMinutes: integer("reading_time_minutes"),
-    wordCount: integer("word_count"),
-
-    // Featured/pinned post
-    isFeatured: integer("is_featured", { mode: "boolean" })
-      .notNull()
-      .default(false),
-
-    // Allow comments
-    allowComments: integer("allow_comments", { mode: "boolean" })
-      .notNull()
-      .default(true),
-
-    // View count
-    viewCount: integer("view_count").notNull().default(0),
-
-    // Scheduled publish date (for scheduled posts)
-    publishAt: integer("publish_at", { mode: "timestamp" }),
-
-    // Actual publish date (editorial/display date)
-    publishedAt: integer("published_at", { mode: "timestamp" }),
-
-    // When post was actually made live (system timestamp)
-    postedAt: integer("posted_at", { mode: "timestamp" }),
-
-    // App identifier for multi-app database sharing
-    appId: text("app_id"),
-
-    // Version retention setting (null = keep all, 1-10 = keep last N versions)
-    maxVersionsToKeep: integer("max_versions_to_keep"),
-
-    // Timestamps
-    createdAt: integer("created_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`),
-
-    updatedAt: integer("updated_at", { mode: "timestamp" })
-      .notNull()
-      .default(sql`(unixepoch())`)
-      .$onUpdate(() => new Date()),
-  },
-  (table) => [
-    index("blog_posts_slug_idx").on(table.slug),
-    index("blog_posts_status_idx").on(table.status),
-    index("blog_posts_content_type_idx").on(table.contentType),
-    index("blog_posts_category_id_idx").on(table.categoryId),
-    index("blog_posts_series_id_idx").on(table.seriesId),
-    index("blog_posts_author_id_idx").on(table.authorId),
-    index("blog_posts_app_id_idx").on(table.appId),
-    index("blog_posts_published_at_idx").on(table.publishedAt),
-    index("blog_posts_is_featured_idx").on(table.isFeatured),
-  ],
-);
-
-export type Post = typeof postsTable.$inferSelect;
 export type NewPost = typeof postsTable.$inferInsert;
 
-export type BlogPostType = typeof postsTable.$inferSelect;
-export type NewBlogPostType = typeof postsTable.$inferInsert;
+export type PostType = typeof postsTable.$inferSelect;
+export type NewPostType = typeof postsTable.$inferInsert;
 
 /**
- * BlogPost Model - Fat Model Pattern
+ * Post Model - Fat Model Pattern
  */
-export class BlogPost extends BaseModel {
-  static entity = "blog_posts";
+export class Post extends BaseModel {
+  static entity = "posts";
   static table = postsTable;
   static primaryKey = "id";
 
@@ -700,12 +556,12 @@ export class BlogPost extends BaseModel {
   static async findBySlug(
     slug: string,
     options?: { appId?: string },
-  ): Promise<BlogPost | null> {
+  ): Promise<Post | null> {
     const query: Record<string, unknown> = { slug };
     if (options?.appId) query.appId = options.appId;
 
     const results = await this.where(query);
-    return results.length > 0 ? (results[0] as BlogPost) : null;
+    return results.length > 0 ? (results[0] as Post) : null;
   }
 
   /**
@@ -812,7 +668,7 @@ export class BlogPost extends BaseModel {
   }
 
   /**
-   * Get tags for this post (BelongsToMany BlogTag via postTagsTable)
+   * Get tags for this post (BelongsToMany PostTag via postTagLinksTable)
    */
   async tags(options?: {
     select?: string[];
@@ -820,10 +676,7 @@ export class BlogPost extends BaseModel {
     orderDirection?: "asc" | "desc";
     withPivot?: string[];
   }) {
-    const { BlogTag } = await import("./BlogTag");
-    const { postTagsTable } = await import("./BlogPostTag");
-
-    return this.belongsToMany(BlogTag, postTagsTable, {
+    return this.belongsToMany(PostTag, postTagLinksTable, {
       foreignKey: "postId",
       otherKey: "tagId",
       ...options,
