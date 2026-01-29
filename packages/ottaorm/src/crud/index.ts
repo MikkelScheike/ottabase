@@ -19,6 +19,9 @@ export interface CrudRequest {
     offset?: number;
     page?: number;
     perPage?: number;
+    uniqueField?: string;
+    uniqueValue?: string;
+    uniqueIgnoreId?: string;
   };
 }
 
@@ -67,6 +70,31 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
   const Model = getModel(entityName)!;
 
   try {
+    // GET uniqueness check
+    if (method === "GET" && id === "unique") {
+      const uniqueField = query?.uniqueField;
+      const uniqueValue = query?.uniqueValue;
+
+      if (!uniqueField || uniqueValue === undefined) {
+        return {
+          success: false,
+          error: "uniqueField and uniqueValue are required",
+          status: 400,
+        };
+      }
+
+      const isUnique = await Model.isUnique(uniqueField, uniqueValue, {
+        where: query?.where,
+        ignoreId: query?.uniqueIgnoreId,
+      });
+
+      return {
+        success: true,
+        data: { unique: isUnique },
+        status: 200,
+      };
+    }
+
     // GET with ID - find single record
     if (method === "GET" && id) {
       const record = await Model.find(id);
@@ -308,6 +336,15 @@ export async function parseCrudRequest(
   const perPage =
     url.searchParams.get("perPage") || url.searchParams.get("per_page");
   if (perPage) query.perPage = parseInt(perPage, 10);
+
+  const uniqueField = url.searchParams.get("uniqueField");
+  if (uniqueField) query.uniqueField = uniqueField;
+
+  const uniqueValue = url.searchParams.get("uniqueValue");
+  if (uniqueValue !== null) query.uniqueValue = uniqueValue;
+
+  const uniqueIgnoreId = url.searchParams.get("uniqueIgnoreId");
+  if (uniqueIgnoreId) query.uniqueIgnoreId = uniqueIgnoreId;
 
   // Parse body for POST/PATCH/PUT
   let body: Record<string, unknown> | undefined;

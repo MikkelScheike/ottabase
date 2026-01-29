@@ -5,7 +5,7 @@
 // ============================================================
 
 import type { DbDriver } from "@ottabase/db/drizzle";
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { getConnection } from "../context";
 import { AbstractBaseModel, ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult } from "./AbstractBaseModel";
@@ -69,7 +69,6 @@ function isSqlDriver(driver: any): driver is DbDriver {
  * ```
  */
 export class BaseModel extends AbstractBaseModel {
-
   // SQL-specific static property
   static table: SQLiteTable;
 
@@ -103,7 +102,7 @@ export class BaseModel extends AbstractBaseModel {
     if (!isSqlDriver(connection)) {
       throw new Error(
         `Connection '${this.connection}' is not a SQL driver for model ${this.entity}. ` +
-        `Make sure you registered a SQL driver (e.g., D1Driver) for this connection.`
+          `Make sure you registered a SQL driver (e.g., D1Driver) for this connection.`,
       );
     }
     return connection;
@@ -115,14 +114,16 @@ export class BaseModel extends AbstractBaseModel {
   static async find<T extends typeof BaseModel>(
     this: T,
     id: string | number,
-    driver?: DbDriver
+    driver?: DbDriver,
   ): Promise<InstanceType<T> | null> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
     const pkColumn = (table as any)[this.primaryKey];
 
     if (!pkColumn) {
-      throw new Error(`Primary key column ${this.primaryKey} not found in table ${this.entity}`);
+      throw new Error(
+        `Primary key column ${this.primaryKey} not found in table ${this.entity}`,
+      );
     }
 
     const results = await db
@@ -133,7 +134,10 @@ export class BaseModel extends AbstractBaseModel {
 
     if (results.length === 0) return null;
 
-    return new this({ entity: this.entity, data: results[0] }) as InstanceType<T>;
+    return new this({
+      entity: this.entity,
+      data: results[0],
+    }) as InstanceType<T>;
   }
 
   /**
@@ -142,7 +146,7 @@ export class BaseModel extends AbstractBaseModel {
   static async first<T extends typeof BaseModel>(
     this: T,
     where?: Record<string, any>,
-    driver?: DbDriver
+    driver?: DbDriver,
   ): Promise<InstanceType<T> | null> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
@@ -160,7 +164,10 @@ export class BaseModel extends AbstractBaseModel {
 
     if (results.length === 0) return null;
 
-    return new this({ entity: this.entity, data: results[0] }) as InstanceType<T>;
+    return new this({
+      entity: this.entity,
+      data: results[0],
+    }) as InstanceType<T>;
   }
 
   /**
@@ -169,8 +176,13 @@ export class BaseModel extends AbstractBaseModel {
   static async where<T extends typeof BaseModel>(
     this: T,
     where: Record<string, any>,
-    options?: { orderBy?: string; orderDirection?: 'asc' | 'desc'; limit?: number; offset?: number },
-    driver?: DbDriver
+    options?: {
+      orderBy?: string;
+      orderDirection?: "asc" | "desc";
+      limit?: number;
+      offset?: number;
+    },
+    driver?: DbDriver,
   ): Promise<InstanceType<T>[]> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
@@ -188,7 +200,9 @@ export class BaseModel extends AbstractBaseModel {
       const orderColumn = (table as any)[options.orderBy];
       if (orderColumn) {
         query = query.orderBy(
-          options.orderDirection === 'desc' ? desc(orderColumn) : asc(orderColumn)
+          options.orderDirection === "desc"
+            ? desc(orderColumn)
+            : asc(orderColumn),
         );
       }
     }
@@ -203,7 +217,10 @@ export class BaseModel extends AbstractBaseModel {
 
     const results = await query;
 
-    return results.map((row: any) => new this({ entity: this.entity, data: row }) as InstanceType<T>);
+    return results.map(
+      (row: any) =>
+        new this({ entity: this.entity, data: row }) as InstanceType<T>,
+    );
   }
 
   /**
@@ -211,10 +228,58 @@ export class BaseModel extends AbstractBaseModel {
    */
   static async all<T extends typeof BaseModel>(
     this: T,
-    options?: { orderBy?: string; orderDirection?: 'asc' | 'desc'; limit?: number; offset?: number },
-    driver?: DbDriver
+    options?: {
+      orderBy?: string;
+      orderDirection?: "asc" | "desc";
+      limit?: number;
+      offset?: number;
+    },
+    driver?: DbDriver,
   ): Promise<InstanceType<T>[]> {
     return this.where({}, options, driver);
+  }
+
+  /**
+   * Check if a value is unique for a field, optionally scoped and excluding an id.
+   */
+  static async isUnique<T extends typeof BaseModel>(
+    this: T,
+    field: string,
+    value: unknown,
+    options?: {
+      where?: Record<string, any>;
+      ignoreId?: string | number;
+      driver?: DbDriver;
+    },
+  ): Promise<boolean> {
+    const db = this.getDriver(options?.driver).getDb();
+    const table = this.getTable();
+    const column = (table as any)[field];
+
+    if (!column) {
+      throw new Error(`Field '${field}' not found on model ${this.entity}`);
+    }
+
+    const conditions: any[] = [eq(column, value)];
+
+    if (options?.where) {
+      conditions.push(...this.buildWhereConditions(options.where));
+    }
+
+    if (options?.ignoreId !== undefined && options?.ignoreId !== null) {
+      const pkColumn = (table as any)[this.primaryKey];
+      if (pkColumn) {
+        conditions.push(ne(pkColumn, options.ignoreId));
+      }
+    }
+
+    const results = await db
+      .select({ id: (table as any)[this.primaryKey] })
+      .from(table)
+      .where(and(...conditions))
+      .limit(1);
+
+    return results.length === 0;
   }
 
   /**
@@ -242,15 +307,21 @@ export class BaseModel extends AbstractBaseModel {
    * Prepare data for database operations
    * Converts string dates to Date objects based on model casts
    */
-  protected static prepareForDatabase(data: Record<string, any>): Record<string, any> {
+  protected static prepareForDatabase(
+    data: Record<string, any>,
+  ): Record<string, any> {
     const prepared = { ...data };
 
     if (this.casts) {
       for (const [key, castType] of Object.entries(this.casts)) {
-        if ((castType === 'date' || castType === 'datetime') && prepared[key] !== undefined && prepared[key] !== null) {
+        if (
+          (castType === "date" || castType === "datetime") &&
+          prepared[key] !== undefined &&
+          prepared[key] !== null
+        ) {
           const value = prepared[key];
           // Convert string dates to Date objects
-          if (typeof value === 'string') {
+          if (typeof value === "string") {
             const date = new Date(value);
             if (!isNaN(date.getTime())) {
               prepared[key] = date;
@@ -269,7 +340,7 @@ export class BaseModel extends AbstractBaseModel {
   static async create<T extends typeof BaseModel>(
     this: T,
     data: Record<string, any>,
-    driver?: DbDriver
+    driver?: DbDriver,
   ): Promise<InstanceType<T>> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
@@ -279,10 +350,15 @@ export class BaseModel extends AbstractBaseModel {
 
     // Cloudflare Workers (workerd) disallows random generation in module/global scope,
     // so model schemas avoid crypto.randomUUID() defaults. Generate ids at runtime.
-    if (this.primaryKey === "id" && (createData.id === undefined || createData.id === null)) {
+    if (
+      this.primaryKey === "id" &&
+      (createData.id === undefined || createData.id === null)
+    ) {
       const uuidFn = globalThis.crypto?.randomUUID;
       if (typeof uuidFn !== "function") {
-        throw new Error(`Missing id for ${this.entity} and crypto.randomUUID is unavailable`);
+        throw new Error(
+          `Missing id for ${this.entity} and crypto.randomUUID is unavailable`,
+        );
       }
       createData.id = uuidFn.call(globalThis.crypto);
     }
@@ -293,7 +369,10 @@ export class BaseModel extends AbstractBaseModel {
       throw new Error(`Failed to create ${this.entity}`);
     }
 
-    return new this({ entity: this.entity, data: result[0] }) as InstanceType<T>;
+    return new this({
+      entity: this.entity,
+      data: result[0],
+    }) as InstanceType<T>;
   }
 
   /**
@@ -303,7 +382,7 @@ export class BaseModel extends AbstractBaseModel {
     this: T,
     id: string | number,
     data: Record<string, any>,
-    driver?: DbDriver
+    driver?: DbDriver,
   ): Promise<InstanceType<T>> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
@@ -326,7 +405,10 @@ export class BaseModel extends AbstractBaseModel {
       throw new Error(`Failed to update ${this.entity} with id ${id}`);
     }
 
-    return new this({ entity: this.entity, data: result[0] }) as InstanceType<T>;
+    return new this({
+      entity: this.entity,
+      data: result[0],
+    }) as InstanceType<T>;
   }
 
   /**
@@ -334,7 +416,7 @@ export class BaseModel extends AbstractBaseModel {
    */
   static async delete(
     id: string | number,
-    driver?: DbDriver
+    driver?: DbDriver,
   ): Promise<boolean> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
@@ -354,7 +436,7 @@ export class BaseModel extends AbstractBaseModel {
    */
   static async count(
     where?: Record<string, any>,
-    driver?: DbDriver
+    driver?: DbDriver,
   ): Promise<number> {
     const db = this.getDriver(driver).getDb();
     const table = this.getTable();
@@ -380,14 +462,14 @@ export class BaseModel extends AbstractBaseModel {
     page: number = 1,
     perPage: number = 15,
     where?: Record<string, any>,
-    options?: { orderBy?: string; orderDirection?: 'asc' | 'desc' },
-    driver?: DbDriver
+    options?: { orderBy?: string; orderDirection?: "asc" | "desc" },
+    driver?: DbDriver,
   ): Promise<PaginationResult<InstanceType<T>>> {
     const offset = (page - 1) * perPage;
 
     const [data, total] = await Promise.all([
       this.where(where || {}, { ...options, limit: perPage, offset }, driver),
-      this.count(where, driver)
+      this.count(where, driver),
     ]);
 
     const totalPages = Math.ceil(total / perPage);
@@ -399,7 +481,7 @@ export class BaseModel extends AbstractBaseModel {
       perPage,
       totalPages,
       hasNextPage: page < totalPages,
-      hasPrevPage: page > 1
+      hasPrevPage: page > 1,
     };
   }
 
@@ -435,7 +517,7 @@ export class BaseModel extends AbstractBaseModel {
     const pk = this.get(ModelClass.primaryKey);
 
     if (!pk) {
-      throw new Error('Cannot delete record without primary key');
+      throw new Error("Cannot delete record without primary key");
     }
 
     return ModelClass.delete(pk, driver);
@@ -449,7 +531,7 @@ export class BaseModel extends AbstractBaseModel {
     const pk = this.get(ModelClass.primaryKey);
 
     if (!pk) {
-      throw new Error('Cannot refresh record without primary key');
+      throw new Error("Cannot refresh record without primary key");
     }
 
     const fresh = await ModelClass.find(pk, driver);
@@ -493,10 +575,10 @@ export class BaseModel extends AbstractBaseModel {
     relatedModel: T,
     foreignKey: string,
     options?: {
-      ownerKey?: string;      // Primary key in related model (default: relatedModel.primaryKey)
-      select?: string[];      // Fields to select from related model
+      ownerKey?: string; // Primary key in related model (default: relatedModel.primaryKey)
+      select?: string[]; // Fields to select from related model
       driver?: DbDriver;
-    }
+    },
   ): Promise<InstanceType<T> | null> {
     const foreignValue = this.get(foreignKey);
 
@@ -525,14 +607,19 @@ export class BaseModel extends AbstractBaseModel {
 
     const pkColumn = (table as any)[ownerKey];
     if (!pkColumn) {
-      throw new Error(`Owner key ${ownerKey} not found in ${relatedModel.entity}`);
+      throw new Error(
+        `Owner key ${ownerKey} not found in ${relatedModel.entity}`,
+      );
     }
 
     const results = await query.where(eq(pkColumn, foreignValue)).limit(1);
 
     if (results.length === 0) return null;
 
-    return new relatedModel({ entity: relatedModel.entity, data: results[0] }) as InstanceType<T>;
+    return new relatedModel({
+      entity: relatedModel.entity,
+      data: results[0],
+    }) as InstanceType<T>;
   }
 
   /**
@@ -565,13 +652,13 @@ export class BaseModel extends AbstractBaseModel {
     relatedModel: T,
     foreignKey: string,
     options?: {
-      localKey?: string;      // Primary key in this model (default: this.constructor.primaryKey)
-      select?: string[];      // Fields to select from related model
-      orderBy?: string;       // Field to order by
-      orderDirection?: 'asc' | 'desc';
-      limit?: number;         // Limit results
+      localKey?: string; // Primary key in this model (default: this.constructor.primaryKey)
+      select?: string[]; // Fields to select from related model
+      orderBy?: string; // Field to order by
+      orderDirection?: "asc" | "desc";
+      limit?: number; // Limit results
       driver?: DbDriver;
-    }
+    },
   ): Promise<InstanceType<T>[]> {
     const ModelClass = this.constructor as typeof BaseModel;
     const localKey = options?.localKey || ModelClass.primaryKey;
@@ -601,7 +688,9 @@ export class BaseModel extends AbstractBaseModel {
 
     const fkColumn = (table as any)[foreignKey];
     if (!fkColumn) {
-      throw new Error(`Foreign key ${foreignKey} not found in ${relatedModel.entity}`);
+      throw new Error(
+        `Foreign key ${foreignKey} not found in ${relatedModel.entity}`,
+      );
     }
 
     query = query.where(eq(fkColumn, localValue));
@@ -611,7 +700,9 @@ export class BaseModel extends AbstractBaseModel {
       const orderColumn = (table as any)[options.orderBy];
       if (orderColumn) {
         query = query.orderBy(
-          options.orderDirection === 'desc' ? desc(orderColumn) : asc(orderColumn)
+          options.orderDirection === "desc"
+            ? desc(orderColumn)
+            : asc(orderColumn),
         );
       }
     }
@@ -623,8 +714,12 @@ export class BaseModel extends AbstractBaseModel {
 
     const results = await query;
 
-    return results.map((row: any) =>
-      new relatedModel({ entity: relatedModel.entity, data: row }) as InstanceType<T>
+    return results.map(
+      (row: any) =>
+        new relatedModel({
+          entity: relatedModel.entity,
+          data: row,
+        }) as InstanceType<T>,
     );
   }
 
@@ -668,16 +763,16 @@ export class BaseModel extends AbstractBaseModel {
     relatedModel: T,
     pivotTable: SQLiteTable,
     options?: {
-      foreignKey?: string;    // Key in pivot table for this model (default: {entity}Id)
-      otherKey?: string;      // Key in pivot table for related model (default: {relatedEntity}Id)
-      localKey?: string;      // Primary key in this model (default: primaryKey)
-      relatedKey?: string;    // Primary key in related model (default: relatedModel.primaryKey)
-      select?: string[];      // Fields to select from related model
-      orderBy?: string;       // Field to order by
-      orderDirection?: 'asc' | 'desc';
-      withPivot?: string[];   // Additional pivot fields to include
+      foreignKey?: string; // Key in pivot table for this model (default: {entity}Id)
+      otherKey?: string; // Key in pivot table for related model (default: {relatedEntity}Id)
+      localKey?: string; // Primary key in this model (default: primaryKey)
+      relatedKey?: string; // Primary key in related model (default: relatedModel.primaryKey)
+      select?: string[]; // Fields to select from related model
+      orderBy?: string; // Field to order by
+      orderDirection?: "asc" | "desc";
+      withPivot?: string[]; // Additional pivot fields to include
       driver?: DbDriver;
-    }
+    },
   ): Promise<InstanceType<T>[]> {
     const ModelClass = this.constructor as typeof BaseModel;
     const localKey = options?.localKey || ModelClass.primaryKey;
@@ -691,8 +786,10 @@ export class BaseModel extends AbstractBaseModel {
     const db = driver.getDb();
 
     // Infer keys from model names if not provided
-    const foreignKey = options?.foreignKey || `${ModelClass.entity.toLowerCase()}Id`;
-    const otherKey = options?.otherKey || `${relatedModel.entity.toLowerCase()}Id`;
+    const foreignKey =
+      options?.foreignKey || `${ModelClass.entity.toLowerCase()}Id`;
+    const otherKey =
+      options?.otherKey || `${relatedModel.entity.toLowerCase()}Id`;
     const relatedKey = options?.relatedKey || relatedModel.primaryKey;
 
     // Get IDs from pivot table
@@ -700,7 +797,9 @@ export class BaseModel extends AbstractBaseModel {
     const pivotOtherColumn = (pivotTable as any)[otherKey];
 
     if (!pivotFkColumn || !pivotOtherColumn) {
-      throw new Error(`Keys ${foreignKey} or ${otherKey} not found in pivot table`);
+      throw new Error(
+        `Keys ${foreignKey} or ${otherKey} not found in pivot table`,
+      );
     }
 
     const pivotRows = await db
@@ -724,7 +823,9 @@ export class BaseModel extends AbstractBaseModel {
     const relatedPkColumn = (relatedTable as any)[relatedKey];
 
     if (!relatedPkColumn) {
-      throw new Error(`Primary key ${relatedKey} not found in ${relatedModel.entity}`);
+      throw new Error(
+        `Primary key ${relatedKey} not found in ${relatedModel.entity}`,
+      );
     }
 
     let query = db.select().from(relatedTable);
@@ -748,7 +849,9 @@ export class BaseModel extends AbstractBaseModel {
       const orderColumn = (relatedTable as any)[options.orderBy];
       if (orderColumn) {
         query = query.orderBy(
-          options.orderDirection === 'desc' ? desc(orderColumn) : asc(orderColumn)
+          options.orderDirection === "desc"
+            ? desc(orderColumn)
+            : asc(orderColumn),
         );
       }
     }
@@ -758,10 +861,15 @@ export class BaseModel extends AbstractBaseModel {
     // Optionally attach pivot data
     if (options?.withPivot && options.withPivot.length > 0) {
       return results.map((row: any) => {
-        const instance = new relatedModel({ entity: relatedModel.entity, data: row }) as InstanceType<T>;
+        const instance = new relatedModel({
+          entity: relatedModel.entity,
+          data: row,
+        }) as InstanceType<T>;
 
         // Find matching pivot row
-        const pivotRow = pivotRows.find((pr: any) => pr[otherKey] === row[relatedKey]);
+        const pivotRow = pivotRows.find(
+          (pr: any) => pr[otherKey] === row[relatedKey],
+        );
 
         if (pivotRow) {
           const pivotData: any = {};
@@ -778,8 +886,12 @@ export class BaseModel extends AbstractBaseModel {
       });
     }
 
-    return results.map((row: any) =>
-      new relatedModel({ entity: relatedModel.entity, data: row }) as InstanceType<T>
+    return results.map(
+      (row: any) =>
+        new relatedModel({
+          entity: relatedModel.entity,
+          data: row,
+        }) as InstanceType<T>,
     );
   }
 
@@ -800,11 +912,11 @@ export class BaseModel extends AbstractBaseModel {
       localKey?: string;
       select?: string[];
       driver?: DbDriver;
-    }
+    },
   ): Promise<InstanceType<T> | null> {
     const results = await this.hasMany(relatedModel, foreignKey, {
       ...options,
-      limit: 1
+      limit: 1,
     });
 
     return results.length > 0 ? results[0] : null;

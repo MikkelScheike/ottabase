@@ -65,7 +65,7 @@ import {
   User,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface BlogPost {
   id: string;
@@ -259,6 +259,9 @@ function BlogEditorForm({
   // Active tab
   const [activeTab, setActiveTab] = useState("content");
   const [previewVersion, setPreviewVersion] = useState<BlogPostVersion | null>(null);
+  const [slugStatus, setSlugStatus] = useState<
+    "idle" | "checking" | "available" | "taken"
+  >("idle");
 
   // Content editors - initialData is guaranteed to be available in edit mode
   const mainEditor = useOttaEditor({
@@ -329,6 +332,51 @@ function BlogEditorForm({
     previewPost?.content?.blocks && previewPost.content.blocks.length > 0;
   const hasPreviewFootnotes =
     previewPost?.footnotes?.blocks && previewPost.footnotes.blocks.length > 0;
+
+  useEffect(() => {
+    const baseSlug = (slug || generateSlug(title)).trim();
+    if (!baseSlug) {
+      setSlugStatus("idle");
+      return;
+    }
+
+    let cancelled = false;
+    setSlugStatus("checking");
+
+    const timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams();
+        params.set("uniqueField", "slug");
+        params.set("uniqueValue", baseSlug);
+        if (postId) {
+          params.set("uniqueIgnoreId", postId);
+        }
+        if (initialData?.appId) {
+          params.set("where", JSON.stringify({ appId: initialData.appId }));
+        }
+
+        const response = await fetch(
+          `/api/ottaorm/posts/unique?${params.toString()}`,
+        );
+        if (!response.ok) {
+          if (!cancelled) setSlugStatus("idle");
+          return;
+        }
+
+        const result = (await response.json()) as { unique?: boolean };
+        if (!cancelled) {
+          setSlugStatus(result.unique ? "available" : "taken");
+        }
+      } catch {
+        if (!cancelled) setSlugStatus("idle");
+      }
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [slug, title, postId, initialData?.appId]);
 
   // Auto-generate slug from title
   const handleTitleChange = (newTitle: string) => {
@@ -599,7 +647,28 @@ function BlogEditorForm({
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="url-friendly-slug"
+                  aria-invalid={slugStatus === "taken"}
+                  className={
+                    slugStatus === "taken"
+                      ? "border-destructive focus-visible:ring-destructive"
+                      : undefined
+                  }
                 />
+                {slugStatus === "checking" && (
+                  <p className="text-xs text-muted-foreground">
+                    Checking slug...
+                  </p>
+                )}
+                {slugStatus === "taken" && (
+                  <p className="text-xs text-destructive">
+                    Slug already in use.
+                  </p>
+                )}
+                {slugStatus === "available" && (
+                  <p className="text-xs text-muted-foreground">
+                    Slug is available.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -692,7 +761,10 @@ function BlogEditorForm({
               </Card>
             </TabsContent>
 
-            <TabsContent value="seo" className="mt-4 data-[state=inactive]:hidden">
+            <TabsContent
+              value="seo"
+              className="mt-4 data-[state=inactive]:hidden"
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>SEO Settings</CardTitle>
@@ -1001,7 +1073,9 @@ function BlogEditorForm({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="maxVersionsToKeep">Keep Previous Versions</Label>
+                <Label htmlFor="maxVersionsToKeep">
+                  Keep Previous Versions
+                </Label>
                 <select
                   id="maxVersionsToKeep"
                   aria-label="Keep previous versions"

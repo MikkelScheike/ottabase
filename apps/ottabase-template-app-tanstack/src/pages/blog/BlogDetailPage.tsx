@@ -3,6 +3,7 @@
  *
  * Displays a single blog post with full content using BlogRenderer.
  */
+import type { OutputData } from "@ottabase/ottaeditor";
 import { createModelHooks } from "@ottabase/ottaorm/client";
 import {
   Blocks,
@@ -20,7 +21,6 @@ import {
   Layers,
   User,
 } from "lucide-react";
-import type { OutputData } from "@ottabase/ottaeditor";
 
 interface BlogPost {
   id: string;
