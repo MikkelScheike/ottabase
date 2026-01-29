@@ -1,4 +1,5 @@
 import type { API, BlockTool, BlockToolConstructorOptions } from "@editorjs/editorjs";
+import "./SpoilerTool.css";
 
 interface SpoilerConfig {
 	placeholder?: string;
@@ -59,7 +60,6 @@ export default class SpoilerTool implements BlockTool {
 		wrapper.appendChild(textarea);
 
 		this.wrapper = wrapper;
-		this.addStyles();
 
 		return wrapper;
 	}
@@ -70,48 +70,5 @@ export default class SpoilerTool implements BlockTool {
 
 	validate(savedData: SpoilerData): boolean {
 		return savedData.text.trim() !== "";
-	}
-
-	private addStyles(): void {
-		const styleId = "cdx-spoiler-styles";
-		if (document.getElementById(styleId)) return;
-
-		const style = document.createElement("style");
-		style.id = styleId;
-		style.textContent = `
-			.cdx-spoiler__wrapper {
-				padding: 12px;
-				border-radius: 8px;
-				background: #fefce8;
-				border: 1px solid #fde047;
-			}
-
-			.dark .cdx-spoiler__wrapper {
-				background: rgba(113, 63, 18, 0.2);
-				border-color: rgba(113, 63, 18, 0.5);
-			}
-
-			.cdx-spoiler__textarea {
-				display: block;
-				width: 100%;
-				padding: 8px;
-				border: 1px solid #e5e7eb;
-				border-radius: 6px;
-				font-size: 14px;
-				font-family: inherit;
-				background: #ffffff;
-				color: #111827;
-				resize: vertical;
-				min-height: 60px;
-			}
-
-			.dark .cdx-spoiler__textarea {
-				border-color: #374151;
-				background: #1f2937;
-				color: #f9fafb;
-			}
-		`;
-
-		document.head.appendChild(style);
 	}
 }
