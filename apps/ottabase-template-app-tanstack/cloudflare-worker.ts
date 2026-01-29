@@ -27,7 +27,9 @@ import {
   Tag,
   User,
   autoInit,
+  clearConnection,
   handleCrud,
+  hasConnection,
   parseCrudRequest,
   registerConnection,
   registerModels,
@@ -182,9 +184,38 @@ async function checkMigrationAuth(
   return providedSecret === env.MIGRATION_SECRET;
 }
 
+function initDbConnection(env: CloudflareEnv): void {
+  if (!env.OBCF_D1) return;
+
+  if (hasConnection("default")) {
+    clearConnection("default");
+  }
+
+  registerConnection("default", createD1Driver(env.OBCF_D1));
+  registerModels([
+    Shortlink,
+    Todo,
+    User,
+    Post,
+    PostTag,
+    PostTagLink,
+    Tag,
+    ReferralTracking,
+    PostCategory,
+    PostSeries,
+    PostVersion,
+  ]);
+}
+
 export default {
   async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
     try {
+      // ============================================================
+      // CRITICAL: Register DB connection FIRST for ALL requests
+      // This must happen BEFORE any code that might import models
+      // ============================================================
+      initDbConnection(env);
+
       const url = new URL(request.url);
       const origin = request.headers.get("Origin") || "*";
       const authCorsHeaders = {
@@ -194,27 +225,6 @@ export default {
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         Vary: "Origin",
       };
-
-      // Register database connection and models for ALL /api/ottaorm/* routes
-      // This ensures models are available before any route handler is invoked
-      if (url.pathname.startsWith("/api/ottaorm/")) {
-        if (env.OBCF_D1) {
-          registerConnection("default", createD1Driver(env.OBCF_D1));
-          registerModels([
-            Shortlink,
-            Todo,
-            User,
-            Post,
-            PostTag,
-            PostTagLink,
-            Tag,
-            ReferralTracking,
-            PostCategory,
-            PostSeries,
-            PostVersion,
-          ]);
-        }
-      }
 
       if (url.pathname.startsWith("/api/") && request.method === "OPTIONS") {
         return new Response(null, {
