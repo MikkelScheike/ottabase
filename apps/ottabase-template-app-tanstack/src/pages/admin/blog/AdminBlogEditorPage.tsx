@@ -262,6 +262,7 @@ function BlogEditorForm({
   const [slugStatus, setSlugStatus] = useState<
     "idle" | "checking" | "available" | "taken"
   >("idle");
+  const [slugError, setSlugError] = useState<string | null>(null);
 
   // Content editors - initialData is guaranteed to be available in edit mode
   const mainEditor = useOttaEditor({
@@ -337,8 +338,20 @@ function BlogEditorForm({
     const baseSlug = (slug || generateSlug(title)).trim();
     if (!baseSlug) {
       setSlugStatus("idle");
+      setSlugError(null);
       return;
     }
+
+    const isSlugValid = /^[A-Za-z0-9_-]+$/.test(baseSlug);
+    if (!isSlugValid) {
+      setSlugStatus("idle");
+      setSlugError(
+        "Slug can only contain letters, numbers, hyphens, and underscores.",
+      );
+      return;
+    }
+
+    setSlugError(null);
 
     let cancelled = false;
     setSlugStatus("checking");
@@ -483,6 +496,19 @@ function BlogEditorForm({
       return;
     }
 
+    const baseSlug = (slug || generateSlug(title)).trim();
+    if (!/^[A-Za-z0-9_-]+$/.test(baseSlug)) {
+      alert(
+        "Slug can only contain letters, numbers, hyphens, and underscores.",
+      );
+      return;
+    }
+
+    if (slugStatus === "taken") {
+      alert("Slug already in use. Please choose a different slug.");
+      return;
+    }
+
     try {
       // Get editor content
       const content = await mainEditor.save();
@@ -507,7 +533,6 @@ function BlogEditorForm({
         twitterCard: "summary_large_image",
       };
 
-      const baseSlug = (slug || generateSlug(title)).trim();
       if (baseSlug !== slug) {
         setSlug(baseSlug);
       }
@@ -647,13 +672,16 @@ function BlogEditorForm({
                   value={slug}
                   onChange={(e) => setSlug(e.target.value)}
                   placeholder="url-friendly-slug"
-                  aria-invalid={slugStatus === "taken"}
+                  aria-invalid={slugStatus === "taken" || !!slugError}
                   className={
-                    slugStatus === "taken"
+                    slugStatus === "taken" || slugError
                       ? "border-destructive focus-visible:ring-destructive"
                       : undefined
                   }
                 />
+                {slugError && (
+                  <p className="text-xs text-destructive">{slugError}</p>
+                )}
                 {slugStatus === "checking" && (
                   <p className="text-xs text-muted-foreground">
                     Checking slug...

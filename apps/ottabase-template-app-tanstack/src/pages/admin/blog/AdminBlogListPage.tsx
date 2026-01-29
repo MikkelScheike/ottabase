@@ -279,6 +279,16 @@ export function AdminBlogListPage() {
 
                   <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" asChild>
+                      <a
+                        href={`/blog/${post.slug}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="View post"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </a>
+                    </Button>
+                    <Button variant="ghost" size="icon" asChild>
                       <Link
                         to="/admin/blog/$postId/edit"
                         params={{ postId: post.id }}
