@@ -30,7 +30,7 @@ export function ShortlinkForm({
     fullUrl: "",
     shortCode: "",
     type: "redirect",
-    appName: "default",
+    appId: "default",
     expiryDate: "",
   });
 
@@ -40,7 +40,7 @@ export function ShortlinkForm({
         fullUrl: shortlink.fullUrl,
         shortCode: shortlink.shortCode,
         type: shortlink.type,
-        appName: shortlink.appName,
+        appId: shortlink.appId || "default",
         expiryDate: shortlink.expiryDate
           ? new Date(shortlink.expiryDate).toISOString().slice(0, 16)
           : "",
@@ -58,7 +58,7 @@ export function ShortlinkForm({
         fullUrl: formData.fullUrl.trim(),
         shortCode: formData.shortCode.trim(),
         type: formData.type,
-        appName: formData.appName.trim(),
+        appId: formData.appId.trim(),
         expiryDate: formData.expiryDate ? formData.expiryDate : null,
       };
 
@@ -175,13 +175,13 @@ export function ShortlinkForm({
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="appName">App Name</Label>
+          <Label htmlFor="appId">App ID</Label>
           <Input
-            id="appName"
+            id="appId"
             placeholder="default"
-            value={formData.appName}
+            value={formData.appId}
             onChange={(e) =>
-              setFormData({ ...formData, appName: e.target.value })
+              setFormData({ ...formData, appId: e.target.value })
             }
             disabled={loading}
           />

@@ -416,7 +416,7 @@ export function ShortlinksPage() {
 
                         {/* App - simple text */}
                         <TableCell className="text-sm text-muted-foreground">
-                          {link.appName}
+                          {link.appId || "default"}
                         </TableCell>
 
                         {/* Clicks */}
