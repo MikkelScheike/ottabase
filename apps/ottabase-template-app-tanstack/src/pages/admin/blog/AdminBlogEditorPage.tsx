@@ -544,7 +544,11 @@ function BlogEditorForm({
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="content" className="mt-4">
+            <TabsContent
+              value="content"
+              className="mt-4 data-[state=inactive]:hidden"
+              forceMount
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>Main Content</CardTitle>
@@ -561,7 +565,11 @@ function BlogEditorForm({
               </Card>
             </TabsContent>
 
-            <TabsContent value="notes" className="mt-4">
+            <TabsContent
+              value="notes"
+              className="mt-4 data-[state=inactive]:hidden"
+              forceMount
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>Private Notes</CardTitle>
@@ -578,7 +586,11 @@ function BlogEditorForm({
               </Card>
             </TabsContent>
 
-            <TabsContent value="footnotes" className="mt-4">
+            <TabsContent
+              value="footnotes"
+              className="mt-4 data-[state=inactive]:hidden"
+              forceMount
+            >
               <Card>
                 <CardHeader>
                   <CardTitle>Footnotes & References</CardTitle>
@@ -596,7 +608,7 @@ function BlogEditorForm({
               </Card>
             </TabsContent>
 
-            <TabsContent value="seo" className="mt-4">
+            <TabsContent value="seo" className="mt-4 data-[state=inactive]:hidden">
               <Card>
                 <CardHeader>
                   <CardTitle>SEO Settings</CardTitle>
@@ -643,6 +655,7 @@ function BlogEditorForm({
                     <input
                       type="checkbox"
                       id="seoNoIndex"
+                      aria-label="Hide from search engines"
                       checked={seoNoIndex}
                       onChange={(e) => setSeoNoIndex(e.target.checked)}
                       className="rounded"
@@ -757,8 +770,10 @@ function BlogEditorForm({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Content Type</Label>
+                <Label htmlFor="contentType">Content Type</Label>
                 <select
+                  id="contentType"
+                  aria-label="Content type"
                   value={contentType}
                   onChange={(e) =>
                     setContentType(e.target.value as ContentType)
@@ -774,8 +789,10 @@ function BlogEditorForm({
               </div>
 
               <div className="space-y-2">
-                <Label>Status</Label>
+                <Label htmlFor="postStatus">Status</Label>
                 <select
+                  id="postStatus"
+                  aria-label="Post status"
                   value={status}
                   onChange={(e) => setStatus(e.target.value as PostStatus)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -811,6 +828,7 @@ function BlogEditorForm({
                   <input
                     type="checkbox"
                     id="isFeatured"
+                    aria-label="Featured post"
                     checked={isFeatured}
                     onChange={(e) => setIsFeatured(e.target.checked)}
                     className="rounded"
@@ -822,6 +840,7 @@ function BlogEditorForm({
                   <input
                     type="checkbox"
                     id="allowComments"
+                    aria-label="Allow comments"
                     checked={allowComments}
                     onChange={(e) => setAllowComments(e.target.checked)}
                     className="rounded"
@@ -845,8 +864,10 @@ function BlogEditorForm({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Series</Label>
+                <Label htmlFor="seriesSelect">Series</Label>
                 <select
+                  id="seriesSelect"
+                  aria-label="Series"
                   value={seriesId || ""}
                   onChange={(e) => setSeriesId(e.target.value || null)}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -896,8 +917,10 @@ function BlogEditorForm({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label>Keep Previous Versions</Label>
+                <Label htmlFor="maxVersionsToKeep">Keep Previous Versions</Label>
                 <select
+                  id="maxVersionsToKeep"
+                  aria-label="Keep previous versions"
                   value={maxVersionsToKeep || ""}
                   onChange={(e) =>
                     setMaxVersionsToKeep(
