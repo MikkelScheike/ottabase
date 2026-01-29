@@ -33,6 +33,14 @@ export const shortlinksTable = sqliteTable("shortlinks", {
   // Optional expiry timestamp
   expiryDate: integer("expiry_date", { mode: "timestamp" }),
 
+  // Interstitial redirect settings
+  interstitialEnabled: integer("interstitial_enabled", {
+    mode: "boolean",
+  })
+    .notNull()
+    .default(false),
+  interstitialSeconds: integer("interstitial_seconds").default(10),
+
   // Analytics
   clicks: integer("clicks").notNull().default(0),
   lastClickedAt: integer("last_clicked_at", { mode: "timestamp" }),
@@ -65,11 +73,15 @@ export class Shortlink extends BaseModel {
     updatedAt: "date" as const,
     lastClickedAt: "date" as const,
     clicks: "number" as const,
+    interstitialEnabled: "boolean" as const,
+    interstitialSeconds: "number" as const,
   };
 
   protected static defaults = {
     type: ShortlinkTypes.REDIRECT,
     clicks: 0,
+    interstitialEnabled: false,
+    interstitialSeconds: 10,
   };
 
   protected static fields: ModelFields = {
@@ -190,6 +202,43 @@ export class Shortlink extends BaseModel {
       tableConfig: {
         visible: true,
         colWidth: 150,
+      },
+    },
+    interstitialEnabled: {
+      type: "boolean",
+      editable: true,
+      sortable: true,
+      uiConfig: {
+        label: "Interstitial",
+        description: "Show countdown before redirect",
+      },
+      formConfig: {
+        visible: true,
+        fieldType: "boolean",
+      },
+      tableConfig: {
+        visible: true,
+        colWidth: 120,
+      },
+    },
+    interstitialSeconds: {
+      type: "number",
+      editable: true,
+      sortable: true,
+      uiConfig: {
+        label: "Interstitial Seconds",
+        description: "Seconds to wait before redirect",
+      },
+      formConfig: {
+        visible: true,
+        fieldType: "number",
+        min: 1,
+        max: 60,
+        step: 1,
+      },
+      tableConfig: {
+        visible: true,
+        colWidth: 160,
       },
     },
     clicks: {

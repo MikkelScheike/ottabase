@@ -41,7 +41,11 @@ import {
 } from "@ottabase/ottaupload/server";
 import { dispatch, dispatchBatch } from "@ottabase/queue";
 import { ReferralTracking } from "@ottabase/referrals";
-import { Shortlink } from "@ottabase/shortlinks";
+import {
+  Shortlink,
+  renderExpiredShortlinkPage,
+  renderShortlinkInterstitialPage,
+} from "@ottabase/shortlinks";
 import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { jsonResponse } from "@ottabase/utils/http-response";
 import {
@@ -2224,15 +2228,20 @@ export default {
           }
 
           if (shortlink.isExpired()) {
-            return errorResponse("This shortlink has expired", 410, {
-              code: "LINK_EXPIRED",
-            });
+            return renderExpiredShortlinkPage();
           }
 
           // Track usage
           shortlink.trackClick().catch((err) => {
             console.error("Failed to track shortlink click:", err);
           });
+
+          if (shortlink.get("interstitialEnabled")) {
+            return renderShortlinkInterstitialPage({
+              url: shortlink.get("fullUrl"),
+              seconds: (shortlink.get("interstitialSeconds") as number) || 10,
+            });
+          }
 
           return Response.redirect(shortlink.get("fullUrl"), 302);
         } catch (error) {
@@ -2264,16 +2273,21 @@ export default {
           if (shortlink) {
             // Check if expired
             if (shortlink.isExpired()) {
-              // Return 410 Gone for expired links
-              return errorResponse("This shortlink has expired", 410, {
-                code: "LINK_EXPIRED",
-              });
+              return renderExpiredShortlinkPage();
             }
 
             // Track the click asynchronously (don't wait for it), but log failures
             shortlink.trackClick().catch((error) => {
               console.error("Shortlink click tracking error:", error);
             });
+
+            if (shortlink.get("interstitialEnabled")) {
+              return renderShortlinkInterstitialPage({
+                url: shortlink.get("fullUrl"),
+                seconds:
+                  (shortlink.get("interstitialSeconds") as number) || 10,
+              });
+            }
 
             // Redirect to the full URL
             return Response.redirect(shortlink.get("fullUrl"), 302);

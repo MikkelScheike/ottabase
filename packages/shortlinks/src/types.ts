@@ -24,6 +24,8 @@ export interface CreateShortlinkRequest {
   type?: ShortlinkType;
   appId?: string;
   expiryDate?: Date | null;
+  interstitialEnabled?: boolean;
+  interstitialSeconds?: number | null;
 }
 
 /**
@@ -34,6 +36,8 @@ export interface UpdateShortlinkRequest {
   shortCode?: string;
   type?: ShortlinkType;
   expiryDate?: Date | null;
+  interstitialEnabled?: boolean;
+  interstitialSeconds?: number | null;
 }
 
 /**

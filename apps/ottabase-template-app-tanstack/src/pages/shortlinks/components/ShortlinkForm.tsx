@@ -32,6 +32,8 @@ export function ShortlinkForm({
     type: "redirect",
     appId: "default",
     expiryDate: "",
+    interstitialEnabled: false,
+    interstitialSeconds: 10,
   });
 
   useEffect(() => {
@@ -44,6 +46,8 @@ export function ShortlinkForm({
         expiryDate: shortlink.expiryDate
           ? new Date(shortlink.expiryDate).toISOString().slice(0, 16)
           : "",
+        interstitialEnabled: shortlink.interstitialEnabled ?? false,
+        interstitialSeconds: shortlink.interstitialSeconds ?? 10,
       });
     }
   }, [shortlink]);
@@ -60,6 +64,10 @@ export function ShortlinkForm({
         type: formData.type,
         appId: formData.appId.trim(),
         expiryDate: formData.expiryDate ? formData.expiryDate : null,
+        interstitialEnabled: formData.interstitialEnabled,
+        interstitialSeconds: formData.interstitialEnabled
+          ? formData.interstitialSeconds
+          : null,
       };
 
       if (shortlink) {
@@ -201,6 +209,51 @@ export function ShortlinkForm({
         />
         <p className="text-xs text-muted-foreground">
           Leave empty for links that never expire
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            id="interstitialEnabled"
+            type="checkbox"
+            aria-label="Show interstitial"
+            checked={formData.interstitialEnabled}
+            onChange={(e) =>
+              setFormData({
+                ...formData,
+                interstitialEnabled: e.target.checked,
+              })
+            }
+            disabled={loading}
+            className="rounded"
+          />
+          <Label htmlFor="interstitialEnabled">Show interstitial</Label>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Display a countdown page before redirecting.
+        </p>
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="interstitialSeconds">Countdown Seconds</Label>
+        <Input
+          id="interstitialSeconds"
+          type="number"
+          min={1}
+          max={60}
+          step={1}
+          value={formData.interstitialSeconds}
+          onChange={(e) =>
+            setFormData({
+              ...formData,
+              interstitialSeconds: Number(e.target.value),
+            })
+          }
+          disabled={loading || !formData.interstitialEnabled}
+        />
+        <p className="text-xs text-muted-foreground">
+          Defaults to 10 seconds when enabled.
         </p>
       </div>
 
