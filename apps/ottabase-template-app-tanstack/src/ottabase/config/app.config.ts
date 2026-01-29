@@ -1,7 +1,7 @@
 import {
-  createAppConfig,
-  createThemeColors,
-  DEFAULT_THEME_COLORS,
+    createAppConfig,
+    createThemeColors,
+    DEFAULT_THEME_COLORS,
 } from "@ottabase/config";
 
 export const appConfig = createAppConfig({
@@ -39,11 +39,11 @@ export const appConfig = createAppConfig({
     api: {
       serverErrorHttpCode: 500,
     },
-    features: {
-      spotlight: {
-        enabled: false,
-        shortcuts: [],
-      },
+		features: {
+			spotlight: {
+				enabled: true,
+				shortcuts: ["/"],
+			},
       referrals: {
         enabled: true,
         trackClicks: true, // Set to false to disable click tracking (only track conversions)
