@@ -14,6 +14,7 @@ import Raw from "@editorjs/raw";
 import Table from "@editorjs/table";
 import Underline from "@editorjs/underline";
 import Warning from "@editorjs/warning";
+import CTATool from "./tools/CTATool/CTATool";
 import SpoilerTool from "./tools/SpoilerTool/SpoilerTool";
 import type { OttaEditorPlugin } from "./types";
 
@@ -37,6 +38,7 @@ export const DEFAULT_PLUGIN_NAMES = {
   UNDERLINE: 'underline',
   INLINE_CODE: 'inlineCode',
   SPOILER: 'spoiler',
+  CTA: 'cta',
 } as const;
 
 /**
@@ -154,6 +156,14 @@ export const defaultPlugins: OttaEditorPlugin[] = [
       placeholder: "Enter spoiler text...",
     } as any,
   },
+  {
+    name: DEFAULT_PLUGIN_NAMES.CTA,
+    tool: CTATool as any,
+    config: {
+      placeholder: "Enter button text...",
+      defaultStyle: "primary",
+    } as any,
+  },
 ];
 
 /**
@@ -186,8 +196,7 @@ export function getDefaultPlugins(
  */
 export {
     CheckList,
-    CodeTool,
-    Delimiter,
+    CodeTool, CTATool, Delimiter,
     Embed,
     Header,
     InlineCode,

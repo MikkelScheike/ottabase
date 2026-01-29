@@ -3,6 +3,7 @@ import "./styles.css";
 import AdvancedImageBlock from "./components/AdvancedImage/AdvancedImage";
 import Checklist from "./components/Checklist";
 import Code from "./components/Code";
+import CTA from "./components/CTA";
 import List from "./components/List";
 import Quote from "./components/Quote";
 import Spoiler from "./components/Spoiler";
@@ -20,6 +21,7 @@ export const customRenderers = {
     warning: Warning,
     quote: Quote,
     spoiler: Spoiler,
+    cta: CTA,
 }
 
 export const blockClass = "cdc-content-block";
@@ -83,6 +85,9 @@ export const defaultEJSRConfigs = {
     },
     spoiler: {
         className: `${blockClass} cdc-content-spoiler`
+    },
+    cta: {
+        className: `${blockClass} cdc-content-cta`
     },
 };
 
