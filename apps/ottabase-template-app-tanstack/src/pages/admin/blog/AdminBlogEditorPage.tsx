@@ -22,6 +22,11 @@ import {
 } from "@ottabase/ottaeditor";
 import { createModelHooks } from "@ottabase/ottaorm/client";
 import {
+  Blocks,
+  customRenderers,
+  defaultEJSRConfigs,
+} from "@ottabase/ottarenderer";
+import {
   Badge,
   Button,
   Card,
@@ -29,6 +34,11 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   Input,
   Label,
   Tabs,
@@ -40,6 +50,7 @@ import {
 import { Link, useNavigate, useParams } from "@tanstack/react-router";
 import {
   ArrowLeft,
+  Calendar,
   FileText,
   History,
   Image as ImageIcon,
@@ -51,6 +62,7 @@ import {
   Settings,
   StickyNote,
   Trash2,
+  User,
   X,
 } from "lucide-react";
 import { useState } from "react";
@@ -94,9 +106,14 @@ interface BlogPostVersion {
   postId: string;
   versionNumber: number;
   title: string;
+  content: OutputData | null;
+  excerpt: string | null;
+  privateNotes: OutputData | null;
+  footnotes: OutputData | null;
+  changedBy?: string | null;
+  changeNote?: string | null;
   createdAt: string;
   wordCount: number | null;
-  changeNote: string | null;
 }
 
 const blogPostHooks = createModelHooks<BlogPost>({ entityName: "posts" });
@@ -228,7 +245,7 @@ function BlogEditorForm({
     orderDirection: "desc",
     limit: 20,
   });
-  const versions = isEditMode ? (versionsData?.data || []) : [];
+  const versions = isEditMode ? (versionsData || []) : [];
 
   // API hooks
   const createPost = blogPostHooks.useCreate();
@@ -240,6 +257,7 @@ function BlogEditorForm({
 
   // Active tab
   const [activeTab, setActiveTab] = useState("content");
+  const [previewVersion, setPreviewVersion] = useState<BlogPostVersion | null>(null);
 
   // Content editors - initialData is guaranteed to be available in edit mode
   const mainEditor = useOttaEditor({
@@ -256,6 +274,60 @@ function BlogEditorForm({
     ...getEditorConfig("Add footnotes and references..."),
     data: initialData?.footnotes ?? undefined,
   });
+
+  const formatDate = (date: string) => {
+    return new Date(date).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const applyVersionToEditor = async (version: BlogPostVersion) => {
+    if (!version) return;
+
+    handleTitleChange(version.title || "");
+    setExcerpt(version.excerpt || "");
+
+    if (version.content) {
+      await mainEditor.render(version.content);
+    } else {
+      await mainEditor.clear();
+    }
+
+    if (version.privateNotes) {
+      await notesEditor.render(version.privateNotes);
+    } else {
+      await notesEditor.clear();
+    }
+
+    if (version.footnotes) {
+      await footnotesEditor.render(version.footnotes);
+    } else {
+      await footnotesEditor.clear();
+    }
+
+    setActiveTab("content");
+  };
+
+  const previewPost = previewVersion
+    ? {
+        title: previewVersion.title,
+        excerpt: previewVersion.excerpt,
+        content: previewVersion.content,
+        footnotes: previewVersion.footnotes,
+        publishedAt,
+        authorName,
+        heroImage,
+        contentType,
+        isFeatured,
+      }
+    : null;
+
+  const hasPreviewContent =
+    previewPost?.content?.blocks && previewPost.content.blocks.length > 0;
+  const hasPreviewFootnotes =
+    previewPost?.footnotes?.blocks && previewPost.footnotes.blocks.length > 0;
 
   // Auto-generate slug from title
   const handleTitleChange = (newTitle: string) => {
@@ -962,24 +1034,55 @@ function BlogEditorForm({
                               {version.wordCount} words
                             </span>
                           )}
+                          {version.changeNote && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {version.changeNote}
+                            </div>
+                          )}
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-6 px-2 text-destructive hover:text-destructive"
-                          onClick={async () => {
-                            if (
-                              window.confirm(
-                                `Delete version ${version.versionNumber}?`,
-                              )
-                            ) {
-                              await deleteVersion.mutateAsync(version.id);
-                              refetchVersions();
-                            }
-                          }}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="h-6 px-2"
+                            onClick={() => setPreviewVersion(version)}
+                          >
+                            Preview
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-6 px-2"
+                            onClick={async () => {
+                              if (
+                                window.confirm(
+                                  `Load version ${version.versionNumber} into the editor?`,
+                                )
+                              ) {
+                                await applyVersionToEditor(version);
+                              }
+                            }}
+                          >
+                            Load
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-2 text-destructive hover:text-destructive"
+                            onClick={async () => {
+                              if (
+                                window.confirm(
+                                  `Delete version ${version.versionNumber}?`,
+                                )
+                              ) {
+                                await deleteVersion.mutateAsync(version.id);
+                                refetchVersions();
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1040,6 +1143,113 @@ function BlogEditorForm({
           )}
         </div>
       </div>
+
+      <Dialog
+        open={!!previewVersion}
+        onOpenChange={(open) => {
+          if (!open) setPreviewVersion(null);
+        }}
+      >
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Preview - Version {previewVersion?.versionNumber}
+            </DialogTitle>
+            <DialogDescription>
+              This is a read-only preview of the selected version.
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewPost && (
+            <article className="max-w-3xl mx-auto">
+              {/* Hero Image */}
+              {previewPost.heroImage?.url && (
+                <figure className="mb-8">
+                  <img
+                    src={previewPost.heroImage.url}
+                    alt={previewPost.heroImage.alt || previewPost.title}
+                    className="w-full rounded-lg object-cover aspect-video"
+                  />
+                  {previewPost.heroImage.caption && (
+                    <figcaption className="mt-2 text-center text-sm text-muted-foreground">
+                      {previewPost.heroImage.caption}
+                    </figcaption>
+                  )}
+                </figure>
+              )}
+
+              {/* Content Type Badge */}
+              {previewPost.contentType !== "blog" && (
+                <span className="inline-block mb-4 px-3 py-1 bg-secondary text-secondary-foreground text-sm rounded-full capitalize">
+                  {previewPost.contentType}
+                </span>
+              )}
+
+              {/* Title */}
+              <h1 className="text-4xl font-bold mb-4 leading-tight">
+                {previewPost.title}
+              </h1>
+
+              {/* Metadata */}
+              <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-muted-foreground">
+                {previewPost.authorName && (
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    <span className="font-medium text-foreground">
+                      {previewPost.authorName}
+                    </span>
+                  </div>
+                )}
+                {previewPost.publishedAt && (
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-4 w-4" />
+                    <time dateTime={previewPost.publishedAt}>
+                      {formatDate(previewPost.publishedAt)}
+                    </time>
+                  </div>
+                )}
+                {previewPost.isFeatured && (
+                  <span className="bg-primary/10 text-primary px-2 py-0.5 rounded text-xs font-medium">
+                    Featured
+                  </span>
+                )}
+              </div>
+
+              {/* Excerpt */}
+              {previewPost.excerpt && (
+                <p className="text-xl text-muted-foreground mb-8 leading-relaxed">
+                  {previewPost.excerpt}
+                </p>
+              )}
+
+              {/* Main Content */}
+              {hasPreviewContent && (
+                <div className="prose prose-slate dark:prose-invert max-w-none mb-12">
+                  <Blocks
+                    data={previewPost.content!}
+                    renderers={customRenderers}
+                    config={defaultEJSRConfigs}
+                  />
+                </div>
+              )}
+
+              {/* Footnotes */}
+              {hasPreviewFootnotes && (
+                <aside className="border-t pt-8 mt-12">
+                  <h2 className="text-xl font-semibold mb-4">Footnotes</h2>
+                  <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-muted-foreground">
+                    <Blocks
+                      data={previewPost.footnotes!}
+                      renderers={customRenderers}
+                      config={defaultEJSRConfigs}
+                    />
+                  </div>
+                </aside>
+              )}
+            </article>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
