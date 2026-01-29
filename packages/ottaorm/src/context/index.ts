@@ -7,8 +7,17 @@
 // Usage: registerConnection(name, driver), models specify connection via static property
 // ============================================================
 
+// IMPORTANT: Use globalThis to store connections to prevent module duplication issues
+// This ensures all module instances share the same connection registry
+declare global {
+  var __OTTAORM_CONNECTIONS__: Map<string, any> | undefined;
+}
+
 // Connection registry for multi-database support
-const connections: Map<string, any> = new Map();
+// Stored in globalThis to survive module duplication in bundlers
+const connections: Map<string, any> =
+  globalThis.__OTTAORM_CONNECTIONS__ ||
+  (globalThis.__OTTAORM_CONNECTIONS__ = new Map());
 
 /**
  * Register a named database connection
