@@ -246,6 +246,7 @@ function BlogEditorForm({
     limit: 20,
   });
   const versions = isEditMode ? (versionsData || []) : [];
+  const versionHistory = versions.length > 0 ? versions.slice(1) : [];
 
   // API hooks
   const createPost = blogPostHooks.useCreate();
@@ -410,10 +411,13 @@ function BlogEditorForm({
   };
 
   // Prune old versions if maxVersionsToKeep is set
-  const pruneOldVersions = async (keepCount: number) => {
-    if (keepCount < 1 || versions.length <= keepCount) return;
+  const pruneOldVersions = async (
+    versionList: BlogPostVersion[],
+    keepCount: number,
+  ) => {
+    if (keepCount < 1 || versionList.length <= keepCount) return;
 
-    const versionsToDelete = versions.slice(keepCount);
+    const versionsToDelete = versionList.slice(keepCount);
     for (const version of versionsToDelete) {
       try {
         await deleteVersion.mutateAsync(version.id);
@@ -422,6 +426,7 @@ function BlogEditorForm({
       }
     }
   };
+
 
   // Save post
   const handleSave = async (publishNow = false) => {
@@ -454,9 +459,14 @@ function BlogEditorForm({
         twitterCard: "summary_large_image",
       };
 
+      const baseSlug = (slug || generateSlug(title)).trim();
+      if (baseSlug !== slug) {
+        setSlug(baseSlug);
+      }
+
       const postData: Partial<BlogPost> = {
         title,
-        slug: slug || generateSlug(title),
+        slug: baseSlug,
         excerpt: excerpt || undefined,
         content: content || undefined,
         contentType,
@@ -502,8 +512,10 @@ function BlogEditorForm({
 
         // Prune old versions if setting is enabled
         if (maxVersionsToKeep && maxVersionsToKeep > 0) {
-          await refetchVersions();
-          await pruneOldVersions(maxVersionsToKeep);
+          const refreshed = await refetchVersions();
+          const latestVersions =
+            ((refreshed.data || []) as BlogPostVersion[]) ?? [];
+          await pruneOldVersions(latestVersions, maxVersionsToKeep);
         }
       } else {
         await createPost.mutateAsync(postData);
@@ -550,7 +562,7 @@ function BlogEditorForm({
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Save Draft
+            Save
           </Button>
           <Button onClick={() => handleSave(true)} disabled={isSaving}>
             {isSaving ? (
@@ -1013,11 +1025,11 @@ function BlogEditorForm({
                 </p>
               </div>
 
-              {isEditMode && versions.length > 0 && (
+              {isEditMode && versionHistory.length > 0 && (
                 <div className="space-y-2">
-                  <Label>Recent Versions ({versions.length})</Label>
+                  <Label>Recent Versions ({versionHistory.length})</Label>
                   <div className="max-h-[200px] overflow-y-auto rounded-md border divide-y">
-                    {versions.map((version) => (
+                    {versionHistory.map((version) => (
                       <div
                         key={version.id}
                         className="flex items-center justify-between p-2 text-sm hover:bg-muted/50"

@@ -4,7 +4,13 @@
  * Separated from Post.ts to avoid circular dependencies with PostTag.ts
  */
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import {
+  index,
+  integer,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/sqlite-core";
 
 /**
  * Posts table - main content storage
@@ -146,8 +152,8 @@ export const postsTable = sqliteTable(
       .$onUpdate(() => new Date()),
   },
   (table) => [
-    // Lookup by slug (unique per appId)
-    index("posts_slug_idx").on(table.slug),
+    // Unique slug per appId
+    uniqueIndex("posts_app_id_slug_unique_idx").on(table.appId, table.slug),
 
     // Published posts query: status + publishedAt (DESC) for sorting
     index("posts_status_published_at_idx").on(table.status, table.publishedAt),
