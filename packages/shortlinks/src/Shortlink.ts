@@ -5,6 +5,8 @@
 import { BaseModel, ModelFields } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { renderExpiredShortlinkPage } from "./pages/expired";
+import { renderShortlinkInterstitialPage } from "./pages/interstitial";
 import { ShortlinkTypes } from "./types";
 
 /**
@@ -348,4 +350,26 @@ export class Shortlink extends BaseModel {
     if (!expiryDate) return false;
     return expiryDate.getTime() < Date.now();
   }
+
+  /**
+   * Build the redirect response that handles expiry and interstitial display.
+   */
+  static buildRedirectResponse(shortlink: Shortlink): Response {
+    if (shortlink.isExpired()) {
+      return renderExpiredShortlinkPage();
+    }
+
+    if (shortlink.get("interstitialEnabled")) {
+      return renderShortlinkInterstitialPage({
+        url: shortlink.get("fullUrl") as string,
+        seconds: (shortlink.get("interstitialSeconds") as number) || 10,
+      });
+    }
+
+    return Response.redirect(shortlink.get("fullUrl") as string, 302);
+  }
+}
+
+export function buildRedirectResponse(shortlink: Shortlink): Response {
+  return Shortlink.buildRedirectResponse(shortlink);
 }

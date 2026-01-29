@@ -1,8 +1,8 @@
 import { handleAuthRequest } from "@ottabase/auth/backend";
 import { getLoginConfig } from "@ottabase/auth/components";
 import {
-  RealtimeActor,
-  RealtimeBroadcaster,
+    RealtimeActor,
+    RealtimeBroadcaster,
 } from "@ottabase/cf-realtime/server";
 import { createImagesClient } from "@ottabase/cf/images";
 import { createKVClient } from "@ottabase/cf/kv";
@@ -10,64 +10,60 @@ import { createR2Client } from "@ottabase/cf/r2";
 import { createRateLimitingClient } from "@ottabase/cf/rate-limiting";
 import { createD1Driver } from "@ottabase/db/drizzle-d1";
 import {
-  createResendMailer,
-  sendTemplatedEmail,
-  type TemplateContent,
-  type TemplateVariables,
+    createResendMailer,
+    sendTemplatedEmail,
+    type TemplateContent,
+    type TemplateVariables,
 } from "@ottabase/email";
 import {
-  Post,
-  PostCategory,
-  PostSeries,
-  PostTag,
-  PostTagLink,
-  PostVersion,
+    Post,
+    PostCategory,
+    PostSeries,
+    PostTag,
+    PostTagLink,
+    PostVersion,
 } from "@ottabase/ottablog";
 import {
-  Tag,
-  User,
-  autoInit,
-  clearConnection,
-  handleCrud,
-  hasConnection,
-  parseCrudRequest,
-  registerConnection,
-  registerModels,
+    Tag,
+    User,
+    autoInit,
+    clearConnection,
+    handleCrud,
+    hasConnection,
+    parseCrudRequest,
+    registerConnection,
+    registerModels,
 } from "@ottabase/ottaorm";
 import { ScheduledTask } from "@ottabase/ottaorm/models";
 import {
-  uploadFileToCloudflareImages,
-  uploadFileToR2,
+    uploadFileToCloudflareImages,
+    uploadFileToR2,
 } from "@ottabase/ottaupload/server";
 import { dispatch, dispatchBatch } from "@ottabase/queue";
 import { ReferralTracking } from "@ottabase/referrals";
-import {
-  Shortlink,
-  renderExpiredShortlinkPage,
-  renderShortlinkInterstitialPage,
-} from "@ottabase/shortlinks";
+import { Shortlink, buildRedirectResponse } from "@ottabase/shortlinks";
 import { ServiceError, errorResponse } from "@ottabase/utils/http-errors";
 import { jsonResponse } from "@ottabase/utils/http-response";
 import {
-  paginatedJsonResponse,
-  parsePaginationParams,
+    paginatedJsonResponse,
+    parsePaginationParams,
 } from "@ottabase/utils/pagination";
 import { getAllSchemas } from "./ottabase/db/schemas-helper";
 import { processReferralAttribution } from "./ottabase/helpers/referral-attribution";
 import { appMigrations } from "./ottabase/migrations";
 import { Todo } from "./ottabase/models/Todo";
 import {
-  deleteDLQJob,
-  getDLQJob,
-  getDLQJobs,
-  getFailedJobs,
-  getQueueStats,
-  getRecentProcessedJobs,
-  incrementDispatchStats,
-  purgeDLQ,
-  queueHandler,
-  retryAllDLQJobs,
-  retryDLQJob,
+    deleteDLQJob,
+    getDLQJob,
+    getDLQJobs,
+    getFailedJobs,
+    getQueueStats,
+    getRecentProcessedJobs,
+    incrementDispatchStats,
+    purgeDLQ,
+    queueHandler,
+    retryAllDLQJobs,
+    retryDLQJob,
 } from "./ottabase/queue";
 import { registerAppEmailTemplates } from "./src/email/templates";
 
@@ -537,12 +533,12 @@ export default {
         );
 
         // Optional filters
-        const appName = url.searchParams.get("appName");
+        const appId = url.searchParams.get("appId");
         const type = url.searchParams.get("type");
 
         // Build where conditions
         const whereConditions: Record<string, any> = {};
-        if (appName) whereConditions.appName = appName;
+        if (appId) whereConditions.appId = appId;
         if (type) whereConditions.type = type;
 
         // Use OttaORM's paginate method
@@ -577,7 +573,7 @@ export default {
           fullUrl?: string;
           shortCode?: string;
           type?: string;
-          appName?: string;
+          appId?: string;
           expiryDate?: string | null;
         }>(request);
 
@@ -598,7 +594,7 @@ export default {
             fullUrl: body.fullUrl,
             shortCode: body.shortCode,
             type: body.type || "redirect",
-            appName: body.appName || "default",
+            appId: body.appId || "default",
             expiryDate: body.expiryDate ? new Date(body.expiryDate) : null,
           });
 
@@ -2227,23 +2223,12 @@ export default {
             });
           }
 
-          if (shortlink.isExpired()) {
-            return renderExpiredShortlinkPage();
-          }
-
           // Track usage
           shortlink.trackClick().catch((err) => {
             console.error("Failed to track shortlink click:", err);
           });
 
-          if (shortlink.get("interstitialEnabled")) {
-            return renderShortlinkInterstitialPage({
-              url: shortlink.get("fullUrl"),
-              seconds: (shortlink.get("interstitialSeconds") as number) || 10,
-            });
-          }
-
-          return Response.redirect(shortlink.get("fullUrl"), 302);
+          return buildRedirectResponse(shortlink);
         } catch (error) {
           console.error("Shortlink explicit redirect error:", error);
           return errorResponse("Failed to process shortlink", 500);
@@ -2271,26 +2256,12 @@ export default {
           const shortlink = await Shortlink.findByCode(shortCode);
 
           if (shortlink) {
-            // Check if expired
-            if (shortlink.isExpired()) {
-              return renderExpiredShortlinkPage();
-            }
-
             // Track the click asynchronously (don't wait for it), but log failures
             shortlink.trackClick().catch((error) => {
               console.error("Shortlink click tracking error:", error);
             });
 
-            if (shortlink.get("interstitialEnabled")) {
-              return renderShortlinkInterstitialPage({
-                url: shortlink.get("fullUrl"),
-                seconds:
-                  (shortlink.get("interstitialSeconds") as number) || 10,
-              });
-            }
-
-            // Redirect to the full URL
-            return Response.redirect(shortlink.get("fullUrl"), 302);
+            return buildRedirectResponse(shortlink);
           }
         } catch (error) {
           console.error("Shortlink redirect error:", error);

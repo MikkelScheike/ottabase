@@ -7,6 +7,7 @@ A reusable shortlink management system designed for Cloudflare infrastructure.
 - 🔗 URL shortening with custom identifiers
 - 🎯 Multi-app database sharing via opt-in `appId` column
 - ⏰ Optional expiry dates
+- 💡 Helpers for expired/interstitial redirects (`renderExpiredShortlinkPage`, `renderShortlinkInterstitialPage`, `buildRedirectResponse`)
 - 📊 Click tracking and analytics
 - 🏗️ Built on Drizzle ORM for Cloudflare D1
 - 🔄 Reusable across monorepo apps
@@ -40,6 +41,8 @@ The package exports a `shortlinksTable` Drizzle schema with the following fields
 - `shortCode` - Unique short identifier
 - `type` - Link type (redirect, tracking, internal, external)
 - `appId` - Nullable app identifier (auto-set when `scopeByAppId: true` in config)
+- `interstitialEnabled` - Whether to show the interstitial countdown page
+- `interstitialSeconds` - Countdown duration (seconds) when interstitial is enabled
 - `expiryDate` - Optional expiry timestamp
 - `clicks` - Click counter
 - `lastClickedAt` - Last click timestamp
@@ -57,7 +60,8 @@ await db.insert(shortlinksTable).values({
   fullUrl: "https://github.com/ottabase",
   shortCode: "gh",
   type: "redirect",
-  appName: "myapp",
+  appId: "myapp",
+  interstitialEnabled: true,
 });
 
 // Query shortlinks
@@ -66,6 +70,14 @@ const link = await db
   .from(shortlinksTable)
   .where(eq(shortlinksTable.shortCode, "gh"))
   .get();
+```
+
+For worker-side redirects, reuse the exported helpers instead of reconstructing the markup:
+
+```ts
+import { buildRedirectResponse } from "@ottabase/shortlinks";
+
+const response = buildRedirectResponse(shortlink);
 ```
 
 ## License
