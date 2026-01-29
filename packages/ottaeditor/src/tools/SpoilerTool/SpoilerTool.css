@@ -12,6 +12,19 @@
 	border-color: rgba(113, 63, 18, 0.5);
 }
 
+.cdx-spoiler__title {
+	font-size: 11px;
+	font-weight: 600;
+	color: #854d0e;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	margin-bottom: 8px;
+}
+
+.dark .cdx-spoiler__title {
+	color: #fbbf24;
+}
+
 .cdx-spoiler__textarea {
 	display: block;
 	width: 100%;
