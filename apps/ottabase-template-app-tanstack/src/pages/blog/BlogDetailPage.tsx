@@ -79,13 +79,15 @@ export function BlogDetailPage() {
     limit: 1,
   });
 
-  const post = postsData?.data?.[0];
+  const post = postsData?.[0];
 
   // Fetch series info if post is part of a series
   const { data: seriesData } = blogSeriesHooks.useList({
     where: post?.seriesId ? { id: post.seriesId } : undefined,
+  }, {
+    enabled: !!post?.seriesId,
   });
-  const series = seriesData?.data?.[0];
+  const series = seriesData?.[0];
 
   // Fetch other posts in the series for navigation
   const { data: seriesPostsData } = blogPostHooks.useList({
@@ -94,8 +96,10 @@ export function BlogDetailPage() {
       : undefined,
     orderBy: "seriesOrder",
     orderDirection: "asc",
+  }, {
+    enabled: !!post?.seriesId,
   });
-  const seriesPosts = seriesPostsData?.data || [];
+  const seriesPosts = seriesPostsData || [];
 
   // Find previous and next posts in series
   const currentIndex = seriesPosts.findIndex((p) => p.id === post?.id);
