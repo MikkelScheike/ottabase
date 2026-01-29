@@ -4,11 +4,11 @@
 // Auto-renders the correct input based on model field metadata
 // ============================================================
 
-import React, { useCallback } from "react";
-import { clsx } from "clsx";
 import { OttaSelect, type OttaSelectItem } from "@ottabase/ottaselect";
+import { clsx } from "clsx";
+import { AlertCircle, Calendar, Check, Eye, EyeOff, Upload, X } from "lucide-react";
+import React, { useCallback } from "react";
 import type { FormFieldProps, ModelFieldDescriptor } from "../types";
-import { Calendar, Upload, Eye, EyeOff, Check, X, AlertCircle } from "lucide-react";
 
 export type { FormFieldProps };
 
@@ -45,7 +45,25 @@ export function FormField({
     disabled && "opacity-50 cursor-not-allowed bg-gray-50 dark:bg-gray-900"
   );
 
+  // Check if value is an object (not null, not array, not Date, not primitive)
+  const isObjectValue = React.useMemo(() => {
+    if (value === null || value === undefined) return false;
+    if (Array.isArray(value)) return false;
+    if (value instanceof Date) return false;
+    return typeof value === "object" && value.constructor === Object;
+  }, [value]);
+
   const renderField = () => {
+    // If value is an object and field type is not explicitly json/readonly, show as readonly "[Object]"
+    // This prevents manual editing of complex objects that could break data structure
+    if (isObjectValue && fieldType !== "json" && fieldType !== "readonly") {
+      return (
+        <div className={clsx(baseInputClasses, "bg-gray-50 dark:bg-gray-900 cursor-not-allowed py-2")}>
+          <span className="text-gray-600 dark:text-gray-400">[Object]</span>
+        </div>
+      );
+    }
+
     switch (fieldType) {
       case "textarea":
         return (
