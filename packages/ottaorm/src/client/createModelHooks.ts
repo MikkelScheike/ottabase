@@ -119,8 +119,8 @@ export function createModelHooks<T extends { id: string | number }>(
       // Use API client if available
       if (apiClient) {
         try {
-          const result = await apiClient<Record<string, T> & { data?: T }>(url);
-          return result[entityName.slice(0, -1)] || result.data || (result as unknown as T);
+          const result = await apiClient<T>(url);
+          return result || null;
         } catch (error: any) {
           if (error?.status === 404) return null;
           throw error;
@@ -135,8 +135,37 @@ export function createModelHooks<T extends { id: string | number }>(
         throw new Error(error.error || `Failed to fetch ${entityName}`);
       }
 
-      const result = (await response.json()) as Record<string, T> & { data?: T };
-      return result[entityName.slice(0, -1)] || result.data || (result as unknown as T);
+      const result = (await response.json()) as T;
+      return result || null;
+    }
+
+    async function fetchFind(field: string, value: string | number): Promise<T | null> {
+      const params = new URLSearchParams();
+      params.set("field", field);
+      params.set("value", String(value));
+      const url = `${apiPath}?${params.toString()}`;
+
+      // Use API client if available
+      if (apiClient) {
+        try {
+          const result = await apiClient<T>(url);
+          return result || null;
+        } catch (error: any) {
+          if (error?.status === 404) return null;
+          throw error;
+        }
+      }
+
+      // Fallback to raw fetch
+      const response = await fetch(url);
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        const error = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(error.error || `Failed to find ${entityName}`);
+      }
+
+      const result = (await response.json()) as T;
+      return result || null;
     }
 
     async function fetchPaginated(
@@ -178,11 +207,11 @@ export function createModelHooks<T extends { id: string | number }>(
     async function createItem(data: Partial<T>): Promise<T> {
       // Use API client if available
       if (apiClient) {
-        const result = await apiClient<Record<string, T> & { data?: T }>(apiPath, {
+        const result = await apiClient<T>(apiPath, {
           method: "POST",
           body: data,
         });
-        return result[entityName.slice(0, -1)] || result.data || (result as unknown as T);
+        return result;
       }
 
       // Fallback to raw fetch
@@ -197,8 +226,8 @@ export function createModelHooks<T extends { id: string | number }>(
         throw new Error(error.error || `Failed to create ${entityName}`);
       }
 
-      const result = (await response.json()) as Record<string, T> & { data?: T };
-      return result[entityName.slice(0, -1)] || result.data || (result as unknown as T);
+      const result = (await response.json()) as T;
+      return result;
     }
 
     async function updateItem(id: string | number, data: Partial<T>): Promise<T> {
@@ -206,11 +235,11 @@ export function createModelHooks<T extends { id: string | number }>(
 
       // Use API client if available
       if (apiClient) {
-        const result = await apiClient<Record<string, T> & { data?: T }>(url, {
+        const result = await apiClient<T>(url, {
           method: "PATCH",
           body: data,
         });
-        return result[entityName.slice(0, -1)] || result.data || (result as unknown as T);
+        return result;
       }
 
       // Fallback to raw fetch
@@ -225,8 +254,8 @@ export function createModelHooks<T extends { id: string | number }>(
         throw new Error(error.error || `Failed to update ${entityName}`);
       }
 
-      const result = (await response.json()) as Record<string, T> & { data?: T };
-      return result[entityName.slice(0, -1)] || result.data || (result as unknown as T);
+      const result = (await response.json()) as T;
+      return result;
     }
 
     async function deleteItem(id: string | number): Promise<boolean> {
@@ -254,6 +283,7 @@ export function createModelHooks<T extends { id: string | number }>(
     return {
       fetchList,
       fetchDetail,
+      fetchFind,
       fetchPaginated,
       createItem,
       updateItem,
@@ -290,6 +320,22 @@ export function createModelHooks<T extends { id: string | number }>(
       queryKey: queryKeys.detail(id),
       queryFn: () => fetchers.fetchDetail(id),
       enabled: !!id,
+      ...queryOptions,
+    });
+  }
+
+  function useFind(
+    field: string,
+    value: string | number,
+    queryOptions?: Partial<UseQueryOptions<T | null, Error>>
+  ) {
+    const apiClient = useApiClient();
+    const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
+
+    return useQuery<T | null, Error>({
+      queryKey: queryKeys.find(field, value),
+      queryFn: () => fetchers.fetchFind(field, value),
+      enabled: !!field && value !== undefined && value !== null && value !== "",
       ...queryOptions,
     });
   }
@@ -407,6 +453,12 @@ export function createModelHooks<T extends { id: string | number }>(
           queryFn: () => fetchers.fetchDetail(id),
         });
       },
+      prefetchFind: async (field: string, value: string | number) => {
+        await queryClient.prefetchQuery({
+          queryKey: queryKeys.find(field, value),
+          queryFn: () => fetchers.fetchFind(field, value),
+        });
+      },
     };
   }
 
@@ -431,6 +483,7 @@ export function createModelHooks<T extends { id: string | number }>(
     // Query hooks
     useList,
     useDetail,
+    useFind,
     useInfiniteList,
 
     // Mutation hooks

@@ -73,21 +73,19 @@ export function BlogDetailPage() {
   const params = useParams({ strict: false });
   const slug = (params as { slug?: string }).slug;
 
-  // Fetch post by slug
-  const { data: postsData, isLoading: isLoadingPost } = blogPostHooks.useList({
-    where: { slug, status: "published" },
-    limit: 1,
-  });
+  // Fetch post by slug using the new useFind hook
+  const { data: post, isLoading: isLoadingPost } = blogPostHooks.useFind(
+    "slug",
+    slug || "",
+    {
+      enabled: !!slug,
+    }
+  );
 
-  const post = postsData?.[0];
-
-  // Fetch series info if post is part of a series
-  const { data: seriesData } = blogSeriesHooks.useList({
-    where: post?.seriesId ? { id: post.seriesId } : undefined,
-  }, {
+  // Fetch series info if post is part of a series (using useDetail for primary key lookup)
+  const { data: series } = blogSeriesHooks.useDetail(post?.seriesId || "", {
     enabled: !!post?.seriesId,
   });
-  const series = seriesData?.[0];
 
   // Fetch other posts in the series for navigation
   const { data: seriesPostsData } = blogPostHooks.useList({

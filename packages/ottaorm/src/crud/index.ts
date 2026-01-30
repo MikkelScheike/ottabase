@@ -22,6 +22,8 @@ export interface CrudRequest {
     uniqueField?: string;
     uniqueValue?: string;
     uniqueIgnoreId?: string;
+    field?: string;
+    value?: string;
   };
 }
 
@@ -107,7 +109,7 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
       }
       return {
         success: true,
-        data: { [singularize(entityName)]: record.toJson() },
+        data: record.toJson(),
         status: 200,
       };
     }
@@ -115,6 +117,23 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
     // GET without ID - list records
     if (method === "GET") {
       const basePath = `/api/ottaorm/${entityName}`;
+
+      // Check for single object lookup by field/value
+      if (query?.field && query?.value !== undefined) {
+        const record = await Model.first({ [query.field]: query.value });
+        if (!record) {
+          return {
+            success: false,
+            error: `${entityName} with ${query.field} '${query.value}' not found`,
+            status: 404,
+          };
+        }
+        return {
+          success: true,
+          data: record.toJson(),
+          status: 200,
+        };
+      }
 
       // Check for pagination
       if (query?.page || query?.perPage) {
@@ -190,7 +209,7 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
       const record = await Model.create(body);
       return {
         success: true,
-        data: { [singularize(entityName)]: record.toJson() },
+        data: record.toJson(),
         status: 201,
       };
     }
@@ -207,7 +226,7 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
       const record = await Model.update(id, body);
       return {
         success: true,
-        data: { [singularize(entityName)]: record.toJson() },
+        data: record.toJson(),
         status: 200,
       };
     }
@@ -345,6 +364,12 @@ export async function parseCrudRequest(
 
   const uniqueIgnoreId = url.searchParams.get("uniqueIgnoreId");
   if (uniqueIgnoreId) query.uniqueIgnoreId = uniqueIgnoreId;
+
+  const field = url.searchParams.get("field");
+  if (field) query.field = field;
+
+  const value = url.searchParams.get("value");
+  if (value !== null) query.value = value;
 
   // Parse body for POST/PATCH/PUT
   let body: Record<string, unknown> | undefined;

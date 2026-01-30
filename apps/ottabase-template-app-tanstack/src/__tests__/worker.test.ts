@@ -111,8 +111,64 @@ describe('Cloudflare Worker API', () => {
       // Note: The generic handleCrud might fail if mocks aren't perfect, but let's see.
       expect(resp.status).toBe(201);
       const data = (await resp.json()) as any;
-      expect(data.shortlink?.shortCode).toBe("goog");
+      // Response format changed - now returns object directly, not wrapped
+      expect(data.shortCode).toBe("goog");
       createSpy.mockRestore();
+    });
+
+    it("should find shortlink by field/value", async () => {
+      const mockShortlink = {
+        id: "test-1",
+        shortCode: "test-code",
+        fullUrl: "https://example.com",
+        type: "redirect",
+        appId: "test",
+        clicks: 0,
+        expiryDate: null,
+        lastClickedAt: null,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      const shortlinkResult = new Shortlink({
+        entity: Shortlink.entity,
+        data: mockShortlink,
+      } as any);
+
+      const firstSpy = vi
+        .spyOn(Shortlink, "first")
+        .mockResolvedValue(shortlinkResult);
+      vi.spyOn(shortlinkResult, "toJson").mockReturnValue(mockShortlink);
+
+      const resp = await worker.fetch(
+        createRequest("/api/ottaorm/shortlinks?field=shortCode&value=test-code"),
+        env,
+      );
+
+      expect(resp.status).toBe(200);
+      const data = (await resp.json()) as any;
+      // Response should be the object directly, not wrapped
+      expect(data.shortCode).toBe("test-code");
+      expect(data.id).toBe("test-1");
+      expect(firstSpy).toHaveBeenCalledWith({ shortCode: "test-code" });
+
+      firstSpy.mockRestore();
+    });
+
+    it("should return 404 when shortlink not found by field/value", async () => {
+      const firstSpy = vi.spyOn(Shortlink, "first").mockResolvedValue(null);
+
+      const resp = await worker.fetch(
+        createRequest("/api/ottaorm/shortlinks?field=shortCode&value=non-existent"),
+        env,
+      );
+
+      expect(resp.status).toBe(404);
+      const data = (await resp.json()) as any;
+      expect(data.error).toContain("not found");
+      expect(firstSpy).toHaveBeenCalledWith({ shortCode: "non-existent" });
+
+      firstSpy.mockRestore();
     });
   });
 

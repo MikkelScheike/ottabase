@@ -63,6 +63,7 @@ export type QueryKeyFactory<T extends string> = {
   list: (filters?: QueryOptions) => readonly [T, "list", QueryOptions | undefined];
   details: () => readonly [T, "detail"];
   detail: (id: string | number) => readonly [T, "detail", string | number];
+  find: (field: string, value: string | number) => readonly [T, "find", string, string | number];
   infinite: (filters?: QueryOptions) => readonly [T, "infinite", QueryOptions | undefined];
 };
 
@@ -76,6 +77,7 @@ export function createQueryKeys<T extends string>(entity: T): QueryKeyFactory<T>
     list: (filters?: QueryOptions) => [entity, "list", filters] as const,
     details: () => [entity, "detail"] as const,
     detail: (id: string | number) => [entity, "detail", id] as const,
+    find: (field: string, value: string | number) => [entity, "find", field, value] as const,
     infinite: (filters?: QueryOptions) => [entity, "infinite", filters] as const,
   };
 }
