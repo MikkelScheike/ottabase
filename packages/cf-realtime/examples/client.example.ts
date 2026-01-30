@@ -4,7 +4,7 @@
  * This demonstrates various client patterns and use cases.
  */
 
-import { RealtimeClient, ConnectionState } from '@ottabase/cf-realtime';
+import { ConnectionState, RealtimeClient } from '@ottabase/cf-realtime';
 
 // ============================================================================
 // EXAMPLE 1: Basic Connection and Subscription
