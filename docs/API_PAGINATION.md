@@ -12,13 +12,14 @@ OttaBase provides a **generic CRUD endpoint** that handles all registered models
 
 ### Supported Operations
 
-| Method   | URL                           | Description          |
-| -------- | ----------------------------- | -------------------- |
-| `GET`    | `/api/ottaorm/shortlinks`     | List all (paginated) |
-| `GET`    | `/api/ottaorm/shortlinks/123` | Get single by ID     |
-| `POST`   | `/api/ottaorm/shortlinks`     | Create new           |
-| `PATCH`  | `/api/ottaorm/shortlinks/123` | Update existing      |
-| `DELETE` | `/api/ottaorm/shortlinks/123` | Delete               |
+| Method   | URL                                                           | Description                    |
+| -------- | ------------------------------------------------------------- | ------------------------------ |
+| `GET`    | `/api/ottaorm/shortlinks`                                     | List all (paginated)          |
+| `GET`    | `/api/ottaorm/shortlinks/123`                                 | Get single by ID               |
+| `GET`    | `/api/ottaorm/shortlinks?field=shortCode&value=abc`          | Get single by field/value      |
+| `POST`   | `/api/ottaorm/shortlinks`                                     | Create new                     |
+| `PATCH`  | `/api/ottaorm/shortlinks/123`                                 | Update existing                |
+| `DELETE` | `/api/ottaorm/shortlinks/123`                                 | Delete                         |
 
 ## Simplified Pagination Format
 
@@ -73,6 +74,37 @@ All paginated endpoints support these query parameters:
 | `sort` or `orderBy`         | string      | createdAt | Field to sort by                |
 | `order` or `orderDirection` | string      | desc      | Sort direction: "asc" or "desc" |
 | `where`                     | JSON string | -         | Filter conditions as JSON       |
+| `field`                     | string      | -         | Field name for single lookup    |
+| `value`                     | string      | -         | Field value for single lookup   |
+
+### Find Single Record by Field/Value
+
+Find a record by any field (useful for slugs, emails, codes, etc.):
+
+```bash
+GET /api/ottaorm/posts?field=slug&value=my-post-slug
+```
+
+**Response:** Returns the object directly (not wrapped in pagination):
+```json
+{
+  "id": "123",
+  "slug": "my-post-slug",
+  "title": "My Post",
+  "content": "..."
+}
+```
+
+**Example Client Usage:**
+
+```typescript
+import { createModelHooks } from "@ottabase/ottaorm/client";
+
+const postHooks = createModelHooks<Post>({ entityName: "posts" });
+
+// Find by slug
+const { data: post } = postHooks.useFind("slug", "my-post-slug");
+```
 
 ### Example Client Usage
 

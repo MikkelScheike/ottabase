@@ -129,11 +129,15 @@ import { createModelHooks } from "@ottabase/ottaorm/client";
 export const {
   useList: useTodos,
   useDetail: useTodo,
+  useFind: useTodoBySlug, // Find by field/value (e.g., slug, email)
   useCreate: useCreateTodo,
   useUpdate: useUpdateTodo,
   useDelete: useDeleteTodo,
   useInfiniteList: useTodosInfinite,
 } = createModelHooks<TodoType>({ entity: "todos" });
+
+// Usage:
+// const { data: todo } = useTodoBySlug("slug", "my-todo-slug");
 ```
 
 ## Package Guide

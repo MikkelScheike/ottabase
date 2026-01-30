@@ -537,10 +537,11 @@ export default {
       // Handles all registered models via /api/ottaorm/{model}/{id?}
       // GET    /api/ottaorm/shortlinks              - List all (paginated)
       // GET    /api/ottaorm/shortlinks/123          - Get by ID
+      // GET    /api/ottaorm/shortlinks?field=X&value=Y - Get by field/value
       // POST   /api/ottaorm/shortlinks              - Create
       // PATCH  /api/ottaorm/shortlinks/123          - Update
       // DELETE /api/ottaorm/shortlinks/123          - Delete
-      // Query params: page, per_page, sort, order, where (JSON)
+      // Query params: page, per_page, sort, order, where (JSON), field, value
       // ============================================================
 
       if (

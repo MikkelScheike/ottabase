@@ -623,6 +623,79 @@ Your App
 - Migrations run per-app against separate databases
 - Type column on categories/tags enables multi-content-type support
 
+## Generic CRUD API
+
+OttaORM provides a generic CRUD endpoint that works with all registered models:
+
+```
+/api/ottaorm/{model}/{id?}
+```
+
+### Supported Operations
+
+| Method   | URL                           | Description                    |
+| -------- | ----------------------------- | ------------------------------ |
+| `GET`    | `/api/ottaorm/posts`          | List all (paginated)          |
+| `GET`    | `/api/ottaorm/posts/123`      | Get single by ID               |
+| `GET`    | `/api/ottaorm/posts?field=slug&value=my-post` | Get single by field/value |
+| `POST`   | `/api/ottaorm/posts`          | Create new                     |
+| `PATCH`  | `/api/ottaorm/posts/123`      | Update existing                |
+| `DELETE` | `/api/ottaorm/posts/123`      | Delete                         |
+
+### Find by Field/Value
+
+Find a single record by any field (e.g., slug, email, code):
+
+```bash
+# API endpoint
+GET /api/ottaorm/posts?field=slug&value=my-post-slug
+```
+
+**Response:** Returns the object directly (not wrapped):
+```json
+{
+  "id": "123",
+  "slug": "my-post-slug",
+  "title": "My Post",
+  ...
+}
+```
+
+### Client Hooks
+
+TanStack Query hooks for React components:
+
+```typescript
+import { createModelHooks } from "@ottabase/ottaorm/client";
+
+const blogPostHooks = createModelHooks<BlogPost>({ entityName: "posts" });
+
+// In your component
+function BlogDetailPage() {
+  const { data: post, isLoading } = blogPostHooks.useFind("slug", "my-post-slug");
+  
+  // Or by ID
+  const { data: postById } = blogPostHooks.useDetail("123");
+  
+  // List all
+  const { data: posts } = blogPostHooks.useList();
+  
+  // Mutations
+  const createPost = blogPostHooks.useCreate();
+  const updatePost = blogPostHooks.useUpdate();
+  const deletePost = blogPostHooks.useDelete();
+}
+```
+
+**Available hooks:**
+- `useList()` - List all records (paginated)
+- `useDetail(id)` - Get by primary key
+- `useFind(field, value)` - Get by field/value
+- `useCreate()` - Create new record
+- `useUpdate()` - Update existing record
+- `useDelete()` - Delete record
+- `useInfiniteList()` - Infinite scroll pagination
+
 ## Complete Example: API Route
 
 ```typescript
