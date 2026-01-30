@@ -47,7 +47,7 @@ export {
   postTagLinksTable,
   PostVersion,
   postVersionsTable,
-} from "./models";
+} from "./ottaorm-models";
 
 // Type exports from models
 export type {
@@ -73,7 +73,7 @@ export type {
   NewPostType,
   PostVersionType,
   NewPostVersionType,
-} from "./models";
+} from "./ottaorm-models";
 
 // Type exports
 export type {

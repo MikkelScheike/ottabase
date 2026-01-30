@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { Shortlink, buildRedirectResponse } from "../Shortlink";
+import { Shortlink, buildRedirectResponse } from "../ottaorm-models/Shortlink";
 
 const createShortlinkStub = (fields: Record<string, unknown> = {}) =>
   ({

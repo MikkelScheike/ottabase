@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { Post, PostCategory, PostVersion, PostSeries, PostTag, PostTagLink } from "../models";
+import { Post, PostCategory, PostVersion, PostSeries, PostTag, PostTagLink } from "../ottaorm-models";
 
 describe("ottablog models", () => {
   describe("Post model", () => {

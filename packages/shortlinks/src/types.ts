@@ -1,4 +1,4 @@
-import type { NewShortlinkRecord, ShortlinkRecord } from "./Shortlink";
+import type { NewShortlinkRecord, ShortlinkRecord } from "./ottaorm-models/Shortlink";
 
 export type { NewShortlinkRecord, ShortlinkRecord };
 

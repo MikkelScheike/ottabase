@@ -7,7 +7,7 @@
 import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { postsTable } from "./Post";
+import { postsTable } from "./tables/PostTable";
 
 /**
  * Post Versions table - content versioning history

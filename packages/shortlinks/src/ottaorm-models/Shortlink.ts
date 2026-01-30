@@ -5,9 +5,9 @@
 import { BaseModel, ModelFields, PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { renderExpiredShortlinkPage } from "./pages/expired";
-import { renderShortlinkInterstitialPage } from "./pages/interstitial";
-import { ShortlinkTypes } from "./types";
+import { renderExpiredShortlinkPage } from "../pages/expired";
+import { renderShortlinkInterstitialPage } from "../pages/interstitial";
+import { ShortlinkTypes } from "../types";
 
 /**
  * Shortlinks table schema for URL shortening service
