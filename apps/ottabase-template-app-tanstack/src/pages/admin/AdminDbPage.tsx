@@ -219,6 +219,48 @@ export function AdminDbPage() {
     return model || null;
   };
 
+  // Get category for a table name
+  const getTableCategory = (tableName: string): string => {
+    const metadata = getTableMetadata(tableName);
+    if (!metadata) return "Unknown";
+    
+    const categoryMap: Record<string, string> = {
+      core: "Core",
+      app: "App",
+      package: "Package",
+    };
+    
+    return categoryMap[metadata.packageType] || "Unknown";
+  };
+
+  // Group tables by category
+  const groupedTables = (() => {
+    if (!tablesData?.tables) return {};
+    
+    const groups: Record<string, string[]> = {
+      App: [],
+      Package: [],
+      Core: [],
+      Unknown: [],
+    };
+    
+    tablesData.tables.forEach((table) => {
+      const category = getTableCategory(table);
+      if (groups[category]) {
+        groups[category].push(table);
+      } else {
+        groups.Unknown.push(table);
+      }
+    });
+    
+    // Sort tables within each category
+    Object.keys(groups).forEach((category) => {
+      groups[category].sort();
+    });
+    
+    return groups;
+  })();
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -249,19 +291,41 @@ export function AdminDbPage() {
                 </div>
               ) : (
                 <div className="flex flex-col max-h-[calc(100vh-300px)] overflow-y-auto">
-                  {tablesData?.tables.map((table) => (
-                    <button
-                      key={table}
-                      onClick={() => handleTableSelect(table)}
-                      className={`px-4 py-2.5 text-sm text-left hover:bg-muted/50 transition-colors ${
-                        selectedTable === table
-                          ? "bg-accent text-accent-foreground font-medium border-l-2 border-primary"
-                          : "border-l-2 border-transparent"
-                      }`}
-                    >
-                      {table}
-                    </button>
-                  ))}
+                  {(() => {
+                    const categoryOrder = ["App", "Package", "Core", "Unknown"];
+                    const categoryColors: Record<string, string> = {
+                      App: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+                      Package: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                      Core: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+                      Unknown: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300",
+                    };
+                    
+                    return categoryOrder.map((category) => {
+                      const tables = groupedTables[category] || [];
+                      if (tables.length === 0) return null;
+                      
+                      return (
+                        <div key={category}>
+                          <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider border-b border-border/50 ${categoryColors[category] || ""}`}>
+                            {category}
+                          </div>
+                          {tables.map((table) => (
+                            <button
+                              key={table}
+                              onClick={() => handleTableSelect(table)}
+                              className={`px-4 py-2.5 text-sm text-left hover:bg-muted/50 transition-colors w-full ${
+                                selectedTable === table
+                                  ? "bg-accent text-accent-foreground font-medium border-l-2 border-primary"
+                                  : "border-l-2 border-transparent"
+                              }`}
+                            >
+                              {table}
+                            </button>
+                          ))}
+                        </div>
+                      );
+                    });
+                  })()}
                   {tablesData?.tables.length === 0 && (
                     <div className="p-4 text-sm text-muted-foreground">
                       No tables found
