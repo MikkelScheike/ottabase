@@ -1,3 +1,4 @@
+import { api } from "@/lib/api";
 import { useApiMutation } from "@ottabase/ottaorm/client";
 import {
   Button,
@@ -5,7 +6,10 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  Checkbox,
+  Label,
 } from "@ottabase/ui-shadcn";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
@@ -24,12 +28,39 @@ interface InitResult {
   timestamp: string;
 }
 
+interface ModelsMetadataResponse {
+  models: Array<{
+    entityName: string;
+    modelName: string;
+    packageName: string;
+    packageType: "core" | "app" | "package";
+    tableName: string;
+    displayName?: string;
+    displayNamePlural?: string;
+  }>;
+  total: number;
+}
+
 export function MigrationStatusPage() {
   const [initResult, setInitResult] = useState<InitResult | null>(null);
+  const [categoryFilters, setCategoryFilters] = useState({
+    App: true,
+    Package: true,
+    Core: true,
+    Unknown: true,
+  });
 
   const initDb = useApiMutation<InitResult>({
     endpoint: "/api/ottaorm/init",
     method: "POST",
+  });
+
+  // Fetch models metadata
+  const { data: modelsMetadata } = useQuery<ModelsMetadataResponse>({
+    queryKey: ["models-metadata"],
+    queryFn: async () => {
+      return api<ModelsMetadataResponse>("/api/ottaorm/models-metadata");
+    },
   });
 
   // Auto-run on mount
@@ -51,47 +82,56 @@ export function MigrationStatusPage() {
   const isLoading = initDb.isPending;
   const error = initDb.error;
 
-  // Map table variable names to actual table names and categories
+  // Map table variable names to actual table names and categories using metadata from API
   const getTableInfo = (tableVarName: string) => {
-    // Core tables mapping
-    const coreTableMap: Record<string, string> = {
-      accountsTable: "accounts",
-      authenticatorsTable: "authenticators",
-      postsTable: "posts",
-      postTagsTable: "post_tags",
-      sessionsTable: "sessions",
-      tagsTable: "tags",
-      usersTable: "users",
-      verificationTokensTable: "verification_tokens",
-    };
-
-    // App tables mapping
-    const appTableMap: Record<string, string> = {
-      todosTable: "todos",
-    };
-
-    // Package tables mapping
-    const packageTableMap: Record<string, string> = {
-      shortlinksTable: "shortlinks",
-    };
-
-    if (coreTableMap[tableVarName]) {
-      return { actualName: coreTableMap[tableVarName], category: "Core" };
-    }
-    if (appTableMap[tableVarName]) {
-      return { actualName: appTableMap[tableVarName], category: "App" };
-    }
-    if (packageTableMap[tableVarName]) {
-      return { actualName: packageTableMap[tableVarName], category: "Package" };
+    if (!modelsMetadata?.models) {
+      return {
+        actualName: tableVarName,
+        category: 'Unknown' as const,
+        packageName: 'unknown'
+      };
     }
 
-    // Fallback - try to derive from variable name
-    const actualName = tableVarName
-      .replace(/Table$/, "")
-      .replace(/([A-Z])/g, "_$1")
-      .toLowerCase()
-      .replace(/^_/, "");
-    return { actualName, category: "Unknown" };
+    // Convert camelCase table variable name to snake_case entity name
+    // e.g., "verificationTokensTable" -> "verification_tokens"
+    const convertToSnakeCase = (str: string): string => {
+      // Remove "Table" suffix if present
+      let withoutSuffix = str.replace(/Table$/, "");
+      // Convert camelCase to snake_case
+      return withoutSuffix
+        .replace(/([a-z])([A-Z])/g, '$1_$2')
+        .toLowerCase();
+    };
+
+    // Try direct table name match first
+    let model = modelsMetadata.models.find(m => m.tableName === tableVarName);
+
+    // Try with "Table" suffix removed (e.g., "usersTable" -> "users")
+    if (!model && tableVarName.endsWith('Table')) {
+      const withoutSuffix = tableVarName.slice(0, -5);
+      model = modelsMetadata.models.find(m => m.tableName === withoutSuffix);
+    }
+
+    // Try converting camelCase to snake_case (e.g., "verificationTokensTable" -> "verification_tokens")
+    if (!model) {
+      const snakeCaseName = convertToSnakeCase(tableVarName);
+      model = modelsMetadata.models.find(m => m.tableName === snakeCaseName);
+    }
+
+    if (!model) {
+      // Fallback - derive from variable name
+      const actualName = convertToSnakeCase(tableVarName);
+      return { actualName, category: 'Unknown' as const, packageName: 'unknown' };
+    }
+
+    const category = model.packageType === 'core' ? 'Core' :
+                     model.packageType === 'app' ? 'App' : 'Package';
+
+    return {
+      actualName: model.tableName,
+      category,
+      packageName: model.packageName,
+    };
   };
 
   // Build table status map
@@ -199,10 +239,47 @@ export function MigrationStatusPage() {
 
               {/* Single Table View */}
               <div className="border rounded-lg overflow-hidden">
-                <div className="bg-muted/50 px-4 py-2 border-b">
+                <div className="bg-muted/50 px-4 py-2 border-b flex items-center justify-between">
                   <h3 className="font-medium text-sm">
-                    📊 All Tables ({initResult.details.tablesDetected.length})
+                    All Tables (
+                    {(() => {
+                      const filteredCount = initResult.details.tablesDetected.filter(
+                        (tableVarName) => {
+                          const category = getTableInfo(tableVarName).category;
+                          return categoryFilters[category as keyof typeof categoryFilters];
+                        }
+                      ).length;
+                      return filteredCount === initResult.details.tablesDetected.length
+                        ? initResult.details.tablesDetected.length
+                        : `${filteredCount} / ${initResult.details.tablesDetected.length}`;
+                    })()}
+                    )
                   </h3>
+                  <div className="flex items-center gap-4">
+                    <Label className="text-xs text-muted-foreground">Filter:</Label>
+                    <div className="flex items-center gap-3">
+                      {(['App', 'Package', 'Core'] as const).map((category) => (
+                        <div key={category} className="flex items-center gap-2">
+                          <Checkbox
+                            id={`filter-${category.toLowerCase()}`}
+                            checked={categoryFilters[category]}
+                            onCheckedChange={(checked) =>
+                              setCategoryFilters((prev) => ({
+                                ...prev,
+                                [category]: checked === true,
+                              }))
+                            }
+                          />
+                          <Label
+                            htmlFor={`filter-${category.toLowerCase()}`}
+                            className="text-xs cursor-pointer"
+                          >
+                            {category}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
@@ -215,14 +292,46 @@ export function MigrationStatusPage() {
                           Type
                         </th>
                         <th className="text-left px-4 py-2 font-medium">
+                          Package
+                        </th>
+                        <th className="text-left px-4 py-2 font-medium">
                           Status
                         </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                      {initResult.details.tablesDetected.map(
-                        (tableVarName, i) => {
-                          const { actualName, category } =
+                      {(() => {
+                        // Sort tables: App first, then Package, then Core, then Unknown
+                        const categoryOrder: Record<string, number> = {
+                          App: 0,
+                          Package: 1,
+                          Core: 2,
+                          Unknown: 3,
+                        };
+
+                        const sortedTables = [...initResult.details.tablesDetected]
+                          .filter((tableVarName) => {
+                            const category = getTableInfo(tableVarName).category;
+                            return categoryFilters[category as keyof typeof categoryFilters];
+                          })
+                          .sort((a, b) => {
+                            const categoryA = getTableInfo(a).category;
+                            const categoryB = getTableInfo(b).category;
+                            const orderA = categoryOrder[categoryA] ?? 999;
+                            const orderB = categoryOrder[categoryB] ?? 999;
+
+                            // If same category, sort alphabetically by table name
+                            if (orderA === orderB) {
+                              const nameA = getTableInfo(a).actualName;
+                              const nameB = getTableInfo(b).actualName;
+                              return nameA.localeCompare(nameB);
+                            }
+
+                            return orderA - orderB;
+                          });
+
+                        return sortedTables.map((tableVarName, i) => {
+                          const { actualName, category, packageName } =
                             getTableInfo(tableVarName);
                           const statusInfo = getTableStatus(tableVarName);
 
@@ -248,6 +357,11 @@ export function MigrationStatusPage() {
                                 </span>
                               </td>
                               <td className="px-4 py-2">
+                                <code className="text-xs text-muted-foreground">
+                                  {packageName}
+                                </code>
+                              </td>
+                              <td className="px-4 py-2">
                                 <span
                                   className={`flex items-center gap-1 ${statusInfo.color}`}
                                 >
@@ -259,8 +373,8 @@ export function MigrationStatusPage() {
                               </td>
                             </tr>
                           );
-                        },
-                      )}
+                        });
+                      })()}
                     </tbody>
                   </table>
                 </div>

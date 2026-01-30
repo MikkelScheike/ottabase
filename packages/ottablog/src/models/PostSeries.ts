@@ -4,7 +4,7 @@
  * OttaORM model for blog series - groups related posts into ordered collections.
  * Perfect for multi-part tutorials, article series, or themed content.
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { generateSlug } from "../types";
@@ -87,6 +87,8 @@ export class PostSeries extends BaseModel {
   static entity = "series";
   static table = seriesTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottablog";
+  static packageType: PackageType = "package";
 
   static casts = {
     coverImage: "json" as const,

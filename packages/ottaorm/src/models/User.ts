@@ -7,6 +7,7 @@ import {
   BaseModel,
   IModelConstructorParams,
   ModelFields,
+  type PackageType,
 } from "../base/BaseModel";
 
 /**
@@ -64,6 +65,8 @@ export class User extends BaseModel {
   static entity = "users";
   static table = usersTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   // UI/Forms metadata
   static displayName = "User";

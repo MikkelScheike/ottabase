@@ -4,7 +4,7 @@
  * OttaORM model for blog posts using @ottabase/ottablog schema.
  * Supports multiple content types, SEO, hero images, and OttaEditor content.
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import {
   calculateReadingTime,
   CONTENT_TYPES,
@@ -39,6 +39,8 @@ export class Post extends BaseModel {
   static entity = "posts";
   static table = postsTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottablog";
+  static packageType: PackageType = "package";
 
   static casts = {
     content: "json" as const,

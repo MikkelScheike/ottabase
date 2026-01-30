@@ -3,7 +3,7 @@
 // ============================================================
 
 import { primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { BaseModel, ModelFields } from "../base/BaseModel";
+import { BaseModel, ModelFields, type PackageType } from "../base/BaseModel";
 
 /**
  * VerificationToken table schema for Auth.js
@@ -60,6 +60,8 @@ export class VerificationToken extends BaseModel {
   static entity = "verification_tokens";
   static table = verificationTokensTable;
   static primaryKey = "identifier"; // Composite key (identifier, token) - use custom methods
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   protected static fields: ModelFields = {
     identifier: {

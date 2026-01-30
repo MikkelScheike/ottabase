@@ -4,7 +4,7 @@
  * OttaORM model for blog post version history.
  * Stores snapshots of post content on each save for version tracking.
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { postsTable } from "./Post";
@@ -98,6 +98,8 @@ export type NewPostVersionType = typeof postVersionsTable.$inferInsert;
 export class PostVersion extends BaseModel {
   static entity = "post_versions";
   static table = postVersionsTable;
+  static packageName = "@ottabase/ottablog";
+  static packageType: PackageType = "package";
   static primaryKey = "id";
 
   static casts = {

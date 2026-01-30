@@ -23,8 +23,8 @@
 		"clean": "rimraf dist",
 		"lint": "eslint src --ext .ts,.tsx",
 		"type-check": "tsc --noEmit",
-		"test": "vitest",
-		"test:coverage": "vitest --coverage"
+		"test": "vitest --passWithNoTests",
+		"test:coverage": "vitest --coverage --passWithNoTests"
 	},
 	"keywords": [
 		"react",

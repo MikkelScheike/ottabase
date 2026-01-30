@@ -2,7 +2,7 @@
 // Todo Model (App-specific)
 // ============================================================
 
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /**
@@ -52,6 +52,8 @@ export class Todo extends BaseModel {
   static entity = "todos";
   static table = todosTable;
   static primaryKey = "id";
+  static packageName = "app";
+  static packageType: PackageType = "app";
 
   static casts = {
     completed: "boolean" as const,

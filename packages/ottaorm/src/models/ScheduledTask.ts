@@ -8,6 +8,7 @@ import {
   BaseModel,
   IModelConstructorParams,
   ModelFields,
+  type PackageType,
 } from "../base/BaseModel";
 
 /**
@@ -84,6 +85,8 @@ export class ScheduledTask extends BaseModel {
   static entity = "scheduled_tasks";
   static table = scheduledTasksTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   static displayName = "Scheduled Task";
   static displayNamePlural = "Scheduled Tasks";

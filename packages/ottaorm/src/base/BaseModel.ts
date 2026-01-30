@@ -8,7 +8,7 @@ import type { DbDriver } from "@ottabase/db/drizzle";
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import type { SQLiteTable } from "drizzle-orm/sqlite-core";
 import { getConnection } from "../context";
-import { AbstractBaseModel, ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult } from "./AbstractBaseModel";
+import { AbstractBaseModel, ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult, PackageType } from "./AbstractBaseModel";
 
 export interface IModelConstructorParams {
   entity: string;
@@ -16,7 +16,7 @@ export interface IModelConstructorParams {
 }
 
 // Re-export types
-export type { ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult };
+export type { ModelFieldDescriptor, ModelFieldType, ModelFields, PaginationResult, PackageType };
 
 /**
  * Type guard to check if a connection is a SQL driver

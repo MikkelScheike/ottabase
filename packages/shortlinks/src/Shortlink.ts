@@ -2,7 +2,7 @@
 // Shortlink Model (Fat Model)
 // ============================================================
 
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { renderExpiredShortlinkPage } from "./pages/expired";
@@ -68,6 +68,8 @@ export class Shortlink extends BaseModel {
   static entity = "shortlinks";
   static table = shortlinksTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/shortlinks";
+  static packageType: PackageType = "package";
 
   static casts = {
     expiryDate: "date" as const,

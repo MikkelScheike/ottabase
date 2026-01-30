@@ -8,6 +8,11 @@
 export type ModelFieldType = 'string' | 'number' | 'integer' | 'float' | 'date' | 'datetime' | 'boolean' | 'id' | 'json' | 'array';
 
 /**
+ * Package type for model categorization
+ */
+export type PackageType = "core" | "app" | "package";
+
+/**
  * Relationship configuration for select/multiselect fields
  */
 export interface RelationshipConfig {
@@ -133,6 +138,20 @@ export abstract class AbstractBaseModel {
    * @default "default"
    */
   static connection: string = "default";
+
+  /**
+   * Package name (for metadata/registry)
+   * @example "@ottabase/ottaorm", "app", "@ottabase/shortlinks"
+   * If not set, defaults to "unknown"
+   */
+  static packageName?: string;
+
+  /**
+   * Package type (for categorization in UI)
+   * @example "core", "app", "package"
+   * If not set, defaults to "core"
+   */
+  static packageType?: PackageType;
 
   // ============================================================
   // STATIC PROPERTIES - UI/Forms Metadata

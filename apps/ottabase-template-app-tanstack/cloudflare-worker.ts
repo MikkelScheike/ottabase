@@ -29,13 +29,20 @@ import {
     User,
     autoInit,
     clearConnection,
+    getAllModelsMetadata,
     handleCrud,
     hasConnection,
     parseCrudRequest,
     registerConnection,
     registerModels,
 } from "@ottabase/ottaorm";
-import { ScheduledTask } from "@ottabase/ottaorm/models";
+import {
+    Account,
+    Authenticator,
+    ScheduledTask,
+    Session,
+    VerificationToken,
+} from "@ottabase/ottaorm/models";
 import {
     uploadFileToCloudflareImages,
     uploadFileToR2,
@@ -153,7 +160,6 @@ function initAdminCron(env: CloudflareEnv): Response | null {
   }
 
   registerConnection("default", createD1Driver(env.OBCF_D1));
-  registerModels([ScheduledTask]);
   return null;
 }
 
@@ -194,17 +200,14 @@ function initDbConnection(env: CloudflareEnv): void {
 
   registerConnection("default", createD1Driver(env.OBCF_D1));
   registerModels([
-    Shortlink,
+    // Core models
+    User, Tag, Account, Authenticator, Session, VerificationToken, ScheduledTask,
+    // Blog models
+    Post, PostTag, PostTagLink, PostCategory, PostSeries, PostVersion,
+    // Package models
+    Shortlink, ReferralTracking,
+    // App models
     Todo,
-    User,
-    Post,
-    PostTag,
-    PostTagLink,
-    Tag,
-    ReferralTracking,
-    PostCategory,
-    PostSeries,
-    PostVersion,
   ]);
 }
 
@@ -542,7 +545,8 @@ export default {
 
       if (
         url.pathname.startsWith("/api/ottaorm/") &&
-        url.pathname !== "/api/ottaorm/init"
+        url.pathname !== "/api/ottaorm/init" &&
+        url.pathname !== "/api/ottaorm/models-metadata"
       ) {
         if (!env.OBCF_D1) {
           return errorResponse("D1 database binding not configured", 500, {
@@ -2211,6 +2215,26 @@ export default {
       // ============================================================
 
       console.log("[DEBUG] Checking init route:", url.pathname, request.method);
+
+      // GET /api/ottaorm/models-metadata
+      if (url.pathname === "/api/ottaorm/models-metadata" && request.method === "GET") {
+        const metadataMap = getAllModelsMetadata();
+
+        const models = Array.from(metadataMap.entries()).map(([entityName, entry]) => ({
+          entityName,
+          modelName: entry.metadata.modelName,
+          packageName: entry.metadata.packageName,
+          packageType: entry.metadata.packageType,
+          tableName: entry.metadata.tableName,
+          displayName: entry.model.displayName,
+          displayNamePlural: entry.model.displayNamePlural,
+        }));
+
+        return jsonResponse({
+          models,
+          total: models.length,
+        });
+      }
 
       if (
         url.pathname === "/api/ottaorm/init" &&

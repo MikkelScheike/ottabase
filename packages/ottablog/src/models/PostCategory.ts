@@ -3,7 +3,7 @@
  *
  * OttaORM model for post categories with hierarchy support.
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { generateSlug } from "../types";
@@ -84,6 +84,8 @@ export class PostCategory extends BaseModel {
   static entity = "categories";
   static table = categoriesTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottablog";
+  static packageType: PackageType = "package";
 
   static casts = {
     sortOrder: "number" as const,

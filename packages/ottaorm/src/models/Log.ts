@@ -6,6 +6,7 @@ import {
   IMongoModelConstructorParams,
   ModelFields,
   MongoBaseModel,
+  type PackageType,
 } from "../base/MongoBaseModel";
 
 /**
@@ -54,6 +55,8 @@ export class Log extends MongoBaseModel {
   static entity = "logs";
   static connection = "mongodb"; // Use MongoDB connection
   static primaryKey = "_id";
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   static casts = {
     timestamp: "date" as const,

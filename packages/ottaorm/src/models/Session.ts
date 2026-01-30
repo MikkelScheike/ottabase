@@ -3,7 +3,7 @@
 // ============================================================
 
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { BaseModel, ModelFields } from "../base/BaseModel";
+import { BaseModel, ModelFields, type PackageType } from "../base/BaseModel";
 
 /**
  * Session table schema for Auth.js
@@ -55,6 +55,8 @@ export class Session extends BaseModel {
   static entity = "sessions";
   static table = sessionsTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   static casts = {
     createdAt: "date" as const,

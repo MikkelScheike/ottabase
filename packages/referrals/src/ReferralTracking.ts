@@ -2,7 +2,7 @@
 // ReferralTracking Model (Fat Model)
 // ============================================================
 
-import { BaseModel, ModelFields, User } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType, User } from "@ottabase/ottaorm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 /**
@@ -80,6 +80,8 @@ export class ReferralTracking extends BaseModel {
   static entity = "referral_tracking";
   static table = referralTrackingTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/referrals";
+  static packageType: PackageType = "package";
 
   static displayName = "Referral Tracking";
   static displayNamePlural = "Referral Trackings";

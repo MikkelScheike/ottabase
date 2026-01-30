@@ -14,12 +14,15 @@ export {
 // Model registry (for dynamic model lookup)
 export {
   clearModelRegistry,
+  getAllModelsMetadata,
   getModel,
+  getModelWithMetadata,
   getRegisteredModels,
   hasModel,
   registerModel,
   registerModels,
 } from "./registry";
+export type { ModelMetadata, ModelRegistryEntry } from "./registry";
 
 // Generic CRUD handler
 export { handleCrud, parseCrudRequest } from "./crud";
@@ -47,8 +50,9 @@ export { AbstractBaseModel, BaseModel } from "./base";
 export type {
   IModelConstructorParams,
   ModelFieldDescriptor,
-  ModelFieldType,
   ModelFields,
+  ModelFieldType,
+  PackageType,
   PaginationResult,
   RelationshipConfig,
 } from "./base";
@@ -60,19 +64,19 @@ export type {
  */
 export {
   Account,
+  accountsTable,
   // Auth.js SQL models (Edge-safe)
   Authenticator,
-  ScheduledTask,
-  Session,
-  Tag,
-  User,
-  VerificationToken,
-  accountsTable,
   authenticatorsTable,
+  ScheduledTask,
   scheduledTasksTable,
+  Session,
   sessionsTable,
+  Tag,
   tagsTable,
+  User,
   usersTable,
+  VerificationToken,
   verificationTokensTable,
 } from "./models";
 export type {

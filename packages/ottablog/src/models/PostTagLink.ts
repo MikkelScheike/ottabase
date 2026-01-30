@@ -3,7 +3,7 @@
  *
  * Junction table linking Posts to PostTags (many-to-many relationship).
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import {
 	index,
@@ -56,6 +56,8 @@ export class PostTagLink extends BaseModel {
 	static entity = "post_tag_links";
 	static table = postTagLinksTable;
 	static primaryKey = "postId"; // Composite key, using postId as primary
+	static packageName = "@ottabase/ottablog";
+	static packageType: PackageType = "package";
 
 	protected static fields: ModelFields = {
 		postId: {

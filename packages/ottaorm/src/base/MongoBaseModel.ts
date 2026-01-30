@@ -5,7 +5,7 @@
 // Schema-less approach with ORM-like interface
 // ============================================================
 
-import { AbstractBaseModel, PaginationResult, ModelFieldType, ModelFields, ModelFieldDescriptor } from "./AbstractBaseModel";
+import { AbstractBaseModel, PaginationResult, ModelFieldType, ModelFields, ModelFieldDescriptor, PackageType } from "./AbstractBaseModel";
 import { getConnection } from "../context";
 import type { MongoDriver } from "@ottabase/db/mongodb";
 import { ObjectId } from "mongodb";
@@ -16,7 +16,7 @@ export interface IMongoModelConstructorParams {
 }
 
 // Re-export types for convenience
-export type { ModelFieldType, ModelFieldDescriptor, ModelFields, PaginationResult };
+export type { ModelFieldType, ModelFieldDescriptor, ModelFields, PaginationResult, PackageType };
 
 /**
  * Type guard to check if a connection is a MongoDB driver

@@ -6,7 +6,7 @@
  *
  * For universal/core tags (non-blog), use Tag from @ottabase/ottaorm.
  */
-import { BaseModel, ModelFields } from "@ottabase/ottaorm";
+import { BaseModel, ModelFields, type PackageType } from "@ottabase/ottaorm";
 import { sql } from "drizzle-orm";
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
@@ -80,6 +80,8 @@ export class PostTag extends BaseModel {
 	static entity = "post_tags";
 	static table = postTagsTable;
 	static primaryKey = "id";
+	static packageName = "@ottabase/ottablog";
+	static packageType: PackageType = "package";
 
 	static casts = {
 		createdAt: "date" as const,

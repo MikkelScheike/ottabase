@@ -7,6 +7,7 @@ import {
   BaseModel,
   IModelConstructorParams,
   ModelFields,
+  type PackageType,
 } from "../base/BaseModel";
 
 /**
@@ -69,6 +70,8 @@ export class Account extends BaseModel {
   static entity = "accounts";
   static table = accountsTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   static casts = {
     expiresAt: 'number' as const,

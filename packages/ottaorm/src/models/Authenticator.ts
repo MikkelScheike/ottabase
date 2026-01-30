@@ -3,7 +3,7 @@
 // ============================================================
 
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { BaseModel, ModelFields } from "../base/BaseModel";
+import { BaseModel, ModelFields, type PackageType } from "../base/BaseModel";
 
 /**
  * Authenticator table schema for Auth.js WebAuthn/passkey support
@@ -60,6 +60,8 @@ export class Authenticator extends BaseModel {
   static entity = "authenticators";
   static table = authenticatorsTable;
   static primaryKey = "id";
+  static packageName = "@ottabase/ottaorm";
+  static packageType: PackageType = "core";
 
   static casts = {
     credentialBackedUp: "boolean" as const,

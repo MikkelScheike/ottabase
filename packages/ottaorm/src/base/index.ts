@@ -21,6 +21,7 @@ export type {
   ModelFieldType,
   ModelFieldDescriptor,
   ModelFields,
+  PackageType,
   PaginationResult,
   RelationshipConfig,
 } from './AbstractBaseModel';
