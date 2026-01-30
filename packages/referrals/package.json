@@ -17,11 +17,14 @@
   },
   "dependencies": {
     "@ottabase/db": "workspace:*",
-    "@ottabase/ottaorm": "workspace:*",
+    "@ottabase/ottaorm": "workspace:*"
+  },
+  "peerDependencies": {
     "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@ottabase/config": "workspace:*",
+    "drizzle-orm": "catalog:",
     "typescript": "catalog:"
   }
 }
