@@ -30,6 +30,8 @@
     "test:watch": "turbo test -- --watch",
     "test:ui": "turbo test -- --ui",
     "format": "prettier --write .",
+    "prepare": "husky",
+    "lint-staged": "lint-staged",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
     "cloudflare:setup": "pnpm --filter @ottabase/scripts exec cloudflare-setup",
@@ -55,7 +57,9 @@
     "css-loader": "catalog:",
     "eslint-plugin-storybook": "catalog:",
     "happy-dom": "^20.4.0",
+    "husky": "catalog:",
     "jsdom": "^27.4.0",
+    "lint-staged": "catalog:",
     "next-themes": "catalog:",
     "pnpm": "10.27.0",
     "postcss-loader": "catalog:",
@@ -73,5 +77,8 @@
   "engines": {
     "node": ">=24.0.0",
     "pnpm": ">=10.0.0"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,jsonc,css,scss,md,mdx,yml,yaml}": "prettier --write"
   }
 }
