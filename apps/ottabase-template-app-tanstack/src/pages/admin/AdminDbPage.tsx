@@ -39,6 +39,19 @@ interface TableDataResponse {
   };
 }
 
+interface ModelsMetadataResponse {
+  models: Array<{
+    entityName: string;
+    modelName: string;
+    packageName: string;
+    packageType: "core" | "app" | "package";
+    tableName: string;
+    displayName?: string;
+    displayNamePlural?: string;
+  }>;
+  total: number;
+}
+
 export function AdminDbPage() {
   const navigate = useNavigate();
   const search = useSearch({ from: "/admin/db" });
@@ -54,6 +67,14 @@ export function AdminDbPage() {
     queryKey: ["admin", "db", "tables"],
     queryFn: async () => {
       return api<{ tables: string[] }>("/api/admin/db/tables");
+    },
+  });
+
+  // Fetch models metadata
+  const { data: modelsMetadata } = useQuery<ModelsMetadataResponse>({
+    queryKey: ["models-metadata"],
+    queryFn: async () => {
+      return api<ModelsMetadataResponse>("/api/ottaorm/models-metadata");
     },
   });
 
@@ -176,6 +197,28 @@ export function AdminDbPage() {
     }
   };
 
+  // Get model metadata for a table name
+  const getTableMetadata = (tableName: string) => {
+    if (!modelsMetadata?.models) return null;
+
+    // Try exact match first
+    let model = modelsMetadata.models.find(
+      (m) => m.tableName === tableName || m.entityName === tableName,
+    );
+
+    // If not found, try snake_case conversion
+    if (!model) {
+      const snakeCaseName = tableName
+        .replace(/([a-z])([A-Z])/g, "$1_$2")
+        .toLowerCase();
+      model = modelsMetadata.models.find(
+        (m) => m.tableName === snakeCaseName || m.entityName === snakeCaseName,
+      );
+    }
+
+    return model || null;
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -242,10 +285,48 @@ export function AdminDbPage() {
           ) : (
             <Card>
               <CardHeader className="py-4 flex flex-row items-center justify-between space-y-0">
-                <div>
+                <div className="space-y-1">
                   <CardTitle className="text-xl font-mono">
                     {selectedTable}
                   </CardTitle>
+                  {(() => {
+                    const metadata = getTableMetadata(selectedTable);
+                    if (metadata) {
+                      const categoryColors: Record<string, string> = {
+                        core: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
+                        app: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
+                        package:
+                          "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
+                      };
+                      const categoryLabels: Record<string, string> = {
+                        core: "Core",
+                        app: "App",
+                        package: "Package",
+                      };
+                      return (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${
+                              categoryColors[metadata.packageType] ||
+                              "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                            }`}
+                          >
+                            {categoryLabels[metadata.packageType] ||
+                              metadata.packageType}
+                          </span>
+                          <code className="text-xs text-muted-foreground">
+                            {metadata.packageName}
+                          </code>
+                          {metadata.modelName && (
+                            <span className="text-xs text-muted-foreground">
+                              • Model: <code>{metadata.modelName}</code>
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                   <CardDescription>
                     {tableLoading
                       ? "Loading..."
