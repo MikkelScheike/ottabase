@@ -3,8 +3,12 @@
  *
  * Lists all blog posts with filtering, status management, and CRUD operations.
  */
-import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import {
+  CONTENT_TYPES,
+  POST_STATUSES,
+  type ContentType,
+  type PostStatus,
+} from "@ottabase/ottablog";
 import { createModelHooks } from "@ottabase/ottaorm/client";
 import {
   Badge,
@@ -16,19 +20,19 @@ import {
   CardTitle,
   Input,
 } from "@ottabase/ui-shadcn";
+import { Link } from "@tanstack/react-router";
 import {
+  Clock,
+  Edit,
+  Eye,
+  FileText,
+  Filter,
   Plus,
   Search,
-  Edit,
-  Trash2,
-  Eye,
   Star,
-  StarOff,
-  FileText,
-  Clock,
-  Filter,
+  Trash2,
 } from "lucide-react";
-import { CONTENT_TYPES, POST_STATUSES, type ContentType, type PostStatus } from "@ottabase/ottablog";
+import { useState } from "react";
 
 interface BlogPost {
   id: string;
@@ -154,8 +158,11 @@ export function AdminBlogListPage() {
               <Filter className="h-4 w-4 text-muted-foreground" />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as PostStatus | "all")}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as PostStatus | "all")
+                }
                 className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+                aria-label="Filter by status"
               >
                 <option value="all">All Status</option>
                 {Object.entries(POST_STATUSES).map(([value, { label }]) => (
@@ -169,8 +176,11 @@ export function AdminBlogListPage() {
             {/* Content Type Filter */}
             <select
               value={contentTypeFilter}
-              onChange={(e) => setContentTypeFilter(e.target.value as ContentType | "all")}
+              onChange={(e) =>
+                setContentTypeFilter(e.target.value as ContentType | "all")
+              }
               className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+              aria-label="Filter by content type"
             >
               <option value="all">All Types</option>
               {Object.entries(CONTENT_TYPES).map(([value, { label }]) => (
@@ -204,7 +214,8 @@ export function AdminBlogListPage() {
             )}
           </CardTitle>
           <CardDescription>
-            {filteredPosts.length} post{filteredPosts.length !== 1 ? "s" : ""} found
+            {filteredPosts.length} post{filteredPosts.length !== 1 ? "s" : ""}{" "}
+            found
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -266,9 +277,7 @@ export function AdminBlogListPage() {
                         <Eye className="h-3 w-3" />
                         {post.viewCount} views
                       </span>
-                      {post.authorName && (
-                        <span>by {post.authorName}</span>
-                      )}
+                      {post.authorName && <span>by {post.authorName}</span>}
                       <span>
                         {post.status === "published"
                           ? `Published ${formatDate(post.publishedAt)}`

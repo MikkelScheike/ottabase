@@ -108,6 +108,7 @@ export function BlogListPage() {
             value={contentType}
             onChange={(e) => setContentType(e.target.value as ContentType | "")}
             className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+            aria-label="Filter by content type"
           >
             <option value="">All Types</option>
             {Object.entries(CONTENT_TYPES).map(([value, { label }]) => (
@@ -122,6 +123,7 @@ export function BlogListPage() {
               value={seriesFilter}
               onChange={(e) => setSeriesFilter(e.target.value)}
               className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+              aria-label="Filter by series"
             >
               <option value="">All Series</option>
               {series.map((s) => (
