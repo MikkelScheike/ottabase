@@ -38,17 +38,24 @@ const appDir = path.join(__dirname, 'apps/ottabase-template-app-tanstack');
 const PORT_FE = process.env.PORT_FE || 3003;
 const PORT_BE = process.env.PORT_BE || 3004;
 
+// Check for --noopen flag
+const noOpen = process.argv.includes('--noopen');
+
 log.info('Starting TanStack app in development mode...');
 log.info(`Platform: ${process.platform}`);
 log.info(`App directory: ${appDir}`);
 log.info(`Frontend Port: ${PORT_FE}`);
 log.info(`Backend Port: ${PORT_BE}`);
+if (noOpen) {
+    log.info('Browser auto-open disabled (--noopen flag)');
+}
 
 // Start frontend (Vite)
 log.info('Starting frontend (Vite)...');
+const frontendArgs = noOpen ? ['exec', 'vite'] : ['dev'];
 const frontend = spawn(
     isWindows ? 'pnpm.cmd' : 'pnpm',
-    ['dev'],
+    frontendArgs,
     {
         cwd: appDir,
         stdio: 'pipe',
