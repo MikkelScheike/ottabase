@@ -107,17 +107,22 @@ export function ModelCrud<T extends Record<string, unknown>>({
                 };
             }
 
-            // Handle wrapped response { users: [...] } or { data: [...] }
+            // Handle wrapped response { users: [...] } or { data: [...], pagination?: {...} } (OttaORM standard)
             const items = data[config.entity] || data.data || data;
             if (Array.isArray(items)) {
+                const pagination = data.pagination;
+                const total = data.total ?? pagination?.total ?? items.length;
+                const page = data.page ?? pagination?.page ?? 1;
+                const perPage = data.perPage ?? pagination?.perPage ?? items.length;
+                const totalPages = data.totalPages ?? pagination?.totalPages ?? Math.max(1, Math.ceil(total / perPage));
                 return {
                     data: items,
-                    total: data.total ?? items.length,
-                    page: data.page ?? 1,
-                    perPage: data.perPage ?? items.length,
-                    totalPages: data.totalPages ?? 1,
-                    hasNextPage: data.hasNextPage ?? false,
-                    hasPrevPage: data.hasPrevPage ?? false,
+                    total,
+                    page,
+                    perPage,
+                    totalPages,
+                    hasNextPage: data.hasNextPage ?? page < totalPages,
+                    hasPrevPage: data.hasPrevPage ?? page > 1,
                 };
             }
 
