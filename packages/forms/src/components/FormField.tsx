@@ -53,14 +53,21 @@ export function FormField({
         return typeof value === 'object' && value.constructor === Object;
     }, [value]);
 
+    // Use JSON editor when field is explicitly 'json' or when value is an object (basic JSON edit instead of [Object])
+    const useJsonEditor = fieldType === 'json' || (isObjectValue && fieldType !== 'readonly');
+
     const renderField = () => {
-        // If value is an object and field type is not explicitly json/readonly, show as readonly "[Object]"
-        // This prevents manual editing of complex objects that could break data structure
-        if (isObjectValue && fieldType !== 'json' && fieldType !== 'readonly') {
+        if (useJsonEditor) {
             return (
-                <div className={clsx(baseInputClasses, 'bg-gray-50 dark:bg-gray-900 cursor-not-allowed py-2')}>
-                    <span className="text-gray-600 dark:text-gray-400">[Object]</span>
-                </div>
+                <JsonField
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                    disabled={disabled}
+                    placeholder={placeholder || '{}'}
+                    rows={formConfig.rows || 6}
+                    className={clsx(baseInputClasses, 'font-mono text-sm resize-y min-h-[150px]')}
+                />
             );
         }
 
@@ -251,26 +258,6 @@ export function FormField({
                     />
                 );
 
-            case 'json':
-                return (
-                    <textarea
-                        id={name}
-                        name={name}
-                        value={typeof value === 'string' ? value : JSON.stringify(value, null, 2)}
-                        onChange={(e) => {
-                            try {
-                                onChange(JSON.parse(e.target.value));
-                            } catch {
-                                onChange(e.target.value);
-                            }
-                        }}
-                        placeholder={placeholder || '{}'}
-                        disabled={disabled}
-                        rows={formConfig.rows || 6}
-                        className={clsx(baseInputClasses, 'font-mono text-sm resize-y min-h-[150px]')}
-                    />
-                );
-
             case 'hidden':
                 return <input type="hidden" name={name} value={String(value || '')} />;
 
@@ -328,6 +315,93 @@ export function FormField({
 // ============================================================
 // Helper Components
 // ============================================================
+
+/**
+ * JSON field: textarea with stringify/parse. Shows "Invalid JSON" when current text doesn't parse.
+ * Used for fieldType 'json' and for object values (instead of [Object]).
+ * Keeps local text while user types invalid JSON so input isn't reverted.
+ */
+function JsonField({
+    name,
+    value,
+    onChange,
+    disabled,
+    placeholder,
+    rows,
+    className,
+}: {
+    name: string;
+    value: unknown;
+    onChange: (value: unknown) => void;
+    disabled: boolean;
+    placeholder: string;
+    rows: number;
+    className: string;
+}) {
+    const fromProps =
+        typeof value === 'string' ? value : value === null || value === undefined ? '' : JSON.stringify(value, null, 2);
+    const [localText, setLocalText] = React.useState<string | null>(null);
+    const [parseError, setParseError] = React.useState<string | null>(null);
+    const displayValue = localText !== null ? localText : fromProps;
+
+    const handleChange = useCallback(
+        (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+            const raw = e.target.value;
+            setLocalText(raw);
+            if (raw.trim() === '') {
+                setParseError(null);
+                onChange(null);
+                return;
+            }
+            try {
+                const parsed = JSON.parse(raw);
+                setParseError(null);
+                setLocalText(null);
+                onChange(parsed);
+            } catch {
+                setParseError('Invalid JSON');
+            }
+        },
+        [onChange],
+    );
+
+    // When parent value changes (e.g. form reset), clear local text and sync display
+    React.useEffect(() => {
+        setLocalText(null);
+        if (typeof value === 'string' && value.trim() !== '') {
+            try {
+                JSON.parse(value);
+                setParseError(null);
+            } catch {
+                setParseError('Invalid JSON');
+            }
+        } else {
+            setParseError(null);
+        }
+    }, [value]);
+
+    return (
+        <div className="space-y-1">
+            <textarea
+                id={name}
+                name={name}
+                value={displayValue}
+                onChange={handleChange}
+                placeholder={placeholder}
+                disabled={disabled}
+                rows={rows}
+                className={className}
+                spellCheck={false}
+            />
+            {parseError && (
+                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    {parseError}
+                </p>
+            )}
+        </div>
+    );
+}
 
 function PasswordField({
     value,
