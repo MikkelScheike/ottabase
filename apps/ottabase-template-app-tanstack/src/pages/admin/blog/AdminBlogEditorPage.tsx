@@ -6,6 +6,7 @@
  */
 import {
     CONTENT_TYPES,
+    formatDate,
     POST_STATUSES,
     generateSlug,
     type ContentType,
@@ -20,10 +21,11 @@ import {
     type OutputData,
     type ToolSettings,
 } from '@ottabase/ottaeditor';
+import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
 import { createModelHooks } from '@ottabase/ottaorm/client';
+import { useQueryClient } from '@tanstack/react-query';
 import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
 import {
-    Badge,
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -32,6 +34,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    Badge,
     Button,
     Card,
     CardContent,
@@ -69,7 +72,7 @@ import {
     User,
     X,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 interface BlogPost {
     id: string;
@@ -204,36 +207,85 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const [maxVersionsToKeep, setMaxVersionsToKeep] = useState<number | null>(initialData?.maxVersionsToKeep || null);
 
     // Fetch series list for dropdown
-    const { data: seriesListData } = blogSeriesHooks.useList();
+    const { data: seriesListData } = blogSeriesHooks.useList(undefined, SERIES_LIST_QUERY_CONFIG);
     const seriesList = seriesListData?.data || [];
 
-    // Fetch version history for this post (edit mode only)
-    const { data: versionsData, refetch: refetchVersions } = blogPostVersionHooks.useList({
-        where: postId ? { postId } : undefined,
-        orderBy: 'versionNumber',
-        orderDirection: 'desc',
-        limit: 20,
-    });
-    const versions = isEditMode ? versionsData || [] : [];
+    const {
+        data: versionsData,
+        refetch: refetchVersions,
+        isLoading: isLoadingVersions,
+    } = blogPostVersionHooks.useList(
+        {
+            where: postId ? { postId } : undefined,
+            orderBy: 'versionNumber',
+            orderDirection: 'desc',
+            limit: 20,
+        },
+        {
+            enabled: isEditMode && !!postId,
+            ...VERSION_HISTORY_QUERY_CONFIG,
+        },
+    );
+    // Normalize: API may return array or { data: array, pagination }
+    const versions = useMemo(() => {
+        if (!isEditMode) return [];
+        if (Array.isArray(versionsData)) return versionsData;
+        const data = versionsData as { data?: BlogPostVersion[] } | undefined;
+        return Array.isArray(data?.data) ? data.data : [];
+    }, [isEditMode, versionsData]);
     const versionHistory = versions.length > 0 ? versions.slice(1) : [];
 
     // API hooks
     const createPost = blogPostHooks.useCreate();
     const updatePost = blogPostHooks.useUpdate();
+    const deletePost = blogPostHooks.useDelete();
     const createVersion = blogPostVersionHooks.useCreate();
     const deleteVersion = blogPostVersionHooks.useDelete();
 
     const isSaving = createPost.isPending || updatePost.isPending;
+    const queryClient = useQueryClient();
 
     // Active tab
     const [activeTab, setActiveTab] = useState('content');
     const [previewVersion, setPreviewVersion] = useState<BlogPostVersion | null>(null);
     const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [loadVersionDialog, setLoadVersionDialog] = useState<{ open: boolean; versionNumber?: number } | null>(null);
-    const [deleteVersionDialog, setDeleteVersionDialog] = useState<{ open: boolean; versionId?: string; versionNumber?: number } | null>(null);
+    const [deleteVersionDialog, setDeleteVersionDialog] = useState<{
+        open: boolean;
+        versionId?: string;
+        versionNumber?: number;
+    } | null>(null);
     const [deletePostDialog, setDeletePostDialog] = useState(false);
-    const [alertDialog, setAlertDialog] = useState<{ open: boolean; title: string; message: string }>({ open: false, title: '', message: '' });
+    const [alertDialog, setAlertDialog] = useState<{ open: boolean; title: string; message: string }>({
+        open: false,
+        title: '',
+        message: '',
+    });
     const [slugError, setSlugError] = useState<string | null>(null);
+    const justSavedRef = useRef(false);
+
+    // After save we invalidate; when initialData refreshes, sync form state so isDirty stays false
+    useEffect(() => {
+        if (!justSavedRef.current || !initialData) return;
+        justSavedRef.current = false;
+        setTitle(initialData.title ?? '');
+        setSlug(initialData.slug ?? '');
+        setExcerpt(initialData.excerpt ?? '');
+        setContentType(initialData.contentType ?? 'blog');
+        setStatus(initialData.status ?? 'draft');
+        setAuthorName(initialData.authorName ?? '');
+        setIsFeatured(initialData.isFeatured ?? false);
+        setAllowComments(initialData.allowComments ?? true);
+        setPublishedAt(initialData.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '');
+        setHeroImage(initialData.heroImage ?? null);
+        setSeoTitle(initialData.seoMeta?.title ?? '');
+        setSeoDescription(initialData.seoMeta?.description ?? '');
+        setSeoKeywords(initialData.seoMeta?.keywords?.join(', ') ?? '');
+        setSeoNoIndex(initialData.seoMeta?.noIndex ?? false);
+        setSeriesId(initialData.seriesId ?? null);
+        setSeriesOrder(initialData.seriesOrder ?? null);
+        setMaxVersionsToKeep(initialData.maxVersionsToKeep ?? null);
+    }, [initialData]);
 
     // Content editors - initialData is guaranteed to be available in edit mode
     const mainEditor = useOttaEditor({
@@ -251,13 +303,70 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         data: initialData?.footnotes ?? undefined,
     });
 
-    const formatDate = (date: string) => {
-        return new Date(date).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-        });
-    };
+    // Dirty state: form fields or any editor (EditorJS) has changes (Save enabled when dirty in edit mode)
+    const isDirty = useMemo(() => {
+        if (!initialData && !isEditMode) return true; // New post: allow save
+        const formSame =
+            initialData &&
+            title === (initialData.title ?? '') &&
+            slug === (initialData.slug ?? '') &&
+            excerpt === (initialData.excerpt ?? '') &&
+            contentType === initialData.contentType &&
+            status === initialData.status &&
+            authorName === (initialData.authorName ?? '') &&
+            isFeatured === initialData.isFeatured &&
+            allowComments === initialData.allowComments &&
+            (publishedAt || '') ===
+                (initialData.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '') &&
+            (seriesId ?? '') === (initialData.seriesId ?? '') &&
+            (seriesOrder ?? '') === (initialData.seriesOrder ?? '') &&
+            (maxVersionsToKeep ?? '') === (initialData.maxVersionsToKeep ?? '') &&
+            JSON.stringify(heroImage) === JSON.stringify(initialData.heroImage) &&
+            JSON.stringify({
+                title: seoTitle,
+                description: seoDescription,
+                keywords: seoKeywords
+                    ?.split(',')
+                    .map((k) => k.trim())
+                    .filter(Boolean),
+                noIndex: seoNoIndex,
+            }) ===
+                JSON.stringify({
+                    title: initialData.seoMeta?.title ?? '',
+                    description: initialData.seoMeta?.description ?? '',
+                    keywords: initialData.seoMeta?.keywords ?? [],
+                    noIndex: initialData.seoMeta?.noIndex ?? false,
+                });
+        const formDirty = !initialData ? false : !formSame;
+        const editorDirty =
+            mainEditor.hasUnsavedChanges || notesEditor.hasUnsavedChanges || footnotesEditor.hasUnsavedChanges;
+        return formDirty || editorDirty;
+    }, [
+        title,
+        slug,
+        excerpt,
+        contentType,
+        status,
+        authorName,
+        isFeatured,
+        allowComments,
+        publishedAt,
+        seriesId,
+        seriesOrder,
+        maxVersionsToKeep,
+        heroImage,
+        seoTitle,
+        seoDescription,
+        seoKeywords,
+        seoNoIndex,
+        initialData,
+        isEditMode,
+        mainEditor.hasUnsavedChanges,
+        notesEditor.hasUnsavedChanges,
+        footnotesEditor.hasUnsavedChanges,
+    ]);
+
+    const saveDisabled = isSaving || (isEditMode && !isDirty);
 
     const applyVersionToEditor = async (version: BlogPostVersion) => {
         if (!version) return;
@@ -303,65 +412,57 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const hasPreviewContent = previewPost?.content?.blocks && previewPost.content.blocks.length > 0;
     const hasPreviewFootnotes = previewPost?.footnotes?.blocks && previewPost.footnotes.blocks.length > 0;
 
-    useEffect(() => {
-        const baseSlug = (slug || generateSlug(title)).trim();
-        if (!baseSlug) {
-            setSlugStatus('idle');
-            setSlugError(null);
-            return;
-        }
-
-        const isSlugValid = /^[A-Za-z0-9_-]+$/.test(baseSlug);
-        if (!isSlugValid) {
-            setSlugStatus('idle');
-            setSlugError('Slug can only contain letters, numbers, hyphens, and underscores.');
-            return;
-        }
-
-        setSlugError(null);
-
-        let cancelled = false;
-        setSlugStatus('checking');
-
-        const timer = setTimeout(async () => {
-            try {
-                const params = new URLSearchParams();
-                params.set('uniqueField', 'slug');
-                params.set('uniqueValue', baseSlug);
-                if (postId) {
-                    params.set('uniqueIgnoreId', postId);
-                }
-                if (initialData?.appId) {
-                    params.set('where', JSON.stringify({ appId: initialData.appId }));
-                }
-
-                const response = await fetch(`/api/ottaorm/posts/unique?${params.toString()}`);
-                if (!response.ok) {
-                    if (!cancelled) setSlugStatus('idle');
-                    return;
-                }
-
-                const result = (await response.json()) as { unique?: boolean };
-                if (!cancelled) {
-                    setSlugStatus(result.unique ? 'available' : 'taken');
-                }
-            } catch {
-                if (!cancelled) setSlugStatus('idle');
+    // Slug availability check: run only on Title or Slug blur (not on every keystroke)
+    const doSlugCheck = useCallback(
+        (slugToCheck?: string) => {
+            const toCheck = (slugToCheck ?? (slug || generateSlug(title))).trim();
+            if (!toCheck) {
+                setSlugStatus('idle');
+                setSlugError(null);
+                return;
             }
-        }, 350);
+            const isSlugValid = /^[A-Za-z0-9_-]+$/.test(toCheck);
+            if (!isSlugValid) {
+                setSlugStatus('idle');
+                setSlugError('Slug can only contain letters, numbers, hyphens, and underscores.');
+                return;
+            }
+            setSlugError(null);
+            setSlugStatus('checking');
+            const params = new URLSearchParams();
+            params.set('uniqueField', 'slug');
+            params.set('uniqueValue', toCheck);
+            if (postId) params.set('uniqueIgnoreId', postId);
+            if (initialData?.appId) params.set('where', JSON.stringify({ appId: initialData.appId }));
+            fetch(`/api/ottaorm/posts/unique?${params.toString()}`)
+                .then((res) => res.json())
+                .then((result: { unique?: boolean }) => setSlugStatus(result.unique ? 'available' : 'taken'))
+                .catch(() => setSlugStatus('idle'));
+        },
+        [slug, title, postId, initialData?.appId],
+    );
 
-        return () => {
-            cancelled = true;
-            clearTimeout(timer);
-        };
-    }, [slug, title, postId, initialData?.appId]);
+    // Initial slug (from server) – only run availability check when slug has changed from this
+    const initialSlug = (initialData?.slug ?? '').trim();
 
-    // Auto-generate slug from title
+    // Auto-generate slug from title only on Title blur (not on every keystroke)
     const handleTitleChange = (newTitle: string) => {
         setTitle(newTitle);
+        setSlugStatus('idle');
+    };
+
+    const handleTitleBlur = () => {
         if (!isEditMode || !slug) {
-            setSlug(generateSlug(newTitle));
+            const newSlug = generateSlug(title);
+            setSlug(newSlug);
+            if (newSlug !== initialSlug) doSlugCheck(newSlug);
+        } else if (slug.trim() !== initialSlug) {
+            doSlugCheck();
         }
+    };
+
+    const handleSlugBlur = () => {
+        if (slug.trim() !== initialSlug) doSlugCheck();
     };
 
     // Handle hero image upload
@@ -457,12 +558,20 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
 
         const baseSlug = (slug || generateSlug(title)).trim();
         if (!/^[A-Za-z0-9_-]+$/.test(baseSlug)) {
-            setAlertDialog({ open: true, title: 'Validation Error', message: 'Slug can only contain letters, numbers, hyphens, and underscores.' });
+            setAlertDialog({
+                open: true,
+                title: 'Validation Error',
+                message: 'Slug can only contain letters, numbers, hyphens, and underscores.',
+            });
             return;
         }
 
         if (slugStatus === 'taken') {
-            setAlertDialog({ open: true, title: 'Validation Error', message: 'Slug already in use. Please choose a different slug.' });
+            setAlertDialog({
+                open: true,
+                title: 'Validation Error',
+                message: 'Slug already in use. Please choose a different slug.',
+            });
             return;
         }
 
@@ -501,7 +610,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                 content: content || undefined,
                 contentType,
                 status: publishNow ? 'published' : status,
-                heroImage: heroImage || undefined,
+                heroImage,
                 seoMeta,
                 privateNotes: privateNotes || undefined,
                 footnotes: footnotes || undefined,
@@ -536,6 +645,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
 
             if (isEditMode && postId) {
                 await updatePost.mutateAsync({ id: postId, data: postData });
+                justSavedRef.current = true;
+                // Invalidate post detail; when initialData refreshes we sync form state so isDirty stays false
+                queryClient.invalidateQueries({ queryKey: ['posts'] });
 
                 // Prune old versions if setting is enabled
                 if (maxVersionsToKeep && maxVersionsToKeep > 0) {
@@ -543,11 +655,17 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                     const latestVersions = ((refreshed.data || []) as BlogPostVersion[]) ?? [];
                     await pruneOldVersions(latestVersions, maxVersionsToKeep);
                 }
+                // Stay on same editor page after save
             } else {
-                await createPost.mutateAsync(postData);
+                const created = await createPost.mutateAsync(postData);
+                justSavedRef.current = true;
+                // Go to the new post's editor so user stays on "blog details" for that post
+                if (created?.id) {
+                    navigate({ to: '/admin/blog/$postId/edit', params: { postId: created.id } });
+                } else {
+                    navigate({ to: '/admin/blog' });
+                }
             }
-
-            navigate({ to: '/admin/blog' });
         } catch (error) {
             console.error('Failed to save post:', error);
             setAlertDialog({ open: true, title: 'Error', message: 'Failed to save post. Please try again.' });
@@ -557,8 +675,8 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const handleLoadVersion = async () => {
         if (loadVersionDialog?.open && loadVersionDialog.versionNumber !== undefined) {
             try {
-                // Find the version object by versionNumber
-                const version = allVersions?.find((v) => v.versionNumber === loadVersionDialog.versionNumber);
+                // Find the version object by versionNumber (fixed: use 'versions' not 'allVersions')
+                const version = versions?.find((v) => v.versionNumber === loadVersionDialog.versionNumber);
                 if (version) {
                     await applyVersionToEditor(version);
                 }
@@ -589,22 +707,10 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     };
 
     const handleDeletePost = async () => {
-        if (deletePostDialog) {
+        if (deletePostDialog && postId) {
             try {
-                if (!postId) {
-                    console.error('No post ID available for deletion');
-                    return;
-                }
-
-                const response = await fetch(`/api/admin/blog/${encodeURIComponent(postId)}`, {
-                    method: 'DELETE',
-                });
-
-                if (!response.ok) {
-                    const errorData = (await response.json()) as { error?: string };
-                    throw new Error(errorData.error || 'Failed to delete post');
-                }
-
+                // Use OttaORM delete hook (same as list page) instead of non-existent /api/admin/blog/:id
+                await deletePost.mutateAsync(postId);
                 navigate({ to: '/admin/blog' });
             } catch (error) {
                 console.error('Failed to delete post:', error);
@@ -641,7 +747,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                     <Badge variant={status === 'published' ? 'default' : 'secondary'}>
                         {POST_STATUSES[status].label}
                     </Badge>
-                    <Button variant="outline" onClick={() => handleSave(false)} disabled={isSaving}>
+                    <Button variant="outline" onClick={() => handleSave(false)} disabled={saveDisabled}>
                         {isSaving ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -649,7 +755,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                         )}
                         Save
                     </Button>
-                    <Button onClick={() => handleSave(true)} disabled={isSaving}>
+                    <Button onClick={() => handleSave(true)} disabled={saveDisabled}>
                         {isSaving ? (
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
@@ -673,6 +779,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                     id="title"
                                     value={title}
                                     onChange={(e) => handleTitleChange(e.target.value)}
+                                    onBlur={handleTitleBlur}
                                     placeholder="Enter post title..."
                                     className="text-lg font-semibold"
                                 />
@@ -682,7 +789,11 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                 <Input
                                     id="slug"
                                     value={slug}
-                                    onChange={(e) => setSlug(e.target.value)}
+                                    onChange={(e) => {
+                                        setSlug(e.target.value);
+                                        setSlugStatus('idle');
+                                    }}
+                                    onBlur={handleSlugBlur}
                                     placeholder="url-friendly-slug"
                                     aria-invalid={slugStatus === 'taken' || !!slugError}
                                     className={
@@ -1088,9 +1199,26 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                 <p className="text-xs text-muted-foreground">
                                     Older versions will be automatically deleted on save
                                 </p>
+                                {isEditMode &&
+                                    maxVersionsToKeep != null &&
+                                    maxVersionsToKeep > 0 &&
+                                    versions.length > maxVersionsToKeep && (
+                                        <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+                                            {versions.length - maxVersionsToKeep} version
+                                            {versions.length - maxVersionsToKeep === 1 ? '' : 's'} in the database would
+                                            be deleted on next save.
+                                        </p>
+                                    )}
                             </div>
 
-                            {isEditMode && versionHistory.length > 0 && (
+                            {isEditMode && isLoadingVersions && (
+                                <div className="flex items-center justify-center p-4 text-sm text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Loading version history...
+                                </div>
+                            )}
+
+                            {isEditMode && !isLoadingVersions && versionHistory.length > 0 && (
                                 <div className="space-y-2">
                                     <Label>Recent Versions ({versionHistory.length})</Label>
                                     <div className="max-h-[200px] overflow-y-auto rounded-md border divide-y">
@@ -1128,7 +1256,12 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                                         variant="outline"
                                                         size="sm"
                                                         className="h-6 px-2"
-                                                        onClick={() => setLoadVersionDialog({ open: true, versionNumber: version.versionNumber })}
+                                                        onClick={() =>
+                                                            setLoadVersionDialog({
+                                                                open: true,
+                                                                versionNumber: version.versionNumber,
+                                                            })
+                                                        }
                                                     >
                                                         Load
                                                     </Button>
@@ -1136,7 +1269,13 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                                         variant="ghost"
                                                         size="sm"
                                                         className="h-6 px-2 text-destructive hover:text-destructive"
-                                                        onClick={() => setDeleteVersionDialog({ open: true, versionId: version.id, versionNumber: version.versionNumber })}
+                                                        onClick={() =>
+                                                            setDeleteVersionDialog({
+                                                                open: true,
+                                                                versionId: version.id,
+                                                                versionNumber: version.versionNumber,
+                                                            })
+                                                        }
                                                     >
                                                         <Trash2 className="h-3 w-3" />
                                                     </Button>
@@ -1275,9 +1414,11 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                 </DialogContent>
             </Dialog>
 
-
             {/* Load Version Confirmation Dialog */}
-            <AlertDialog open={loadVersionDialog?.open ?? false} onOpenChange={(open) => !open && setLoadVersionDialog(null)}>
+            <AlertDialog
+                open={loadVersionDialog?.open ?? false}
+                onOpenChange={(open) => !open && setLoadVersionDialog(null)}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Load Version?</AlertDialogTitle>
@@ -1287,15 +1428,16 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleLoadVersion}>
-                            Load
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleLoadVersion}>Load</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
 
             {/* Delete Version Confirmation Dialog */}
-            <AlertDialog open={deleteVersionDialog?.open ?? false} onOpenChange={(open) => !open && setDeleteVersionDialog(null)}>
+            <AlertDialog
+                open={deleteVersionDialog?.open ?? false}
+                onOpenChange={(open) => !open && setDeleteVersionDialog(null)}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Version?</AlertDialogTitle>
@@ -1305,7 +1447,10 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteVersion} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        <AlertDialogAction
+                            onClick={handleDeleteVersion}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -1317,13 +1462,14 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Post?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this post?
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>Are you sure you want to delete this post?</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeletePost} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                        <AlertDialogAction
+                            onClick={handleDeletePost}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
                             Delete
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -1331,7 +1477,10 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             </AlertDialog>
 
             {/* General Alert Dialog */}
-            <AlertDialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}>
+            <AlertDialog
+                open={alertDialog.open}
+                onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>

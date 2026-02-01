@@ -2,11 +2,15 @@
  * BlogRenderer Component
  *
  * Renders blog post content with all metadata using EditorJS renderer.
+ * Supports hooks and themes for extensibility.
  * This is a reusable component that can be used in any app.
  */
-import React from 'react';
-import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
-import type { HeroImage, SeoMeta, EditorJSData } from '../types';
+import './BlogRenderer.css';
+import React, { useEffect, useMemo, useState } from 'react';
+import { applyFilters, doAction, HOOKS } from '../hooks';
+import { defaultTheme, getActiveTheme, getTheme } from '../themes';
+import { formatDate as defaultFormatDate } from '../types';
+import type { EditorJSData, HeroImage, SeoMeta } from '../types';
 
 export interface BlogPostData {
     id: string;
@@ -64,19 +68,15 @@ export interface BlogRendererProps {
     renderSeriesNav?: (post: BlogPostData) => React.ReactNode;
     /** On author click */
     onAuthorClick?: (authorId: string) => void;
+    /** Theme ID to use (defaults to active theme) */
+    themeId?: string;
+    /** Disable hooks (for testing) */
+    disableHooks?: boolean;
 }
-
-const defaultFormatDate = (date: Date | string): string => {
-    const d = typeof date === 'string' ? new Date(date) : date;
-    return d.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-    });
-};
 
 /**
  * BlogRenderer - Renders a complete blog post with all metadata
+ * Supports hooks and themes for extensibility
  *
  * @example
  * ```tsx
@@ -103,120 +103,187 @@ export function BlogRenderer({
     renderFooter,
     renderSeriesNav,
     onAuthorClick,
+    themeId,
+    disableHooks = false,
 }: BlogRendererProps) {
-    const hasContent = post.content?.blocks && post.content.blocks.length > 0;
+    // Resolve theme: themeId override > active theme > default (memoized)
+    const theme = useMemo(() => (themeId ? getTheme(themeId) : null) ?? getActiveTheme() ?? defaultTheme, [themeId]);
+
+    const props = useMemo(
+        () => ({
+            post,
+            showHeroImage,
+            showTitle,
+            showMetadata,
+            showExcerpt,
+            showFootnotes,
+            showSeries,
+            className,
+            contentClassName,
+            formatDate,
+            renderHeader,
+            renderFooter,
+            renderSeriesNav,
+            onAuthorClick,
+        }),
+        [
+            post,
+            showHeroImage,
+            showTitle,
+            showMetadata,
+            showExcerpt,
+            showFootnotes,
+            showSeries,
+            className,
+            contentClassName,
+            formatDate,
+            renderHeader,
+            renderFooter,
+            renderSeriesNav,
+            onAuthorClick,
+        ],
+    );
+
+    // Apply filters to post data (synchronously for React)
+    const [filteredPost, setFilteredPost] = useState<BlogPostData>(post);
+    const [filteredContent, setFilteredContent] = useState<EditorJSData | null>(post.content || null);
+    const [isFilteringComplete, setIsFilteringComplete] = useState(false);
+
+    useEffect(() => {
+        if (!disableHooks) {
+            setIsFilteringComplete(false);
+
+            // Apply filters asynchronously
+            Promise.all([
+                applyFilters(HOOKS['post.title.filter'], post.title, post),
+                applyFilters(HOOKS['post.excerpt.filter'], post.excerpt, post),
+                applyFilters(HOOKS['post.content.filter'], post.content, post),
+            ]).then(([filteredTitle, filteredExcerpt, filteredContentResult]) => {
+                const newFilteredPost = {
+                    ...post,
+                    title: filteredTitle as string,
+                    excerpt: filteredExcerpt as string | null,
+                };
+
+                setFilteredPost(newFilteredPost);
+                setFilteredContent(filteredContentResult as EditorJSData | null);
+                setIsFilteringComplete(true);
+
+                // Execute action hooks AFTER filters have been applied (fixes race condition)
+                doAction(HOOKS['post.render.before'], newFilteredPost, props);
+            });
+        } else {
+            // If hooks are disabled, use original post data
+            setFilteredPost(post);
+            setFilteredContent(post.content || null);
+            setIsFilteringComplete(true);
+        }
+    }, [post.id, post.title, post.excerpt, post.content, disableHooks, props]);
+
+    const hasContent = filteredContent?.blocks && filteredContent.blocks.length > 0;
     const hasFootnotes = post.footnotes?.blocks && post.footnotes.blocks.length > 0;
     const hasSeriesInfo = post.seriesId && post.seriesTitle;
 
+    // Use theme renderers if available, otherwise fall back to default (memoized)
+    // Wrap each renderer in error handling to prevent theme bugs from crashing the entire render
+    const renderers = useMemo(() => {
+        const safeRenderer = <T extends unknown[]>(
+            renderer: ((...args: T) => React.ReactNode) | undefined,
+            fallback: (...args: T) => React.ReactNode,
+            name: string,
+        ) => {
+            return (...args: T): React.ReactNode => {
+                try {
+                    const fn = renderer || fallback;
+                    return fn(...args);
+                } catch (error) {
+                    console.error(`Error in theme renderer "${name}":`, error);
+                    return null; // Fail gracefully - render nothing instead of crashing
+                }
+            };
+        };
+
+        return {
+            renderHero: safeRenderer(theme.renderers.renderHero, defaultTheme.renderers.renderHero, 'renderHero'),
+            renderTitle: safeRenderer(theme.renderers.renderTitle, defaultTheme.renderers.renderTitle, 'renderTitle'),
+            renderMetadata: safeRenderer(
+                theme.renderers.renderMetadata,
+                defaultTheme.renderers.renderMetadata,
+                'renderMetadata',
+            ),
+            renderExcerpt: safeRenderer(
+                theme.renderers.renderExcerpt,
+                defaultTheme.renderers.renderExcerpt,
+                'renderExcerpt',
+            ),
+            renderContent: safeRenderer(
+                theme.renderers.renderContent,
+                defaultTheme.renderers.renderContent,
+                'renderContent',
+            ),
+            renderFootnotes: safeRenderer(
+                theme.renderers.renderFootnotes,
+                defaultTheme.renderers.renderFootnotes,
+                'renderFootnotes',
+            ),
+            renderSeries: safeRenderer(
+                theme.renderers.renderSeries,
+                defaultTheme.renderers.renderSeries,
+                'renderSeries',
+            ),
+        };
+    }, [theme]);
+
+    const containerClass = `${theme.config?.classes?.container || ''} ${className}`.trim();
+
+    // Execute action hooks (side effects only, not for rendering)
+    // Only run after filtering is complete to ensure hooks receive filtered data
+    useEffect(() => {
+        if (!disableHooks && isFilteringComplete) {
+            doAction(HOOKS['post.content.before'], filteredPost, props);
+            return () => {
+                doAction(HOOKS['post.content.after'], filteredPost, props);
+            };
+        }
+    }, [disableHooks, isFilteringComplete, filteredPost, props]);
+
+    useEffect(() => {
+        if (!disableHooks && isFilteringComplete) {
+            doAction(HOOKS['post.render.after'], filteredPost, props);
+        }
+    }, [disableHooks, isFilteringComplete, filteredPost, props]);
+
     return (
-        <article className={`blog-post ${className}`}>
+        <article className={`blog-post ${containerClass}`}>
             {/* Custom header */}
             {renderHeader?.()}
 
-            {/* Hero Image */}
-            {showHeroImage && post.heroImage?.url && (
-                <figure className="blog-post__hero">
-                    <img
-                        src={post.heroImage.url}
-                        alt={post.heroImage.alt || post.title}
-                        className="blog-post__hero-image"
-                        loading="eager"
-                    />
-                    {post.heroImage.caption && (
-                        <figcaption className="blog-post__hero-caption">{post.heroImage.caption}</figcaption>
-                    )}
-                </figure>
-            )}
+            {/* Theme renderer: Header */}
+            {theme.renderers.renderHeader?.(filteredPost, props)}
 
-            {/* Series Banner */}
-            {showSeries && hasSeriesInfo && (
-                <div className="blog-post__series-banner">
-                    <span className="blog-post__series-label">
-                        Part of series: <strong>{post.seriesTitle}</strong>
-                    </span>
-                    {post.seriesOrder && post.seriesTotalParts && (
-                        <span className="blog-post__series-progress">
-                            Part {post.seriesOrder} of {post.seriesTotalParts}
-                        </span>
-                    )}
-                    {renderSeriesNav?.(post)}
-                </div>
-            )}
+            {/* Theme renderer: Hero Image */}
+            {renderers.renderHero(filteredPost, props)}
 
-            {/* Title */}
-            {showTitle && <h1 className="blog-post__title">{post.title}</h1>}
+            {/* Theme renderer: Series */}
+            {renderers.renderSeries(filteredPost, props)}
 
-            {/* Metadata */}
-            {showMetadata && (
-                <div className="blog-post__meta">
-                    {/* Author */}
-                    {post.authorName && (
-                        <div className="blog-post__author">
-                            {post.authorAvatar && (
-                                <img
-                                    src={post.authorAvatar}
-                                    alt={post.authorName}
-                                    className="blog-post__author-avatar"
-                                />
-                            )}
-                            <span
-                                className={`blog-post__author-name ${onAuthorClick ? 'blog-post__author-name--clickable' : ''}`}
-                                onClick={() => onAuthorClick && post.authorId && onAuthorClick(post.authorId)}
-                            >
-                                {post.authorName}
-                            </span>
-                        </div>
-                    )}
+            {/* Theme renderer: Title */}
+            {renderers.renderTitle(filteredPost, props)}
 
-                    {/* Date */}
-                    {post.publishedAt && (
-                        <time
-                            className="blog-post__date"
-                            dateTime={
-                                typeof post.publishedAt === 'string' ? post.publishedAt : post.publishedAt.toISOString()
-                            }
-                        >
-                            {formatDate(post.publishedAt)}
-                        </time>
-                    )}
+            {/* Theme renderer: Metadata */}
+            {renderers.renderMetadata(filteredPost, props)}
 
-                    {/* Reading Time */}
-                    {post.readingTimeMinutes && (
-                        <span className="blog-post__reading-time">{post.readingTimeMinutes} min read</span>
-                    )}
+            {/* Theme renderer: Excerpt */}
+            {renderers.renderExcerpt(filteredPost, props)}
 
-                    {/* Featured Badge */}
-                    {post.isFeatured && <span className="blog-post__featured-badge">Featured</span>}
-                </div>
-            )}
+            {/* Theme renderer: Main Content */}
+            {renderers.renderContent({ ...filteredPost, content: filteredContent }, props)}
 
-            {/* Excerpt */}
-            {showExcerpt && post.excerpt && <p className="blog-post__excerpt">{post.excerpt}</p>}
+            {/* Theme renderer: Footnotes */}
+            {renderers.renderFootnotes(filteredPost, props)}
 
-            {/* Main Content */}
-            {hasContent && (
-                <div className={`blog-post__content ${contentClassName}`}>
-                    <Blocks
-                        data={post.content as EditorJSData}
-                        renderers={customRenderers}
-                        config={defaultEJSRConfigs}
-                    />
-                </div>
-            )}
-
-            {/* Footnotes */}
-            {showFootnotes && hasFootnotes && (
-                <aside className="blog-post__footnotes">
-                    <h2 className="blog-post__footnotes-title">Footnotes</h2>
-                    <div className="blog-post__footnotes-content">
-                        <Blocks
-                            data={post.footnotes as EditorJSData}
-                            renderers={customRenderers}
-                            config={defaultEJSRConfigs}
-                        />
-                    </div>
-                </aside>
-            )}
+            {/* Theme renderer: Footer */}
+            {theme.renderers.renderFooter?.(filteredPost, props)}
 
             {/* Custom footer */}
             {renderFooter?.()}

@@ -587,6 +587,16 @@ const adminBlogEditRoute = new Route({
     ),
 });
 
+const adminBlogStudioRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/blog/studio',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/blog/AdminBlogStudioPage').then((m) => ({
+            default: m.AdminBlogStudioPage,
+        })),
+    ),
+});
+
 // Public Blog routes
 const blogListRoute = new Route({
     getParentRoute: () => rootRoute,
@@ -668,6 +678,7 @@ const routeTree = rootRoute.addChildren([
     adminBlogRoute,
     adminBlogNewRoute,
     adminBlogEditRoute,
+    adminBlogStudioRoute,
     adminDbRoute,
     blogListRoute,
     blogDetailRoute,

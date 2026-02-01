@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
-import { Activity, Clock, Database, FileText, Layers, UserPlus } from 'lucide-react';
+import { Activity, Clock, Database, FileText, Layers, Palette, UserPlus } from 'lucide-react';
 
 export function AdminIndexPage() {
     const adminLinks = [
@@ -9,6 +9,13 @@ export function AdminIndexPage() {
             description: 'Create and manage blog posts, changelogs, and documentation.',
             href: '/admin/blog',
             icon: FileText,
+            disabled: false,
+        },
+        {
+            title: 'Blog Studio',
+            description: 'Manage blog themes and plugins (activate theme, enable/disable plugins).',
+            href: '/admin/blog/studio',
+            icon: Palette,
             disabled: false,
         },
         {

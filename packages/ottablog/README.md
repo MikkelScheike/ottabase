@@ -15,6 +15,8 @@ A comprehensive blog and content management system for Ottabase apps. Built on t
 - **Multi-App Ready** - Built-in appId support for multi-tenant databases
 - **Analytics Ready** - Reading time, word count, view tracking
 - **Type-Safe** - Full TypeScript support with Drizzle ORM
+- **Blog Studio** - Themes and plugins managed from DB; active theme and Content Injector (and config) applied at init
+  (see [STUDIO.md](./STUDIO.md))
 
 ## Installation
 
@@ -427,8 +429,85 @@ const post = await Post.create({
 - **Multi-Tenant Ready** - appId support out of the box
 - **SEO Optimized** - Built-in metadata support
 - **Analytics Ready** - Reading time and view tracking
-- **Version Control** - Full post history tracking
+- **Version Control** - Full post history with optional retention (`maxVersionsToKeep`); older versions pruned on save
 - **Content Organization** - Categories, tags, and series support
+
+## Blog Studio (themes & plugins)
+
+Themes and plugins are managed in the database and applied at init so `BlogRenderer` uses the correct theme and plugin
+hooks (e.g. Content Injector with DB-backed config).
+
+- **Themes** – Register themes; one is active per app. State in `ottablog_themes`.
+- **Plugins** – Register plugins; enable/disable and store config in `ottablog_plugins`. Content Injector injects HTML
+  from its `config.content`.
+- **Client** – Fetch `GET /api/blog/studio/state`, then `setActiveTheme(activeThemeId)` and for each enabled plugin
+  build from `config`, register, and activate. Use an in-flight dedupe so concurrent calls share one request.
+- **Admin** – Blog Studio page: activate theme, enable/disable plugins, configure Content Injector (content, position,
+  content types, priority).
+
+Full architecture, API, and Content Injector config: **[STUDIO.md](./STUDIO.md)**.
+
+## Styling
+
+The package includes a `BlogRenderer` component for rendering blog posts with theme support.
+
+### Option 1: Tailwind Classes (Recommended)
+
+The default theme uses Tailwind CSS classes. No additional CSS import required:
+
+```tsx
+import { BlogRenderer, initOttablog } from '@ottabase/ottablog';
+
+initOttablog({ defaultThemeId: 'default' });
+
+<BlogRenderer post={post} showHeroImage showMetadata />;
+```
+
+### Option 2: Optional CSS Styles
+
+A CSS file is provided at `src/components/BlogRenderer.css` with:
+
+- `.blog-post` and related classes for post rendering
+- `.blog-card` and related classes for post listings
+- Dark mode support via `prefers-color-scheme`
+
+**To use the CSS:**
+
+```typescript
+// Import in your app entry point (only if not using Tailwind)
+import '@ottabase/ottablog/src/components/BlogRenderer.css';
+```
+
+**Note:** The CSS is optional and not required if you're using Tailwind or custom themes.
+
+### Option 3: Custom Themes
+
+Create your own theme with complete control:
+
+```typescript
+import { registerTheme, setActiveTheme, type Theme } from '@ottabase/ottablog';
+
+const myTheme: Theme = {
+  metadata: {
+    id: 'my-theme',
+    name: 'My Custom Theme',
+    version: '1.0.0',
+  },
+  renderers: {
+    renderTitle: (post) => <h1 className="custom-title">{post.title}</h1>,
+    renderContent: (post) => <div className="custom-content">{/* render content */}</div>,
+    // ... other renderers
+  },
+  config: {
+    classes: {
+      container: 'max-w-4xl mx-auto px-4',
+    },
+  },
+};
+
+registerTheme(myTheme);
+setActiveTheme('my-theme');
+```
 
 ## License
 
