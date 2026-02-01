@@ -5,6 +5,7 @@
 // ============================================================
 
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
+import { JsonEditor } from 'json-edit-react';
 import { clsx } from 'clsx';
 import { AlertCircle, Calendar, Check, Eye, EyeOff, Upload, X } from 'lucide-react';
 import React, { useCallback } from 'react';
@@ -317,9 +318,9 @@ export function FormField({
 // ============================================================
 
 /**
- * JSON field: textarea with stringify/parse. Shows "Invalid JSON" when current text doesn't parse.
+ * JSON field: Edit (textarea) + Tree view (@uiw/react-json-view).
  * Used for fieldType 'json' and for object values (instead of [Object]).
- * Keeps local text while user types invalid JSON so input isn't reverted.
+ * Tree view gives collapsible nodes, copy, and light/dark theme.
  */
 function JsonField({
     name,
@@ -342,7 +343,25 @@ function JsonField({
         typeof value === 'string' ? value : value === null || value === undefined ? '' : JSON.stringify(value, null, 2);
     const [localText, setLocalText] = React.useState<string | null>(null);
     const [parseError, setParseError] = React.useState<string | null>(null);
+    const [tab, setTab] = React.useState<'edit' | 'view'>('view');
     const displayValue = localText !== null ? localText : fromProps;
+
+    // Resolve tree value: object or array for JsonEditor (editable tree)
+    const treeValue = React.useMemo(() => {
+        if (value === null || value === undefined) return {};
+        if (typeof value === 'object' && (value.constructor === Object || Array.isArray(value))) return value;
+        if (typeof value === 'string') {
+            try {
+                const parsed = JSON.parse(value);
+                return typeof parsed === 'object' && parsed !== null ? parsed : { value: parsed };
+            } catch {
+                return null;
+            }
+        }
+        return { value };
+    }, [value]);
+
+    const canShowTree = treeValue !== null;
 
     const handleChange = useCallback(
         (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -365,7 +384,6 @@ function JsonField({
         [onChange],
     );
 
-    // When parent value changes (e.g. form reset), clear local text and sync display
     React.useEffect(() => {
         setLocalText(null);
         if (typeof value === 'string' && value.trim() !== '') {
@@ -380,24 +398,89 @@ function JsonField({
         }
     }, [value]);
 
+    const handleSetData = useCallback(
+        (newData: unknown) => {
+            onChange(newData);
+        },
+        [onChange],
+    );
+
     return (
-        <div className="space-y-1">
-            <textarea
-                id={name}
-                name={name}
-                value={displayValue}
-                onChange={handleChange}
-                placeholder={placeholder}
-                disabled={disabled}
-                rows={rows}
-                className={className}
-                spellCheck={false}
-            />
-            {parseError && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                    {parseError}
-                </p>
+        <div className="space-y-2">
+            <div className="flex gap-1 border-b border-gray-200 dark:border-gray-600">
+                <button
+                    type="button"
+                    onClick={() => setTab('edit')}
+                    className={clsx(
+                        'px-3 py-1.5 text-sm font-medium rounded-t transition-colors',
+                        tab === 'edit'
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-b-0 border-gray-200 dark:border-gray-600'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200',
+                    )}
+                >
+                    Edit
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setTab('view')}
+                    className={clsx(
+                        'px-3 py-1.5 text-sm font-medium rounded-t transition-colors',
+                        tab === 'view'
+                            ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border border-b-0 border-gray-200 dark:border-gray-600'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200',
+                    )}
+                >
+                    Tree view
+                </button>
+            </div>
+
+            {tab === 'edit' && (
+                <div className="space-y-1">
+                    <textarea
+                        id={name}
+                        name={name}
+                        value={displayValue}
+                        onChange={handleChange}
+                        placeholder={placeholder}
+                        disabled={disabled}
+                        rows={rows}
+                        className={className}
+                        spellCheck={false}
+                    />
+                    {parseError && (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            {parseError}
+                        </p>
+                    )}
+                </div>
+            )}
+
+            {tab === 'view' && (
+                <div
+                    className={clsx(
+                        'rounded-lg border overflow-auto min-h-[120px] max-h-[400px] p-2',
+                        'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800',
+                    )}
+                >
+                    {canShowTree ? (
+                        <JsonEditor
+                            data={treeValue as object}
+                            setData={handleSetData}
+                            viewOnly={disabled}
+                            rootName=""
+                            collapse={2}
+                            enableClipboard
+                        />
+                    ) : parseError ? (
+                        <p className="text-sm text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                            <AlertCircle className="w-4 h-4 shrink-0" />
+                            Invalid JSON — fix in Edit tab
+                        </p>
+                    ) : (
+                        <p className="text-sm text-gray-500 dark:text-gray-400">Empty — edit to add JSON</p>
+                    )}
+                </div>
             )}
         </div>
     );
