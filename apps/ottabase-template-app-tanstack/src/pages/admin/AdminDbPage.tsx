@@ -516,7 +516,8 @@ export function AdminDbPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Row?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this row? ({deleteRowDialog?.pkField}: {deleteRowDialog?.id})
+                            Are you sure you want to delete this row? ({deleteRowDialog?.pkField}: {deleteRowDialog?.id}
+                            )
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

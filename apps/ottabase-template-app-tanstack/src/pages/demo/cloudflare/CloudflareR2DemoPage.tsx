@@ -278,14 +278,12 @@ export function CloudflareR2DemoPage() {
                     )}
                 </CardContent>
             </Card>
-        
+
             <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete File?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Delete {deleteDialog}?
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>Delete {deleteDialog}?</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>

@@ -232,8 +232,10 @@ export function EditorClient() {
                 sampleData={sampleDataMinimal}
             />
 
-
-            <AlertDialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}>
+            <AlertDialog
+                open={alertDialog.open}
+                onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>

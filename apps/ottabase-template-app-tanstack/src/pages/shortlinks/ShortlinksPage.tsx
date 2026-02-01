@@ -539,20 +539,15 @@ export function ShortlinksPage() {
                 </CardContent>
             </Card>
 
-
             <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Shortlink?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this shortlink?
-                        </AlertDialogDescription>
+                        <AlertDialogDescription>Are you sure you want to delete this shortlink?</AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>
-                            Delete
-                        </AlertDialogAction>
+                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

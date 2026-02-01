@@ -539,7 +539,9 @@ export function AdminCronPage() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                onClick={() => setDeleteDialog({ taskId: task.id, taskName: task.name })}
+                                                onClick={() =>
+                                                    setDeleteDialog({ taskId: task.id, taskName: task.name })
+                                                }
                                                 disabled={deleteMutation.isPending}
                                                 title="Delete"
                                                 className="h-8 px-2 text-red-600 hover:bg-red-50"
@@ -591,7 +593,10 @@ export function AdminCronPage() {
                 </AlertDialogContent>
             </AlertDialog>
 
-            <AlertDialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}>
+            <AlertDialog
+                open={alertDialog.open}
+                onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>

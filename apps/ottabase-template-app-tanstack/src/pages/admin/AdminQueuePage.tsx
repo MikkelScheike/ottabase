@@ -809,10 +809,7 @@ export function AdminQueuePage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                         <AlertDialogCancel disabled={isRetryingAll}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmRetryAll}
-                            disabled={isRetryingAll}
-                        >
+                        <AlertDialogAction onClick={handleConfirmRetryAll} disabled={isRetryingAll}>
                             {isRetryingAll ? 'Retrying...' : 'Retry All'}
                         </AlertDialogAction>
                     </AlertDialogFooter>
@@ -825,7 +822,8 @@ export function AdminQueuePage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Permanently Delete All DLQ Jobs?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete ALL jobs from the Dead Letter Queue. This action cannot be undone.
+                            This will permanently delete ALL jobs from the Dead Letter Queue. This action cannot be
+                            undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -842,7 +840,10 @@ export function AdminQueuePage() {
             </AlertDialog>
 
             {/* Alert/Info Dialog */}
-            <AlertDialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}>
+            <AlertDialog
+                open={alertDialog.open}
+                onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>

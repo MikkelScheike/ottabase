@@ -336,7 +336,10 @@ const editor2 = useOttaEditor({
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex gap-2">
-                        <Button onClick={handleSaveFullFeaturedEditor} disabled={!editor1.isReady || !editor1.hasUnsavedChanges}>
+                        <Button
+                            onClick={handleSaveFullFeaturedEditor}
+                            disabled={!editor1.isReady || !editor1.hasUnsavedChanges}
+                        >
                             💾 Save Editor 1{editor1.hasUnsavedChanges && <span className="ml-2 text-xs">●</span>}
                         </Button>
                         <Button onClick={() => editor1.clear()} disabled={!editor1.isReady} variant="destructive">
@@ -387,7 +390,10 @@ const editor2 = useOttaEditor({
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="flex gap-2">
-                        <Button onClick={handleSaveCustomPluginEditor} disabled={!editor2.isReady || !editor2.hasUnsavedChanges}>
+                        <Button
+                            onClick={handleSaveCustomPluginEditor}
+                            disabled={!editor2.isReady || !editor2.hasUnsavedChanges}
+                        >
                             💾 Save Editor 2{editor2.hasUnsavedChanges && <span className="ml-2 text-xs">●</span>}
                         </Button>
                         <Button onClick={() => editor2.clear()} disabled={!editor2.isReady} variant="destructive">
@@ -482,8 +488,10 @@ const editor2 = useOttaEditor({
                 </CardContent>
             </Card>
 
-
-            <AlertDialog open={alertDialog.open} onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}>
+            <AlertDialog
+                open={alertDialog.open}
+                onOpenChange={(open) => !open && setAlertDialog({ ...alertDialog, open: false })}
+            >
                 <AlertDialogContent>
                     <AlertDialogHeader>
                         <AlertDialogTitle>{alertDialog.title}</AlertDialogTitle>
