@@ -1,6 +1,21 @@
 import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@ottabase/ui-shadcn';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    Button,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    Input,
+} from '@ottabase/ui-shadcn';
 import { api, isApiError } from '@/lib/api';
 
 interface Todo {
@@ -11,17 +26,13 @@ interface Todo {
     createdAt?: string;
 }
 
-interface TodoResponse {
-    entity: string;
-    data: Todo;
-}
-
 export function CloudflareD1DemoPage() {
     const [todos, setTodos] = useState<Todo[]>([]);
     const [newTodo, setNewTodo] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [dbReady, setDbReady] = useState(false);
+    const [deleteDialog, setDeleteDialog] = useState<Todo | null>(null);
 
     useEffect(() => {
         void initializeDb();
@@ -44,10 +55,9 @@ export function CloudflareD1DemoPage() {
     const loadTodos = async () => {
         try {
             setLoading(true);
-            const data = await api<{ todos: TodoResponse[] }>('/api/cloudflare/d1/todos');
-            // Extract the actual todo data from the nested response
-            const extractedTodos = data.todos.map((item) => item.data);
-            setTodos(extractedTodos);
+            const data = await api<{ todos: Todo[] }>('/api/cloudflare/d1/todos');
+            const list = Array.isArray(data.todos) ? data.todos : [];
+            setTodos(list.filter((t): t is Todo => t != null && typeof t === 'object' && 'id' in t));
             setError(null);
         } catch (err) {
             setError(isApiError(err) ? err.message : 'Unknown error');
@@ -103,6 +113,12 @@ export function CloudflareD1DemoPage() {
         } finally {
             setLoading(false);
         }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteDialog) return;
+        await deleteTodo(deleteDialog.id);
+        setDeleteDialog(null);
     };
 
     return (
@@ -174,7 +190,7 @@ export function CloudflareD1DemoPage() {
                                         {todo.title}
                                     </span>
                                     <Button
-                                        onClick={() => deleteTodo(todo.id)}
+                                        onClick={() => setDeleteDialog(todo)}
                                         disabled={loading}
                                         variant="ghost"
                                         size="sm"
@@ -185,6 +201,24 @@ export function CloudflareD1DemoPage() {
                             ))
                         )}
                     </div>
+
+                    <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Delete Todo?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to delete &quot;{deleteDialog?.title}&quot;? This cannot be
+                                    undone.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleConfirmDelete} disabled={loading}>
+                                    Delete
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </>
             ) : null}
         </div>
