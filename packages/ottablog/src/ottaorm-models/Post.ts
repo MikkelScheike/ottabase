@@ -17,20 +17,9 @@ import {
 } from '../types';
 import { PostTag } from './PostTag';
 import { postTagLinksTable } from './PostTagLink';
+import { postsTable, type NewPost, type NewPostType, type PostType } from './Post.schema';
 
-/**
- * Posts table - main content storage
- */
-/**
- * Posts table definition moved to PostTable.ts to avoid circular connection
- */
-import { postsTable } from './tables/PostTable';
-export { postsTable };
-
-export type NewPost = typeof postsTable.$inferInsert;
-
-export type PostType = typeof postsTable.$inferSelect;
-export type NewPostType = typeof postsTable.$inferInsert;
+export { postsTable, type NewPost, type NewPostType, type PostType } from './Post.schema';
 
 /**
  * Post Model - Fat Model Pattern

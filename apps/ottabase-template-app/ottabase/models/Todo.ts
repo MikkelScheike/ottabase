@@ -2,33 +2,10 @@
 // Todo Model (App-specific)
 // ============================================================
 
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 import { BaseModel, IModelConstructorParams, ModelFields } from '@ottabase/ottaorm';
+import { todosTable, type NewTodoType, type TodoType } from './Todo.schema';
 
-/**
- * Todo table schema
- */
-export const todosTable = sqliteTable('todos', {
-    id: text('id')
-        .primaryKey()
-        .$defaultFn(() => crypto.randomUUID()),
-    title: text('title').notNull(),
-    completed: integer('completed', { mode: 'boolean' }).default(false).notNull(),
-    userId: text('user_id'),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date())
-        .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date())
-        .$onUpdateFn(() => new Date())
-        .notNull(),
-});
-
-/**
- * Todo model type
- */
-export type TodoType = typeof todosTable.$inferSelect;
-export type NewTodoType = typeof todosTable.$inferInsert;
+export { todosTable, type NewTodoType, type TodoType } from './Todo.schema';
 
 /**
  * Todo model - App-specific fat model

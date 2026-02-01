@@ -443,16 +443,17 @@ export class SentryTransport implements Transport {
         tracesSampleRate?: number;
     }): Promise<void> {
         try {
-            // Try to load Sentry from Node.js or browser
-            let Sentry;
+            // Try to load Sentry from Node.js or browser (optional peer deps; use variables so DTS build does not require them)
+            let Sentry:
+                | { init: (opts: Record<string, unknown>) => void; captureException: (err: unknown) => void }
+                | undefined;
+            const sentryNodeModule = '@sentry/node';
+            const sentryBrowserModule = '@sentry/browser';
             try {
-                // Try Node.js Sentry first
-                Sentry = await import('@sentry/node');
+                Sentry = (await import(/* @vite-ignore */ sentryNodeModule)) as typeof Sentry;
             } catch {
-                // Fall back to browser Sentry
                 try {
-                    // Optional dependency
-                    Sentry = await import('@sentry/browser');
+                    Sentry = (await import(/* @vite-ignore */ sentryBrowserModule)) as typeof Sentry;
                 } catch {
                     console.warn(
                         'Sentry SDK not found. Install @sentry/node or @sentry/browser to use SentryTransport.',

@@ -2,38 +2,10 @@
 // @ottabase/ottaorm - User Model
 // ============================================================
 
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { BaseModel, IModelConstructorParams, ModelFields, type PackageType } from '../base/BaseModel';
+import { usersTable, type NewUserType, type UserType } from './User.schema';
 
-/**
- * User table schema
- */
-export const usersTable = sqliteTable('users', {
-    id: text('id')
-        .primaryKey()
-        .$defaultFn(() => crypto.randomUUID()),
-    name: text('name'),
-    email: text('email').notNull().unique(),
-    image: text('image'),
-    // Referral fields
-    referralUsername: text('referral_username').unique(),
-    referredById: text('referred_by_id'),
-    // App identifier for multi-app database sharing (nullable, opt-in)
-    appId: text('app_id'),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date())
-        .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date())
-        .$onUpdateFn(() => new Date())
-        .notNull(),
-});
-
-/**
- * User model type
- */
-export type UserType = typeof usersTable.$inferSelect;
-export type NewUserType = typeof usersTable.$inferInsert;
+export { usersTable, type NewUserType, type UserType } from './User.schema';
 
 /**
  * User model - Simple fat model example

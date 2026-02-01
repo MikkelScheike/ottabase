@@ -4,74 +4,22 @@
  * OttaORM model for post categories with hierarchy support.
  */
 import { BaseModel, ModelFields, type PackageType } from '@ottabase/ottaorm';
-import { sql } from 'drizzle-orm';
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { generateSlug } from '../types';
+import {
+    categoriesTable,
+    type Category,
+    type NewCategory,
+    type NewPostCategoryType,
+    type PostCategoryType,
+} from './PostCategory.schema';
 
-/**
- * Categories table - hierarchical content organization
- */
-export const categoriesTable = sqliteTable(
-    'categories',
-    {
-        id: text('id')
-            .primaryKey()
-            .$defaultFn(() => crypto.randomUUID()),
-
-        // Category name
-        name: text('name').notNull(),
-
-        // URL-friendly slug
-        slug: text('slug').notNull(),
-
-        // Optional description
-        description: text('description'),
-
-        // Parent category for hierarchy (null = root category)
-        parentId: text('parent_id'),
-
-        // Display order within parent
-        sortOrder: integer('sort_order').notNull().default(0),
-
-        // App identifier for multi-app database sharing
-        appId: text('app_id'),
-
-        // Content type this category applies to (post, news, docs, etc.)
-        type: text('type').notNull().default('post'),
-
-        // Timestamps
-        createdAt: integer('created_at', { mode: 'timestamp' })
-            .notNull()
-            .default(sql`(unixepoch())`),
-
-        updatedAt: integer('updated_at', { mode: 'timestamp' })
-            .notNull()
-            .default(sql`(unixepoch())`)
-            .$onUpdate(() => new Date()),
-    },
-    (table) => [
-        // Lookup by slug with type filtering
-        index('categories_slug_type_idx').on(table.slug, table.type),
-
-        // Multi-tenant with type: appId + type for filtering categories by content type
-        index('categories_app_id_type_idx').on(table.appId, table.type),
-
-        // Hierarchy traversal: parentId + sortOrder for getting children ordered
-        index('categories_parent_id_sort_order_idx').on(table.parentId, table.sortOrder),
-
-        // Root categories: parentId + appId + type + sortOrder
-        index('categories_parent_id_app_id_type_idx').on(table.parentId, table.appId, table.type),
-
-        // Type filtering single index for flexibility
-        index('categories_type_idx').on(table.type),
-    ],
-);
-
-export type Category = typeof categoriesTable.$inferSelect;
-export type NewCategory = typeof categoriesTable.$inferInsert;
-
-export type PostCategoryType = typeof categoriesTable.$inferSelect;
-export type NewPostCategoryType = typeof categoriesTable.$inferInsert;
+export {
+    categoriesTable,
+    type Category,
+    type NewCategory,
+    type NewPostCategoryType,
+    type PostCategoryType,
+} from './PostCategory.schema';
 
 export class PostCategory extends BaseModel {
     static entity = 'categories';

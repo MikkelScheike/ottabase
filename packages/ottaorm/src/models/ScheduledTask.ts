@@ -3,55 +3,10 @@
 // DB-driven cron scheduler (like Laravel's scheduler)
 // ============================================================
 
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { BaseModel, IModelConstructorParams, ModelFields, type PackageType } from '../base/BaseModel';
+import { type NewScheduledTaskType, type ScheduledTaskType, scheduledTasksTable } from './ScheduledTask.schema';
 
-/**
- * ScheduledTask table schema
- */
-export const scheduledTasksTable = sqliteTable('scheduled_tasks', {
-    id: text('id')
-        .primaryKey()
-        .$defaultFn(() => crypto.randomUUID()),
-    name: text('name').notNull(),
-    description: text('description'),
-    // Cron expression (e.g., "0 0 * * *" for daily at midnight)
-    schedule: text('schedule').notNull(),
-    // Task type: "command" | "url" | "handler"
-    taskType: text('task_type').notNull().default('handler'),
-    // Command/URL/handler name to execute
-    task: text('task').notNull(),
-    // JSON payload to pass to the task
-    payload: text('payload'),
-    // Whether the task is active
-    isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-    // Timezone for schedule evaluation (default: UTC)
-    timezone: text('timezone').default('UTC'),
-    // Last run timestamp
-    lastRunAt: integer('last_run_at', { mode: 'timestamp' }),
-    // Next scheduled run timestamp
-    nextRunAt: integer('next_run_at', { mode: 'timestamp' }),
-    // Last run status: "success" | "failed" | "running" | null
-    lastStatus: text('last_status'),
-    // Last error message if failed
-    lastError: text('last_error'),
-    // Run count
-    runCount: integer('run_count').notNull().default(0),
-    // Fail count
-    failCount: integer('fail_count').notNull().default(0),
-    // App identifier for multi-app database sharing (nullable, opt-in)
-    appId: text('app_id'),
-    createdAt: integer('created_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date())
-        .notNull(),
-    updatedAt: integer('updated_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date())
-        .$onUpdateFn(() => new Date())
-        .notNull(),
-});
-
-export type ScheduledTaskType = typeof scheduledTasksTable.$inferSelect;
-export type NewScheduledTaskType = typeof scheduledTasksTable.$inferInsert;
+export { type NewScheduledTaskType, type ScheduledTaskType, scheduledTasksTable } from './ScheduledTask.schema';
 
 /**
  * ScheduledTask model for DB-driven cron scheduler

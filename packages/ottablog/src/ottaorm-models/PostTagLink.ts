@@ -4,44 +4,9 @@
  * Junction table linking Posts to PostTags (many-to-many relationship).
  */
 import { BaseModel, ModelFields, type PackageType } from '@ottabase/ottaorm';
-import { sql } from 'drizzle-orm';
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
-import { postsTable } from './tables/PostTable';
-import { postTagsTable } from './PostTag';
+import { postTagLinksTable, type NewPostTagLinkType, type PostTagLinkType } from './PostTagLink.schema';
 
-/**
- * Post-Tag junction table for many-to-many relationship
- */
-export const postTagLinksTable = sqliteTable(
-    'post_tag_links',
-    {
-        postId: text('post_id')
-            .notNull()
-            .references(() => postsTable.id, { onDelete: 'cascade' }),
-
-        tagId: text('tag_id')
-            .notNull()
-            .references(() => postTagsTable.id, { onDelete: 'cascade' }),
-
-        // When the tag was added to the post
-        createdAt: integer('created_at', { mode: 'timestamp' })
-            .notNull()
-            .default(sql`(unixepoch())`),
-    },
-    (table) => [
-        // Composite primary key prevents duplicate tag assignments
-        primaryKey({ columns: [table.postId, table.tagId] }),
-
-        // Get all tags for a post
-        index('post_tag_links_post_id_idx').on(table.postId),
-
-        // Get all posts with a tag
-        index('post_tag_links_tag_id_idx').on(table.tagId),
-    ],
-);
-
-export type PostTagLinkType = typeof postTagLinksTable.$inferSelect;
-export type NewPostTagLinkType = typeof postTagLinksTable.$inferInsert;
+export { postTagLinksTable, type NewPostTagLinkType, type PostTagLinkType } from './PostTagLink.schema';
 
 /**
  * PostTagLink Model - Junction for Post <-> PostTag relationship

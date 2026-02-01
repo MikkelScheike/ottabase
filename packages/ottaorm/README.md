@@ -21,10 +21,18 @@ pnpm add @ottabase/ottaorm @ottabase/db drizzle-orm
 
 ## Quick Start
 
+### File layout: schema and model
+
+Table definitions live in **`ModelName.schema.ts`** next to the model file. The model file imports the table from
+`./ModelName.schema` and **re-exports** it so existing imports (e.g. for migrations or schema collection) continue to
+work. No breaking changes for callers: `from '../models/Todo'` or `from '@ottabase/ottaorm'` still provide the table and
+types.
+
 ### 1. Define Your Model
 
+**Todo.schema.ts** – table and inferred types:
+
 ```typescript
-import { BaseModel } from '@ottabase/ottaorm';
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const todosTable = sqliteTable('todos', {
@@ -41,6 +49,18 @@ export const todosTable = sqliteTable('todos', {
         .notNull(),
 });
 
+export type TodoType = typeof todosTable.$inferSelect;
+export type NewTodoType = typeof todosTable.$inferInsert;
+```
+
+**Todo.ts** – model class and re-exports:
+
+```typescript
+import { BaseModel } from '@ottabase/ottaorm';
+import { todosTable, type NewTodoType, type TodoType } from './Todo.schema';
+
+export { todosTable, type NewTodoType, type TodoType } from './Todo.schema';
+
 export class Todo extends BaseModel {
     static entity = 'todos';
     static table = todosTable;
@@ -52,7 +72,6 @@ export class Todo extends BaseModel {
         updatedAt: 'date' as const,
     };
 
-    // Custom methods
     static async incomplete() {
         return this.where({ completed: false });
     }
@@ -225,13 +244,13 @@ export default {
 
 ## Fat Model Pattern
 
-Everything in one class - schema, validation, relationships, custom methods:
+Logic lives in the model class; the table schema lives in `ModelName.schema.ts` and is re-exported from the model file.
+
+**Todo.schema.ts** – table and types:
 
 ```typescript
-import { BaseModel } from '@ottabase/ottaorm';
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
-// 1. Define table schema
 export const todosTable = sqliteTable('todos', {
     id: text('id')
         .primaryKey()
@@ -247,7 +266,18 @@ export const todosTable = sqliteTable('todos', {
         .notNull(),
 });
 
-// 2. Define model class
+export type TodoType = typeof todosTable.$inferSelect;
+export type NewTodoType = typeof todosTable.$inferInsert;
+```
+
+**Todo.ts** – model class (import table from schema, re-export for migrations/schema collection):
+
+```typescript
+import { BaseModel } from '@ottabase/ottaorm';
+import { todosTable, type NewTodoType, type TodoType } from './Todo.schema';
+
+export { todosTable, type NewTodoType, type TodoType } from './Todo.schema';
+
 export class Todo extends BaseModel {
     static entity = 'todos';
     static table = todosTable;

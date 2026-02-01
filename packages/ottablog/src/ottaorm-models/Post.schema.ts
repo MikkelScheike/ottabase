@@ -1,14 +1,9 @@
 /**
- * Post Table Definition
- *
- * Separated from Post.ts to avoid circular dependencies with PostTag.ts
+ * Post table schema - main content storage
  */
 import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
-/**
- * Posts table - main content storage
- */
 export const postsTable = sqliteTable(
     'posts',
     {
@@ -173,3 +168,7 @@ export const postsTable = sqliteTable(
         index('posts_app_id_idx').on(table.appId),
     ],
 );
+
+export type PostType = typeof postsTable.$inferSelect;
+export type NewPostType = typeof postsTable.$inferInsert;
+export type NewPost = typeof postsTable.$inferInsert;
