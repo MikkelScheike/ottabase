@@ -60,12 +60,7 @@ export function OrganizationSwitcher({ currentOrgId, onOrgChange }: Organization
 
     if (orgs.length === 0) {
         return (
-            <Button
-                variant="outline"
-                size="sm"
-                className="gap-2"
-                onClick={handleCreateNew}
-            >
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleCreateNew}>
                 <Plus className="h-4 w-4" />
                 <span className="text-sm">Create Organization</span>
             </Button>
@@ -75,25 +70,16 @@ export function OrganizationSwitcher({ currentOrgId, onOrgChange }: Organization
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
             <DropdownMenuTrigger asChild>
-                <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={isOpen}
-                    className="w-[200px] justify-between"
-                >
+                <Button variant="outline" role="combobox" aria-expanded={isOpen} className="w-[200px] justify-between">
                     <div className="flex items-center gap-2 overflow-hidden">
                         <Building2 className="h-4 w-4 flex-shrink-0" />
-                        <span className="text-sm truncate">
-                            {currentOrg?.name || 'Select org...'}
-                        </span>
+                        <span className="text-sm truncate">{currentOrg?.name || 'Select org...'}</span>
                     </div>
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-[200px]">
-                <DropdownMenuLabel className="text-xs text-muted-foreground">
-                    Your Organizations
-                </DropdownMenuLabel>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Your Organizations</DropdownMenuLabel>
                 {orgs.map((org) => (
                     <DropdownMenuItem
                         key={org.id}
@@ -104,16 +90,11 @@ export function OrganizationSwitcher({ currentOrgId, onOrgChange }: Organization
                             <Building2 className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                             <span className="truncate">{org.name}</span>
                         </div>
-                        {currentOrgId === org.id && (
-                            <Check className="h-4 w-4 flex-shrink-0" />
-                        )}
+                        {currentOrgId === org.id && <Check className="h-4 w-4 flex-shrink-0" />}
                     </DropdownMenuItem>
                 ))}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem
-                    onClick={handleCreateNew}
-                    className="cursor-pointer"
-                >
+                <DropdownMenuItem onClick={handleCreateNew} className="cursor-pointer">
                     <Plus className="mr-2 h-4 w-4" />
                     <span>Create Organization</span>
                 </DropdownMenuItem>

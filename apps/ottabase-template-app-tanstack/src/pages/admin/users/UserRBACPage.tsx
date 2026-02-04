@@ -85,9 +85,7 @@ export function UserRBACPage() {
         },
     ];
 
-    const availableOrgs = orgs.filter(
-        (org) => !mockUserOrgs.some((uo) => uo.organizationId === org.id)
-    );
+    const availableOrgs = orgs.filter((org) => !mockUserOrgs.some((uo) => uo.organizationId === org.id));
 
     const getRoleBadgeVariant = (role: MemberRole): BadgeVariant => {
         switch (role) {
@@ -183,9 +181,7 @@ export function UserRBACPage() {
                         <div>
                             <h3 className="font-semibold text-lg">{mockUser.name}</h3>
                             <p className="text-sm text-muted-foreground">{mockUser.email}</p>
-                            <code className="text-xs bg-muted px-2 py-1 rounded mt-1 inline-block">
-                                {mockUser.id}
-                            </code>
+                            <code className="text-xs bg-muted px-2 py-1 rounded mt-1 inline-block">{mockUser.id}</code>
                         </div>
                     </div>
                 </CardContent>
@@ -197,9 +193,7 @@ export function UserRBACPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <CardTitle>Organization Memberships</CardTitle>
-                            <CardDescription>
-                                Organizations this user has access to
-                            </CardDescription>
+                            <CardDescription>Organizations this user has access to</CardDescription>
                         </div>
                         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                             <DialogTrigger asChild>
@@ -211,9 +205,7 @@ export function UserRBACPage() {
                             <DialogContent>
                                 <DialogHeader>
                                     <DialogTitle>Add to Organization</DialogTitle>
-                                    <DialogDescription>
-                                        Grant this user access to an organization
-                                    </DialogDescription>
+                                    <DialogDescription>Grant this user access to an organization</DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4 py-4">
                                     <div className="space-y-2">
@@ -242,9 +234,7 @@ export function UserRBACPage() {
                                         <Label htmlFor="role">Role</Label>
                                         <Select
                                             value={selectedRole}
-                                            onValueChange={(value) =>
-                                                setSelectedRole(value as MemberRole)
-                                            }
+                                            onValueChange={(value) => setSelectedRole(value as MemberRole)}
                                         >
                                             <SelectTrigger id="role">
                                                 <SelectValue />
@@ -303,27 +293,18 @@ export function UserRBACPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="h-4 w-4 text-muted-foreground" />
-                                                <span className="font-medium">
-                                                    {membership.organizationName}
-                                                </span>
+                                                <span className="font-medium">{membership.organizationName}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <Select
                                                 value={membership.role}
                                                 onValueChange={(value) =>
-                                                    handleRoleChange(
-                                                        membership.id,
-                                                        value as MemberRole
-                                                    )
+                                                    handleRoleChange(membership.id, value as MemberRole)
                                                 }
                                             >
                                                 <SelectTrigger className="w-32">
-                                                    <Badge
-                                                        variant={getRoleBadgeVariant(
-                                                            membership.role
-                                                        )}
-                                                    >
+                                                    <Badge variant={getRoleBadgeVariant(membership.role)}>
                                                         {membership.role}
                                                     </Badge>
                                                 </SelectTrigger>
@@ -347,12 +328,7 @@ export function UserRBACPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() =>
-                                                    handleRemove(
-                                                        membership.id,
-                                                        membership.organizationName
-                                                    )
-                                                }
+                                                onClick={() => handleRemove(membership.id, membership.organizationName)}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>

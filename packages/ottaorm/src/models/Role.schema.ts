@@ -17,9 +17,13 @@ export const rolesTable = sqliteTable('roles', {
     name: text('name').notNull().unique(),
     description: text('description'),
     // JSON array of permission names
-    permissions: text('permissions').notNull().$defaultFn(() => '[]'),
+    permissions: text('permissions')
+        .notNull()
+        .$defaultFn(() => '[]'),
     // System roles cannot be deleted
-    isSystem: integer('is_system', { mode: 'boolean' }).$defaultFn(() => false).notNull(),
+    isSystem: integer('is_system', { mode: 'boolean' })
+        .$defaultFn(() => false)
+        .notNull(),
     createdAt: integer('created_at', { mode: 'timestamp' })
         .$defaultFn(() => new Date())
         .notNull(),

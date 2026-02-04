@@ -67,11 +67,11 @@ export function PermissionsMatrixPage() {
     const filterRoles = (filter: string) => {
         switch (filter) {
             case 'system':
-                return roles.filter(r => r.isSystem || (!r.organizationId && !r.appId));
+                return roles.filter((r) => r.isSystem || (!r.organizationId && !r.appId));
             case 'org':
-                return roles.filter(r => r.organizationId && !r.appId);
+                return roles.filter((r) => r.organizationId && !r.appId);
             case 'app':
-                return roles.filter(r => r.appId);
+                return roles.filter((r) => r.appId);
             default:
                 return roles;
         }
@@ -98,23 +98,23 @@ export function PermissionsMatrixPage() {
                     toast.rbac[hasIt ? 'permissionRevoked' : 'permissionGranted']();
                 },
                 onError: (err) => {
-                    toast.error(
-                        'Permission update failed',
-                        err instanceof Error ? err.message : 'Unknown error'
-                    );
+                    toast.error('Permission update failed', err instanceof Error ? err.message : 'Unknown error');
                 },
-            }
+            },
         );
     };
 
     // Group permissions by category
-    const permissionsByCategory = SYSTEM_PERMISSIONS.reduce((acc, perm) => {
-        if (!acc[perm.category]) {
-            acc[perm.category] = [];
-        }
-        acc[perm.category].push(perm);
-        return acc;
-    }, {} as Record<string, typeof SYSTEM_PERMISSIONS>);
+    const permissionsByCategory = SYSTEM_PERMISSIONS.reduce(
+        (acc, perm) => {
+            if (!acc[perm.category]) {
+                acc[perm.category] = [];
+            }
+            acc[perm.category].push(perm);
+            return acc;
+        },
+        {} as Record<string, typeof SYSTEM_PERMISSIONS>,
+    );
 
     return (
         <div className="space-y-4">
@@ -126,9 +126,7 @@ export function PermissionsMatrixPage() {
                                 <Shield className="h-5 w-5" />
                                 Permissions Matrix
                             </CardTitle>
-                            <CardDescription>
-                                Manage role permissions across the hierarchy
-                            </CardDescription>
+                            <CardDescription>Manage role permissions across the hierarchy</CardDescription>
                         </div>
                         <Button variant="outline" asChild>
                             <Link to="/admin/rbac">← Back to RBAC</Link>
@@ -154,15 +152,9 @@ export function PermissionsMatrixPage() {
                         <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="mb-4">
                                 <TabsTrigger value="all">All Roles ({roles.length})</TabsTrigger>
-                                <TabsTrigger value="system">
-                                    System ({filterRoles('system').length})
-                                </TabsTrigger>
-                                <TabsTrigger value="org">
-                                    Organization ({filterRoles('org').length})
-                                </TabsTrigger>
-                                <TabsTrigger value="app">
-                                    App ({filterRoles('app').length})
-                                </TabsTrigger>
+                                <TabsTrigger value="system">System ({filterRoles('system').length})</TabsTrigger>
+                                <TabsTrigger value="org">Organization ({filterRoles('org').length})</TabsTrigger>
+                                <TabsTrigger value="app">App ({filterRoles('app').length})</TabsTrigger>
                             </TabsList>
 
                             <TabsContent value={activeTab} className="overflow-x-auto">
@@ -180,9 +172,7 @@ export function PermissionsMatrixPage() {
                                                 <Table>
                                                     <TableHeader>
                                                         <TableRow>
-                                                            <TableHead className="w-1/4">
-                                                                Permission
-                                                            </TableHead>
+                                                            <TableHead className="w-1/4">Permission</TableHead>
                                                             {filteredRoles.map((role) => (
                                                                 <TableHead key={role.id} className="text-center">
                                                                     <div className="space-y-1">
@@ -191,8 +181,8 @@ export function PermissionsMatrixPage() {
                                                                                 role.isSystem
                                                                                     ? 'default'
                                                                                     : role.organizationId
-                                                                                    ? 'secondary'
-                                                                                    : 'outline'
+                                                                                      ? 'secondary'
+                                                                                      : 'outline'
                                                                             }
                                                                         >
                                                                             {role.name}
@@ -229,7 +219,7 @@ export function PermissionsMatrixPage() {
                                                                                     onCheckedChange={() =>
                                                                                         handleToggle(
                                                                                             role,
-                                                                                            permission.id
+                                                                                            permission.id,
                                                                                         )
                                                                                     }
                                                                                     disabled={

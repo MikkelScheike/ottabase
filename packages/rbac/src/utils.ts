@@ -12,7 +12,7 @@ import type { RBACContext, RBACCheckOptions, PermissionCheckResult } from './typ
 export async function createRBACContext(
     user: User | null,
     cache?: any,
-    options?: { organizationId?: string; tenantId?: string }
+    options?: { organizationId?: string; tenantId?: string },
 ): Promise<RBACContext> {
     if (!user) {
         return {
@@ -67,7 +67,7 @@ export async function createRBACContext(
                     organizationId,
                     tenantId,
                 },
-                organizationId
+                organizationId,
             );
         } catch (error) {
             // Ignore cache errors
@@ -83,7 +83,7 @@ export async function createRBACContext(
 export function hasPermission(
     context: RBACContext,
     permission: string | string[],
-    options: RBACCheckOptions = {}
+    options: RBACCheckOptions = {},
 ): PermissionCheckResult {
     if (!context.isAuthenticated) {
         return {
@@ -126,7 +126,7 @@ export function hasPermission(
 export function hasRole(
     context: RBACContext,
     role: string | string[],
-    options: RBACCheckOptions = {}
+    options: RBACCheckOptions = {},
 ): PermissionCheckResult {
     if (!context.isAuthenticated) {
         return {

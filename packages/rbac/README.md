@@ -31,8 +31,7 @@ sqlite3 .wrangler/state/v3/d1/*.sqlite \
 pnpm --filter @ottabase/ottaorm seed:rbac
 ```
 
-Creates tables: `roles`, `permissions`, `user_roles`
-Default roles: `owner`, `admin`, `member`
+Creates tables: `roles`, `permissions`, `user_roles` Default roles: `owner`, `admin`, `member`
 
 ### 2. Initialize Cache
 
@@ -42,9 +41,9 @@ import { createKVClient } from '@ottabase/cf';
 
 // In your worker
 const cache = initRBACCache({
-  kv: createKVClient({ namespace: env.RBAC_KV }),
-  ttl: 300, // 5 minutes
-  prefix: 'rbac:', // Cache key prefix
+    kv: createKVClient({ namespace: env.RBAC_KV }),
+    ttl: 300, // 5 minutes
+    prefix: 'rbac:', // Cache key prefix
 });
 
 // Cache keys are automatically tenant-scoped:
@@ -61,9 +60,9 @@ const adminRole = await Role.findByName('admin');
 
 // Assign role (org-scoped)
 await user.assignRole(
-  adminRole.id,
-  currentUserId,
-  organizationId, // Required for multi-tenant
+    adminRole.id,
+    currentUserId,
+    organizationId, // Required for multi-tenant
 );
 
 // Verify
@@ -75,20 +74,20 @@ const isAdmin = await user.hasRole('admin', organizationId);
 ```typescript
 // Check permission (with cache)
 const canEdit = await user.hasPermission('posts:edit', {
-  cache,
-  organizationId: 'org-123', // Tenant context
+    cache,
+    organizationId: 'org-123', // Tenant context
 });
 
 // Get all permissions
 const permissions = await user.getPermissions({
-  cache,
-  organizationId: 'org-123',
+    cache,
+    organizationId: 'org-123',
 });
 
 // Get user roles
 const roles = await user.roles({
-  cache,
-  organizationId: 'org-123',
+    cache,
+    organizationId: 'org-123',
 });
 ```
 
@@ -111,11 +110,11 @@ System (Global)
 ```typescript
 // Create org-scoped role
 const editorRole = await Role.create({
-  name: 'editor',
-  displayName: 'Content Editor',
-  description: 'Can create and edit content',
-  organizationId: 'org-123', // Scoped to org (null = system)
-  permissions: ['posts:*', 'tags:read'],
+    name: 'editor',
+    displayName: 'Content Editor',
+    description: 'Can create and edit content',
+    organizationId: 'org-123', // Scoped to org (null = system)
+    permissions: ['posts:*', 'tags:read'],
 });
 
 // Assign to user in this org
@@ -123,12 +122,12 @@ await user.assignRole(editorRole.id, adminId, 'org-123');
 
 // Check permission in org context
 const canEditInOrgA = await user.hasPermission('posts:edit', {
-  organizationId: 'org-123',
+    organizationId: 'org-123',
 }); // true
 
 // Same user, different org
 const canEditInOrgB = await user.hasPermission('posts:edit', {
-  organizationId: 'org-456',
+    organizationId: 'org-456',
 }); // false (different permissions per org)
 ```
 
@@ -139,10 +138,10 @@ import { buildAppContext, hasPermission } from '@ottabase/rbac';
 
 // Build complete context
 const context = await buildAppContext({
-  organizationId: 'org-123',
-  appId: 'web',
-  user,
-  cache,
+    organizationId: 'org-123',
+    appId: 'web',
+    user,
+    cache,
 });
 
 // Context includes:
@@ -158,7 +157,7 @@ const context = await buildAppContext({
 
 // Check permission from context
 if (hasPermission(context, 'posts:edit')) {
-  // User can edit posts
+    // User can edit posts
 }
 ```
 
@@ -167,14 +166,15 @@ if (hasPermission(context, 'posts:edit')) {
 ### Two-Level Cache
 
 1. **Request-level cache** - In-memory, 60s TTL
-   - Zero latency on cache hits
-   - Prevents duplicate queries in same request
+    - Zero latency on cache hits
+    - Prevents duplicate queries in same request
 
 2. **KV cache** - Cloudflare KV, 5min TTL
-   - Shared across requests/workers
-   - Per-organization versioning
+    - Shared across requests/workers
+    - Per-organization versioning
 
 **Performance:**
+
 - First request: 2-3 DB queries
 - Cached requests: **0 DB queries** ⚡
 
@@ -208,15 +208,15 @@ await cache.clear();
 
 ```typescript
 // Format: resource:action
-'users:read'     // Read users
-'users:create'   // Create users
-'users:update'   // Update users
-'users:delete'   // Delete users
-'users:*'        // All user operations
+'users:read'; // Read users
+'users:create'; // Create users
+'users:update'; // Update users
+'users:delete'; // Delete users
+'users:*'; // All user operations
 
 // Wildcards
-'*:read'         // Read all resources
-'*:*'            // Full access (superadmin)
+'*:read'; // Read all resources
+'*:*'; // Full access (superadmin)
 ```
 
 ## User Model Extensions
@@ -248,65 +248,68 @@ const roles = await user.roles({ organizationId, cache });
 
 ```typescript
 import {
-  buildAppContext,
-  extractOrganizationId,
-  extractAppId,
-  hasPermission,
-  hasAnyRole,
-  hasAllRoles,
-  isOwnerOrAdmin,
+    buildAppContext,
+    extractOrganizationId,
+    extractAppId,
+    hasPermission,
+    hasAnyRole,
+    hasAllRoles,
+    isOwnerOrAdmin,
 } from '@ottabase/rbac';
 
 // Extract tenant ID from request
 const orgId = await extractOrganizationId({
-  request,
-  headerName: 'X-Organization-Id',     // Default
-  queryParam: 'organizationId',         // Default
-  subdomainPrefix: 'org-',              // acme.app.com → org-acme
+    request,
+    headerName: 'X-Organization-Id', // Default
+    queryParam: 'organizationId', // Default
+    subdomainPrefix: 'org-', // acme.app.com → org-acme
 });
 
 // Extract app ID from request
 const appId = extractAppId({
-  request,
-  headerName: 'X-App-Id',
-  queryParam: 'appId',
-  env,
-  defaultAppId: 'web',
+    request,
+    headerName: 'X-App-Id',
+    queryParam: 'appId',
+    env,
+    defaultAppId: 'web',
 });
 
 // Build context
 const context = await buildAppContext({
-  organizationId: orgId,
-  appId,
-  user,
-  cache,
-  ipAddress: request.headers.get('cf-connecting-ip'),
-  userAgent: request.headers.get('user-agent'),
+    organizationId: orgId,
+    appId,
+    user,
+    cache,
+    ipAddress: request.headers.get('cf-connecting-ip'),
+    userAgent: request.headers.get('user-agent'),
 });
 
 // Use context helpers
-if (hasPermission(context, 'posts:edit')) { }
-if (hasAnyRole(context, ['admin', 'editor'])) { }
-if (isOwnerOrAdmin(context)) { }
+if (hasPermission(context, 'posts:edit')) {
+}
+if (hasAnyRole(context, ['admin', 'editor'])) {
+}
+if (isOwnerOrAdmin(context)) {
+}
 ```
 
 ## Default Roles
 
-| Role | Permissions | Description |
-|------|-------------|-------------|
-| `owner` | `*:*` | Full organization control |
-| `admin` | `*:*` (org-scoped) | Manage org members and settings |
-| `member` | `*:read` | Basic read access |
+| Role     | Permissions        | Description                     |
+| -------- | ------------------ | ------------------------------- |
+| `owner`  | `*:*`              | Full organization control       |
+| `admin`  | `*:*` (org-scoped) | Manage org members and settings |
+| `member` | `*:read`           | Basic read access               |
 
 Create custom roles:
 
 ```typescript
 const role = await Role.create({
-  name: 'content-manager',
-  displayName: 'Content Manager',
-  description: 'Manage all content',
-  organizationId: 'org-123', // null = system role
-  permissions: ['posts:*', 'tags:*', 'media:*'],
+    name: 'content-manager',
+    displayName: 'Content Manager',
+    description: 'Manage all content',
+    organizationId: 'org-123', // null = system role
+    permissions: ['posts:*', 'tags:*', 'media:*'],
 });
 ```
 
@@ -317,7 +320,7 @@ const role = await Role.create({
 ```typescript
 // Each org is isolated
 await user.hasPermission('posts:edit', {
-  organizationId: 'org-acme', // Required
+    organizationId: 'org-acme', // Required
 });
 ```
 
@@ -326,7 +329,7 @@ await user.hasPermission('posts:edit', {
 ```typescript
 // No org required (set organizationId: null or omit)
 await user.hasPermission('posts:edit', {
-  organizationId: null, // Global context
+    organizationId: null, // Global context
 });
 ```
 
@@ -337,25 +340,25 @@ await user.hasPermission('posts:edit', {
 ```typescript
 // Cloudflare Worker
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    // Build context
-    const orgId = await extractOrganizationId({ request });
-    const user = await getCurrentUser(request, env);
+    async fetch(request: Request, env: Env): Promise<Response> {
+        // Build context
+        const orgId = await extractOrganizationId({ request });
+        const user = await getCurrentUser(request, env);
 
-    const context = await buildAppContext({
-      organizationId: orgId,
-      appId: 'web',
-      user,
-      cache: initRBACCache({ kv: createKVClient({ namespace: env.RBAC_KV }) }),
-    });
+        const context = await buildAppContext({
+            organizationId: orgId,
+            appId: 'web',
+            user,
+            cache: initRBACCache({ kv: createKVClient({ namespace: env.RBAC_KV }) }),
+        });
 
-    // Check permission
-    if (!hasPermission(context, 'posts:create')) {
-      return new Response('Forbidden', { status: 403 });
-    }
+        // Check permission
+        if (!hasPermission(context, 'posts:create')) {
+            return new Response('Forbidden', { status: 403 });
+        }
 
-    // ... handle request
-  }
+        // ... handle request
+    },
 };
 ```
 
@@ -366,18 +369,12 @@ import { logCreate } from '@ottabase/audit';
 import { createAuditData } from '@ottabase/rbac';
 
 // Create audit log from context
-const auditData = createAuditData(
-  context,
-  'create',
-  'post',
-  postId,
-  { title: 'New Post' }
-);
+const auditData = createAuditData(context, 'create', 'post', postId, { title: 'New Post' });
 
 await logCreate('post', postId, postData, {
-  ...auditData,
-  ipAddress: context.ipAddress,
-  userAgent: context.userAgent,
+    ...auditData,
+    ipAddress: context.ipAddress,
+    userAgent: context.userAgent,
 });
 ```
 

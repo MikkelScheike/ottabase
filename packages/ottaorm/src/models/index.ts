@@ -22,7 +22,12 @@ export { ScheduledTask, scheduledTasksTable, type NewScheduledTaskType, type Sch
 
 // Multi-tenant organization models
 export { Organization, organizationsTable, type NewOrganizationType, type OrganizationType } from './Organization';
-export { OrganizationMember, organizationMembersTable, type NewOrganizationMemberType, type OrganizationMemberType } from './OrganizationMember';
+export {
+    OrganizationMember,
+    organizationMembersTable,
+    type NewOrganizationMemberType,
+    type OrganizationMemberType,
+} from './OrganizationMember';
 
 // RBAC models (with tenant + app scoping)
 export { Role, rolesTable, type NewRoleType, type RoleType } from './Role';

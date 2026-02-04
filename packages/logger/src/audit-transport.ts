@@ -32,8 +32,12 @@ import type { LogEntry, Transport } from './types';
  * ```
  */
 export class AuditDbTransport implements Transport {
-    private getUserContext: () => { userId?: string; userEmail?: string } | Promise<{ userId?: string; userEmail?: string }>;
-    private getRequestContext: () => { ipAddress?: string; userAgent?: string } | Promise<{ ipAddress?: string; userAgent?: string }>;
+    private getUserContext: () =>
+        | { userId?: string; userEmail?: string }
+        | Promise<{ userId?: string; userEmail?: string }>;
+    private getRequestContext: () =>
+        | { ipAddress?: string; userAgent?: string }
+        | Promise<{ ipAddress?: string; userAgent?: string }>;
     private minLevel: number;
     private buffer: LogEntry[] = [];
     private bufferSize: number;
@@ -41,13 +45,19 @@ export class AuditDbTransport implements Transport {
     private timer: ReturnType<typeof setTimeout> | null = null;
     private flushing: boolean = false;
 
-    constructor(options: {
-        getUserContext?: () => { userId?: string; userEmail?: string } | Promise<{ userId?: string; userEmail?: string }>;
-        getRequestContext?: () => { ipAddress?: string; userAgent?: string } | Promise<{ ipAddress?: string; userAgent?: string }>;
-        minLevel?: number;
-        bufferSize?: number;
-        flushInterval?: number;
-    } = {}) {
+    constructor(
+        options: {
+            getUserContext?: () =>
+                | { userId?: string; userEmail?: string }
+                | Promise<{ userId?: string; userEmail?: string }>;
+            getRequestContext?: () =>
+                | { ipAddress?: string; userAgent?: string }
+                | Promise<{ ipAddress?: string; userAgent?: string }>;
+            minLevel?: number;
+            bufferSize?: number;
+            flushInterval?: number;
+        } = {},
+    ) {
         this.getUserContext = options.getUserContext || (() => ({}));
         this.getRequestContext = options.getRequestContext || (() => ({}));
         this.minLevel = options.minLevel ?? 1; // INFO level by default

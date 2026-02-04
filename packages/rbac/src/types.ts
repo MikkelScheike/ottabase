@@ -31,7 +31,7 @@ export class RBACError extends Error {
     constructor(
         message: string,
         public code: 'UNAUTHORIZED' | 'FORBIDDEN' | 'INVALID_PERMISSION' = 'FORBIDDEN',
-        public details?: any
+        public details?: any,
     ) {
         super(message);
         this.name = 'RBACError';

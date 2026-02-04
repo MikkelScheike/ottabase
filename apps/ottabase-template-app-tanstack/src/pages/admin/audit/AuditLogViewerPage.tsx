@@ -258,11 +258,7 @@ export function AuditLogViewerPage() {
 
                                 {/* Clear Filters */}
                                 <div className="space-y-2 flex items-end">
-                                    <Button
-                                        variant="outline"
-                                        onClick={handleClearFilters}
-                                        className="w-full"
-                                    >
+                                    <Button variant="outline" onClick={handleClearFilters} className="w-full">
                                         Clear Filters
                                     </Button>
                                 </div>
@@ -329,9 +325,7 @@ export function AuditLogViewerPage() {
                                                     <code className="text-xs">{log.organizationId || '-'}</code>
                                                 </TableCell>
                                                 <TableCell className="max-w-xs truncate text-xs text-muted-foreground">
-                                                    {log.metadata
-                                                        ? JSON.stringify(log.metadata)
-                                                        : '-'}
+                                                    {log.metadata ? JSON.stringify(log.metadata) : '-'}
                                                 </TableCell>
                                             </TableRow>
                                         ))}
@@ -359,8 +353,7 @@ export function AuditLogViewerPage() {
 
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm text-muted-foreground">
-                                            Page {pagination.page} of {pagination.totalPages} (
-                                            {pagination.total} total)
+                                            Page {pagination.page} of {pagination.totalPages} ({pagination.total} total)
                                         </span>
                                         <div className="flex gap-1">
                                             <Button
@@ -411,12 +404,12 @@ export function AuditLogViewerPage() {
                 </CardHeader>
                 <CardContent className="text-sm space-y-2 text-muted-foreground">
                     <p>
-                        Audit logs capture all significant events across the system, including user actions,
-                        RBAC changes, and data modifications.
+                        Audit logs capture all significant events across the system, including user actions, RBAC
+                        changes, and data modifications.
                     </p>
                     <p>
-                        Logs are automatically retained based on your organization's compliance requirements
-                        and can be exported for archival purposes.
+                        Logs are automatically retained based on your organization's compliance requirements and can be
+                        exported for archival purposes.
                     </p>
                 </CardContent>
             </Card>

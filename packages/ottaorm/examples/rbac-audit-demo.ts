@@ -130,7 +130,7 @@ async function createUsersAndAssignRoles(adminRole: any, editorRole: any) {
             roleName: 'editor',
             organizationId: 'org-123',
         },
-        adminUser.get('email') as string
+        adminUser.get('email') as string,
     );
     console.log('✓ Logged role assignment to audit log');
 
@@ -221,7 +221,7 @@ async function performActionsWithAudit(adminUser: any, editorUser: any) {
             userAgent: 'Mozilla/5.0',
             url: '/api/users',
             method: 'POST',
-        }
+        },
     );
     console.log('✓ Created user and logged to audit');
 
@@ -245,7 +245,7 @@ async function performActionsWithAudit(adminUser: any, editorUser: any) {
             userAgent: 'Mozilla/5.0',
             url: `/api/users/${newUser.get('id')}`,
             method: 'PATCH',
-        }
+        },
     );
     console.log('✓ Updated user and logged to audit');
 
@@ -277,11 +277,7 @@ async function queryAuditLogs(adminUser: any, editorUser: any) {
     console.log(`Found ${orgLogs.length} audit log(s) for org-123`);
 
     // Get audit logs by admin user
-    const adminLogs = await AuditLog.getByUserInOrganization(
-        adminUser.get('id') as string,
-        'org-123',
-        10
-    );
+    const adminLogs = await AuditLog.getByUserInOrganization(adminUser.get('id') as string, 'org-123', 10);
     console.log(`Found ${adminLogs.length} audit log(s) by admin user`);
 
     // Get recent audit logs

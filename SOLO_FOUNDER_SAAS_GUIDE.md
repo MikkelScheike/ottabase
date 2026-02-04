@@ -2,7 +2,8 @@
 
 **Build production-ready multi-tenant SaaS from your home office**
 
-Welcome to Ottabase - the all-batteries-included monorepo for solo founders who want to ship fast without compromising on quality.
+Welcome to Ottabase - the all-batteries-included monorepo for solo founders who want to ship fast without compromising
+on quality.
 
 ---
 
@@ -44,6 +45,7 @@ pnpm dev
 ```
 
 **You now have:**
+
 - ✅ Multi-tenant organization system
 - ✅ Role-based access control (RBAC)
 - ✅ Audit logging
@@ -76,16 +78,19 @@ pnpm dev
 ### What This Means
 
 **Tenant (Organization):**
+
 - Your customers (e.g., Acme Corp, Startup Inc)
 - Data is isolated per tenant
 - Each tenant has its own members, roles, and data
 
 **App:**
+
 - Different applications sharing the same database (web, admin, api)
 - Users can have different permissions in different apps
 - Example: User is admin in web app, viewer in admin dashboard
 
 **User:**
+
 - Global user accounts (same login across all tenants)
 - Users can belong to multiple organizations
 - Permissions are scoped per tenant + app
@@ -106,7 +111,7 @@ const org = await Organization.create({
     name: 'Acme Corp',
     slug: 'acme',
     plan: 'pro',
-    status: 'active'
+    status: 'active',
 });
 
 // Find by slug
@@ -125,7 +130,7 @@ await OrganizationMember.addMember({
     userId: user.id,
     organizationId: org.id,
     role: 'admin',
-    status: 'active'
+    status: 'active',
 });
 
 // Check membership
@@ -147,20 +152,20 @@ import { User, Role, UserRole } from '@ottabase/ottaorm/models';
 await user.assignRole(
     adminRoleId,
     assignedBy.id,
-    'org-acme',  // organizationId (REQUIRED)
-    'web'        // appId (OPTIONAL - null means all apps)
+    'org-acme', // organizationId (REQUIRED)
+    'web', // appId (OPTIONAL - null means all apps)
 );
 
 // Check permissions
 const canEdit = await user.hasPermission('posts:edit', {
     organizationId: 'org-acme',
-    cache: rbacCache
+    cache: rbacCache,
 });
 
 // Get user roles
 const roles = await user.roles({
     organizationId: 'org-acme',
-    cache: rbacCache
+    cache: rbacCache,
 });
 ```
 
@@ -173,20 +178,20 @@ import { buildAppContext, hasPermission } from '@ottabase/rbac';
 
 // Build context from request
 const context = await buildAppContext({
-    organizationId: 'org-acme',  // From subdomain/header
-    appId: 'web',                // From env/header
-    user: currentUser,            // From session
+    organizationId: 'org-acme', // From subdomain/header
+    appId: 'web', // From env/header
+    user: currentUser, // From session
     ipAddress: request.headers.get('cf-connecting-ip'),
     userAgent: request.headers.get('user-agent'),
-    cache: rbacCache
+    cache: rbacCache,
 });
 
 // Now you have everything:
-console.log(context.organizationId);  // 'org-acme'
-console.log(context.appId);           // 'web'
-console.log(context.user.email);      // 'john@acme.com'
-console.log(context.roles);           // ['admin', 'editor']
-console.log(context.permissions);     // ['posts:*', 'users:read', ...]
+console.log(context.organizationId); // 'org-acme'
+console.log(context.appId); // 'web'
+console.log(context.user.email); // 'john@acme.com'
+console.log(context.roles); // ['admin', 'editor']
+console.log(context.permissions); // ['posts:*', 'users:read', ...]
 
 // Check permissions easily
 if (hasPermission(context, 'posts:edit')) {
@@ -203,20 +208,11 @@ import { logCreate, logUpdate } from '@ottabase/audit';
 import { createAuditData } from '@ottabase/rbac';
 
 // Log action using context
-await logCreate('post', post.id, post, createAuditData(
-    context,
-    'create',
-    'post',
-    post.id
-));
+await logCreate('post', post.id, post, createAuditData(context, 'create', 'post', post.id));
 
 // Query logs
 const logs = await AuditLog.getByOrganization('org-acme', 100);
-const userLogs = await AuditLog.getByUserInOrganization(
-    user.id,
-    'org-acme',
-    50
-);
+const userLogs = await AuditLog.getByUserInOrganization(user.id, 'org-acme', 50);
 ```
 
 ---
@@ -234,10 +230,11 @@ sqlite3 your-app.db < packages/ottaorm/migrations/002_multi_tenant_system.sql
 ```
 
 **What you get:**
+
 - `organizations` - Tenant entities
 - `organization_members` - User ↔ Organization
 - `roles` - System roles (admin, editor, viewer)
-- `permissions` - System permissions (users:*, posts:read, etc.)
+- `permissions` - System permissions (users:\*, posts:read, etc.)
 - `user_roles` - User role assignments (per organization + app)
 - `audit_logs` - Complete audit trail
 
@@ -255,21 +252,16 @@ import { Role, Permission } from '@ottabase/ottaorm/models';
 // Create roles
 const adminRole = await Role.create({
     name: 'admin',
-    description: 'Full access to all resources'
+    description: 'Full access to all resources',
 });
 
 // Create permissions
-const permissions = [
-    'users:*',
-    'posts:*',
-    'roles:*',
-    'audit:read'
-];
+const permissions = ['users:*', 'posts:*', 'roles:*', 'audit:read'];
 
 for (const perm of permissions) {
     await Permission.create({
         name: perm,
-        description: `Permission for ${perm}`
+        description: `Permission for ${perm}`,
     });
 }
 
@@ -284,10 +276,10 @@ import { initRBACCache } from '@ottabase/rbac';
 
 // Initialize with Cloudflare KV
 const cache = initRBACCache({
-    kv: env.KV_NAMESPACE,  // Cloudflare KV
-    ttl: 300,              // 5 minutes
+    kv: env.KV_NAMESPACE, // Cloudflare KV
+    ttl: 300, // 5 minutes
     prefix: 'rbac:',
-    enabled: true
+    enabled: true,
 });
 ```
 
@@ -301,7 +293,7 @@ const org = await Organization.create({
     name: 'Your Company',
     slug: 'your-company',
     ownerId: user.id,
-    plan: 'pro'
+    plan: 'pro',
 });
 
 // Add owner as admin
@@ -309,7 +301,7 @@ await OrganizationMember.addMember({
     userId: user.id,
     organizationId: org.id,
     role: 'owner',
-    status: 'active'
+    status: 'active',
 });
 
 // Assign RBAC role
@@ -317,7 +309,7 @@ await user.assignRole(
     adminRoleId,
     user.id,
     org.id,
-    null  // All apps
+    null, // All apps
 );
 ```
 
@@ -334,17 +326,21 @@ Let's build a blog post CRUD with full multi-tenant support and RBAC.
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const postsTable = sqliteTable('posts', {
-    id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-    organizationId: text('organization_id').notNull(),  // Tenant scoping
-    appId: text('app_id'),                              // App scoping (optional)
+    id: text('id')
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    organizationId: text('organization_id').notNull(), // Tenant scoping
+    appId: text('app_id'), // App scoping (optional)
     title: text('title').notNull(),
     content: text('content').notNull(),
     authorId: text('author_id').notNull(),
     status: text('status').default('draft'),
     createdAt: integer('created_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date()).notNull(),
+        .$defaultFn(() => new Date())
+        .notNull(),
     updatedAt: integer('updated_at', { mode: 'timestamp' })
-        .$defaultFn(() => new Date()).notNull(),
+        .$defaultFn(() => new Date())
+        .notNull(),
 });
 ```
 
@@ -363,7 +359,7 @@ export async function POST(request: Request) {
         appId: 'web',
         user: await getAuthUser(request),
         ipAddress: request.headers.get('cf-connecting-ip'),
-        cache: rbacCache
+        cache: rbacCache,
     });
 
     // 2. Check permission
@@ -377,18 +373,13 @@ export async function POST(request: Request) {
     // 4. Create post (tenant-scoped)
     const post = await Post.create({
         ...data,
-        organizationId: context.organizationId,  // Tenant isolation
-        appId: context.appId,                     // App scoping
-        authorId: context.userId!
+        organizationId: context.organizationId, // Tenant isolation
+        appId: context.appId, // App scoping
+        authorId: context.userId!,
     });
 
     // 5. Log action
-    await logCreate('post', post.id, post, createAuditData(
-        context,
-        'create',
-        'post',
-        post.id
-    ));
+    await logCreate('post', post.id, post, createAuditData(context, 'create', 'post', post.id));
 
     return Response.json(post);
 }
@@ -401,7 +392,7 @@ export async function GET(request: Request) {
     const context = await buildAppContext({
         organizationId: extractOrgFromRequest(request),
         appId: 'web',
-        user: await getAuthUser(request)
+        user: await getAuthUser(request),
     });
 
     if (!hasPermission(context, 'posts:read')) {
@@ -411,7 +402,7 @@ export async function GET(request: Request) {
     // Query posts for THIS organization only
     const posts = await Post.where({
         organizationId: context.organizationId,
-        appId: context.appId  // Optional: filter by app
+        appId: context.appId, // Optional: filter by app
     });
 
     return Response.json(posts);
@@ -419,6 +410,7 @@ export async function GET(request: Request) {
 ```
 
 **Key Points:**
+
 1. ✅ Context built once, used everywhere
 2. ✅ Permissions checked before operations
 3. ✅ Data scoped by organizationId (tenant isolation)
@@ -438,21 +430,21 @@ import { extractOrganizationId } from '@ottabase/rbac';
 // acme.yourapp.com → 'org-acme'
 const orgId = await extractOrganizationId({
     request,
-    subdomainPrefix: 'org-'
+    subdomainPrefix: 'org-',
 });
 
 // Strategy 2: Header
 // X-Organization-Id: org-acme
 const orgId = await extractOrganizationId({
     request,
-    headerName: 'X-Organization-Id'
+    headerName: 'X-Organization-Id',
 });
 
 // Strategy 3: Query parameter
 // ?organizationId=org-acme
 const orgId = await extractOrganizationId({
     request,
-    queryParam: 'organizationId'
+    queryParam: 'organizationId',
 });
 
 // Strategy 4: JWT claim
@@ -462,7 +454,7 @@ const orgId = await extractOrganizationId({
     getJWT: async (req) => {
         const token = req.headers.get('Authorization')?.replace('Bearer ', '');
         return jwt.verify(token, secret);
-    }
+    },
 });
 ```
 
@@ -480,7 +472,7 @@ async function switchOrganization(userId: string, newOrgId: string) {
     // 2. Update session/JWT with new organizationId
     const session = await updateSession({
         userId,
-        organizationId: newOrgId
+        organizationId: newOrgId,
     });
 
     // 3. Clear cache for this user in new org
@@ -493,17 +485,10 @@ async function switchOrganization(userId: string, newOrgId: string) {
 ### Inviting Users to Organization
 
 ```typescript
-async function inviteUserToOrganization(
-    email: string,
-    organizationId: string,
-    invitedById: string
-) {
+async function inviteUserToOrganization(email: string, organizationId: string, invitedById: string) {
     // 1. Check inviter has permission
     const inviter = await User.find(invitedById);
-    const canInvite = await OrganizationMember.isOwnerOrAdmin(
-        invitedById,
-        organizationId
-    );
+    const canInvite = await OrganizationMember.isOwnerOrAdmin(invitedById, organizationId);
 
     if (!canInvite) {
         throw new Error('Insufficient permissions to invite');
@@ -522,21 +507,26 @@ async function inviteUserToOrganization(
         role: 'member',
         status: 'invited',
         invitedBy: invitedById,
-        invitedAt: new Date()
+        invitedAt: new Date(),
     });
 
     // 4. Send invitation email
     await sendInvitationEmail(user.email, organizationId);
 
     // 5. Log action
-    await logCreate('organization_member', user.id, { email }, {
-        userId: invitedById,
-        organizationId,
-        appId: 'web',
-        action: 'invite_user',
-        resourceType: 'organization_member',
-        resourceId: user.id
-    });
+    await logCreate(
+        'organization_member',
+        user.id,
+        { email },
+        {
+            userId: invitedById,
+            organizationId,
+            appId: 'web',
+            action: 'invite_user',
+            resourceType: 'organization_member',
+            resourceId: user.id,
+        },
+    );
 
     return user;
 }
@@ -572,13 +562,11 @@ if (hasPermission(context, 'posts:edit')) {
 // Method 2: Using user model
 const canDelete = await user.hasPermission('posts:delete', {
     organizationId: 'org-acme',
-    cache: rbacCache
+    cache: rbacCache,
 });
 
 // Method 3: Multiple permissions (OR)
-const canManageUsers =
-    hasPermission(context, 'users:*') ||
-    hasPermission(context, '*:*');
+const canManageUsers = hasPermission(context, 'users:*') || hasPermission(context, '*:*');
 ```
 
 ### Creating Custom Roles
@@ -587,15 +575,11 @@ const canManageUsers =
 // Create custom role
 const editorRole = await Role.create({
     name: 'blog_editor',
-    description: 'Can edit blog posts only'
+    description: 'Can edit blog posts only',
 });
 
 // Assign specific permissions
-const permissions = [
-    'posts:read',
-    'posts:write',
-    'posts:edit'
-];
+const permissions = ['posts:read', 'posts:write', 'posts:edit'];
 
 for (const permName of permissions) {
     const perm = await Permission.first({ name: permName });
@@ -609,7 +593,7 @@ await user.assignRole(
     editorRole.id,
     adminUser.id,
     'org-acme',
-    'web'  // Only in web app
+    'web', // Only in web app
 );
 ```
 
@@ -625,8 +609,8 @@ await user.assignRole(viewerRoleId, assignerId, orgId, 'admin');
 // Check permissions in specific app
 const context = await buildAppContext({
     organizationId: orgId,
-    appId: 'admin',  // Admin dashboard
-    user
+    appId: 'admin', // Admin dashboard
+    user,
 });
 
 // This will use permissions for admin app only
@@ -640,6 +624,7 @@ const canEditSettings = hasPermission(context, 'settings:edit');
 ### What Gets Logged
 
 Every action creates an audit log entry with:
+
 - Who: userId, userEmail
 - What: action (create/update/delete), resourceType, resourceId
 - When: createdAt timestamp
@@ -657,21 +642,26 @@ await logCreate('post', post.id, post, {
     userId: context.userId,
     organizationId: context.organizationId,
     appId: context.appId,
-    ipAddress: context.ipAddress
+    ipAddress: context.ipAddress,
 });
 
 // Update
-await logUpdate('post', post.id, { before, after }, {
-    userId: context.userId,
-    organizationId: context.organizationId,
-    appId: context.appId
-});
+await logUpdate(
+    'post',
+    post.id,
+    { before, after },
+    {
+        userId: context.userId,
+        organizationId: context.organizationId,
+        appId: context.appId,
+    },
+);
 
 // Delete
 await logDelete('post', post.id, post, {
     userId: context.userId,
     organizationId: context.organizationId,
-    appId: context.appId
+    appId: context.appId,
 });
 
 // Custom action
@@ -683,7 +673,7 @@ await AuditLog.create({
     resourceType: 'organization',
     resourceId: orgId,
     status: 'success',
-    metadata: JSON.stringify({ format: 'csv', rowCount: 1000 })
+    metadata: JSON.stringify({ format: 'csv', rowCount: 1000 }),
 });
 ```
 
@@ -694,25 +684,16 @@ await AuditLog.create({
 const logs = await AuditLog.getByOrganization('org-acme', 100);
 
 // User actions in organization
-const userLogs = await AuditLog.getByUserInOrganization(
-    user.id,
-    'org-acme',
-    50
-);
+const userLogs = await AuditLog.getByUserInOrganization(user.id, 'org-acme', 50);
 
 // Resource-specific logs
-const postLogs = await AuditLog.getByResourceInOrganization(
-    'post',
-    post.id,
-    'org-acme',
-    20
-);
+const postLogs = await AuditLog.getByResourceInOrganization('post', post.id, 'org-acme', 20);
 
 // Advanced queries
 const recentDeletes = await AuditLog.where({
     organizationId: 'org-acme',
     action: 'delete',
-    createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
+    createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
 });
 ```
 
@@ -748,9 +729,9 @@ import { initRBACCache } from '@ottabase/rbac';
 export function getRBACCache(env: any) {
     return initRBACCache({
         kv: env.KV_NAMESPACE,
-        ttl: 300,        // 5 minutes
+        ttl: 300, // 5 minutes
         prefix: 'rbac:',
-        enabled: !!env.KV_NAMESPACE
+        enabled: !!env.KV_NAMESPACE,
     });
 }
 ```
@@ -773,7 +754,7 @@ export async function middleware(request: Request) {
     const appId = extractAppId({
         request,
         env: process.env,
-        defaultAppId: 'web'
+        defaultAppId: 'web',
     });
 
     // Get user from session
@@ -786,7 +767,7 @@ export async function middleware(request: Request) {
         user,
         ipAddress: request.headers.get('cf-connecting-ip'),
         userAgent: request.headers.get('user-agent'),
-        cache: rbacCache
+        cache: rbacCache,
     });
 
     // Attach to request
@@ -801,7 +782,7 @@ export async function middleware(request: Request) {
 - [ ] Run migrations on production database
 - [ ] Setup Cloudflare KV for RBAC caching
 - [ ] Configure Auth.js with production secrets
-- [ ] Setup subdomain routing (*.yourapp.com)
+- [ ] Setup subdomain routing (\*.yourapp.com)
 - [ ] Configure CORS for API
 - [ ] Enable audit log archival (optional)
 - [ ] Setup monitoring for cache hit rates
@@ -823,7 +804,7 @@ export function withContext(handler: (req: Request, ctx: AppContext) => Promise<
             appId: extractAppId({ request, env: process.env }),
             user: await getAuthUser(request),
             ipAddress: request.headers.get('cf-connecting-ip'),
-            cache: rbacCache
+            cache: rbacCache,
         });
 
         return handler(request, context);
@@ -852,7 +833,7 @@ class TenantScopedModel extends BaseModel {
 
 // Usage
 const posts = await Post.scopeToOrganization('org-acme').where({
-    status: 'published'
+    status: 'published',
 });
 ```
 
@@ -910,7 +891,7 @@ const roles = await user.roles({ cache });
 // ✅ Correct
 const roles = await user.roles({
     cache,
-    organizationId: 'org-acme'  // REQUIRED
+    organizationId: 'org-acme', // REQUIRED
 });
 ```
 
@@ -919,6 +900,7 @@ const roles = await user.roles({
 **Problem:** User sees data from different organization
 
 **Solution:**
+
 1. Always filter queries by organizationId
 2. Validate organizationId in middleware
 3. Check user membership before operations
@@ -932,7 +914,7 @@ if (!isMember) {
 
 // Scope query
 const posts = await Post.where({
-    organizationId: orgId  // CRITICAL
+    organizationId: orgId, // CRITICAL
 });
 ```
 
@@ -941,6 +923,7 @@ const posts = await Post.where({
 **Problem:** RBAC queries still hitting database
 
 **Solution:**
+
 1. Check KV is configured
 2. Verify cache is initialized
 3. Check cache stats
@@ -962,6 +945,7 @@ console.log(stats);
 **Problem:** User has role but permission check fails
 
 **Solution:**
+
 1. Check role has permissions assigned
 2. Verify organizationId matches
 3. Check role is assigned in correct app
@@ -970,11 +954,14 @@ console.log(stats);
 // Debug permissions
 const role = await Role.first({ name: 'admin' });
 const permissions = await role.permissions();
-console.log('Role permissions:', permissions.map(p => p.name));
+console.log(
+    'Role permissions:',
+    permissions.map((p) => p.name),
+);
 
 const userPerms = await user.getPermissions({
     organizationId: 'org-acme',
-    cache: rbacCache
+    cache: rbacCache,
 });
 console.log('User permissions:', userPerms);
 ```
@@ -983,44 +970,41 @@ console.log('User permissions:', userPerms);
 
 ## What Makes This "Solo Founder's Delight"
 
-✅ **Zero Boilerplate** - Everything pre-configured and ready
-✅ **Production-Ready** - Security, performance, and scalability built-in
-✅ **Type-Safe** - Full TypeScript support with inference
-✅ **Batteries Included** - Auth, RBAC, Audit, Multi-tenancy out of the box
-✅ **DRY** - Reusable packages, no code duplication
-✅ **KISS** - Simple patterns, easy to understand
-✅ **Well-Documented** - This guide + inline docs + examples
-✅ **Scalable** - From MVP to millions of users
-✅ **Maintainable** - Clear architecture, easy to extend
+✅ **Zero Boilerplate** - Everything pre-configured and ready ✅ **Production-Ready** - Security, performance, and
+scalability built-in ✅ **Type-Safe** - Full TypeScript support with inference ✅ **Batteries Included** - Auth, RBAC,
+Audit, Multi-tenancy out of the box ✅ **DRY** - Reusable packages, no code duplication ✅ **KISS** - Simple patterns,
+easy to understand ✅ **Well-Documented** - This guide + inline docs + examples ✅ **Scalable** - From MVP to millions
+of users ✅ **Maintainable** - Clear architecture, easy to extend
 
 ---
 
 ## Next Steps
 
 1. **Read the architecture docs:**
-   - `MULTI_APP_MULTI_TENANT_ARCHITECTURE.md` - Deep dive into design decisions
-   - `RBAC_AUDIT_SETUP_GUIDE.md` - Detailed RBAC setup
-   - `OPTIMIZATION_SUMMARY.md` - Performance tips
+    - `MULTI_APP_MULTI_TENANT_ARCHITECTURE.md` - Deep dive into design decisions
+    - `RBAC_AUDIT_SETUP_GUIDE.md` - Detailed RBAC setup
+    - `OPTIMIZATION_SUMMARY.md` - Performance tips
 
 2. **Explore examples:**
-   - `packages/ottaorm/examples/rbac-audit-demo.ts` - Complete working example
-   - Look at existing feature packages (shortlinks, blog, referrals)
+    - `packages/ottaorm/examples/rbac-audit-demo.ts` - Complete working example
+    - Look at existing feature packages (shortlinks, blog, referrals)
 
 3. **Build your MVP:**
-   - Create your first organization
-   - Add RBAC to your routes
-   - Deploy to production
+    - Create your first organization
+    - Add RBAC to your routes
+    - Deploy to production
 
 4. **Join the community:**
-   - Star the repo
-   - Share your feedback
-   - Contribute improvements
+    - Star the repo
+    - Share your feedback
+    - Contribute improvements
 
 ---
 
 ## Support
 
 **Need help?**
+
 - GitHub Issues: https://github.com/your-user/ottabase/issues
 - Documentation: ./docs
 - Examples: ./packages/ottaorm/examples

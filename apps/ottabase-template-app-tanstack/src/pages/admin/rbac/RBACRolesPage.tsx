@@ -128,7 +128,10 @@ export function RBACRolesPage() {
             name: formData.name,
             displayName: formData.displayName,
             description: formData.description,
-            permissions: formData.permissions.split(',').map(p => p.trim()).filter(Boolean),
+            permissions: formData.permissions
+                .split(',')
+                .map((p) => p.trim())
+                .filter(Boolean),
         };
 
         try {
@@ -277,7 +280,9 @@ export function RBACRolesPage() {
                                     disabled={!!editingRole}
                                 />
                                 <p className="text-sm text-muted-foreground">
-                                    {editingRole ? 'Role name cannot be changed' : 'Unique role identifier (lowercase, no spaces)'}
+                                    {editingRole
+                                        ? 'Role name cannot be changed'
+                                        : 'Unique role identifier (lowercase, no spaces)'}
                                 </p>
                             </div>
 
@@ -322,9 +327,7 @@ export function RBACRolesPage() {
                             <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                                 Cancel
                             </Button>
-                            <Button type="submit">
-                                {editingRole ? 'Update Role' : 'Create Role'}
-                            </Button>
+                            <Button type="submit">{editingRole ? 'Update Role' : 'Create Role'}</Button>
                         </div>
                     </form>
                 </DialogContent>
@@ -336,7 +339,8 @@ export function RBACRolesPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Delete Role?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the role and remove it from all users. This action cannot be undone.
+                            This will permanently delete the role and remove it from all users. This action cannot be
+                            undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

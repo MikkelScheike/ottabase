@@ -72,7 +72,7 @@ export function OrganizationSettingsPage() {
     });
 
     const handleChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData((prev) => ({ ...prev, [field]: value }));
         setHasChanges(true);
     };
 
@@ -90,7 +90,7 @@ export function OrganizationSettingsPage() {
                 onError: (error) => {
                     toast.error('Failed to update', error instanceof Error ? error.message : 'Unknown error');
                 },
-            }
+            },
         );
     };
 
@@ -129,9 +129,7 @@ export function OrganizationSettingsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold">Organization Settings</h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage your organization profile and preferences
-                    </p>
+                    <p className="text-muted-foreground mt-1">Manage your organization profile and preferences</p>
                 </div>
                 <Button variant="outline" asChild>
                     <Link to="/organizations">← Back</Link>
@@ -152,9 +150,7 @@ export function OrganizationSettingsPage() {
                     <div className="space-y-2">
                         <Label>Organization ID</Label>
                         <div className="flex items-center gap-2">
-                            <code className="text-sm bg-muted px-3 py-2 rounded flex-1">
-                                {org.id}
-                            </code>
+                            <code className="text-sm bg-muted px-3 py-2 rounded flex-1">{org.id}</code>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -190,9 +186,7 @@ export function OrganizationSettingsPage() {
                             onChange={(e) => handleChange('slug', e.target.value)}
                             disabled={updateMutation.isPending}
                         />
-                        <p className="text-sm text-muted-foreground">
-                            URL: /org/{formData.slug}
-                        </p>
+                        <p className="text-sm text-muted-foreground">URL: /org/{formData.slug}</p>
                     </div>
 
                     {/* Plan */}
@@ -248,9 +242,7 @@ export function OrganizationSettingsPage() {
                     {/* Created At */}
                     <div className="space-y-2">
                         <Label>Created</Label>
-                        <p className="text-sm text-muted-foreground">
-                            {new Date(org.createdAt).toLocaleString()}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{new Date(org.createdAt).toLocaleString()}</p>
                     </div>
 
                     {/* Save Button */}
@@ -289,8 +281,8 @@ export function OrganizationSettingsPage() {
                         <AlertTriangle className="h-4 w-4" />
                         <AlertTitle>Delete Organization</AlertTitle>
                         <AlertDescription>
-                            This will permanently delete the organization and all associated data
-                            including members, roles, and audit logs. This action cannot be undone.
+                            This will permanently delete the organization and all associated data including members,
+                            roles, and audit logs. This action cannot be undone.
                         </AlertDescription>
                     </Alert>
 
@@ -312,8 +304,8 @@ export function OrganizationSettingsPage() {
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete <strong>{org.name}</strong> and all
-                            associated data. This action cannot be undone.
+                            This will permanently delete <strong>{org.name}</strong> and all associated data. This
+                            action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

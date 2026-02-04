@@ -18,10 +18,7 @@ export const runtime = 'edge';
 /**
  * Helper function to compose multiple middleware
  */
-function compose<T extends (...args: any[]) => Promise<Response>>(
-    handler: T,
-    ...middlewares: Array<(h: T) => T>
-): T {
+function compose<T extends (...args: any[]) => Promise<Response>>(handler: T, ...middlewares: Array<(h: T) => T>): T {
     return middlewares.reduce((h, middleware) => middleware(h), handler);
 }
 
@@ -77,7 +74,7 @@ export const POST = withRBAC(
                     error: 'Failed to create user',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
@@ -88,7 +85,7 @@ export const POST = withRBAC(
             if (!userId) return null;
             return User.find(userId);
         },
-    }
+    },
 );
 
 /**
@@ -141,7 +138,7 @@ export const DELETE = withRBAC(
                     error: 'Failed to delete user',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
@@ -152,5 +149,5 @@ export const DELETE = withRBAC(
             if (!userId) return null;
             return User.find(userId);
         },
-    }
+    },
 );

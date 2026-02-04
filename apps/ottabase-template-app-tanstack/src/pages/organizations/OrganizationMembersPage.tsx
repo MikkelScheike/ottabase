@@ -39,12 +39,7 @@ import { InviteMemberForm, type InviteMemberFormData } from './components/Invite
 import { ApiErrorDisplay } from '@/components/ErrorBoundary';
 import { TableSkeleton } from '@/components/LoadingSkeletons';
 import { useRBACToast } from '@/hooks/useToast';
-import {
-    useOrganizationMembers,
-    useInviteMember,
-    useUpdateMemberRole,
-    useRemoveMember,
-} from '@/hooks/useRBAC';
+import { useOrganizationMembers, useInviteMember, useUpdateMemberRole, useRemoveMember } from '@/hooks/useRBAC';
 
 export function OrganizationMembersPage() {
     const toast = useRBACToast();
@@ -87,7 +82,7 @@ export function OrganizationMembersPage() {
                 onError: (err) => {
                     toast.error('Failed to remove member', err instanceof Error ? err.message : 'Unknown error');
                 },
-            }
+            },
         );
     };
 
@@ -102,7 +97,7 @@ export function OrganizationMembersPage() {
                 onError: (err) => {
                     toast.error('Failed to update role', err instanceof Error ? err.message : 'Unknown error');
                 },
-            }
+            },
         );
     };
 
@@ -204,7 +199,9 @@ export function OrganizationMembersPage() {
                                         <TableCell>
                                             <Select
                                                 value={member.role}
-                                                onValueChange={(value: MemberRole) => handleQuickRoleChange(member.id, value)}
+                                                onValueChange={(value: MemberRole) =>
+                                                    handleQuickRoleChange(member.id, value)
+                                                }
                                                 disabled={updateRoleMutation.isPending}
                                             >
                                                 <SelectTrigger className="w-32">
@@ -231,14 +228,10 @@ export function OrganizationMembersPage() {
                                             </Badge>
                                         </TableCell>
                                         <TableCell>
-                                            {member.invitedAt
-                                                ? new Date(member.invitedAt).toLocaleDateString()
-                                                : '-'}
+                                            {member.invitedAt ? new Date(member.invitedAt).toLocaleDateString() : '-'}
                                         </TableCell>
                                         <TableCell>
-                                            {member.joinedAt
-                                                ? new Date(member.joinedAt).toLocaleDateString()
-                                                : '-'}
+                                            {member.joinedAt ? new Date(member.joinedAt).toLocaleDateString() : '-'}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
@@ -274,7 +267,9 @@ export function OrganizationMembersPage() {
                     <DialogHeader>
                         <DialogTitle>{editingMember ? 'Edit Member' : 'Invite Member'}</DialogTitle>
                         <DialogDescription>
-                            {editingMember ? 'Update member role and status' : 'Invite a new member to this organization'}
+                            {editingMember
+                                ? 'Update member role and status'
+                                : 'Invite a new member to this organization'}
                         </DialogDescription>
                     </DialogHeader>
                     <InviteMemberForm

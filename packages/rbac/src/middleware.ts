@@ -31,7 +31,7 @@ export function withRBAC<T extends (...args: any[]) => Promise<Response>>(
         requireAll?: boolean;
         getUserFromRequest?: (request: Request) => Promise<User | null>;
         cache?: RBACCache | boolean; // Pass cache instance or true to use global cache
-    }
+    },
 ): T {
     return (async (...args: any[]) => {
         const request = args[0] as Request;
@@ -58,7 +58,7 @@ export function withRBAC<T extends (...args: any[]) => Promise<Response>>(
                     {
                         status: 401,
                         headers: { 'Content-Type': 'application/json' },
-                    }
+                    },
                 );
             }
 
@@ -78,7 +78,7 @@ export function withRBAC<T extends (...args: any[]) => Promise<Response>>(
                         {
                             status: 403,
                             headers: { 'Content-Type': 'application/json' },
-                        }
+                        },
                     );
                 }
             }
@@ -99,7 +99,7 @@ export function withRBAC<T extends (...args: any[]) => Promise<Response>>(
                         {
                             status: 403,
                             headers: { 'Content-Type': 'application/json' },
-                        }
+                        },
                     );
                 }
             }
@@ -117,7 +117,7 @@ export function withRBAC<T extends (...args: any[]) => Promise<Response>>(
                     {
                         status: error.code === 'UNAUTHORIZED' ? 401 : 403,
                         headers: { 'Content-Type': 'application/json' },
-                    }
+                    },
                 );
             }
 
@@ -168,7 +168,7 @@ export function requirePermission(permission: string | string[], options: RBACCh
                 throw new RBACError(
                     result.reason || 'Insufficient permissions',
                     'FORBIDDEN',
-                    result.missingPermissions
+                    result.missingPermissions,
                 );
             }
 
@@ -209,7 +209,7 @@ export function requireRole(role: string | string[], options: RBACCheckOptions =
 export async function checkPermission(
     user: User | null,
     permission: string | string[],
-    options: RBACCheckOptions = {}
+    options: RBACCheckOptions = {},
 ): Promise<void> {
     const context = await createRBACContext(user);
     const result = hasPermission(context, permission, options);
@@ -225,7 +225,7 @@ export async function checkPermission(
 export async function checkRole(
     user: User | null,
     role: string | string[],
-    options: RBACCheckOptions = {}
+    options: RBACCheckOptions = {},
 ): Promise<void> {
     const context = await createRBACContext(user);
     const result = hasRole(context, role, options);

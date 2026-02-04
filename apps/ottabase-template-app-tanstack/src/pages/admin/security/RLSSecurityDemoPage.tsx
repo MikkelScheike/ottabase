@@ -240,8 +240,8 @@ export function RLSSecurityDemoPage() {
                 <ShieldAlert className="h-4 w-4" />
                 <AlertTitle>Production-Grade Security</AlertTitle>
                 <AlertDescription>
-                    Every database query is automatically filtered by your security context.
-                    Cross-tenant access is blocked at the ORM level before queries execute.
+                    Every database query is automatically filtered by your security context. Cross-tenant access is
+                    blocked at the ORM level before queries execute.
                 </AlertDescription>
             </Alert>
 
@@ -262,9 +262,9 @@ export function RLSSecurityDemoPage() {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <p className="text-muted-foreground">
-                                Row-Level Security (RLS) automatically enforces data isolation at the
-                                database level. Every query is filtered based on your security context
-                                (user, organization, app) without any manual filtering required.
+                                Row-Level Security (RLS) automatically enforces data isolation at the database level.
+                                Every query is filtered based on your security context (user, organization, app) without
+                                any manual filtering required.
                             </p>
 
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -274,8 +274,7 @@ export function RLSSecurityDemoPage() {
                                         <h3 className="font-semibold">Automatic Filtering</h3>
                                     </div>
                                     <p className="text-sm text-muted-foreground">
-                                        No need to add `where: {"{"} organizationId {"}"}` - RLS does it
-                                        automatically
+                                        No need to add `where: {'{'} organizationId {'}'}` - RLS does it automatically
                                     </p>
                                 </div>
 
@@ -303,11 +302,9 @@ export function RLSSecurityDemoPage() {
                             <div className="bg-muted p-4 rounded-lg font-mono text-sm">
                                 <div className="text-muted-foreground mb-2">// Before RLS (manual)</div>
                                 <div className="text-red-600">
-                                    const posts = await Posts.find({"{"} organizationId {"}"});
+                                    const posts = await Posts.find({'{'} organizationId {'}'});
                                 </div>
-                                <div className="text-muted-foreground mt-4 mb-2">
-                                    // After RLS (automatic)
-                                </div>
+                                <div className="text-muted-foreground mt-4 mb-2">// After RLS (automatic)</div>
                                 <div className="text-green-600">const posts = await Posts.find();</div>
                                 <div className="text-muted-foreground text-xs mt-2">
                                     ↳ Automatically filtered by security context
@@ -322,9 +319,7 @@ export function RLSSecurityDemoPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Live Security Tests</CardTitle>
-                            <CardDescription>
-                                Real-time validation of RLS policies across your system
-                            </CardDescription>
+                            <CardDescription>Real-time validation of RLS policies across your system</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -343,9 +338,7 @@ export function RLSSecurityDemoPage() {
                                         <TableRow key={idx}>
                                             <TableCell>{getStatusIcon(test.status)}</TableCell>
                                             <TableCell className="font-medium">{test.name}</TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {test.description}
-                                            </TableCell>
+                                            <TableCell className="text-muted-foreground">{test.description}</TableCell>
                                             <TableCell>{getLevelBadge(test.level)}</TableCell>
                                             <TableCell>{getStatusBadge(test.status)}</TableCell>
                                             <TableCell className="text-sm text-muted-foreground">
@@ -359,13 +352,10 @@ export function RLSSecurityDemoPage() {
                             <div className="mt-6 flex items-center justify-between p-4 bg-green-50 rounded-lg border border-green-200">
                                 <div className="flex items-center gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-600" />
-                                    <span className="font-semibold text-green-900">
-                                        All Security Tests Passed
-                                    </span>
+                                    <span className="font-semibold text-green-900">All Security Tests Passed</span>
                                 </div>
                                 <Badge variant="default">
-                                    {securityTests.filter((t) => t.status === 'passed').length}/
-                                    {securityTests.length}
+                                    {securityTests.filter((t) => t.status === 'passed').length}/{securityTests.length}
                                 </Badge>
                             </div>
                         </CardContent>
@@ -377,9 +367,7 @@ export function RLSSecurityDemoPage() {
                     <Card>
                         <CardHeader>
                             <CardTitle>Registered Model Policies</CardTitle>
-                            <CardDescription>
-                                Security policies for all models in your application
-                            </CardDescription>
+                            <CardDescription>Security policies for all models in your application</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <Table>
@@ -432,11 +420,9 @@ export function RLSSecurityDemoPage() {
                             <div className="mt-6 p-4 bg-muted rounded-lg">
                                 <h4 className="font-semibold mb-2">Add Custom Policy</h4>
                                 <div className="font-mono text-sm">
-                                    <div className="text-muted-foreground">
-                                        // Register your own models
-                                    </div>
+                                    <div className="text-muted-foreground">// Register your own models</div>
                                     <div>
-                                        registerPolicy({"{"}
+                                        registerPolicy({'{'}
                                         <br />
                                         &nbsp;&nbsp;model: 'posts',
                                         <br />
@@ -444,7 +430,7 @@ export function RLSSecurityDemoPage() {
                                         <br />
                                         &nbsp;&nbsp;auditEnabled: true,
                                         <br />
-                                        {"}"});
+                                        {'}'});
                                     </div>
                                 </div>
                             </div>
@@ -467,9 +453,7 @@ export function RLSSecurityDemoPage() {
                                     </div>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="bg-muted p-3 rounded font-mono text-sm">
-                                        {feature.example}
-                                    </div>
+                                    <div className="bg-muted p-3 rounded font-mono text-sm">{feature.example}</div>
                                 </CardContent>
                             </Card>
                         ))}
@@ -484,36 +468,32 @@ export function RLSSecurityDemoPage() {
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                                     <div>
-                                        <strong>Impossible to forget</strong> - Security is automatic,
-                                        not manual
+                                        <strong>Impossible to forget</strong> - Security is automatic, not manual
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                                     <div>
-                                        <strong>Reduces bugs by 90%</strong> - No manual filtering
-                                        means no filtering bugs
+                                        <strong>Reduces bugs by 90%</strong> - No manual filtering means no filtering
+                                        bugs
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                                     <div>
-                                        <strong>Single source of truth</strong> - All security rules in
-                                        one place
+                                        <strong>Single source of truth</strong> - All security rules in one place
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                                     <div>
-                                        <strong>Compliance ready</strong> - Audit all security
-                                        violations
+                                        <strong>Compliance ready</strong> - Audit all security violations
                                     </div>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
                                     <div>
-                                        <strong>Zero trust architecture</strong> - No model accessible
-                                        without policy
+                                        <strong>Zero trust architecture</strong> - No model accessible without policy
                                     </div>
                                 </li>
                             </ul>

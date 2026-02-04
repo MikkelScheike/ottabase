@@ -30,7 +30,7 @@ export const organizationMembersTable = sqliteTable(
     },
     (table) => ({
         pk: primaryKey({ columns: [table.userId, table.organizationId] }),
-    })
+    }),
 );
 
 /**

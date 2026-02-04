@@ -26,24 +26,24 @@ async function main() {
 
     // Initialize RBAC cache (in-memory for demo, use KV in production)
     const rbacCache = initRBACCache({
-        enabled: false  // Disabled for demo (no KV)
+        enabled: false, // Disabled for demo (no KV)
     });
 
     // Create system roles
     console.log('Creating system roles...');
     const adminRole = await Role.create({
         name: 'admin',
-        description: 'Full access to all resources'
+        description: 'Full access to all resources',
     });
 
     const editorRole = await Role.create({
         name: 'editor',
-        description: 'Can create and edit content'
+        description: 'Can create and edit content',
     });
 
     const viewerRole = await Role.create({
         name: 'viewer',
-        description: 'Read-only access'
+        description: 'Read-only access',
     });
 
     // Create permissions
@@ -67,16 +67,14 @@ async function main() {
         await adminRole.assignPermission(perm.id);
     }
 
-    const editorPerms = await Permission.where({}).then(perms =>
-        perms.filter(p => p.name.includes('posts:') && p.name !== 'posts:read')
+    const editorPerms = await Permission.where({}).then((perms) =>
+        perms.filter((p) => p.name.includes('posts:') && p.name !== 'posts:read'),
     );
     for (const perm of editorPerms) {
         await editorRole.assignPermission(perm.id);
     }
 
-    const viewerPerms = await Permission.where({}).then(perms =>
-        perms.filter(p => p.name === 'posts:read')
-    );
+    const viewerPerms = await Permission.where({}).then((perms) => perms.filter((p) => p.name === 'posts:read'));
     for (const perm of viewerPerms) {
         await viewerRole.assignPermission(perm.id);
     }
@@ -93,7 +91,7 @@ async function main() {
         name: 'Acme Corp',
         slug: 'acme',
         plan: 'pro',
-        status: 'active'
+        status: 'active',
     });
     console.log(`✅ Created organization: ${acmeCorp.name} (${acmeCorp.id})`);
 
@@ -101,7 +99,7 @@ async function main() {
         name: 'Startup Inc',
         slug: 'startup',
         plan: 'free',
-        status: 'active'
+        status: 'active',
     });
     console.log(`✅ Created organization: ${startupInc.name} (${startupInc.id})\n`);
 
@@ -113,19 +111,19 @@ async function main() {
 
     const john = await User.create({
         email: 'john@acme.com',
-        name: 'John Doe'
+        name: 'John Doe',
     });
     console.log(`✅ Created user: ${john.name} (${john.email})`);
 
     const jane = await User.create({
         email: 'jane@acme.com',
-        name: 'Jane Smith'
+        name: 'Jane Smith',
     });
     console.log(`✅ Created user: ${jane.name} (${jane.email})`);
 
     const bob = await User.create({
         email: 'bob@startup.com',
-        name: 'Bob Johnson'
+        name: 'Bob Johnson',
     });
     console.log(`✅ Created user: ${bob.name} (${bob.email})\n`);
 
@@ -140,7 +138,7 @@ async function main() {
         userId: john.id,
         organizationId: acmeCorp.id,
         role: 'owner',
-        status: 'active'
+        status: 'active',
     });
     console.log(`✅ John → Acme Corp (owner)`);
 
@@ -150,7 +148,7 @@ async function main() {
         organizationId: acmeCorp.id,
         role: 'admin',
         status: 'active',
-        invitedBy: john.id
+        invitedBy: john.id,
     });
     console.log(`✅ Jane → Acme Corp (admin)`);
 
@@ -159,7 +157,7 @@ async function main() {
         userId: bob.id,
         organizationId: startupInc.id,
         role: 'owner',
-        status: 'active'
+        status: 'active',
     });
     console.log(`✅ Bob → Startup Inc (owner)\n`);
 
@@ -196,7 +194,7 @@ async function main() {
         user: john,
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla/5.0',
-        cache: rbacCache
+        cache: rbacCache,
     });
 
     console.log(`✅ John's context:`);
@@ -212,7 +210,7 @@ async function main() {
         organizationName: acmeCorp.name,
         appId: 'web',
         user: jane,
-        cache: rbacCache
+        cache: rbacCache,
     });
 
     console.log(`\n✅ Jane's context:`);
@@ -226,7 +224,7 @@ async function main() {
         organizationName: startupInc.name,
         appId: 'web',
         user: bob,
-        cache: rbacCache
+        cache: rbacCache,
     });
 
     console.log(`\n✅ Bob's context:`);
@@ -272,16 +270,11 @@ async function main() {
             content: 'First post',
             organizationId: johnContext.organizationId,
             appId: johnContext.appId,
-            authorId: johnContext.userId
+            authorId: johnContext.userId,
         };
 
         // Log creation
-        await logCreate('post', post.id, post, createAuditData(
-            johnContext,
-            'create',
-            'post',
-            post.id
-        ));
+        await logCreate('post', post.id, post, createAuditData(johnContext, 'create', 'post', post.id));
 
         console.log(`✅ Post created and logged`);
     } else {
@@ -308,7 +301,7 @@ async function main() {
             status: 'failure',
             errorMessage: 'Insufficient permissions',
             ipAddress: '192.168.1.2',
-            createdAt: new Date()
+            createdAt: new Date(),
         });
     }
 

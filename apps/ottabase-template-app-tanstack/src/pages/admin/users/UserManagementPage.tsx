@@ -77,7 +77,7 @@ export function UserManagementPage() {
     const users = mockUsers.filter(
         (user) =>
             user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase())
+            user.email.toLowerCase().includes(searchTerm.toLowerCase()),
     );
 
     const getUserInitials = (user: User) => {
@@ -101,9 +101,7 @@ export function UserManagementPage() {
                         <Users className="h-6 w-6" />
                         User Management
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        View and manage all users across the system
-                    </p>
+                    <p className="text-muted-foreground mt-1">View and manage all users across the system</p>
                 </div>
                 <Button variant="outline" asChild>
                     <Link to="/admin">← Back to Admin</Link>
@@ -121,29 +119,20 @@ export function UserManagementPage() {
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Admins</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {mockUsers.filter((u) => u.role === 'admin').length}
-                        </CardTitle>
+                        <CardTitle className="text-2xl">{mockUsers.filter((u) => u.role === 'admin').length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Verified</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {mockUsers.filter((u) => u.emailVerified).length}
-                        </CardTitle>
+                        <CardTitle className="text-2xl">{mockUsers.filter((u) => u.emailVerified).length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>This Month</CardDescription>
                         <CardTitle className="text-2xl">
-                            {
-                                mockUsers.filter(
-                                    (u) =>
-                                        new Date(u.createdAt).getMonth() === new Date().getMonth()
-                                ).length
-                            }
+                            {mockUsers.filter((u) => new Date(u.createdAt).getMonth() === new Date().getMonth()).length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -191,17 +180,11 @@ export function UserManagementPage() {
                                             <div className="flex items-center gap-3">
                                                 <Avatar className="h-8 w-8">
                                                     <AvatarImage src={user.image || undefined} />
-                                                    <AvatarFallback>
-                                                        {getUserInitials(user)}
-                                                    </AvatarFallback>
+                                                    <AvatarFallback>{getUserInitials(user)}</AvatarFallback>
                                                 </Avatar>
                                                 <div>
-                                                    <div className="font-medium">
-                                                        {user.name || 'No name'}
-                                                    </div>
-                                                    <code className="text-xs text-muted-foreground">
-                                                        {user.id}
-                                                    </code>
+                                                    <div className="font-medium">{user.name || 'No name'}</div>
+                                                    <code className="text-xs text-muted-foreground">{user.id}</code>
                                                 </div>
                                             </div>
                                         </TableCell>
@@ -238,9 +221,7 @@ export function UserManagementPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="sm" asChild>
-                                                <Link to={`/admin/users/${user.id}`}>
-                                                    View
-                                                </Link>
+                                                <Link to={`/admin/users/${user.id}`}>View</Link>
                                             </Button>
                                         </TableCell>
                                     </TableRow>

@@ -45,7 +45,7 @@ export const GET = withRBAC(
                     error: 'Internal server error',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
@@ -59,7 +59,7 @@ export const GET = withRBAC(
 
             return User.find(userId);
         },
-    }
+    },
 );
 
 /**
@@ -103,7 +103,7 @@ export const POST = withRBAC(
                     error: 'Failed to create user',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
@@ -114,7 +114,7 @@ export const POST = withRBAC(
             if (!userId) return null;
             return User.find(userId);
         },
-    }
+    },
 );
 
 /**
@@ -134,7 +134,7 @@ export const DELETE = withRBAC(
                     error: 'Internal server error',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
@@ -145,5 +145,5 @@ export const DELETE = withRBAC(
             if (!userId) return null;
             return User.find(userId);
         },
-    }
+    },
 );

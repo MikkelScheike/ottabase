@@ -111,9 +111,15 @@ export function RBACAdminPage() {
                     <div>
                         <h3 className="font-semibold mb-2">Hierarchy</h3>
                         <div className="space-y-1 text-sm">
-                            <p>🏢 <strong>Tenant (Organization)</strong> → Top level isolation</p>
-                            <p className="ml-6">📱 <strong>App</strong> → Application scope (optional)</p>
-                            <p className="ml-12">👤 <strong>User + Role</strong> → Permission enforcement</p>
+                            <p>
+                                🏢 <strong>Tenant (Organization)</strong> → Top level isolation
+                            </p>
+                            <p className="ml-6">
+                                📱 <strong>App</strong> → Application scope (optional)
+                            </p>
+                            <p className="ml-12">
+                                👤 <strong>User + Role</strong> → Permission enforcement
+                            </p>
                         </div>
                     </div>
 

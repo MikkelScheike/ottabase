@@ -32,7 +32,9 @@ export const auditLogsTable = sqliteTable('audit_logs', {
     ipAddress: text('ip_address'),
     userAgent: text('user_agent'),
     // Status
-    status: text('status').$defaultFn(() => 'success').notNull(), // 'success', 'failure', 'error'
+    status: text('status')
+        .$defaultFn(() => 'success')
+        .notNull(), // 'success', 'failure', 'error'
     errorMessage: text('error_message'),
     // Timestamp
     createdAt: integer('created_at', { mode: 'timestamp' })

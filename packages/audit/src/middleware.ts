@@ -32,7 +32,7 @@ import { extractRequestContext, logAudit, logFailure } from './utils';
  */
 export function withAudit<T extends (...args: any[]) => Promise<Response>>(
     handler: T,
-    options: AuditMiddlewareOptions
+    options: AuditMiddlewareOptions,
 ): T {
     return (async (...args: any[]) => {
         const request = args[0] as Request;
@@ -141,10 +141,7 @@ export function withAudit<T extends (...args: any[]) => Promise<Response>>(
  * Create audit middleware with default options
  */
 export function createAuditMiddleware(defaultOptions: Partial<AuditMiddlewareOptions> = {}) {
-    return function <T extends (...args: any[]) => Promise<Response>>(
-        handler: T,
-        options: AuditMiddlewareOptions
-    ): T {
+    return function <T extends (...args: any[]) => Promise<Response>>(handler: T, options: AuditMiddlewareOptions): T {
         return withAudit(handler, {
             ...defaultOptions,
             ...options,
@@ -190,7 +187,7 @@ export function Audit(options: AuditMiddlewareOptions) {
                         userId: context.user?.id,
                         userEmail: context.user?.email,
                     },
-                    context.resourceId
+                    context.resourceId,
                 );
 
                 throw error;

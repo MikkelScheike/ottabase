@@ -45,14 +45,14 @@ export const GET = withAudit(
                     error: 'Failed to fetch users',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
     {
         resourceType: 'user',
         action: 'read',
-    }
+    },
 );
 
 /**
@@ -102,7 +102,7 @@ export const POST = withAudit(
                     error: 'Failed to create user',
                     details: error instanceof Error ? error.message : String(error),
                 },
-                { status: 500 }
+                { status: 500 },
             );
         }
     },
@@ -114,7 +114,7 @@ export const POST = withAudit(
             // Extract resource ID from response if needed
             return undefined;
         },
-    }
+    },
 );
 
 /**
@@ -175,7 +175,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
                 error: 'Failed to update user',
                 details: error instanceof Error ? error.message : String(error),
             },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }
@@ -219,7 +219,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
                 error: 'Failed to delete user',
                 details: error instanceof Error ? error.message : String(error),
             },
-            { status: 500 }
+            { status: 500 },
         );
     }
 }

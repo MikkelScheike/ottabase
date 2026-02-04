@@ -1,4 +1,13 @@
-import { Button, Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ottabase/ui-shadcn';
+import {
+    Button,
+    Input,
+    Label,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@ottabase/ui-shadcn';
 import type { MemberRole, MemberStatus } from '@/types/rbac';
 import { useState } from 'react';
 
@@ -45,15 +54,18 @@ export function InviteMemberForm({ organizationId, onSubmit, onCancel }: InviteM
                         placeholder="user-123"
                         required
                     />
-                    <p className="text-sm text-muted-foreground">
-                        The user ID to invite to this organization
-                    </p>
+                    <p className="text-sm text-muted-foreground">The user ID to invite to this organization</p>
                 </div>
 
                 {/* Role */}
                 <div className="space-y-2">
                     <Label htmlFor="role">Role*</Label>
-                    <Select value={formData.role} onValueChange={(value: 'owner' | 'admin' | 'member') => setFormData({ ...formData, role: value })}>
+                    <Select
+                        value={formData.role}
+                        onValueChange={(value: 'owner' | 'admin' | 'member') =>
+                            setFormData({ ...formData, role: value })
+                        }
+                    >
                         <SelectTrigger id="role">
                             <SelectValue placeholder="Select role" />
                         </SelectTrigger>
@@ -71,7 +83,12 @@ export function InviteMemberForm({ organizationId, onSubmit, onCancel }: InviteM
                 {/* Status */}
                 <div className="space-y-2">
                     <Label htmlFor="status">Status*</Label>
-                    <Select value={formData.status} onValueChange={(value: 'active' | 'invited' | 'suspended') => setFormData({ ...formData, status: value })}>
+                    <Select
+                        value={formData.status}
+                        onValueChange={(value: 'active' | 'invited' | 'suspended') =>
+                            setFormData({ ...formData, status: value })
+                        }
+                    >
                         <SelectTrigger id="status">
                             <SelectValue placeholder="Select status" />
                         </SelectTrigger>
