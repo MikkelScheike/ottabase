@@ -7,6 +7,7 @@
 
 import { useRBACToast } from '@/hooks/useToast';
 import { useSession } from '@/lib/auth';
+import { api } from '@/lib/api';
 import {
     Avatar,
     AvatarFallback,
@@ -23,10 +24,10 @@ import {
     Separator,
 } from '@ottabase/ui-shadcn';
 import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export function UserProfilePage() {
-    const { user } = useSession({ skipAutoSync: true });
+    const { user, updateUser } = useSession({ skipAutoSync: true });
     const toast = useRBACToast();
 
     const [formData, setFormData] = useState({
@@ -36,6 +37,17 @@ export function UserProfilePage() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+
+    const normalize = useCallback((value: string) => value.trim(), []);
+
+    const computeHasChanges = useCallback(
+        (next: { name: string; email: string }) => {
+            const currentName = normalize(user?.name ?? '');
+            const currentEmail = normalize(user?.email ?? '');
+            return normalize(next.name) !== currentName || normalize(next.email) !== currentEmail;
+        },
+        [normalize, user?.email, user?.name],
+    );
 
     useEffect(() => {
         setFormData({
@@ -54,18 +66,66 @@ export function UserProfilePage() {
               .toUpperCase()
         : user?.email?.[0]?.toUpperCase() || '?';
 
-    const handleChange = (field: string, value: string) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
-        setHasChanges(true);
+    const handleChange = (field: 'name' | 'email', value: string) => {
+        setFormData((prev) => {
+            const next = { ...prev, [field]: value };
+            setHasChanges(computeHasChanges(next));
+            return next;
+        });
     };
 
     const handleSave = async () => {
         setIsSaving(true);
         try {
-            // TODO: Implement user update API
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            toast.success('Profile updated', 'Your profile has been updated successfully');
+            if (!user?.id) {
+                toast.error('Profile unavailable', 'Please log in again.');
+                return;
+            }
+
+            const trimmedName = normalize(formData.name);
+            const trimmedEmail = normalize(formData.email);
+
+            if (!trimmedName) {
+                toast.error('Name is required', 'Please enter your full name.');
+                return;
+            }
+
+            const updates: Record<string, string> = {};
+
+            if (trimmedName !== normalize(user.name ?? '')) {
+                updates.name = trimmedName;
+            }
+
+            if (trimmedEmail !== normalize(user.email ?? '')) {
+                toast.warning('Email changes are disabled', 'Contact support to update your login email.');
+                setFormData((prev) => ({ ...prev, email: user.email ?? '' }));
+                setHasChanges(computeHasChanges({ name: trimmedName, email: user.email ?? '' }));
+                return;
+            }
+
+            if (Object.keys(updates).length === 0) {
+                toast.info('No changes to save');
+                setHasChanges(false);
+                return;
+            }
+
+            const updatedUser = await api<Record<string, any>>(`/api/ottaorm/users/${user.id}`, {
+                method: 'PATCH',
+                body: updates,
+            });
+
+            updateUser({
+                name: updatedUser.name,
+                email: updatedUser.email,
+                image: updatedUser.image,
+            });
+
+            setFormData({
+                name: updatedUser.name || '',
+                email: updatedUser.email || '',
+            });
             setHasChanges(false);
+            toast.success('Profile updated', 'Your profile has been updated successfully');
         } catch (error) {
             toast.error('Update failed', 'Failed to update profile');
         } finally {
@@ -132,9 +192,13 @@ export function UserProfilePage() {
                             type="email"
                             value={formData.email}
                             onChange={(e) => handleChange('email', e.target.value)}
-                            disabled={isSaving}
+                            disabled
+                            readOnly
                         />
-                        <p className="text-sm text-muted-foreground">Your email is used for login and notifications</p>
+                        <p className="text-sm text-muted-foreground">
+                            Your email is used for login and notifications. Email changes require verification and are
+                            disabled for now.
+                        </p>
                     </div>
 
                     {/* Save Button */}
