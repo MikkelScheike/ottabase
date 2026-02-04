@@ -1,6 +1,16 @@
+import { getSession } from '@ottabase/auth/backend';
+import { User } from '@ottabase/ottaorm';
 import { Shortlink } from '@ottabase/shortlinks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../../cloudflare-worker';
+
+vi.mock('@ottabase/auth/backend', async () => {
+    const actual = await vi.importActual<any>('@ottabase/auth/backend');
+    return {
+        ...actual,
+        getSession: vi.fn(),
+    };
+});
 
 // Helper to create a mock request
 function createRequest(path: string, method = 'GET', body?: any) {
@@ -51,6 +61,59 @@ describe('Cloudflare Worker API', () => {
         });
     });
 
+    describe('/api/users/me', () => {
+        it('should return current user', async () => {
+            const userJson = { id: 'user-1', name: 'Ada', email: 'ada@example.com' };
+            (getSession as any).mockResolvedValue({ user: { id: 'user-1' } });
+            const findSpy = vi.spyOn(User, 'find').mockResolvedValue({
+                toJson: () => userJson,
+            } as any);
+
+            const resp = await worker.fetch(createRequest('/api/users/me'), env);
+            expect(resp.status).toBe(200);
+            const data = (await resp.json()) as any;
+            expect(data).toEqual(userJson);
+
+            findSpy.mockRestore();
+        });
+
+        it('should validate updates', async () => {
+            (getSession as any).mockResolvedValue({ user: { id: 'user-1' } });
+
+            const resp = await worker.fetch(createRequest('/api/users/me', 'PATCH', { name: ' ' }), env);
+            expect(resp.status).toBe(400);
+            const data = (await resp.json()) as any;
+            expect(data.code).toBe('VALIDATION_ERROR');
+            expect(data.fieldErrors?.name).toBeDefined();
+        });
+
+        it('should update allowed fields', async () => {
+            const userJson = { id: 'user-1', name: 'Ada Lovelace', email: 'ada@example.com', image: null };
+            (getSession as any).mockResolvedValue({ user: { id: 'user-1' } });
+            const updateSpy = vi.spyOn(User, 'update').mockResolvedValue({
+                toJson: () => userJson,
+            } as any);
+
+            const resp = await worker.fetch(createRequest('/api/users/me', 'PATCH', { name: 'Ada Lovelace' }), env);
+            expect(resp.status).toBe(200);
+            const data = (await resp.json()) as any;
+            expect(data.name).toBe('Ada Lovelace');
+
+            updateSpy.mockRestore();
+        });
+    });
+
+    describe('/api/ottaorm/users', () => {
+        it('should be disabled', async () => {
+            (getSession as any).mockResolvedValue({ user: { id: 'user-1' } });
+
+            const resp = await worker.fetch(createRequest('/api/ottaorm/users/user-1'), env);
+            expect(resp.status).toBe(403);
+            const data = (await resp.json()) as any;
+            expect(data.code).toBe('CRUD_DISABLED');
+        });
+    });
+
     describe('/api/ottaorm/shortlinks', () => {
         it('should list shortlinks', async () => {
             // Mock D1 response for listing
@@ -69,7 +132,6 @@ describe('Cloudflare Worker API', () => {
             const payload = {
                 fullUrl: 'https://google.com',
                 shortCode: 'goog',
-                appId: 'test',
             };
 
             // Mock findByCode (return null = not found)
@@ -88,7 +150,7 @@ describe('Cloudflare Worker API', () => {
                     fullUrl: payload.fullUrl,
                     shortCode: payload.shortCode,
                     type: 'redirect',
-                    appId: payload.appId,
+                    appId: null,
                     expiryDate: null,
                     clicks: 0,
                     lastClickedAt: null,

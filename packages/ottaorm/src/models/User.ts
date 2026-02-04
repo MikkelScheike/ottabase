@@ -47,6 +47,11 @@ export class User extends BaseModel {
         emailVerified: 'date' as const,
     };
 
+    static writable = {
+        create: ['name', 'email', 'image', 'referralUsername'],
+        update: ['name', 'image'],
+    };
+
     protected static fields: ModelFields = {
         id: {
             type: 'id',

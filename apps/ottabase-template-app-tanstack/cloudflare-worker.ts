@@ -62,6 +62,7 @@ import { ServiceError, errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import { paginatedJsonResponse, parsePaginationParams } from '@ottabase/utils/pagination';
 import { isEmail } from '@ottabase/utils/string';
+import { isValidUrl } from '@ottabase/utils/url';
 import { getAllSchemas } from './ottabase/db/schemas-helper';
 import { processReferralAttribution } from './ottabase/helpers/referral-attribution';
 import { appMigrations } from './ottabase/migrations';
@@ -412,6 +413,82 @@ export default {
                     200,
                 );
                 return withAuthCors(response);
+            }
+
+            // ============================================================
+            // Current User Profile
+            // ============================================================
+            if (url.pathname === '/api/users/me') {
+                if (!env.OBCF_D1) {
+                    return errorResponse('D1 database binding not configured', 500, {
+                        code: 'CONFIG_ERROR',
+                    });
+                }
+
+                const session = await getSession(request, env as any, getAuthOptions(env));
+                const userId = session?.user?.id;
+
+                if (!userId) {
+                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
+                }
+
+                if (request.method === 'GET') {
+                    const user = await User.find(userId);
+                    if (!user) {
+                        return errorResponse('User not found', 404, { code: 'NOT_FOUND' });
+                    }
+                    return jsonResponse(user.toJson(), 200);
+                }
+
+                if (request.method === 'PATCH') {
+                    const body = await readJson<{
+                        name?: string;
+                        image?: string | null;
+                    }>(request);
+
+                    const updates: Record<string, any> = {};
+                    const fieldErrors: Record<string, string[]> = {};
+
+                    if (body.name !== undefined) {
+                        const name = typeof body.name === 'string' ? body.name.trim() : '';
+                        if (!name) {
+                            fieldErrors.name = ['Name is required'];
+                        } else if (name.length < 2) {
+                            fieldErrors.name = ['Name must be at least 2 characters'];
+                        } else {
+                            updates.name = name;
+                        }
+                    }
+
+                    if (body.image !== undefined) {
+                        const image = typeof body.image === 'string' ? body.image.trim() : '';
+                        if (!image) {
+                            updates.image = null;
+                        } else if (!isValidUrl(image)) {
+                            fieldErrors.image = ['Image must be a valid URL'];
+                        } else {
+                            updates.image = image;
+                        }
+                    }
+
+                    if (Object.keys(fieldErrors).length > 0) {
+                        return errorResponse('Validation failed', 400, {
+                            code: 'VALIDATION_ERROR',
+                            fieldErrors,
+                        });
+                    }
+
+                    if (Object.keys(updates).length === 0) {
+                        return errorResponse('No changes provided', 400, {
+                            code: 'NO_CHANGES',
+                        });
+                    }
+
+                    const updated = await User.update(userId, updates);
+                    return jsonResponse(updated.toJson(), 200);
+                }
+
+                return errorResponse('Method not allowed', 405);
             }
 
             // Check available email providers
@@ -896,6 +973,13 @@ export default {
                     return errorResponse('Invalid CRUD request', 400, {
                         code: 'INVALID_REQUEST',
                         hint: 'Use /api/ottaorm/{model}/{id?} format',
+                    });
+                }
+
+                if (crudRequest.model === 'users') {
+                    return errorResponse('Users CRUD is disabled', 403, {
+                        code: 'CRUD_DISABLED',
+                        hint: 'Use /api/users/me for profile access',
                     });
                 }
 

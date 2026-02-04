@@ -109,7 +109,7 @@ export function UserProfilePage() {
                 return;
             }
 
-            const updatedUser = await api<Record<string, any>>(`/api/ottaorm/users/${user.id}`, {
+            const updatedUser = await api<Record<string, any>>('/api/users/me', {
                 method: 'PATCH',
                 body: updates,
             });

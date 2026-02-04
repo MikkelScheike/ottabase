@@ -250,6 +250,15 @@ export abstract class AbstractBaseModel {
     protected static hidden: string[] = [];
 
     /**
+     * Writable fields allowlist (optional)
+     * If provided, only these fields may be written for create/update.
+     */
+    protected static writable?: {
+        create?: string[];
+        update?: string[];
+    };
+
+    /**
      * Initialize instance with model defaults
      */
     protected constructor() {
@@ -284,6 +293,24 @@ export abstract class AbstractBaseModel {
             defaultSortDirection: this.defaultSortDirection,
             hidden: this.hidden,
         };
+    }
+
+    /**
+     * Get writable fields for create/update operations.
+     * If a writable allowlist is defined, it takes precedence.
+     * Otherwise, falls back to fields metadata (editable !== false).
+     */
+    static getWritableFields(operation: 'create' | 'update'): string[] | null {
+        if (this.writable) {
+            const list = operation === 'create' ? this.writable.create : this.writable.update;
+            return Array.isArray(list) ? list : null;
+        }
+
+        const fields = this.fields || {};
+        const keys = Object.keys(fields);
+        if (keys.length === 0) return null;
+
+        return keys.filter((key) => fields[key]?.editable !== false);
     }
 
     /**
@@ -435,6 +462,14 @@ export abstract class AbstractBaseModel {
         const staticHidden = Array.isArray(ctor.hidden) ? ctor.hidden : [];
         const hiddenSet = new Set([...this.hidden, ...staticHidden]);
 
+        // Guard against drivers returning snake_case keys (e.g., password_hash)
+        for (const hiddenKey of hiddenSet) {
+            const snake = toSnakeCase(hiddenKey);
+            if (snake && snake !== hiddenKey) {
+                hiddenSet.add(snake);
+            }
+        }
+
         // Copy non-hidden attributes
         for (const key in this.attributes) {
             if (!hiddenSet.has(key)) {
@@ -492,4 +527,17 @@ export abstract class AbstractBaseModel {
      * @returns This instance with fresh data
      */
     abstract refresh(driver?: any): Promise<this>;
+}
+
+/**
+ * Convert a camelCase/PascalCase string to snake_case.
+ * Keeps existing snake_case intact.
+ */
+function toSnakeCase(value: string): string {
+    if (!value) return value;
+    if (value.includes('_')) return value.toLowerCase();
+    return value
+        .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+        .replace(/([A-Z])([A-Z][a-z])/g, '$1_$2')
+        .toLowerCase();
 }

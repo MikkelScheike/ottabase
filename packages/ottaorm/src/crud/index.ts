@@ -203,6 +203,16 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
                     status: 400,
                 };
             }
+            const sanitized = sanitizeWritableBody(Model, body, 'create');
+            if (!sanitized.success) {
+                return {
+                    success: false,
+                    error: sanitized.error,
+                    code: 'FIELD_NOT_WRITABLE',
+                    fieldErrors: sanitized.fieldErrors,
+                    status: 400,
+                };
+            }
             const record = await Model.create(body);
             return {
                 success: true,
@@ -217,6 +227,16 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
                 return {
                     success: false,
                     error: 'Request body is required',
+                    status: 400,
+                };
+            }
+            const sanitized = sanitizeWritableBody(Model, body, 'update');
+            if (!sanitized.success) {
+                return {
+                    success: false,
+                    error: sanitized.error,
+                    code: 'FIELD_NOT_WRITABLE',
+                    fieldErrors: sanitized.fieldErrors,
                     status: 400,
                 };
             }
@@ -258,6 +278,46 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
             status: 500,
         };
     }
+}
+
+function sanitizeWritableBody(
+    Model: any,
+    body: Record<string, unknown>,
+    operation: 'create' | 'update',
+): { success: true } | { success: false; error: string; fieldErrors: Record<string, string[]> } {
+    if (!body) return { success: true };
+
+    const getWritableFields = typeof Model.getWritableFields === 'function' ? Model.getWritableFields : null;
+    const writable = getWritableFields ? (getWritableFields.call(Model, operation) as string[] | null) : null;
+
+    // No restrictions if writable is null (no model fields defined)
+    if (writable === null) {
+        return { success: true };
+    }
+
+    const allowed = new Set(writable);
+    const blocked: string[] = [];
+
+    for (const key of Object.keys(body)) {
+        if (!allowed.has(key)) {
+            blocked.push(key);
+        }
+    }
+
+    if (blocked.length === 0) {
+        return { success: true };
+    }
+
+    const fieldErrors: Record<string, string[]> = {};
+    for (const field of blocked) {
+        fieldErrors[field] = ['Field is read-only'];
+    }
+
+    return {
+        success: false,
+        error: 'One or more fields are not writable',
+        fieldErrors,
+    };
 }
 
 /**
