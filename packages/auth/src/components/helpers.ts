@@ -84,8 +84,18 @@ export function getConfiguredSocialProviders(env: ProviderEnv): SocialProvider[]
  *
  * @returns true
  */
-export function isCredentialsConfigured(): boolean {
-    return true; // Credentials don't require env vars
+export function isCredentialsConfigured(env?: ProviderEnv): boolean {
+    const raw = (env as any)?.AUTH_DISABLE_CREDENTIALS;
+    if (typeof raw === 'string') {
+        const value = raw.toLowerCase();
+        if (value === 'true' || value === '1' || value === 'yes') {
+            return false;
+        }
+    }
+    if (raw === true) {
+        return false;
+    }
+    return true; // Credentials don't require env vars unless explicitly disabled
 }
 
 /**
@@ -138,7 +148,7 @@ export function isEmailProviderConfigured(env: ProviderEnv): boolean {
 export function getLoginConfig(env: ProviderEnv) {
     return {
         socialProviders: getConfiguredSocialProviders(env),
-        showCredentials: isCredentialsConfigured(),
+        showCredentials: isCredentialsConfigured(env),
         showMagicLink: isEmailProviderConfigured(env),
         hasSocialProviders: getConfiguredSocialProviders(env).length > 0,
         hasEmailProvider: isEmailProviderConfigured(env),

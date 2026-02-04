@@ -177,7 +177,7 @@ export function RegisterForm({
                 />
                 {validationErrors.password && <p className="text-xs text-destructive">{validationErrors.password}</p>}
                 <p className="text-xs text-muted-foreground">
-                    At least 8 characters with uppercase, lowercase, and number
+                    At least 8 characters with uppercase, lowercase, number, and symbol
                 </p>
             </div>
 

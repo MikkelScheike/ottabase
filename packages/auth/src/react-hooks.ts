@@ -15,7 +15,7 @@
 //
 // ============================================================
 
-import { atom, useAtom, type Getter } from 'jotai';
+import { atom, useAtom, useAtomValue, type Getter } from 'jotai';
 import { atomWithStorage } from 'jotai/utils';
 import { useCallback, useEffect } from 'react';
 import { signOut as authSignOut, getSession as getAuthSession, type AuthSession } from './client-api';
@@ -28,6 +28,7 @@ export interface User {
     email: string;
     name?: string | null;
     image?: string | null;
+    emailVerified?: Date | string | null;
     role?: string;
     [key: string]: any;
 }
@@ -40,14 +41,23 @@ export interface Session extends AuthSession {
 }
 
 // Persistent session storage using localStorage
-const sessionAtom = atomWithStorage<Session | null>('auth_session', null);
+const persistentSessionAtom = atomWithStorage<Session | null>('auth_session', null);
+// In-memory session storage (cleared on refresh)
+const memorySessionAtom = atom<Session | null>(null);
+// Remember-me toggle (defaults to true, not persisted)
+const rememberSessionAtom = atom(true);
+
+const activeSessionAtom = atom((get: Getter) => {
+    const remember = get(rememberSessionAtom);
+    return remember ? get(persistentSessionAtom) : get(memorySessionAtom);
+});
 
 // Auth loading state
 const authLoadingAtom = atom(false);
 
 // Is authenticated derived atom
 const isAuthenticatedAtom = atom((get: Getter) => {
-    const session = get(sessionAtom);
+    const session = get(activeSessionAtom);
     if (!session) return false;
 
     // Check if session is expired
@@ -92,7 +102,10 @@ export interface UseSessionOptions {
  * ```
  */
 export function useSession(options?: UseSessionOptions) {
-    const [session, setSession] = useAtom(sessionAtom);
+    const [persistentSession, setPersistentSession] = useAtom(persistentSessionAtom);
+    const [memorySession, setMemorySession] = useAtom(memorySessionAtom);
+    const [rememberSession, setRememberSession] = useAtom(rememberSessionAtom);
+    const session = useAtomValue(activeSessionAtom);
     const [isLoading, setIsLoading] = useAtom(authLoadingAtom);
     const [isAuthenticated] = useAtom(isAuthenticatedAtom);
 
@@ -112,17 +125,22 @@ export function useSession(options?: UseSessionOptions) {
                 if (!mounted) return;
 
                 if (backendSession) {
-                    setSession(backendSession as Session);
+                    if (rememberSession) {
+                        setPersistentSession(backendSession as Session);
+                        setMemorySession(null);
+                    } else {
+                        setMemorySession(backendSession as Session);
+                        setPersistentSession(null);
+                    }
                 } else {
                     // Clear local session if backend session doesn't exist
-                    setSession(null);
+                    setPersistentSession(null);
+                    setMemorySession(null);
                 }
             } catch (error) {
                 console.error('Failed to sync session:', error);
             } finally {
-                if (mounted) {
-                    setIsLoading(false);
-                }
+                setIsLoading(false);
             }
         }
 
@@ -131,16 +149,31 @@ export function useSession(options?: UseSessionOptions) {
         return () => {
             mounted = false;
         };
-    }, [options?.skipAutoSync, options?.baseUrl, setSession, setIsLoading]);
+    }, [
+        options?.skipAutoSync,
+        options?.baseUrl,
+        rememberSession,
+        setPersistentSession,
+        setMemorySession,
+        setIsLoading,
+    ]);
 
     /**
      * Manually set session (e.g., after successful login)
      */
     const login = useCallback(
-        (newSession: Session) => {
-            setSession(newSession);
+        (newSession: Session, loginOptions?: { remember?: boolean }) => {
+            const remember = loginOptions?.remember ?? rememberSession;
+            setRememberSession(remember);
+            if (remember) {
+                setPersistentSession(newSession);
+                setMemorySession(null);
+            } else {
+                setMemorySession(newSession);
+                setPersistentSession(null);
+            }
         },
-        [setSession],
+        [rememberSession, setRememberSession, setPersistentSession, setMemorySession],
     );
 
     /**
@@ -157,9 +190,10 @@ export function useSession(options?: UseSessionOptions) {
             console.error('Failed to sign out:', error);
         } finally {
             // Clear local session regardless
-            setSession(null);
+            setPersistentSession(null);
+            setMemorySession(null);
         }
-    }, [options?.baseUrl, setSession]);
+    }, [options?.baseUrl, setPersistentSession, setMemorySession]);
 
     /**
      * Update user fields in session
@@ -167,13 +201,18 @@ export function useSession(options?: UseSessionOptions) {
     const updateUser = useCallback(
         (updatedUser: Partial<User>) => {
             if (session) {
-                setSession({
+                const updatedSession = {
                     ...session,
                     user: { ...session.user, ...updatedUser },
-                });
+                };
+                if (rememberSession) {
+                    setPersistentSession(updatedSession);
+                } else {
+                    setMemorySession(updatedSession);
+                }
             }
         },
-        [session, setSession],
+        [session, rememberSession, setPersistentSession, setMemorySession],
     );
 
     /**
@@ -187,16 +226,23 @@ export function useSession(options?: UseSessionOptions) {
             });
 
             if (backendSession) {
-                setSession(backendSession as Session);
+                if (rememberSession) {
+                    setPersistentSession(backendSession as Session);
+                    setMemorySession(null);
+                } else {
+                    setMemorySession(backendSession as Session);
+                    setPersistentSession(null);
+                }
             } else {
-                setSession(null);
+                setPersistentSession(null);
+                setMemorySession(null);
             }
         } catch (error) {
             console.error('Failed to refresh session:', error);
         } finally {
             setIsLoading(false);
         }
-    }, [options?.baseUrl, setSession, setIsLoading]);
+    }, [options?.baseUrl, rememberSession, setPersistentSession, setMemorySession, setIsLoading]);
 
     const user = session?.user ?? null;
 

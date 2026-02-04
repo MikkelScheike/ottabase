@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 
 export function LoginPage() {
     const navigate = useNavigate();
-    const { login } = useSession();
+    const { login, isAuthenticated, isLoading: isSessionLoading } = useSession({ skipAutoSync: true });
     const [error, setError] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [magicLinkSent, setMagicLinkSent] = useState(false);
@@ -46,6 +46,12 @@ export function LoginPage() {
         };
     }, []);
 
+    useEffect(() => {
+        if (!isSessionLoading && isAuthenticated) {
+            navigate({ to: '/dashboard' });
+        }
+    }, [isAuthenticated, isSessionLoading, navigate]);
+
     // Check for missing configuration and show warnings
     useEffect(() => {
         const newWarnings: string[] = [];
@@ -60,7 +66,9 @@ export function LoginPage() {
         const hasMagicLink = loginConfig.showMagicLink;
         const hasCredentials = loginConfig.showCredentials;
 
-        if (!hasAnySocialLogin && !hasMagicLink) {
+        if (!hasAnySocialLogin && !hasMagicLink && !hasCredentials) {
+            newWarnings.push('No authentication methods configured. Enable credentials, OAuth, or Magic Link.');
+        } else if (!hasAnySocialLogin && !hasMagicLink) {
             newWarnings.push('No OAuth providers or Magic Link configured. Only credentials login available.');
         }
 
@@ -74,6 +82,10 @@ export function LoginPage() {
             newWarnings.push(
                 'Magic Link not configured. Set EMAIL_SERVER + EMAIL_FROM or EMAIL_RESEND_API_KEY in the worker environment.',
             );
+        }
+
+        if (!hasCredentials) {
+            newWarnings.push('Credentials login disabled. Set AUTH_DISABLE_CREDENTIALS=false to enable.');
         }
 
         setWarnings(newWarnings);
@@ -99,7 +111,15 @@ export function LoginPage() {
         }
     };
 
-    const handleCredentialsLogin = async ({ email, password }: { email: string; password: string }) => {
+    const handleCredentialsLogin = async ({
+        email,
+        password,
+        rememberMe,
+    }: {
+        email: string;
+        password: string;
+        rememberMe: boolean;
+    }) => {
         setIsLoading(true);
         setError(undefined);
 
@@ -114,10 +134,11 @@ export function LoginPage() {
 
             // Update local session state
             if (result.session) {
-                login(result.session);
+                login(result.session, { remember: rememberMe });
             }
 
             // Navigate to dashboard
+            setIsLoading(false);
             navigate({ to: '/dashboard' });
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Login failed');

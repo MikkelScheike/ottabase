@@ -16,7 +16,7 @@ Framework-agnostic Auth.js integration for Ottabase with Cloudflare D1 and Drizz
 ## Installation
 
 ```bash
-pnpm add @auth/core drizzle-orm
+pnpm add @ottabase/auth @auth/core drizzle-orm
 ```
 
 ## Quick Start
@@ -39,15 +39,20 @@ pnpm ottaorm:migrate
 
 Auth tables are in core OttaORM migrations (001, 002, 006, 007, 008).
 
-### 3. Configure Auth
+### 3. Configure Auth (Cloudflare Workers)
 
 ```typescript
-import { createOttabaseAuthConfig, createGoogleProvider } from '@ottabase/auth';
+import { handleAuthRequest } from '@ottabase/auth/backend';
 
-export const authConfig = createOttabaseAuthConfig({
-    d1: env.DB,
-    providers: [createGoogleProvider(env)],
-});
+export default {
+    async fetch(request: Request, env: Env) {
+        const url = new URL(request.url);
+        if (url.pathname.startsWith('/api/auth/')) {
+            return handleAuthRequest(request, env);
+        }
+        return new Response('OK');
+    },
+};
 ```
 
 ## Usage Examples
@@ -66,9 +71,9 @@ const config = createOttabaseAuthConfig({
 ### With Custom User Fields
 
 ```typescript
-// 1. Add fields to User table in your migration
-// ALTER TABLE User ADD COLUMN role TEXT;
-// ALTER TABLE User ADD COLUMN subscriptionTier TEXT;
+// 1. Add fields to users table in your migration
+// ALTER TABLE users ADD COLUMN role TEXT;
+// ALTER TABLE users ADD COLUMN subscription_tier TEXT;
 
 // 2. Configure adapter to query custom fields
 const config = createOttabaseAuthConfig({
@@ -134,22 +139,17 @@ export const config = {
 ### Cloudflare Workers
 
 ```typescript
-import { Auth } from '@auth/core';
-import { createOttabaseAuthConfig } from '@ottabase/auth';
+import { handleAuthRequest, getSession } from '@ottabase/auth/backend';
 
 export default {
     async fetch(request: Request, env: Env) {
-        const config = createOttabaseAuthConfig({
-            d1: env.DB,
-            providers: [
-                /* ... */
-            ],
-        });
+        const url = new URL(request.url);
+        if (url.pathname.startsWith('/api/auth/')) {
+            return handleAuthRequest(request, env);
+        }
 
-        const auth = Auth(request, config);
-        const session = await auth.getSession();
-
-        return new Response(JSON.stringify(session));
+        const session = await getSession(request, env);
+        return new Response(JSON.stringify(session ?? null));
     },
 };
 ```
@@ -195,8 +195,8 @@ export function LoginPage() {
 
       // Credentials login
       showCredentials
-      onCredentialsLogin={async ({ email, password }) => {
-        await signIn("credentials", { email, password });
+      onCredentialsLogin={async ({ email, password, rememberMe }) => {
+        await signIn("credentials", { email, password, rememberMe });
       }}
 
       // Magic link
@@ -236,8 +236,8 @@ export function LoginPage() {
 
       // Handlers
       onSocialLogin={(id) => signIn(id)}
-      onCredentialsLogin={async ({ email, password }) => {
-        await signIn("credentials", { email, password });
+      onCredentialsLogin={async ({ email, password, rememberMe }) => {
+        await signIn("credentials", { email, password, rememberMe });
       }}
       onMagicLinkSend={async (email) => {
         await signIn("email", { email });
@@ -330,6 +330,29 @@ Components use Tailwind CSS and follow shadcn/ui design patterns. They automatic
 />
 ```
 
+## Client API (Framework-Agnostic)
+
+```typescript
+import {
+    signInWithCredentials,
+    signInWithProvider,
+    sendMagicLink,
+    registerWithCredentials,
+} from '@ottabase/auth/client';
+
+// Credentials login
+await signInWithCredentials({ email, password }, { redirect: false });
+
+// OAuth login
+await signInWithProvider('google', { redirectTo: '/dashboard' });
+
+// Magic link
+await sendMagicLink(email, { redirectTo: '/dashboard' });
+
+// Registration (requires /api/auth/register endpoint)
+await registerWithCredentials({ name, email, password, referralCode });
+```
+
 ## Providers
 
 ### OAuth Providers
@@ -365,8 +388,7 @@ createGitHubProvider(env, {
 ### Credentials Provider (Username/Password)
 
 ```typescript
-import { createCredentialsProvider } from '@ottabase/auth';
-import bcrypt from 'bcryptjs';
+import { createCredentialsProvider, verifyPassword } from '@ottabase/auth';
 
 const credentialsProvider = createCredentialsProvider(async (credentials) => {
     // Validate credentials against your database
@@ -374,7 +396,7 @@ const credentialsProvider = createCredentialsProvider(async (credentials) => {
         where: { email: credentials.email },
     });
 
-    if (!user || !(await bcrypt.compare(credentials.password, user.passwordHash))) {
+    if (!user || !(await verifyPassword(credentials.password, user.passwordHash))) {
         return null; // Invalid credentials
     }
 
@@ -384,6 +406,21 @@ const credentialsProvider = createCredentialsProvider(async (credentials) => {
         email: user.email,
         name: user.name,
     };
+});
+```
+
+#### Registration (Credentials)
+
+```typescript
+import { hashPassword } from '@ottabase/auth';
+
+// Example server-side registration
+const passwordHash = await hashPassword(password);
+await db.insert(users).values({
+    email,
+    name,
+    passwordHash,
+    emailVerified: null,
 });
 ```
 
@@ -531,6 +568,8 @@ const adapter = createD1AuthAdapterCached(env.DB);
 ```bash
 # Required for Auth.js
 AUTH_SECRET=your_random_secret  # Generate: openssl rand -base64 32
+AUTH_URL=https://your-app.example.com
+ENVIRONMENT=production
 
 # Google OAuth (optional)
 GOOGLE_CLIENT_ID=your_client_id
@@ -560,19 +599,27 @@ EMAIL_RESEND_API_KEY=your_resend_api_key
 # Email Provider - Nodemailer/SMTP (optional)
 EMAIL_SERVER=smtp://user:password@smtp.example.com:587
 EMAIL_FROM=noreply@yourdomain.com
+
+# Credentials/Session toggles (optional)
+AUTH_DISABLE_CREDENTIALS=false
+AUTH_REQUIRE_EMAIL_VERIFIED=false
+AUTH_SESSION_MAX_AGE=2592000 # 30 days in seconds
+AUTH_VERBOSE=false
 ```
+
+**Note:** `AUTH_SECRET` is required in production (`ENVIRONMENT=production`), otherwise the worker will throw.
 
 ## Database Schema
 
 Auth tables are managed by OttaORM migrations:
 
-| Table               | Migration | Purpose                             |
-| ------------------- | --------- | ----------------------------------- |
-| `User`              | 001       | User accounts                       |
-| `Account`           | 002       | OAuth provider accounts             |
-| `Session`           | 006       | Session storage (database strategy) |
-| `VerificationToken` | 007       | Email verification tokens           |
-| `Authenticator`     | 008       | WebAuthn/Passkey credentials        |
+| Table                 | Migration | Purpose                             |
+| --------------------- | --------- | ----------------------------------- |
+| `users`               | 001       | User accounts                       |
+| `accounts`            | 002       | OAuth provider accounts             |
+| `sessions`            | 006       | Session storage (database strategy) |
+| `verification_tokens` | 007       | Email verification tokens           |
+| `authenticators`      | 008       | WebAuthn/Passkey credentials        |
 
 ### Extending the User Model
 
@@ -580,9 +627,9 @@ Add custom columns in your app's migrations:
 
 ```sql
 -- In your migration file
-ALTER TABLE User ADD COLUMN role TEXT;
-ALTER TABLE User ADD COLUMN subscriptionTier TEXT;
-ALTER TABLE User ADD COLUMN organizationId TEXT;
+ALTER TABLE users ADD COLUMN role TEXT;
+ALTER TABLE users ADD COLUMN subscription_tier TEXT;
+ALTER TABLE users ADD COLUMN organization_id TEXT;
 ```
 
 Then configure the adapter:
@@ -594,6 +641,13 @@ const config = createOttabaseAuthConfig({
   customUserFields: ["role", "subscriptionTier", "organizationId"],
 });
 ```
+
+### Credentials Storage
+
+Credentials logins use these columns on `users`:
+
+- `password_hash` - PBKDF2 hash string
+- `email_verified` - ISO timestamp (optional, used when `AUTH_REQUIRE_EMAIL_VERIFIED=true`)
 
 ## API Reference
 
@@ -711,7 +765,7 @@ if (!env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) {
 
 ### Custom fields not working
 
-1. Verify columns exist in User table
+1. Verify columns exist in users table
 2. Match field names exactly (case-sensitive)
 3. Add fields to `customUserFields` array
 

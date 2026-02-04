@@ -7,6 +7,7 @@ TanStack Router + Query template with automated OttaORM migrations and Cloudflar
 - **TanStack Router** - Type-safe routing with file-based structure
 - **TanStack Query** - Powerful async state management
 - **OttaORM** - Fat models with automated migrations
+- **Auth.js** - OAuth, Magic Link, and Credentials authentication
 - **Vite** - Fast development server and optimized builds
 - **Cloudflare Workers** - D1, KV, R2, Queues, Rate Limiting, Durable Objects
 - **Mantine + shadcn/ui** - Flexible UI component libraries
@@ -28,6 +29,42 @@ pnpm dev:worker
 curl -X POST http://localhost:3004/api/ottaorm/init
 
 # Done! Visit http://localhost:3004
+```
+
+## Authentication
+
+This template ships with Auth.js + D1 integration:
+
+- UI: `/login`, `/register`, `/dashboard`
+- Backend: `/api/auth/*` and `/api/auth/register`
+- Credentials are stored in D1 `users.password_hash` (PBKDF2)
+
+### Required Env (production)
+
+```bash
+AUTH_SECRET=your_random_secret
+AUTH_URL=https://your-app.example.com
+ENVIRONMENT=production
+```
+
+### Optional Env
+
+```bash
+# OAuth providers
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GITHUB_CLIENT_ID=...
+GITHUB_CLIENT_SECRET=...
+
+# Magic link
+EMAIL_RESEND_API_KEY=...
+EMAIL_SERVER=smtp://user:pass@smtp.example.com:587
+EMAIL_FROM=noreply@yourdomain.com
+
+# Auth toggles
+AUTH_DISABLE_CREDENTIALS=false
+AUTH_REQUIRE_EMAIL_VERIFIED=false
+AUTH_SESSION_MAX_AGE=2592000
 ```
 
 ## Database Setup
@@ -115,6 +152,9 @@ apps/ottabase-template-app-tanstack/
 
 - `/` - Home page
 - `/demo` - Demo gallery index
+- `/login` - Login (OAuth / Magic Link / Credentials)
+- `/register` - Registration (Credentials)
+- `/dashboard` - Protected route
 - `/demo/mantine` - Mantine UI components demo
 - `/demo/shadcn` - shadcn/ui components demo
 - `/demo/ottaeditor` - Rich text editor demo
@@ -132,6 +172,9 @@ apps/ottabase-template-app-tanstack/
 
 - `/api/health` - Worker health check
 - `/api/cloudflare/*` - Cloudflare service demos
+- `/api/auth/*` - Auth.js routes (signin, signout, session, callbacks)
+- `/api/auth/register` - Credentials registration
+- `/api/auth/config` - Auth UI configuration
 - `/api/ottaorm/*` - OttaORM CRUD endpoints
 
 ## Using Cloudflare Bindings

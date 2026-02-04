@@ -186,7 +186,9 @@ export const coreMigrations: Migration[] = [
           id TEXT PRIMARY KEY,
           name TEXT,
           email TEXT NOT NULL UNIQUE,
+          email_verified TEXT,
           image TEXT,
+          password_hash TEXT,
           created_at INTEGER NOT NULL,
           updated_at INTEGER NOT NULL
         )

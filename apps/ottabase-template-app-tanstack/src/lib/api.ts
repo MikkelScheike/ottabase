@@ -10,10 +10,9 @@ import { toast } from 'sonner';
 
 /**
  * Get auth token from storage/context.
- * TODO: Implement when auth is added.
  */
 function getAuthToken(): string | null {
-    // Future: return localStorage.getItem("authToken") or session token
+    // Cookie-based Auth.js sessions do not require a bearer token by default.
     return null;
 }
 
@@ -32,7 +31,6 @@ function handleApiError(error: ApiError): void {
         toast.error('Session expired', {
             description: 'Please log in again',
         });
-        // TODO: Redirect to login
         return;
     }
 
@@ -97,8 +95,15 @@ export const api = createApiClient({
     getAuthToken,
     onError: handleApiError,
     onUnauthorized: (error) => {
-        // TODO: Clear auth state and redirect to login
-        console.log('Unauthorized:', error.message);
+        try {
+            localStorage.removeItem('auth_session');
+        } catch {
+            // ignore
+        }
+
+        if (typeof window !== 'undefined') {
+            window.location.href = '/login';
+        }
     },
     defaultHeaders: {
         Accept: 'application/json',

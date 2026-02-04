@@ -13,7 +13,9 @@ export const usersTable = sqliteTable('users', {
         .$defaultFn(() => crypto.randomUUID()),
     name: text('name'),
     email: text('email').notNull().unique(),
+    emailVerified: text('email_verified'),
     image: text('image'),
+    passwordHash: text('password_hash'),
     // Referral fields
     referralUsername: text('referral_username').unique(),
     referredById: text('referred_by_id'),

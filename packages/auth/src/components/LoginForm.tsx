@@ -29,7 +29,7 @@ export interface LoginFormProps {
 
     // Callbacks
     onSocialLogin?: (providerId: string) => void;
-    onCredentialsLogin?: (credentials: { email: string; password: string }) => Promise<void>;
+    onCredentialsLogin?: (credentials: { email: string; password: string; rememberMe: boolean }) => Promise<void>;
     onMagicLinkSend?: (email: string) => Promise<void>;
     onForgotPassword?: () => void;
 
@@ -42,6 +42,9 @@ export interface LoginFormProps {
     className?: string;
     showSignUp?: boolean;
     onSignUpClick?: () => void;
+    showRememberMe?: boolean;
+    rememberMeLabel?: string;
+    defaultRememberMe?: boolean;
 }
 
 export function LoginForm({
@@ -61,6 +64,9 @@ export function LoginForm({
     className = '',
     showSignUp = false,
     onSignUpClick,
+    showRememberMe = true,
+    rememberMeLabel = 'Remember me',
+    defaultRememberMe = true,
 }: LoginFormProps) {
     const [activeTab, setActiveTab] = useState(defaultTab);
 
@@ -107,6 +113,9 @@ export function LoginForm({
                                             error={error}
                                             showForgotPassword={!!onForgotPassword}
                                             onForgotPassword={onForgotPassword}
+                                            showRememberMe={showRememberMe}
+                                            rememberMeLabel={rememberMeLabel}
+                                            defaultRememberMe={defaultRememberMe}
                                         />
                                     </TabsContent>
                                 )}
@@ -131,6 +140,9 @@ export function LoginForm({
                                         error={error}
                                         showForgotPassword={!!onForgotPassword}
                                         onForgotPassword={onForgotPassword}
+                                        showRememberMe={showRememberMe}
+                                        rememberMeLabel={rememberMeLabel}
+                                        defaultRememberMe={defaultRememberMe}
                                     />
                                 )}
 

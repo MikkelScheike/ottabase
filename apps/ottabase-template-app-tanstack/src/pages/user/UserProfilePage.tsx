@@ -26,7 +26,7 @@ import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
 import { useState } from 'react';
 
 export function UserProfilePage() {
-    const { user } = useSession();
+    const { user } = useSession({ skipAutoSync: true });
     const toast = useRBACToast();
 
     const [formData, setFormData] = useState({

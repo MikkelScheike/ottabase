@@ -91,6 +91,7 @@ export {
     getCsrfToken,
     getSession as getSessionClient,
     isAuthenticated as isAuthenticatedClient,
+    registerWithCredentials,
     sendMagicLink,
     signInWithCredentials,
     signInWithProvider,
@@ -98,6 +99,8 @@ export {
     type AuthClientOptions,
     type AuthResponse,
     type AuthSession,
+    type RegisterCredentials,
+    type RegisterResponse,
     type SignInCredentials,
 } from './client-api';
 

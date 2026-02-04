@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRouteProps) {
     const navigate = useNavigate();
-    const { isAuthenticated, isLoading } = useSession();
+    const { isAuthenticated, isLoading } = useSession({ skipAutoSync: true });
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {

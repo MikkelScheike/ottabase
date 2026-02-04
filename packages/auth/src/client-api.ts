@@ -19,6 +19,16 @@ export interface SignInCredentials {
 }
 
 /**
+ * Registration credentials
+ */
+export interface RegisterCredentials {
+    name?: string;
+    email: string;
+    password: string;
+    referralCode?: string;
+}
+
+/**
  * Auth session
  */
 export interface AuthSession {
@@ -43,6 +53,21 @@ export interface AuthResponse {
 }
 
 /**
+ * Registration response
+ */
+export interface RegisterResponse {
+    success: boolean;
+    error?: string;
+    user?: {
+        id: string;
+        email: string;
+        name?: string | null;
+        image?: string | null;
+        [key: string]: any;
+    };
+}
+
+/**
  * Client configuration options
  */
 export interface AuthClientOptions {
@@ -55,6 +80,41 @@ export interface AuthClientOptions {
 const defaultOptions: AuthClientOptions = {
     baseUrl: '/api/auth',
 };
+
+const authErrorMessages: Record<string, string> = {
+    CredentialsSignin: 'Invalid email or password',
+    AccessDenied: 'Access denied',
+    OAuthSignin: 'OAuth sign in failed',
+    OAuthCallback: 'OAuth callback failed',
+    OAuthAccountNotLinked: 'Account not linked to this provider',
+    EmailSignin: 'Email sign in failed',
+    EmailCreateAccount: 'Email account creation failed',
+    CallbackRouteError: 'Authentication callback failed',
+    Default: 'Authentication failed',
+};
+
+function parseAuthError(location: string | null): string | null {
+    if (!location) return null;
+    try {
+        const url = new URL(location, 'http://localhost');
+        const error = url.searchParams.get('error');
+        const code = url.searchParams.get('code');
+        if (error && authErrorMessages[error]) {
+            return authErrorMessages[error];
+        }
+        if (code && authErrorMessages[code]) {
+            return authErrorMessages[code];
+        }
+        return error || code;
+    } catch {
+        return null;
+    }
+}
+
+function parseAuthErrorFromUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    return parseAuthError(url);
+}
 
 /**
  * Sign in with email and password
@@ -71,32 +131,52 @@ export async function signInWithCredentials(
     const csrfToken = await getCsrfToken(options?.clientOptions);
 
     try {
+        const form = new URLSearchParams();
+        form.set('email', credentials.email);
+        form.set('password', credentials.password);
+        if (csrfToken) {
+            form.set('csrfToken', csrfToken);
+        }
+        form.set('redirect', String(options?.redirect ?? false));
+        form.set('callbackUrl', options?.redirectTo ?? '/dashboard');
+        form.set('json', 'true');
+
         const response = await fetch(`${baseUrl}/callback/credentials`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Auth-Return-Redirect': '1',
             },
             credentials: 'include',
-            body: JSON.stringify({
-                ...credentials,
-                csrfToken,
-                redirect: options?.redirect ?? false,
-                callbackUrl: options?.redirectTo ?? '/dashboard',
-            }),
+            redirect: 'manual',
+            body: form.toString(),
         });
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Authentication failed' }));
+        if (response.status >= 300 && response.status < 400) {
+            const location = response.headers.get('Location');
+            const parsedError = parseAuthError(location);
+            if (parsedError) {
+                return { success: false, error: parsedError };
+            }
+        }
+
+        const data = await response.json().catch(() => null);
+
+        const redirectError = parseAuthErrorFromUrl(data?.url);
+        if (redirectError) {
+            return { success: false, error: redirectError };
+        }
+
+        if (!response.ok || data?.error) {
             return {
                 success: false,
-                error: error.error || 'Invalid credentials',
+                error: data?.error || 'Invalid credentials',
             };
         }
 
-        const data = await response.json();
-
-        if (options?.redirect) {
-            return { success: true };
+        if (options?.redirect && data?.url && typeof window !== 'undefined') {
+            window.location.href = data.url;
+            return { success: true, url: data.url };
         }
 
         const session = await getSession(options?.clientOptions);
@@ -161,24 +241,44 @@ export async function sendMagicLink(
     const csrfToken = await getCsrfToken(options?.clientOptions);
 
     try {
+        const form = new URLSearchParams();
+        form.set('email', email);
+        if (csrfToken) {
+            form.set('csrfToken', csrfToken);
+        }
+        form.set('callbackUrl', options?.redirectTo ?? '/dashboard');
+        form.set('json', 'true');
+
         const response = await fetch(`${baseUrl}/signin/email`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Auth-Return-Redirect': '1',
             },
             credentials: 'include',
-            body: JSON.stringify({
-                email,
-                csrfToken,
-                callbackUrl: options?.redirectTo ?? '/dashboard',
-            }),
+            redirect: 'manual',
+            body: form.toString(),
         });
 
-        if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Failed to send magic link' }));
+        if (response.status >= 300 && response.status < 400) {
+            const location = response.headers.get('Location');
+            const parsedError = parseAuthError(location);
+            if (parsedError) {
+                return { success: false, error: parsedError };
+            }
+        }
+
+        const data = await response.json().catch(() => null);
+
+        const redirectError = parseAuthErrorFromUrl(data?.url);
+        if (redirectError) {
+            return { success: false, error: redirectError };
+        }
+
+        if (!response.ok || data?.error) {
             return {
                 success: false,
-                error: error.error || 'Failed to send magic link',
+                error: data?.error || 'Failed to send magic link',
             };
         }
 
@@ -189,6 +289,46 @@ export async function sendMagicLink(
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Failed to send magic link',
+        };
+    }
+}
+
+/**
+ * Register a new user with credentials
+ */
+export async function registerWithCredentials(
+    data: RegisterCredentials,
+    options?: { clientOptions?: AuthClientOptions },
+): Promise<RegisterResponse> {
+    const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+
+    try {
+        const response = await fetch(`${baseUrl}/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Registration failed' }));
+            return {
+                success: false,
+                error: error.error || 'Registration failed',
+            };
+        }
+
+        const payload = await response.json().catch(() => ({}));
+        return {
+            success: true,
+            user: payload.user,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Registration failed',
         };
     }
 }
@@ -205,6 +345,8 @@ export async function getSession(options?: AuthClientOptions): Promise<AuthSessi
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
+            cache: 'no-store',
         });
 
         if (!response.ok) {
@@ -232,6 +374,7 @@ export async function signOut(options?: {
     clientOptions?: AuthClientOptions;
 }): Promise<AuthResponse> {
     const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+    const csrfToken = await getCsrfToken(options?.clientOptions);
 
     try {
         const params = new URLSearchParams();
@@ -239,17 +382,45 @@ export async function signOut(options?: {
             params.set('callbackUrl', options.redirectTo);
         }
 
+        const form = new URLSearchParams();
+        if (csrfToken) {
+            form.set('csrfToken', csrfToken);
+        }
+        if (options?.redirectTo) {
+            form.set('callbackUrl', options.redirectTo);
+        }
+        form.set('json', 'true');
+
         const response = await fetch(`${baseUrl}/signout?${params.toString()}`, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-Auth-Return-Redirect': '1',
             },
+            credentials: 'include',
+            redirect: 'manual',
+            body: form.toString(),
         });
 
-        if (!response.ok) {
+        if (response.status >= 300 && response.status < 400) {
+            const location = response.headers.get('Location');
+            const parsedError = parseAuthError(location);
+            if (parsedError) {
+                return { success: false, error: parsedError };
+            }
+        }
+
+        const data = await response.json().catch(() => null);
+
+        const redirectError = parseAuthErrorFromUrl(data?.url);
+        if (redirectError) {
+            return { success: false, error: redirectError };
+        }
+
+        if (!response.ok || data?.error) {
             return {
                 success: false,
-                error: 'Failed to sign out',
+                error: data?.error || 'Failed to sign out',
             };
         }
 

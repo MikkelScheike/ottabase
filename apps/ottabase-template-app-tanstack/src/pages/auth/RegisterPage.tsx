@@ -2,13 +2,14 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { RegisterForm, type RegisterFormData } from '@ottabase/auth/components';
 import { useSession } from '@/lib/auth';
+import { registerWithCredentials, signInWithCredentials } from '@/lib/auth-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@ottabase/ui-shadcn';
 import { ArrowLeft } from 'lucide-react';
-import { getStoredReferralCode, getReferralExpiryInfo } from '@/lib/referrals';
+import { clearStoredReferralCode, getStoredReferralCode, getReferralExpiryInfo } from '@/lib/referrals';
 
 export function RegisterPage() {
     const navigate = useNavigate();
-    const { login } = useSession();
+    const { login } = useSession({ skipAutoSync: true });
     const [error, setError] = useState<string>();
     const [isLoading, setIsLoading] = useState(false);
     const [success, setSuccess] = useState(false);
@@ -30,54 +31,37 @@ export function RegisterPage() {
         setError(undefined);
 
         try {
-            // TODO: Implement actual registration when Auth.js is setup
-            console.log('Registering user:', data);
+            const registerResult = await registerWithCredentials({
+                name: data.name,
+                email: data.email,
+                password: data.password,
+                referralCode: referralCode || undefined,
+            });
 
-            // Simulated API call
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-
-            // Demo-only: simulated "email already exists" check.
-            // This runs in development builds to mimic backend validation.
-            // In production, real uniqueness checks must be performed on the server.
-            if (import.meta.env?.DEV) {
-                const simulatedExistingEmails = ['existing@example.com'];
-                if (simulatedExistingEmails.includes(data.email)) {
-                    throw new Error('An account with this email already exists');
-                }
+            if (!registerResult.success) {
+                throw new Error(registerResult.error || 'Registration failed');
             }
 
-            // Simulated successful registration
-            const userId = Math.random().toString(36).substring(7);
-            const mockSession = {
-                user: {
-                    id: userId,
-                    email: data.email,
-                    name: data.name,
-                },
-                expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-            };
+            const signInResult = await signInWithCredentials(
+                { email: data.email, password: data.password },
+                { redirect: false },
+            );
 
-            // Handle referral attribution if there's a stored referral code
-            if (referralCode) {
-                // In a real implementation, this would be handled server-side during user creation
-                // For demo purposes, we'll just log it
-                console.log('User registered with referral code:', referralCode);
-                console.log('TODO: Attribute user', userId, 'to referrer with code:', referralCode);
-
-                // In production, the server would:
-                // 1. Look up the referrer by referralUsername
-                // 2. Set the new user's referredById field
-                // 3. Update ReferralTracking records from pending to completed
+            if (!signInResult.success) {
+                throw new Error(signInResult.error || 'Registration succeeded, but sign in failed');
             }
 
-            // Log them in immediately after registration
-            login(mockSession);
+            if (signInResult.session) {
+                login(signInResult.session);
+            }
+
+            clearStoredReferralCode();
             setSuccess(true);
+            setIsLoading(false);
 
-            // Redirect to dashboard after a brief success message
             setTimeout(() => {
                 navigate({ to: '/dashboard' });
-            }, 1500);
+            }, 1000);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Registration failed');
             setIsLoading(false);
@@ -148,19 +132,20 @@ export function RegisterPage() {
 
                 <Card className="mt-4">
                     <CardHeader>
-                        <CardTitle className="text-sm">Demo Info</CardTitle>
-                        <CardDescription className="text-xs">
-                            This is a demo implementation with simulated registration
-                        </CardDescription>
+                        <CardTitle className="text-sm">Security</CardTitle>
+                        <CardDescription className="text-xs">Your credentials are stored securely</CardDescription>
                     </CardHeader>
                     <CardContent className="text-xs space-y-2">
                         <p>
-                            <strong>Password requirements:</strong> 8+ chars with uppercase, lowercase, and number
+                            <strong>Password requirements:</strong> 8+ chars with uppercase, lowercase, number, and
+                            symbol
                         </p>
                         <p>
-                            <strong>Registration:</strong> Creates account and logs you in automatically
+                            <strong>Registration:</strong> Creates your account and signs you in automatically
                         </p>
-                        <p className="text-muted-foreground">In production, you'd send a verification email</p>
+                        <p className="text-muted-foreground">
+                            Email verification can be enabled via worker configuration
+                        </p>
                     </CardContent>
                 </Card>
             </div>

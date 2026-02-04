@@ -17,7 +17,7 @@ import { useEffect } from 'react';
 
 export function DashboardPage() {
     const navigate = useNavigate();
-    const { user, logout, session } = useSession();
+    const { user, logout, session } = useSession({ skipAutoSync: true });
 
     const handleLogout = () => {
         logout();
@@ -129,8 +129,7 @@ export function DashboardPage() {
 
                         <div className="pt-4 border-t">
                             <p className="text-xs text-muted-foreground">
-                                <strong>Note:</strong> This is a demo implementation. In production, you'd integrate
-                                with Auth.js and a real backend.
+                                <strong>Note:</strong> Session data comes from Auth.js and is stored in secure cookies.
                             </p>
                         </div>
                     </CardContent>

@@ -1,4 +1,10 @@
-import { getSession, handleAuthRequest, hashPassword, verifyPassword } from '@ottabase/auth/backend';
+import {
+    getSession,
+    handleAuthRequest,
+    hashPassword,
+    verifyPassword,
+    type CreateAuthConfigOptions,
+} from '@ottabase/auth/backend';
 import { getLoginConfig } from '@ottabase/auth/components';
 import { RealtimeActor, RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
 import { createImagesClient } from '@ottabase/cf/images';
@@ -55,6 +61,7 @@ import { Shortlink, buildRedirectResponse } from '@ottabase/shortlinks';
 import { ServiceError, errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import { paginatedJsonResponse, parsePaginationParams } from '@ottabase/utils/pagination';
+import { isEmail } from '@ottabase/utils/string';
 import { getAllSchemas } from './ottabase/db/schemas-helper';
 import { processReferralAttribution } from './ottabase/helpers/referral-attribution';
 import { appMigrations } from './ottabase/migrations';
@@ -99,6 +106,48 @@ async function readJson<T = any>(request: Request): Promise<T> {
         // @ts-expect-error - ok
         return {};
     }
+}
+
+function normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+}
+
+function isStrongPassword(password: string): boolean {
+    if (password.length < 8) return false;
+    return /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(password);
+}
+
+function getAuthOptions(env: CloudflareEnv): CreateAuthConfigOptions {
+    const options: CreateAuthConfigOptions = {
+        authConfig: {
+            pages: {
+                signIn: '/login',
+                error: '/login',
+            },
+        },
+    };
+
+    const maxAge = Number(env.AUTH_SESSION_MAX_AGE);
+    if (Number.isFinite(maxAge) && maxAge > 0) {
+        options.sessionMaxAge = maxAge;
+    }
+
+    const requireVerified = env.AUTH_REQUIRE_EMAIL_VERIFIED === 'true' || env.AUTH_REQUIRE_EMAIL_VERIFIED === '1';
+    if (requireVerified) {
+        options.requireVerifiedEmail = true;
+    }
+
+    const disableCredentials = env.AUTH_DISABLE_CREDENTIALS === 'true' || env.AUTH_DISABLE_CREDENTIALS === '1';
+    if (disableCredentials) {
+        options.disableCredentials = true;
+    }
+
+    const verbose = env.AUTH_VERBOSE === 'true' || env.AUTH_VERBOSE === '1';
+    if (verbose) {
+        options.verbose = true;
+    }
+
+    return options;
 }
 
 async function simulateRateLimit(env: CloudflareEnv, key: string) {
@@ -319,6 +368,24 @@ export default {
                 'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
                 Vary: 'Origin',
             };
+            const withAuthCors = (response: Response) => {
+                try {
+                    Object.entries(authCorsHeaders).forEach(([key, value]) => {
+                        response.headers.set(key, value);
+                    });
+                    return response;
+                } catch {
+                    const headers = new Headers(response.headers);
+                    Object.entries(authCorsHeaders).forEach(([key, value]) => {
+                        headers.set(key, value);
+                    });
+                    return new Response(response.body, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers,
+                    });
+                }
+            };
 
             if (url.pathname.startsWith('/api/') && request.method === 'OPTIONS') {
                 return new Response(null, {
@@ -344,10 +411,7 @@ export default {
                     },
                     200,
                 );
-                Object.entries(authCorsHeaders).forEach(([key, value]) => {
-                    response.headers.set(key, value);
-                });
-                return response;
+                return withAuthCors(response);
             }
 
             // Check available email providers
@@ -820,7 +884,7 @@ export default {
                 // ============================================================
 
                 // Get authenticated session
-                const session = await getSession(request, env as any);
+                const session = await getSession(request, env as any, getAuthOptions(env));
 
                 // Extract security context from session and request
                 const securityContext = await getSecurityContext(request, session);
@@ -1325,13 +1389,21 @@ export default {
             // Custom Registration with Referral Attribution
             // ============================================================
 
-            // This is a demo endpoint showing how to handle registration with referral attribution
-            // In production, you'd integrate this logic into your Auth.js callbacks
             if (url.pathname === '/api/auth/register' && request.method === 'POST') {
                 if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
+                    return withAuthCors(
+                        errorResponse('D1 database binding not configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                if (env.AUTH_DISABLE_CREDENTIALS === 'true' || env.AUTH_DISABLE_CREDENTIALS === '1') {
+                    return withAuthCors(
+                        errorResponse('Credentials registration is disabled', 403, {
+                            code: 'CREDENTIALS_DISABLED',
+                        }),
+                    );
                 }
 
                 registerConnection('default', createD1Driver(env.OBCF_D1));
@@ -1343,22 +1415,56 @@ export default {
                     referralCode?: string;
                 }>(request);
 
-                if (!body.email || !body.password) {
-                    return errorResponse('email and password are required', 400);
+                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
+                const password = typeof body.password === 'string' ? body.password : '';
+                const name = typeof body.name === 'string' ? body.name.trim() : '';
+
+                const fieldErrors: Record<string, string[]> = {};
+
+                if (!email) {
+                    fieldErrors.email = ['Email is required'];
+                } else if (!isEmail(email)) {
+                    fieldErrors.email = ['Invalid email address'];
+                }
+
+                if (!password) {
+                    fieldErrors.password = ['Password is required'];
+                } else if (!isStrongPassword(password)) {
+                    fieldErrors.password = [
+                        'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol',
+                    ];
+                }
+
+                if (name && name.length < 2) {
+                    fieldErrors.name = ['Name must be at least 2 characters'];
+                }
+
+                if (Object.keys(fieldErrors).length > 0) {
+                    return withAuthCors(
+                        errorResponse('Validation failed', 400, {
+                            code: 'VALIDATION_ERROR',
+                            fieldErrors,
+                        }),
+                    );
                 }
 
                 try {
-                    // TODO: In production, you would:
-                    // 1. Hash the password
-                    // 2. Validate email uniqueness
-                    // 3. Create user in database
-                    // 4. Send verification email
+                    const existing = await User.first({ email });
+                    if (existing) {
+                        return withAuthCors(
+                            errorResponse('Email already in use', 409, {
+                                code: 'EMAIL_EXISTS',
+                            }),
+                        );
+                    }
 
-                    // For demo purposes, create a mock user
+                    const passwordHash = await hashPassword(password);
+
                     const newUser = await User.create({
-                        email: body.email,
-                        name: body.name,
+                        email,
+                        name: name || null,
                         emailVerified: null,
+                        passwordHash,
                     });
 
                     const newUserId = newUser.get('id');
@@ -1372,14 +1478,22 @@ export default {
                         });
                     }
 
-                    return jsonResponse({
+                    const userJson = newUser.toJson();
+                    delete (userJson as any).passwordHash;
+
+                    const response = jsonResponse({
                         success: true,
-                        user: newUser.toJson(),
+                        user: userJson,
                         referralAttribution: attributionResult || null,
                     });
+                    return withAuthCors(response);
                 } catch (error) {
+                    const message = error instanceof Error ? error.message : 'Registration failed';
+                    if (typeof message === 'string' && message.toLowerCase().includes('unique')) {
+                        return withAuthCors(errorResponse('Email already in use', 409, { code: 'EMAIL_EXISTS' }));
+                    }
                     console.error('Registration error:', error);
-                    return errorResponse(error instanceof Error ? error.message : 'Registration failed', 500);
+                    return withAuthCors(errorResponse(message, 500));
                 }
             }
 
@@ -1389,11 +1503,8 @@ export default {
             // Handles all Auth.js routes: /api/auth/signin, /api/auth/signout,
             // /api/auth/session, /api/auth/callback/*, etc.
             if (url.pathname.startsWith('/api/auth/')) {
-                const response = await handleAuthRequest(request, env as any);
-                Object.entries(authCorsHeaders).forEach(([key, value]) => {
-                    response.headers.set(key, value);
-                });
-                return response;
+                const response = await handleAuthRequest(request, env as any, getAuthOptions(env));
+                return withAuthCors(response);
             }
 
             // ============================================================

@@ -519,6 +519,18 @@ export const todosTable = sqliteTable('todos', {
 // Call /api/ottaorm/init → Column added automatically ✅
 ```
 
+## Auth Integration
+
+OttaORM core migrations include Auth.js tables used by `@ottabase/auth`:
+
+- `users`
+- `accounts`
+- `sessions`
+- `verification_tokens`
+- `authenticators`
+
+Credentials auth uses `users.password_hash` (PBKDF2) and `users.email_verified` (optional).
+
 ### Custom Migrations
 
 ```typescript
@@ -665,8 +677,7 @@ const org = await Organization.first({ slug: 'acme-corp' });
 const activeOrgs = await Organization.where({ status: 'active' });
 ```
 
-**Available Plans:** `free`, `pro`, `enterprise`
-**Available Statuses:** `active`, `suspended`, `deleted`
+**Available Plans:** `free`, `pro`, `enterprise` **Available Statuses:** `active`, `suspended`, `deleted`
 
 ### OrganizationMember Model
 
@@ -702,8 +713,7 @@ console.log(membership.get('role')); // 'admin', 'member', etc.
 await OrganizationMember.update(membership.id, { role: 'admin' });
 ```
 
-**Available Roles:** `owner`, `admin`, `member`
-**Available Statuses:** `active`, `invited`, `suspended`
+**Available Roles:** `owner`, `admin`, `member` **Available Statuses:** `active`, `invited`, `suspended`
 
 ### Multi-Tenant Setup
 

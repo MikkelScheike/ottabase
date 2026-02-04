@@ -55,55 +55,23 @@ export interface DrizzleD1AuthAdapterOptions {
  */
 const STANDARD_USER_FIELDS = ['id', 'name', 'email', 'emailVerified', 'image'];
 
-/**
- * Create an Auth.js adapter for Cloudflare D1 using Drizzle ORM
- *
- * This adapter provides Auth.js database operations using Drizzle ORM
- * optimized for Cloudflare D1. It uses raw SQL queries for maximum
- * compatibility and performance with D1.
- *
- * @param d1 - The D1 database binding from the Worker environment
- * @param options - Optional configuration for the adapter
- * @returns An Auth.js compatible adapter
- *
- * @example
- * ```typescript
- * import { createDrizzleD1AuthAdapter } from "@ottabase/auth/adapters/drizzle";
- *
- * export const authConfig = {
- *   adapter: createDrizzleD1AuthAdapter(env.OBCF_D1),
- *   providers: [
- *     // Your providers
- *   ],
- * };
- * ```
- *
- * @example
- * ```typescript
- * // With logging enabled
- * const adapter = createDrizzleD1AuthAdapter(env.OBCF_D1, {
- *   log: ["query", "error"]
- * });
- * ```
- *
- * @example
- * ```typescript
- * // With custom user fields
- * const adapter = createDrizzleD1AuthAdapter(env.OBCF_D1, {
- *   customUserFields: ["role", "subscriptionTier", "organizationId"]
- * });
- * ```
- *
- * @example
- * ```typescript
- * // With error handling
- * const adapter = createDrizzleD1AuthAdapter(env.OBCF_D1, {
- *   onError: (error, operation) => {
- *     console.error(`Auth adapter error in ${operation}:`, error);
- *   }
- * });
- * ```
- */
+const FIELD_NAME_REGEX = /^[A-Za-z0-9_]+$/;
+
+const USER_FIELD_COLUMN_OVERRIDES: Record<string, string> = {
+    emailVerified: 'email_verified',
+};
+
+function toSnakeCase(value: string): string {
+    return value.replace(/([A-Z])/g, '_$1').toLowerCase();
+}
+
+function toDbColumn(field: string): string {
+    if (USER_FIELD_COLUMN_OVERRIDES[field]) {
+        return USER_FIELD_COLUMN_OVERRIDES[field];
+    }
+
+    return toSnakeCase(field);
+}
 
 /**
  * Handle errors in adapter operations
@@ -120,12 +88,7 @@ function handleError(error: unknown, operation: string, onError?: (error: Error,
     throw enhancedError;
 }
 
-/**
- * Get user fields SQL selection string
- */
-function getUserFieldsSQL(customFields?: string[]): string {
-    const FIELD_NAME_REGEX = /^[A-Za-z0-9_]+$/;
-
+function getUserFieldList(customFields?: string[]): string[] {
     const fields = [...STANDARD_USER_FIELDS];
 
     if (customFields && customFields.length > 0) {
@@ -141,14 +104,40 @@ function getUserFieldsSQL(customFields?: string[]): string {
             }
         }
     }
-    return fields.join(', ');
+
+    return fields;
+}
+
+function getUserFieldSelections(customFields?: string[], tableAlias?: string): string {
+    const fields = getUserFieldList(customFields);
+
+    return fields
+        .map((field) => {
+            const column = toDbColumn(field);
+            if (!FIELD_NAME_REGEX.test(column)) {
+                throw new Error(
+                    `Invalid user column name "${column}" derived from field "${field}". ` +
+                        'Column names may only contain alphanumeric characters and underscore.',
+                );
+            }
+
+            const qualified = tableAlias ? `${tableAlias}.${column}` : column;
+            if (column === field) {
+                return qualified;
+            }
+
+            return `${qualified} as ${field}`;
+        })
+        .join(', ');
 }
 
 export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1AuthAdapterOptions = {}): Adapter {
     const driver = options.driver || createD1Driver(d1, { log: options.log });
     const d1Binding = driver.getD1();
     const { customUserFields, onError } = options;
-    const userFieldsSQL = getUserFieldsSQL(customUserFields);
+    const userFieldsSQL = getUserFieldSelections(customUserFields);
+    const userFieldsWithAliasSQL = getUserFieldSelections(customUserFields, 'u');
+    const userFieldList = getUserFieldList(customUserFields);
 
     return {
         // ============================================================
@@ -158,14 +147,22 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
         async createUser(user: Omit<AdapterUser, 'id'>): Promise<AdapterUser> {
             try {
                 const id = crypto.randomUUID();
-                const now = new Date().toISOString();
+                const nowMs = Date.now();
 
                 await d1Binding
                     .prepare(
-                        `INSERT INTO User (id, name, email, emailVerified, image, createdAt, updatedAt)
+                        `INSERT INTO users (id, name, email, email_verified, image, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     )
-                    .bind(id, user.name, user.email, user.emailVerified?.toISOString() || null, user.image, now, now)
+                    .bind(
+                        id,
+                        user.name,
+                        user.email,
+                        user.emailVerified?.toISOString() || null,
+                        user.image,
+                        nowMs,
+                        nowMs,
+                    )
                     .run();
 
                 return {
@@ -183,7 +180,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
         async getUser(id: string): Promise<AdapterUser | null> {
             try {
                 const result = await d1Binding
-                    .prepare(`SELECT ${userFieldsSQL} FROM User WHERE id = ?`)
+                    .prepare(`SELECT ${userFieldsSQL} FROM users WHERE id = ?`)
                     .bind(id)
                     .first<AdapterUser>();
 
@@ -201,7 +198,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
         async getUserByEmail(email: string): Promise<AdapterUser | null> {
             try {
                 const result = await d1Binding
-                    .prepare(`SELECT ${userFieldsSQL} FROM User WHERE email = ?`)
+                    .prepare(`SELECT ${userFieldsSQL} FROM users WHERE email = ?`)
                     .bind(email)
                     .first<AdapterUser>();
 
@@ -226,13 +223,10 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
             try {
                 const result = await d1Binding
                     .prepare(
-                        `SELECT u.${userFieldsSQL
-                            .split(', ')
-                            .map((f) => `u.${f}`)
-                            .join(', ')}
-             FROM User u
-             INNER JOIN Account a ON u.id = a.userId
-             WHERE a.provider = ? AND a.providerAccountId = ?`,
+                        `SELECT ${userFieldsWithAliasSQL}
+             FROM users u
+             INNER JOIN accounts a ON u.id = a.user_id
+             WHERE a.provider = ? AND a.provider_account_id = ?`,
                     )
                     .bind(provider, providerAccountId)
                     .first<AdapterUser>();
@@ -262,7 +256,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                     values.push(user.email);
                 }
                 if (user.emailVerified !== undefined) {
-                    updates.push('emailVerified = ?');
+                    updates.push('email_verified = ?');
                     values.push(user.emailVerified?.toISOString() || null);
                 }
                 if (user.image !== undefined) {
@@ -270,18 +264,18 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                     values.push(user.image);
                 }
 
-                updates.push('updatedAt = ?');
-                values.push(new Date().toISOString());
+                updates.push('updated_at = ?');
+                values.push(Date.now());
 
                 values.push(user.id);
 
                 await d1Binding
-                    .prepare(`UPDATE User SET ${updates.join(', ')} WHERE id = ?`)
+                    .prepare(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`)
                     .bind(...values)
                     .run();
 
                 const result = await d1Binding
-                    .prepare(`SELECT ${userFieldsSQL} FROM User WHERE id = ?`)
+                    .prepare(`SELECT ${userFieldsSQL} FROM users WHERE id = ?`)
                     .bind(user.id)
                     .first<AdapterUser>();
 
@@ -296,7 +290,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
         async deleteUser(userId: string): Promise<void> {
             try {
-                await d1Binding.prepare(`DELETE FROM User WHERE id = ?`).bind(userId).run();
+                await d1Binding.prepare(`DELETE FROM users WHERE id = ?`).bind(userId).run();
             } catch (error) {
                 return handleError(error, 'deleteUser', onError);
             }
@@ -309,11 +303,12 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
         async linkAccount(account: AdapterAccount): Promise<AdapterAccount> {
             try {
                 const id = crypto.randomUUID();
+                const nowMs = Date.now();
 
                 await d1Binding
                     .prepare(
-                        `INSERT INTO Account (id, userId, type, provider, providerAccountId, refresh_token, access_token, expires_at, token_type, scope, id_token, session_state)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                        `INSERT INTO accounts (id, user_id, type, provider, provider_account_id, refresh_token, access_token, expires_at, token_type, scope, id_token, session_state, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                     )
                     .bind(
                         id,
@@ -328,6 +323,8 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                         account.scope || null,
                         account.id_token || null,
                         account.session_state || null,
+                        nowMs,
+                        nowMs,
                     )
                     .run();
 
@@ -346,7 +343,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
         }): Promise<void> {
             try {
                 await d1Binding
-                    .prepare(`DELETE FROM Account WHERE provider = ? AND providerAccountId = ?`)
+                    .prepare(`DELETE FROM accounts WHERE provider = ? AND provider_account_id = ?`)
                     .bind(provider, providerAccountId)
                     .run();
             } catch (error) {
@@ -361,13 +358,14 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
         async createSession(session: { sessionToken: string; userId: string; expires: Date }): Promise<AdapterSession> {
             try {
                 const id = crypto.randomUUID();
+                const nowMs = Date.now();
 
                 await d1Binding
                     .prepare(
-                        `INSERT INTO Session (id, sessionToken, userId, expires)
-             VALUES (?, ?, ?, ?)`,
+                        `INSERT INTO sessions (id, session_token, user_id, expires, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?)`,
                     )
-                    .bind(id, session.sessionToken, session.userId, session.expires.toISOString())
+                    .bind(id, session.sessionToken, session.userId, session.expires.toISOString(), nowMs, nowMs)
                     .run();
 
                 return {
@@ -382,19 +380,26 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
         async getSessionAndUser(sessionToken: string): Promise<{ session: AdapterSession; user: AdapterUser } | null> {
             try {
-                const userFields = userFieldsSQL
-                    .split(', ')
-                    .map((f) => `u.${f} as user_${f}`)
+                const userFieldAliases = userFieldList.map((field) => ({
+                    field,
+                    alias: `user_${toSnakeCase(field)}`,
+                }));
+
+                const userFields = userFieldAliases
+                    .map(({ field, alias }) => {
+                        const column = toDbColumn(field);
+                        return `u.${column} as ${alias}`;
+                    })
                     .join(', ');
 
                 const result = await d1Binding
                     .prepare(
                         `SELECT
-              s.sessionToken, s.userId, s.expires,
+              s.session_token as sessionToken, s.user_id as userId, s.expires,
               ${userFields}
-             FROM Session s
-             INNER JOIN User u ON s.userId = u.id
-             WHERE s.sessionToken = ?`,
+             FROM sessions s
+             INNER JOIN users u ON s.user_id = u.id
+             WHERE s.session_token = ?`,
                     )
                     .bind(sessionToken)
                     .first<any>();
@@ -403,20 +408,15 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
                 // Check if session is expired
                 if (new Date(result.expires) < new Date()) {
-                    await d1Binding.prepare(`DELETE FROM Session WHERE sessionToken = ?`).bind(sessionToken).run();
+                    await d1Binding.prepare(`DELETE FROM sessions WHERE session_token = ?`).bind(sessionToken).run();
                     return null;
                 }
 
                 // Extract user fields from the result
                 const user: any = {};
-                STANDARD_USER_FIELDS.forEach((field) => {
-                    user[field] = result[`user_${field}`];
+                userFieldAliases.forEach(({ field, alias }) => {
+                    user[field] = result[alias];
                 });
-                if (customUserFields) {
-                    customUserFields.forEach((field) => {
-                        user[field] = result[`user_${field}`];
-                    });
-                }
 
                 return {
                     session: {
@@ -446,15 +446,20 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                     values.push(session.expires.toISOString());
                 }
 
+                updates.push('updated_at = ?');
+                values.push(Date.now());
+
                 values.push(session.sessionToken);
 
                 await d1Binding
-                    .prepare(`UPDATE Session SET ${updates.join(', ')} WHERE sessionToken = ?`)
+                    .prepare(`UPDATE sessions SET ${updates.join(', ')} WHERE session_token = ?`)
                     .bind(...values)
                     .run();
 
                 const result = await d1Binding
-                    .prepare(`SELECT sessionToken, userId, expires FROM Session WHERE sessionToken = ?`)
+                    .prepare(
+                        `SELECT session_token as sessionToken, user_id as userId, expires FROM sessions WHERE session_token = ?`,
+                    )
                     .bind(session.sessionToken)
                     .first<any>();
 
@@ -470,7 +475,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
         async deleteSession(sessionToken: string): Promise<void> {
             try {
-                await d1Binding.prepare(`DELETE FROM Session WHERE sessionToken = ?`).bind(sessionToken).run();
+                await d1Binding.prepare(`DELETE FROM sessions WHERE session_token = ?`).bind(sessionToken).run();
             } catch (error) {
                 return handleError(error, 'deleteSession', onError);
             }
@@ -484,7 +489,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
             try {
                 await d1Binding
                     .prepare(
-                        `INSERT INTO VerificationToken (identifier, token, expires)
+                        `INSERT INTO verification_tokens (identifier, token, expires)
              VALUES (?, ?, ?)`,
                     )
                     .bind(token.identifier, token.token, token.expires.toISOString())
@@ -506,7 +511,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
             try {
                 const result = await d1Binding
                     .prepare(
-                        `SELECT identifier, token, expires FROM VerificationToken WHERE identifier = ? AND token = ?`,
+                        `SELECT identifier, token, expires FROM verification_tokens WHERE identifier = ? AND token = ?`,
                     )
                     .bind(identifier, token)
                     .first<any>();
@@ -514,7 +519,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                 if (!result) return null;
 
                 await d1Binding
-                    .prepare(`DELETE FROM VerificationToken WHERE identifier = ? AND token = ?`)
+                    .prepare(`DELETE FROM verification_tokens WHERE identifier = ? AND token = ?`)
                     .bind(identifier, token)
                     .run();
 

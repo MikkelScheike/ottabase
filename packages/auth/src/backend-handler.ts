@@ -33,6 +33,7 @@ export interface AuthEnv extends ProviderEnv {
     AUTH_SECRET?: string;
     AUTH_URL?: string;
     NEXTAUTH_URL?: string;
+    ENVIRONMENT?: string;
     OBCF_D1?: D1Database;
 }
 
@@ -55,6 +56,11 @@ export interface CredentialsAuthorizeOptions {
      * Minimum password length (default: 6)
      */
     minPasswordLength?: number;
+
+    /**
+     * Require verified email for credentials sign-in
+     */
+    requireVerifiedEmail?: boolean;
 }
 
 /**
@@ -63,34 +69,65 @@ export interface CredentialsAuthorizeOptions {
  */
 async function defaultCredentialsAuthorize(
     credentials: { email: string; password: string },
+    env: AuthEnv,
     options?: CredentialsAuthorizeOptions,
 ): Promise<any> {
-    const { email, password } = credentials;
+    const email = typeof credentials.email === 'string' ? credentials.email.trim().toLowerCase() : '';
+    const password = typeof credentials.password === 'string' ? credentials.password : '';
     const minLength = options?.minPasswordLength ?? 6;
 
     if (!email || !password) {
-        throw new Error('Email and password are required');
+        return null;
     }
 
-    // Validate password length
+    // Validate password length (avoid leaking details)
     if (password.length < minLength) {
-        throw new Error(`Password must be at least ${minLength} characters`);
+        return null;
     }
 
-    // TODO: Replace with database query in production
-    // Example production code:
-    // const db = drizzle(env.OBCF_D1);
-    // const user = await db.select().from(User).where(eq(User.email, email)).get();
-    // if (!user || !await verifyPassword(password, user.passwordHash)) {
-    //     return null;
-    // }
-    // return { id: user.id, email: user.email, name: user.name };
+    if (!env.OBCF_D1) {
+        throw new Error('OBCF_D1 database binding is required for credentials authentication');
+    }
 
-    // Demo: Accept any valid-format login
+    let result: any | null = null;
+    try {
+        result = await env.OBCF_D1.prepare(
+            `SELECT id, name, email, image, email_verified, password_hash
+                 FROM users
+                 WHERE email = ?`,
+        )
+            .bind(email)
+            .first<any>();
+    } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.includes('no such column: email_verified') || message.includes('no such column: password_hash')) {
+            throw new Error('Missing auth columns on users table. Run /api/ottaorm/init to apply migrations.');
+        }
+        throw error;
+    }
+
+    if (!result || !result.password_hash) {
+        if (result && !result.password_hash) {
+            console.warn('Credentials sign-in failed: user has no password_hash (OAuth-only or missing migration).');
+        }
+        return null;
+    }
+
+    const valid = await verifyPassword(password, String(result.password_hash));
+    if (!valid) {
+        return null;
+    }
+
+    if (options?.requireVerifiedEmail && !result.email_verified) {
+        return null;
+    }
+
     return {
-        id: crypto.randomUUID(),
-        email: email,
-        name: email.split('@')[0],
+        id: result.id,
+        email: result.email,
+        name: result.name ?? undefined,
+        image: result.image ?? undefined,
+        emailVerified: result.email_verified ? new Date(result.email_verified) : null,
     };
 }
 
@@ -112,6 +149,11 @@ export interface CreateAuthConfigOptions extends CredentialsAuthorizeOptions {
      * Enable verbose logging
      */
     verbose?: boolean;
+
+    /**
+     * Disable credentials provider entirely
+     */
+    disableCredentials?: boolean;
 }
 
 /**
@@ -120,12 +162,29 @@ export interface CreateAuthConfigOptions extends CredentialsAuthorizeOptions {
  */
 export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions): AuthConfig {
     const verbose = options?.verbose ?? false;
+    const envDisableCredentials =
+        (env as any).AUTH_DISABLE_CREDENTIALS === 'true' || (env as any).AUTH_DISABLE_CREDENTIALS === '1';
+    const disableCredentials = options?.disableCredentials ?? envDisableCredentials;
+    const envRequireVerified =
+        (env as any).AUTH_REQUIRE_EMAIL_VERIFIED === 'true' || (env as any).AUTH_REQUIRE_EMAIL_VERIFIED === '1';
+    const requireVerifiedEmail = options?.requireVerifiedEmail ?? envRequireVerified;
+    const envSessionMaxAge = Number((env as any).AUTH_SESSION_MAX_AGE);
+    const sessionMaxAge =
+        options?.sessionMaxAge ??
+        (Number.isFinite(envSessionMaxAge) && envSessionMaxAge > 0 ? envSessionMaxAge : undefined);
 
     if (!env.OBCF_D1) {
         throw new Error('OBCF_D1 database binding is required for authentication');
     }
 
     if (!env.AUTH_SECRET) {
+        const environment = (env.ENVIRONMENT || '').toLowerCase();
+        const isProduction = environment !== '' && !['development', 'dev', 'test'].includes(environment);
+
+        if (isProduction) {
+            throw new Error('AUTH_SECRET is required in production');
+        }
+
         console.warn('⚠️  AUTH_SECRET is not configured. Using default (INSECURE FOR PRODUCTION!)');
     }
 
@@ -152,17 +211,23 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
         console.warn('⚠️  Magic Link not configured');
     }
 
-    // Always include credentials provider
-    providers.push(
-        createCredentialsProvider(async (credentials: any) => {
-            if (options?.authorize) {
-                return options.authorize(credentials);
-            }
-            return defaultCredentialsAuthorize(credentials, options);
-        }),
-    );
+    if (!disableCredentials) {
+        providers.push(
+            createCredentialsProvider(async (credentials: any) => {
+                if (options?.authorize) {
+                    return options.authorize(credentials);
+                }
+                return defaultCredentialsAuthorize(credentials, env, {
+                    ...options,
+                    requireVerifiedEmail,
+                });
+            }),
+        );
 
-    if (verbose) console.log('✅ Credentials authentication enabled');
+        if (verbose) console.log('✅ Credentials authentication enabled');
+    } else if (verbose) {
+        console.warn('⚠️  Credentials authentication disabled');
+    }
 
     // Create the auth configuration
     // Determine the frontend URL for redirects
@@ -174,7 +239,7 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
         d1: env.OBCF_D1,
         providers,
         sessionStrategy: 'jwt',
-        sessionMaxAge: options?.sessionMaxAge ?? 30 * 24 * 60 * 60, // 30 days
+        sessionMaxAge: sessionMaxAge ?? 30 * 24 * 60 * 60, // 30 days
         authConfig: {
             secret: env.AUTH_SECRET || 'dev-secret-change-in-production',
             /**
@@ -223,6 +288,13 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         token.id = user.id;
                         token.email = user.email;
                         token.name = user.name;
+                        token.image = (user as any).image ?? token.image;
+                        const emailVerified = (user as any).emailVerified;
+                        token.emailVerified = emailVerified
+                            ? emailVerified instanceof Date
+                                ? emailVerified.toISOString()
+                                : String(emailVerified)
+                            : null;
                     }
                     return token;
                 },
@@ -231,6 +303,12 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         session.user.id = token.id as string;
                         session.user.email = token.email as string;
                         session.user.name = token.name as string;
+                        if (token.image) {
+                            session.user.image = token.image as string;
+                        }
+                        if (token.emailVerified) {
+                            session.user.emailVerified = new Date(token.emailVerified as string);
+                        }
                     }
                     return session;
                 },
@@ -317,22 +395,87 @@ export async function getSession(request: Request, env: AuthEnv, options?: Creat
     }
 }
 
-/**
- * Simple password hashing using Web Crypto API
- * For production, consider using bcrypt or argon2
- */
-export async function hashPassword(password: string): Promise<string> {
+const PBKDF2_PREFIX = 'pbkdf2';
+const PBKDF2_ITERATIONS = 120000;
+const PBKDF2_SALT_BYTES = 16;
+const PBKDF2_HASH_BYTES = 32;
+
+function bufferToBase64(buffer: Uint8Array): string {
+    let binary = '';
+    for (const byte of buffer) {
+        binary += String.fromCharCode(byte);
+    }
+    return btoa(binary);
+}
+
+function base64ToBuffer(base64: string): Uint8Array {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+        bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
+}
+
+function timingSafeEqual(a: Uint8Array, b: Uint8Array): boolean {
+    if (a.length !== b.length) {
+        return false;
+    }
+    let diff = 0;
+    for (let i = 0; i < a.length; i++) {
+        diff |= a[i] ^ b[i];
+    }
+    return diff === 0;
+}
+
+async function derivePbkdf2(password: string, salt: Uint8Array, iterations: number): Promise<Uint8Array> {
     const encoder = new TextEncoder();
-    const data = encoder.encode(password);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hash));
-    return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
+    const passwordBytes = encoder.encode(password);
+    const passwordBuffer = Uint8Array.from(passwordBytes).buffer;
+    const saltBuffer = Uint8Array.from(salt).buffer;
+    const keyMaterial = await crypto.subtle.importKey('raw', passwordBuffer, 'PBKDF2', false, ['deriveBits']);
+    const derivedBits = await crypto.subtle.deriveBits(
+        {
+            name: 'PBKDF2',
+            salt: saltBuffer,
+            iterations,
+            hash: 'SHA-256',
+        },
+        keyMaterial,
+        PBKDF2_HASH_BYTES * 8,
+    );
+    return new Uint8Array(derivedBits);
 }
 
 /**
- * Verify password against hash
+ * Password hashing using PBKDF2 (SHA-256)
+ * Output format: pbkdf2$iterations$saltBase64$hashBase64
+ */
+export async function hashPassword(password: string): Promise<string> {
+    const salt = crypto.getRandomValues(new Uint8Array(PBKDF2_SALT_BYTES));
+    const derived = await derivePbkdf2(password, salt, PBKDF2_ITERATIONS);
+    return `${PBKDF2_PREFIX}$${PBKDF2_ITERATIONS}$${bufferToBase64(salt)}$${bufferToBase64(derived)}`;
+}
+
+/**
+ * Verify password against stored hash
+ * Supports PBKDF2 format only.
  */
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-    const passwordHash = await hashPassword(password);
-    return passwordHash === hash;
+    if (!hash) return false;
+
+    if (hash.startsWith(`${PBKDF2_PREFIX}$`)) {
+        const parts = hash.split('$');
+        if (parts.length !== 4) return false;
+
+        const iterations = Number(parts[1]);
+        if (!Number.isFinite(iterations) || iterations <= 0) return false;
+
+        const salt = base64ToBuffer(parts[2]);
+        const expected = base64ToBuffer(parts[3]);
+        const derived = await derivePbkdf2(password, salt, iterations);
+        return timingSafeEqual(derived, expected);
+    }
+
+    return false;
 }

@@ -43,6 +43,7 @@ export class User extends BaseModel {
     static casts = {
         createdAt: 'date' as const,
         updatedAt: 'date' as const,
+        emailVerified: 'date' as const,
     };
 
     protected static fields: ModelFields = {
@@ -95,6 +96,20 @@ export class User extends BaseModel {
                 },
             },
         },
+        emailVerified: {
+            type: 'datetime',
+            editable: false,
+            uiConfig: {
+                label: 'Email Verified',
+                description: 'Timestamp when the email was verified',
+            },
+            formConfig: {
+                visible: false,
+            },
+            tableConfig: {
+                visible: false,
+            },
+        },
         image: {
             type: 'string',
             editable: true,
@@ -104,6 +119,20 @@ export class User extends BaseModel {
             formConfig: {
                 visible: true,
                 fieldType: 'input',
+            },
+            tableConfig: {
+                visible: false,
+            },
+        },
+        passwordHash: {
+            type: 'string',
+            editable: false,
+            uiConfig: {
+                label: 'Password Hash',
+                description: 'Hashed password (never exposed in UI)',
+            },
+            formConfig: {
+                visible: false,
             },
             tableConfig: {
                 visible: false,
