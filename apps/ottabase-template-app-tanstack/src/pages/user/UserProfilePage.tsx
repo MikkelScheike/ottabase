@@ -23,7 +23,7 @@ import {
     Separator,
 } from '@ottabase/ui-shadcn';
 import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function UserProfilePage() {
     const { user } = useSession({ skipAutoSync: true });
@@ -36,6 +36,14 @@ export function UserProfilePage() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+
+    useEffect(() => {
+        setFormData({
+            name: user?.name || '',
+            email: user?.email || '',
+        });
+        setHasChanges(false);
+    }, [user?.name, user?.email]);
 
     const userInitials = user?.name
         ? user.name
@@ -66,11 +74,7 @@ export function UserProfilePage() {
     };
 
     if (!user) {
-        return (
-            <div className="flex items-center justify-center min-h-screen">
-                <p className="text-muted-foreground">Please sign in to view your profile</p>
-            </div>
-        );
+        return null;
     }
 
     return (
