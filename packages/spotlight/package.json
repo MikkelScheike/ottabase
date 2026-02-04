@@ -23,8 +23,8 @@
         "clean": "rimraf dist",
         "lint": "eslint src --ext .ts,.tsx",
         "type-check": "tsc --noEmit",
-        "test": "vitest --passWithNoTests",
-        "test:coverage": "vitest --coverage --passWithNoTests"
+        "test": "vitest",
+        "test:coverage": "vitest --coverage"
     },
     "keywords": [
         "react",
@@ -52,14 +52,18 @@
         }
     },
     "devDependencies": {
+        "@testing-library/react": "^16.3.2",
         "@types/node": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
+        "@vitejs/plugin-react": "catalog:",
         "eslint": "catalog:",
+        "jsdom": "^27.4.0",
         "react": "catalog:",
         "react-dom": "catalog:",
         "rimraf": "catalog:",
         "tsup": "catalog:",
-        "typescript": "catalog:"
+        "typescript": "catalog:",
+        "vitest": "catalog:"
     }
 }
