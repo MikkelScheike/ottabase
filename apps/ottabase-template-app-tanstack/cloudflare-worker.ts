@@ -1,4 +1,4 @@
-import { getSession, handleAuthRequest } from '@ottabase/auth/backend';
+import { getSession, handleAuthRequest, hashPassword, verifyPassword } from '@ottabase/auth/backend';
 import { getLoginConfig } from '@ottabase/auth/components';
 import { RealtimeActor, RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
 import { createImagesClient } from '@ottabase/cf/images';
@@ -700,6 +700,91 @@ export default {
                 }
             }
 
+            // Public Blog API (list + by-slug with stripped body for protected posts; unlock)
+            // ============================================================
+            if (url.pathname.startsWith('/api/blog/posts') && env.OBCF_D1) {
+                registerConnection('default', createD1Driver(env.OBCF_D1));
+
+                /** Strip private fields; optionally hide content/footnotes for protected posts */
+                function publicPostJson(record: Post, options?: { includeContent?: boolean }): Record<string, unknown> {
+                    const j = record.toJson() as Record<string, unknown>;
+                    const { privateNotes, ...rest } = j;
+                    if (rest.isProtected && !options?.includeContent) {
+                        const { content, footnotes, ...restNoContent } = rest;
+                        return { ...restNoContent, content: null, footnotes: null };
+                    }
+                    return rest;
+                }
+
+                // GET /api/blog/posts - list published posts (stripped for protected)
+                if (url.pathname === '/api/blog/posts' && request.method === 'GET') {
+                    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
+                    const perPage = Math.min(50, Math.max(1, parseInt(url.searchParams.get('perPage') || '15', 10)));
+                    const appId = url.searchParams.get('appId') || null;
+                    const contentType = url.searchParams.get('contentType') || null;
+                    const seriesId = url.searchParams.get('seriesId') || null;
+                    const where: Record<string, unknown> = { status: 'published' };
+                    if (appId) where.appId = appId;
+                    if (contentType) where.contentType = contentType;
+                    if (seriesId) where.seriesId = seriesId;
+                    const result = await Post.paginate(page, perPage, where, {
+                        orderBy: 'publishedAt',
+                        orderDirection: 'desc',
+                    });
+                    const data = result.data.map((r) => publicPostJson(r));
+                    return jsonResponse({
+                        data,
+                        pagination: {
+                            page: result.page,
+                            perPage: result.perPage,
+                            total: result.total,
+                            totalPages: result.totalPages,
+                        },
+                    });
+                }
+
+                // GET /api/blog/posts/by-slug/:slug - single published post (stripped if protected)
+                const bySlugMatch = url.pathname.match(/^\/api\/blog\/posts\/by-slug\/([^/]+)$/);
+                if (bySlugMatch && request.method === 'GET') {
+                    const slug = decodeURIComponent(bySlugMatch[1]);
+                    const appId = url.searchParams.get('appId') || null;
+                    const where: Record<string, unknown> = { slug, status: 'published' };
+                    if (appId) where.appId = appId;
+                    const record = await Post.first(where);
+                    if (!record) {
+                        return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
+                    }
+                    return jsonResponse(publicPostJson(record));
+                }
+
+                // POST /api/blog/posts/unlock - verify password, return full post
+                if (url.pathname === '/api/blog/posts/unlock' && request.method === 'POST') {
+                    const body = await readJson<{ slug: string; password: string }>(request);
+                    const slug = body?.slug?.trim();
+                    const password = body?.password;
+                    if (!slug || password === undefined || password === null) {
+                        return errorResponse('slug and password are required', 400, { code: 'VALIDATION_ERROR' });
+                    }
+                    const appId = url.searchParams.get('appId') || null;
+                    const where: Record<string, unknown> = { slug, status: 'published' };
+                    if (appId) where.appId = appId;
+                    const record = await Post.first(where);
+                    if (!record) {
+                        return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
+                    }
+                    const isProtected = record.get('isProtected');
+                    const passwordHash = record.get('passwordHash');
+                    if (!isProtected || !passwordHash) {
+                        return jsonResponse(publicPostJson(record, { includeContent: true }));
+                    }
+                    const valid = await verifyPassword(String(password), String(passwordHash));
+                    if (!valid) {
+                        return errorResponse('Invalid password', 401, { code: 'INVALID_PASSWORD' });
+                    }
+                    return jsonResponse(publicPostJson(record, { includeContent: true }));
+                }
+            }
+
             // Generic OttaORM CRUD API
             // ============================================================
             // Handles all registered models via /api/ottaorm/{model}/{id?}
@@ -748,6 +833,35 @@ export default {
                         code: 'INVALID_REQUEST',
                         hint: 'Use /api/ottaorm/{model}/{id?} format',
                     });
+                }
+
+                // Hash post password when setting/changing (posts model only)
+                if (
+                    crudRequest.model === 'posts' &&
+                    crudRequest.body &&
+                    (crudRequest.method === 'POST' || crudRequest.method === 'PATCH')
+                ) {
+                    const isProtected = (crudRequest.body as any).isProtected;
+                    const password = (crudRequest.body as any).password;
+                    if (isProtected === true && typeof password !== 'string') {
+                        let hasExistingPassword = false;
+                        if (crudRequest.method === 'PATCH' && crudRequest.id) {
+                            const existing = await Post.find(crudRequest.id);
+                            hasExistingPassword = !!existing?.get('passwordHash');
+                        }
+                        if (!hasExistingPassword) {
+                            return errorResponse('Password is required to protect a post', 400, {
+                                code: 'VALIDATION_ERROR',
+                                fieldErrors: { password: ['Password is required when enabling protection'] },
+                            });
+                        }
+                    }
+
+                    if (typeof password === 'string') {
+                        const plain = password;
+                        (crudRequest.body as any).passwordHash = await hashPassword(plain);
+                        delete (crudRequest.body as any).password;
+                    }
                 }
 
                 // Handle the CRUD operation with RLS protection

@@ -4,7 +4,7 @@
  * OttaORM model for blog posts using @ottabase/ottablog schema.
  * Supports multiple content types, SEO, hero images, and OttaEditor content.
  */
-import { BaseModel, ModelFields, type PackageType } from '@ottabase/ottaorm';
+import { BaseModel, ModelFields, type IModelConstructorParams, type PackageType } from '@ottabase/ottaorm';
 import {
     calculateReadingTime,
     CONTENT_TYPES,
@@ -15,9 +15,9 @@ import {
     type EditorJSData,
     type PostStatus,
 } from '../types';
+import { postsTable } from './Post.schema';
 import { PostTag } from './PostTag';
 import { postTagLinksTable } from './PostTagLink';
-import { postsTable, type NewPost, type NewPostType, type PostType } from './Post.schema';
 
 export { postsTable, type NewPost, type NewPostType, type PostType } from './Post.schema';
 
@@ -39,6 +39,7 @@ export class Post extends BaseModel {
         footnotes: 'json' as const,
         isFeatured: 'boolean' as const,
         allowComments: 'boolean' as const,
+        isProtected: 'boolean' as const,
         viewCount: 'number' as const,
         readingTimeMinutes: 'number' as const,
         wordCount: 'number' as const,
@@ -56,8 +57,14 @@ export class Post extends BaseModel {
         contentType: 'blog',
         isFeatured: false,
         allowComments: true,
+        isProtected: false,
         viewCount: 0,
     };
+
+    constructor(params: IModelConstructorParams) {
+        super(params);
+        this.hidden = [...this.hidden, 'passwordHash'];
+    }
 
     protected static fields: ModelFields = {
         id: {
@@ -417,6 +424,50 @@ export class Post extends BaseModel {
             tableConfig: {
                 visible: true,
                 colWidth: 150,
+            },
+        },
+        isProtected: {
+            type: 'boolean',
+            editable: true,
+            filterable: true,
+            uiConfig: {
+                label: 'Password protected',
+                description: 'Require a password to view full content',
+                defaultValue: false,
+            },
+            formConfig: {
+                visible: true,
+                fieldType: 'boolean',
+            },
+            tableConfig: {
+                visible: true,
+                colWidth: 120,
+            },
+        },
+        passwordHash: {
+            type: 'string',
+            editable: false,
+            uiConfig: {
+                label: 'Password (hashed)',
+                description: 'Set via password field when enabling protection',
+            },
+            formConfig: { visible: false },
+            tableConfig: { visible: false },
+        },
+        passwordHint: {
+            type: 'string',
+            editable: true,
+            uiConfig: {
+                label: 'Password hint',
+                description: 'Optional hint shown on the lock screen',
+                placeholder: 'e.g. Our wedding date',
+            },
+            formConfig: {
+                visible: true,
+                fieldType: 'input',
+            },
+            tableConfig: {
+                visible: false,
             },
         },
         viewCount: {

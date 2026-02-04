@@ -4,11 +4,12 @@
  * Full-featured blog post editor with OttaEditor integration,
  * hero image upload, SEO settings, and all post fields.
  */
+import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
 import {
     CONTENT_TYPES,
     formatDate,
-    POST_STATUSES,
     generateSlug,
+    POST_STATUSES,
     type ContentType,
     type HeroImage,
     type PostStatus,
@@ -21,9 +22,7 @@ import {
     type OutputData,
     type ToolSettings,
 } from '@ottabase/ottaeditor';
-import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
 import { createModelHooks } from '@ottabase/ottaorm/client';
-import { useQueryClient } from '@tanstack/react-query';
 import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
 import {
     AlertDialog,
@@ -54,6 +53,7 @@ import {
     TabsTrigger,
     Textarea,
 } from '@ottabase/ui-shadcn';
+import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import {
     ArrowLeft,
@@ -61,6 +61,7 @@ import {
     FileText,
     History,
     Image as ImageIcon,
+    KeyRound,
     Layers,
     Loader2,
     Save,
@@ -94,6 +95,8 @@ interface BlogPost {
     authorEmail: string | null;
     isFeatured: boolean;
     allowComments: boolean;
+    isProtected?: boolean;
+    passwordHint?: string | null;
     publishedAt: string | null;
     maxVersionsToKeep: number | null;
     wordCount: number | null;
@@ -185,6 +188,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const [authorName, setAuthorName] = useState(initialData?.authorName || '');
     const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured || false);
     const [allowComments, setAllowComments] = useState(initialData?.allowComments ?? true);
+    const [isProtected, setIsProtected] = useState(initialData?.isProtected ?? false);
+    const [passwordHint, setPasswordHint] = useState(initialData?.passwordHint ?? '');
+    const [password, setPassword] = useState(''); // transient: only sent when setting/changing
     const [publishedAt, setPublishedAt] = useState(
         initialData?.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '',
     );
@@ -219,7 +225,6 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             where: postId ? { postId } : undefined,
             orderBy: 'versionNumber',
             orderDirection: 'desc',
-            limit: 20,
         },
         {
             enabled: isEditMode && !!postId,
@@ -233,7 +238,6 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         const data = versionsData as { data?: BlogPostVersion[] } | undefined;
         return Array.isArray(data?.data) ? data.data : [];
     }, [isEditMode, versionsData]);
-    const versionHistory = versions.length > 0 ? versions.slice(1) : [];
 
     // API hooks
     const createPost = blogPostHooks.useCreate();
@@ -276,6 +280,8 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         setAuthorName(initialData.authorName ?? '');
         setIsFeatured(initialData.isFeatured ?? false);
         setAllowComments(initialData.allowComments ?? true);
+        setIsProtected(initialData.isProtected ?? false);
+        setPasswordHint(initialData.passwordHint ?? '');
         setPublishedAt(initialData.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '');
         setHeroImage(initialData.heroImage ?? null);
         setSeoTitle(initialData.seoMeta?.title ?? '');
@@ -316,6 +322,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             authorName === (initialData.authorName ?? '') &&
             isFeatured === initialData.isFeatured &&
             allowComments === initialData.allowComments &&
+            isProtected === (initialData.isProtected ?? false) &&
+            (passwordHint ?? '') === (initialData.passwordHint ?? '') &&
+            !password &&
             (publishedAt || '') ===
                 (initialData.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '') &&
             (seriesId ?? '') === (initialData.seriesId ?? '') &&
@@ -575,6 +584,15 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             return;
         }
 
+        if (isProtected && !initialData?.isProtected && !password.trim()) {
+            setAlertDialog({
+                open: true,
+                title: 'Validation Error',
+                message: 'Please set a password to protect this post.',
+            });
+            return;
+        }
+
         try {
             // Get editor content
             const content = await mainEditor.save();
@@ -617,6 +635,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                 authorName: authorName || undefined,
                 isFeatured,
                 allowComments,
+                isProtected,
+                passwordHint: passwordHint || undefined,
+                ...(isProtected && password.trim() ? { password: password.trim() } : {}),
                 publishedAt: publishNow && !publishedAt ? new Date().toISOString() : publishedAt || undefined,
                 seriesId: seriesId || undefined,
                 seriesOrder: seriesOrder || undefined,
@@ -1115,6 +1136,65 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                     />
                                     <Label htmlFor="allowComments">Allow Comments</Label>
                                 </div>
+
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="checkbox"
+                                        id="isProtected"
+                                        aria-label="Password protect post"
+                                        checked={isProtected}
+                                        onChange={(e) => {
+                                            const next = e.target.checked;
+                                            setIsProtected(next);
+                                            if (!next) {
+                                                setPassword('');
+                                            }
+                                        }}
+                                        className="rounded"
+                                    />
+                                    <Label htmlFor="isProtected" className="flex items-center gap-1.5">
+                                        <KeyRound className="h-4 w-4" />
+                                        Password protect post
+                                    </Label>
+                                </div>
+                                {isProtected && (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="postPassword">Password</Label>
+                                            <Input
+                                                id="postPassword"
+                                                type="password"
+                                                value={password}
+                                                onChange={(e) => setPassword(e.target.value)}
+                                                placeholder={
+                                                    initialData?.isProtected
+                                                        ? 'Leave blank to keep current'
+                                                        : 'Set password'
+                                                }
+                                                className="bg-background dark:bg-background"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                {initialData?.isProtected
+                                                    ? 'Enter a new password to change it.'
+                                                    : 'Readers will need this password to view the full post.'}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="passwordHint">Password hint (optional)</Label>
+                                            <Input
+                                                id="passwordHint"
+                                                type="text"
+                                                value={passwordHint}
+                                                onChange={(e) => setPasswordHint(e.target.value)}
+                                                placeholder="e.g. Our wedding date"
+                                                className="bg-background dark:bg-background"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                Shown on the lock screen to help readers.
+                                            </p>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -1218,11 +1298,11 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                 </div>
                             )}
 
-                            {isEditMode && !isLoadingVersions && versionHistory.length > 0 && (
+                            {isEditMode && !isLoadingVersions && versions.length > 0 && (
                                 <div className="space-y-2">
-                                    <Label>Recent Versions ({versionHistory.length})</Label>
+                                    <Label>All Versions ({versions.length})</Label>
                                     <div className="max-h-[200px] overflow-y-auto rounded-md border divide-y">
-                                        {versionHistory.map((version) => (
+                                        {versions.map((version) => (
                                             <div
                                                 key={version.id}
                                                 className="flex items-center justify-between p-2 text-sm hover:bg-muted/50"

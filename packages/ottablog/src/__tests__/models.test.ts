@@ -14,6 +14,7 @@ describe('ottablog models', () => {
             expect(Post.casts).toHaveProperty('updatedAt');
             expect(Post.casts).toHaveProperty('content');
             expect(Post.casts).toHaveProperty('seoMeta');
+            expect(Post.casts).toHaveProperty('isProtected');
         });
 
         it('should have correct default values', () => {
@@ -22,6 +23,7 @@ describe('ottablog models', () => {
             expect(defaults.contentType).toBe('blog');
             expect(defaults.isFeatured).toBe(false);
             expect(defaults.allowComments).toBe(true);
+            expect(defaults.isProtected).toBe(false);
             expect(defaults.viewCount).toBe(0);
         });
 
@@ -32,6 +34,9 @@ describe('ottablog models', () => {
             expect(fields).toHaveProperty('content');
             expect(fields).toHaveProperty('status');
             expect(fields).toHaveProperty('categoryId');
+            expect(fields).toHaveProperty('isProtected');
+            expect(fields).toHaveProperty('passwordHash');
+            expect(fields).toHaveProperty('passwordHint');
         });
 
         it('should have title field configured correctly', () => {

@@ -5,12 +5,12 @@
  * Supports hooks and themes for extensibility.
  * This is a reusable component that can be used in any app.
  */
-import './BlogRenderer.css';
 import React, { useEffect, useMemo, useState } from 'react';
 import { applyFilters, doAction, HOOKS } from '../hooks';
 import { defaultTheme, getActiveTheme, getTheme } from '../themes';
-import { formatDate as defaultFormatDate } from '../types';
 import type { EditorJSData, HeroImage, SeoMeta } from '../types';
+import { formatDate as defaultFormatDate } from '../types';
+import './BlogRenderer.css';
 
 export interface BlogPostData {
     id: string;
@@ -37,6 +37,10 @@ export interface BlogPostData {
     seriesOrder?: number | null;
     seriesTitle?: string | null;
     seriesTotalParts?: number | null;
+    /** Password protection: when true, full content is hidden until unlocked */
+    isProtected?: boolean;
+    /** Optional hint shown on the lock screen (never expose passwordHash) */
+    passwordHint?: string | null;
 }
 
 export interface BlogRendererProps {

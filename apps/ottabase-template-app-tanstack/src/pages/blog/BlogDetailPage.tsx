@@ -2,16 +2,20 @@
  * Public Blog Detail Page
  *
  * Displays a single blog post with full content using BlogRenderer.
+ * Uses public API so protected posts return without body until unlocked.
  */
-import { BlogRenderer, formatDate, type BlogPostData } from '@ottabase/ottablog';
-import { useBlogStudio } from '@/ottabase/blog/BlogStudioContext';
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_DETAIL_QUERY_CONFIG, BLOG_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { api, isApiError } from '@/lib/api';
+import { useBlogStudio } from '@/ottabase/blog/BlogStudioContext';
+import { BlogRenderer, formatDate, type BlogPostData } from '@ottabase/ottablog';
 import type { OutputData } from '@ottabase/ottaeditor';
 import { createModelHooks } from '@ottabase/ottaorm/client';
-import { Button } from '@ottabase/ui-shadcn';
+import { Button, Input } from '@ottabase/ui-shadcn';
+import { useQuery } from '@tanstack/react-query';
 import { Link, useParams } from '@tanstack/react-router';
-import { ArrowLeft, ArrowRight, ChevronLeft } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, Loader2, Lock } from 'lucide-react';
+import { useState } from 'react';
 
 interface BlogPost {
     id: string;
@@ -34,6 +38,8 @@ interface BlogPost {
     readingTimeMinutes: number | null;
     wordCount: number | null;
     isFeatured: boolean;
+    isProtected?: boolean;
+    passwordHint?: string | null;
     publishedAt: string | null;
     seriesId: string | null;
     seriesOrder: number | null;
@@ -56,9 +62,22 @@ export function BlogDetailPage() {
     const params = useParams({ strict: false });
     const slug = (params as { slug?: string }).slug;
     const { isReady: studioReady } = useBlogStudio();
+    const [unlockedPost, setUnlockedPost] = useState<BlogPost | null>(null);
+    const [password, setPassword] = useState('');
+    const [unlockError, setUnlockError] = useState<string | null>(null);
+    const [isUnlocking, setIsUnlocking] = useState(false);
 
-    // Fetch post by slug using the new useFind hook
-    const { data: post, isLoading: isLoadingPost } = blogPostHooks.useFind('slug', slug || '', {
+    // Fetch post by slug from public API (stripped for protected posts)
+    const { data: post, isLoading: isLoadingPost } = useQuery({
+        queryKey: ['blog', 'post', 'by-slug', slug],
+        queryFn: async () => {
+            const res = await fetch(`/api/blog/posts/by-slug/${encodeURIComponent(slug!)}`);
+            if (!res.ok) {
+                if (res.status === 404) return null;
+                throw new Error(await res.text());
+            }
+            return res.json() as Promise<BlogPost>;
+        },
         enabled: !!slug,
         ...BLOG_DETAIL_QUERY_CONFIG,
     });
@@ -115,40 +134,68 @@ export function BlogDetailPage() {
         );
     }
 
+    const displayPost = unlockedPost ?? post;
+    const isLocked = !!(displayPost.isProtected && !displayPost.content);
+
+    const handleUnlock = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setUnlockError(null);
+        if (!password.trim() || !slug) return;
+        setIsUnlocking(true);
+        try {
+            const full = await api<BlogPost>('/api/blog/posts/unlock', {
+                method: 'POST',
+                body: { slug, password: password.trim() },
+            });
+            setUnlockedPost(full);
+            setPassword('');
+        } catch (err) {
+            if (isApiError(err) && err.status === 401) {
+                setUnlockError('Invalid password. Please try again.');
+            } else {
+                setUnlockError('Something went wrong. Please try again.');
+            }
+        } finally {
+            setIsUnlocking(false);
+        }
+    };
+
     // Convert post to BlogPostData format
     const blogPostData: BlogPostData = {
-        id: post.id,
-        title: post.title,
-        slug: post.slug,
-        excerpt: post.excerpt,
-        content: post.content,
-        contentType: post.contentType,
-        status: post.status,
-        heroImage: post.heroImage,
-        seoMeta: post.seoMeta,
-        footnotes: post.footnotes,
-        authorId: post.authorId,
-        authorName: post.authorName,
+        id: displayPost.id,
+        title: displayPost.title,
+        slug: displayPost.slug,
+        excerpt: displayPost.excerpt,
+        content: displayPost.content,
+        contentType: displayPost.contentType,
+        status: displayPost.status,
+        heroImage: displayPost.heroImage,
+        seoMeta: displayPost.seoMeta,
+        footnotes: displayPost.footnotes,
+        authorId: displayPost.authorId,
+        authorName: displayPost.authorName,
         authorEmail: null,
-        authorAvatar: post.authorAvatar,
-        readingTimeMinutes: post.readingTimeMinutes,
-        wordCount: post.wordCount,
-        isFeatured: post.isFeatured,
-        publishedAt: post.publishedAt,
+        authorAvatar: displayPost.authorAvatar,
+        readingTimeMinutes: displayPost.readingTimeMinutes,
+        wordCount: displayPost.wordCount,
+        isFeatured: displayPost.isFeatured,
+        publishedAt: displayPost.publishedAt,
         createdAt: null,
-        seriesId: post.seriesId,
-        seriesOrder: post.seriesOrder,
+        seriesId: displayPost.seriesId,
+        seriesOrder: displayPost.seriesOrder,
         seriesTitle: series?.title || null,
         seriesTotalParts: seriesPosts.length > 0 ? seriesPosts.length : null,
+        isProtected: displayPost.isProtected,
+        passwordHint: displayPost.passwordHint,
     };
 
     // Generate SEO meta tags
-    const seoTitle = post.seoMeta?.title || post.title;
-    const seoDescription = post.seoMeta?.description || post.excerpt || undefined;
-    const seoKeywords = post.seoMeta?.keywords;
+    const seoTitle = displayPost.seoMeta?.title || displayPost.title;
+    const seoDescription = displayPost.seoMeta?.description || displayPost.excerpt || undefined;
+    const seoKeywords = displayPost.seoMeta?.keywords;
     const canonicalUrl =
-        post.seoMeta?.canonicalUrl || (typeof window !== 'undefined' ? window.location.href : undefined);
-    const ogImage = post.seoMeta?.ogImage || post.heroImage?.url;
+        displayPost.seoMeta?.canonicalUrl || (typeof window !== 'undefined' ? window.location.href : undefined);
+    const ogImage = displayPost.seoMeta?.ogImage || displayPost.heroImage?.url;
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -161,10 +208,10 @@ export function BlogDetailPage() {
                 ogImage={ogImage}
                 ogType="article"
                 twitterCard="summary_large_image"
-                noIndex={post.seoMeta?.noIndex}
-                noFollow={post.seoMeta?.noFollow}
-                publishedTime={post.publishedAt || undefined}
-                author={post.authorName || undefined}
+                noIndex={displayPost.seoMeta?.noIndex}
+                noFollow={displayPost.seoMeta?.noFollow}
+                publishedTime={displayPost.publishedAt || undefined}
+                author={displayPost.authorName || undefined}
             />
 
             {/* Back link */}
@@ -177,51 +224,87 @@ export function BlogDetailPage() {
                 </Button>
             </div>
 
-            {/* Blog Renderer with hooks and theme support; key forces re-mount when studio state is applied */}
-            <BlogRenderer
-                key={studioReady ? 'studio-ready' : 'studio-loading'}
-                post={blogPostData}
-                showHeroImage
-                showTitle
-                showMetadata
-                showExcerpt
-                showFootnotes
-                showSeries
-                formatDate={formatDate}
-                renderSeriesNav={(post) => {
-                    if (!series || seriesPosts.length <= 1) return null;
-                    return (
-                        <div className="mt-4 pt-4 border-t">
-                            <div className="grid gap-4 sm:grid-cols-2">
-                                {prevPost && (
-                                    <Link
-                                        to={`/blog/${prevPost.slug}`}
-                                        className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                                    >
-                                        <ArrowLeft className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                        <div className="min-w-0">
-                                            <div className="text-xs text-muted-foreground mb-1">Previous</div>
-                                            <div className="font-medium truncate">{prevPost.title}</div>
-                                        </div>
-                                    </Link>
-                                )}
-                                {nextPost && (
-                                    <Link
-                                        to={`/blog/${nextPost.slug}`}
-                                        className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors sm:text-right sm:flex-row-reverse"
-                                    >
-                                        <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                        <div className="min-w-0">
-                                            <div className="text-xs text-muted-foreground mb-1">Next</div>
-                                            <div className="font-medium truncate">{nextPost.title}</div>
-                                        </div>
-                                    </Link>
-                                )}
+            {/* Lock screen for password-protected posts */}
+            {isLocked && (
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                    <div className="rounded-full bg-muted p-6 mb-6 dark:bg-muted/50">
+                        <Lock className="h-16 w-16 text-muted-foreground" aria-hidden />
+                    </div>
+                    <h1 className="text-2xl font-bold mb-2">{displayPost.title}</h1>
+                    {displayPost.excerpt && (
+                        <p className="text-muted-foreground max-w-lg mb-6">{displayPost.excerpt}</p>
+                    )}
+                    {displayPost.passwordHint && (
+                        <p className="text-sm text-muted-foreground mb-4">Hint: {displayPost.passwordHint}</p>
+                    )}
+                    <form onSubmit={handleUnlock} className="w-full max-w-sm space-y-4">
+                        <Input
+                            type="password"
+                            placeholder="Enter password"
+                            value={password}
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                setUnlockError(null);
+                            }}
+                            className="bg-background dark:bg-background"
+                            autoComplete="current-password"
+                            disabled={isUnlocking}
+                        />
+                        {unlockError && <p className="text-sm text-destructive">{unlockError}</p>}
+                        <Button type="submit" className="w-full" disabled={isUnlocking || !password.trim()}>
+                            {isUnlocking ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Unlock with password'}
+                        </Button>
+                    </form>
+                </div>
+            )}
+
+            {/* Blog Renderer (full content when not locked) */}
+            {!isLocked && (
+                <BlogRenderer
+                    key={studioReady ? 'studio-ready' : 'studio-loading'}
+                    post={blogPostData}
+                    showHeroImage
+                    showTitle
+                    showMetadata
+                    showExcerpt
+                    showFootnotes
+                    showSeries
+                    formatDate={formatDate}
+                    renderSeriesNav={(post) => {
+                        if (!series || seriesPosts.length <= 1) return null;
+                        return (
+                            <div className="mt-4 pt-4 border-t">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    {prevPost && (
+                                        <Link
+                                            to={`/blog/${prevPost.slug}`}
+                                            className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                                        >
+                                            <ArrowLeft className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <div className="text-xs text-muted-foreground mb-1">Previous</div>
+                                                <div className="font-medium truncate">{prevPost.title}</div>
+                                            </div>
+                                        </Link>
+                                    )}
+                                    {nextPost && (
+                                        <Link
+                                            to={`/blog/${nextPost.slug}`}
+                                            className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors sm:text-right sm:flex-row-reverse"
+                                        >
+                                            <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <div className="text-xs text-muted-foreground mb-1">Next</div>
+                                                <div className="font-medium truncate">{nextPost.title}</div>
+                                            </div>
+                                        </Link>
+                                    )}
+                                </div>
                             </div>
-                        </div>
-                    );
-                }}
-            />
+                        );
+                    }}
+                />
+            )}
 
             {/* Series Navigation - All posts */}
             {series && seriesPosts.length > 1 && (
@@ -233,8 +316,8 @@ export function BlogDetailPage() {
                         </summary>
                         <ol className="mt-4 space-y-2 list-decimal list-inside">
                             {seriesPosts.map((p) => (
-                                <li key={p.id} className={p.id === post.id ? 'font-medium' : ''}>
-                                    {p.id === post.id ? (
+                                <li key={p.id} className={p.id === displayPost.id ? 'font-medium' : ''}>
+                                    {p.id === displayPost.id ? (
                                         <span>{p.title} (current)</span>
                                     ) : (
                                         <Link to={`/blog/${p.slug}`} className="hover:text-primary transition-colors">

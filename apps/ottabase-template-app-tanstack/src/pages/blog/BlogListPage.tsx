@@ -2,14 +2,16 @@
  * Public Blog List Page
  *
  * Displays published blog posts with filtering and pagination.
+ * Uses public API so protected posts only return excerpt (no full body).
  */
-import { CONTENT_TYPES, formatDate, type ContentType } from '@ottabase/ottablog';
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_LIST_QUERY_CONFIG, SERIES_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { CONTENT_TYPES, formatDate, type ContentType } from '@ottabase/ottablog';
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { Button, Card, CardContent, Input } from '@ottabase/ui-shadcn';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Search, User } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Lock, Search, User } from 'lucide-react';
 import { useState } from 'react';
 
 interface BlogPost {
@@ -23,6 +25,7 @@ interface BlogPost {
     authorName: string | null;
     readingTimeMinutes: number | null;
     isFeatured: boolean;
+    isProtected?: boolean;
     publishedAt: string | null;
     seriesId: string | null;
     seriesTitle?: string | null;
@@ -35,7 +38,11 @@ interface BlogSeries {
     isComplete: boolean;
 }
 
-const blogPostHooks = createModelHooks<BlogPost>({ entityName: 'posts' });
+interface BlogListResponse {
+    data: BlogPost[];
+    pagination: { page: number; perPage: number; total: number; totalPages: number };
+}
+
 const blogSeriesHooks = createModelHooks<BlogSeries>({
     entityName: 'series',
 });
@@ -48,31 +55,27 @@ export function BlogListPage() {
     const [seriesFilter, setSeriesFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
 
-    // Build where clause for server-side filtering
-    const whereClause: Record<string, unknown> = { status: 'published' };
-    if (contentType) {
-        whereClause.contentType = contentType;
-    }
-    if (seriesFilter) {
-        whereClause.seriesId = seriesFilter;
-    }
-
-    // Fetch published posts with pagination
-    const { data: postsData, isLoading } = blogPostHooks.useList(
-        {
-            where: whereClause,
-            orderBy: 'publishedAt',
-            orderDirection: 'desc',
-            limit: POSTS_PER_PAGE,
-            offset: (currentPage - 1) * POSTS_PER_PAGE,
+    // Fetch published posts from public API (stripped for protected posts)
+    const { data: listResponse, isLoading } = useQuery({
+        queryKey: ['blog', 'posts', currentPage, contentType, seriesFilter],
+        queryFn: async () => {
+            const params = new URLSearchParams();
+            params.set('page', String(currentPage));
+            params.set('perPage', String(POSTS_PER_PAGE));
+            if (contentType) params.set('contentType', contentType);
+            if (seriesFilter) params.set('seriesId', seriesFilter);
+            const res = await fetch(`/api/blog/posts?${params.toString()}`);
+            if (!res.ok) throw new Error(await res.text());
+            return res.json() as Promise<BlogListResponse>;
         },
-        BLOG_LIST_QUERY_CONFIG,
-    );
+        ...BLOG_LIST_QUERY_CONFIG,
+    });
 
     // Fetch series for filter dropdown
     const { data: seriesData } = blogSeriesHooks.useList(undefined, SERIES_LIST_QUERY_CONFIG);
 
-    const posts = postsData || [];
+    const posts = listResponse?.data ?? [];
+    const pagination = listResponse?.pagination ?? { page: 1, perPage: POSTS_PER_PAGE, total: 0, totalPages: 1 };
     const series = seriesData || [];
 
     // Client-side search filter
@@ -211,7 +214,7 @@ export function BlogListPage() {
                     <Button
                         variant="outline"
                         onClick={() => setCurrentPage((p) => p + 1)}
-                        disabled={posts.length < POSTS_PER_PAGE}
+                        disabled={currentPage >= pagination.totalPages}
                     >
                         Next
                         <ChevronRight className="h-4 w-4 ml-1" />
@@ -244,8 +247,11 @@ function FeaturedPostCard({ post }: { post: BlogPost }) {
                             {post.contentType}
                         </span>
                     )}
-                    <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                    <h3 className="text-xl font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-2 flex items-center gap-2">
                         {post.title}
+                        {post.isProtected && (
+                            <Lock className="h-4 w-4 text-muted-foreground shrink-0" aria-label="Password protected" />
+                        )}
                     </h3>
                     {post.excerpt && <p className="text-muted-foreground mb-4 line-clamp-3">{post.excerpt}</p>}
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
@@ -293,8 +299,11 @@ function PostCard({ post }: { post: BlogPost }) {
                             {post.contentType}
                         </span>
                     )}
-                    <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-2">
+                    <h3 className="font-semibold mb-2 group-hover:text-primary transition-colors line-clamp-2 flex items-center gap-2">
                         {post.title}
+                        {post.isProtected && (
+                            <Lock className="h-3 w-3 text-muted-foreground shrink-0" aria-label="Password protected" />
+                        )}
                     </h3>
                     {post.excerpt && <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{post.excerpt}</p>}
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">

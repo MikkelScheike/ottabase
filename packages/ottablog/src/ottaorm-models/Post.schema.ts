@@ -108,6 +108,11 @@ export const postsTable = sqliteTable(
         // Allow comments
         allowComments: integer('allow_comments', { mode: 'boolean' }).notNull().default(true),
 
+        // Password-protected post (show lock screen until correct password)
+        isProtected: integer('is_protected', { mode: 'boolean' }).notNull().default(false),
+        passwordHash: text('password_hash'),
+        passwordHint: text('password_hint'),
+
         // View count
         viewCount: integer('view_count').notNull().default(0),
 
