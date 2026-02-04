@@ -33,6 +33,7 @@ export class User extends BaseModel {
     static primaryKey = 'id';
     static packageName = '@ottabase/ottaorm';
     static packageType: PackageType = 'core';
+    static hidden = ['passwordHash'];
 
     // UI/Forms metadata
     static displayName = 'User';

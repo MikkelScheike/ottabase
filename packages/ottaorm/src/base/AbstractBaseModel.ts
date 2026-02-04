@@ -244,6 +244,22 @@ export abstract class AbstractBaseModel {
     protected static validationRules: any = {};
 
     /**
+     * Fields to hide from JSON output
+     * @example ["passwordHash", "secretToken"]
+     */
+    protected static hidden: string[] = [];
+
+    /**
+     * Initialize instance with model defaults
+     */
+    protected constructor() {
+        const ctor = this.constructor as typeof AbstractBaseModel;
+        if (Array.isArray(ctor.hidden)) {
+            this.hidden = [...ctor.hidden];
+        }
+    }
+
+    /**
      * Get field metadata for this model
      * Used by @ottabase/forms for auto-generating CRUD forms
      */
@@ -266,6 +282,7 @@ export abstract class AbstractBaseModel {
             displayNamePlural: this.displayNamePlural,
             defaultSort: this.defaultSort,
             defaultSortDirection: this.defaultSortDirection,
+            hidden: this.hidden,
         };
     }
 
@@ -414,10 +431,13 @@ export abstract class AbstractBaseModel {
      */
     toJson(): Record<string, any> {
         const visibleAttributes: { [key: string]: any } = {};
+        const ctor = this.constructor as typeof AbstractBaseModel;
+        const staticHidden = Array.isArray(ctor.hidden) ? ctor.hidden : [];
+        const hiddenSet = new Set([...this.hidden, ...staticHidden]);
 
         // Copy non-hidden attributes
         for (const key in this.attributes) {
-            if (!this.hidden.includes(key)) {
+            if (!hiddenSet.has(key)) {
                 visibleAttributes[key] = this.attributes[key];
             }
         }
