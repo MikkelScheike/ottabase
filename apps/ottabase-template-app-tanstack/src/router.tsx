@@ -1,6 +1,8 @@
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { OrganizationSwitcher } from '@/components/OrganizationSwitcher';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { ReferralTracker } from '@/components/ReferralTracker';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { api, isApiError } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { ThemeSwitcher } from '@/ottabase/components/ThemeSwitcher';
@@ -26,6 +28,12 @@ function RootLayout() {
     const { isAuthenticated, user, logout } = useSession();
     const navigate = useNavigate();
     const location = useLocation();
+
+    const [currentOrgId, setCurrentOrgId] = useLocalStorage<string>('currentOrgId');
+
+    const handleOrgChange = (orgId: string) => {
+        setCurrentOrgId(orgId);
+    };
 
     const handleLogout = () => {
         logout();
@@ -92,6 +100,10 @@ function RootLayout() {
                         <ThemeSwitcher />
                         <DarkModeToggle type="button" title="Toggle dark/light mode" />
                         <LanguageSwitcher languages={i18nConfig.enabledLanguages} showLabel={false} />
+
+                        {isAuthenticated && (
+                            <OrganizationSwitcher currentOrgId={currentOrgId} onOrgChange={handleOrgChange} />
+                        )}
 
                         {isAuthenticated ? (
                             <div className="flex items-center gap-2 ml-2 pl-2 border-l">
@@ -648,6 +660,130 @@ const blogDetailRoute = new Route({
     ),
 });
 
+// Organizations routes
+const organizationsRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/organizations',
+    component: lazyRouteComponent(() =>
+        import('@/pages/organizations/OrganizationsPage').then((m) => ({
+            default: m.OrganizationsPage,
+        })),
+    ),
+});
+
+const organizationMembersRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/organizations/$organizationId/members',
+    component: lazyRouteComponent(() =>
+        import('@/pages/organizations/OrganizationMembersPage').then((m) => ({
+            default: m.OrganizationMembersPage,
+        })),
+    ),
+});
+
+const organizationRegistrationRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/organizations/new',
+    component: lazyRouteComponent(() =>
+        import('@/pages/organizations/OrganizationRegistrationPage').then((m) => ({
+            default: m.OrganizationRegistrationPage,
+        })),
+    ),
+});
+
+const organizationSettingsRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/organizations/$organizationId/settings',
+    component: lazyRouteComponent(() =>
+        import('@/pages/organizations/OrganizationSettingsPage').then((m) => ({
+            default: m.OrganizationSettingsPage,
+        })),
+    ),
+});
+
+// User routes
+const userProfileRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/profile',
+    component: lazyRouteComponent(() =>
+        import('@/pages/user/UserProfilePage').then((m) => ({
+            default: m.UserProfilePage,
+        })),
+    ),
+});
+
+// Admin user routes
+const adminUsersRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/users',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/users/UserManagementPage').then((m) => ({
+            default: m.UserManagementPage,
+        })),
+    ),
+});
+
+const adminUserRBACRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/users/$userId/rbac',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/users/UserRBACPage').then((m) => ({
+            default: m.UserRBACPage,
+        })),
+    ),
+});
+
+// Admin RBAC routes
+const adminRBACRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/rbac',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/rbac/RBACAdminPage').then((m) => ({
+            default: m.RBACAdminPage,
+        })),
+    ),
+});
+
+const adminRBACRolesRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/rbac/roles',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/rbac/RBACRolesPage').then((m) => ({
+            default: m.RBACRolesPage,
+        })),
+    ),
+});
+
+const adminRBACPermissionsRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/rbac/permissions',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/rbac/PermissionsMatrixPage').then((m) => ({
+            default: m.PermissionsMatrixPage,
+        })),
+    ),
+});
+
+const adminAuditRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/audit',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/audit/AuditLogViewerPage').then((m) => ({
+            default: m.AuditLogViewerPage,
+        })),
+    ),
+});
+
+const adminSecurityRLSRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/security/rls',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/security/RLSSecurityDemoPage').then((m) => ({
+            default: m.RLSSecurityDemoPage,
+        })),
+    ),
+});
+
 demoLayoutRoute.addChildren([
     demoIndexRoute,
     demoMantineRoute,
@@ -694,8 +830,20 @@ const routeTree = rootRoute.addChildren([
     adminBlogEditRoute,
     adminBlogStudioRoute,
     adminDbRoute,
+    adminRBACRoute,
+    adminRBACRolesRoute,
+    adminRBACPermissionsRoute,
+    adminAuditRoute,
+    adminSecurityRLSRoute,
+    adminUsersRoute,
+    adminUserRBACRoute,
     blogListRoute,
     blogDetailRoute,
+    organizationsRoute,
+    organizationMembersRoute,
+    organizationRegistrationRoute,
+    organizationSettingsRoute,
+    userProfileRoute,
 ]);
 
 const browserHistory = createBrowserHistory();

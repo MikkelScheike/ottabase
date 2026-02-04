@@ -378,3 +378,7 @@ export async function parseCrudRequest(
         query: Object.keys(query).length > 0 ? query : undefined,
     };
 }
+
+// NOTE: tenant-aware CRUD exports are commented out to avoid circular dependencies during build
+// Users can import directly from '@ottabase/ottaorm/crud/tenant-aware' if needed
+// export { handleTenantAwareCrud, tenantAwareCrudMiddleware, type TenantAwareCrudOptions } from "./tenant-aware";

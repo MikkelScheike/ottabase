@@ -22,6 +22,22 @@ export type { ModelMetadata, ModelRegistryEntry } from './registry';
 export { handleCrud, parseCrudRequest } from './crud';
 export type { CrudRequest, CrudResponse } from './crud';
 
+// Row-Level Security (RLS)
+export {
+    RLSError,
+    RLSPolicies,
+    executeSecureCrudRequest,
+    extractSecurityContext,
+    getRegisteredModels as getRLSModels,
+    globalRLS,
+    initRLS,
+    logSecurityViolation,
+    registerPolicy,
+    rlsMiddleware,
+    secureCrud,
+} from './rls';
+export type { ModelRLSConfig, RLSPolicy, RLSViolation, SecureCrudOptions, SecurityContext, SecurityLevel } from './rls';
+
 // Migrations
 export { coreMigrations, rollbackMigrations, runMigrations } from './migrations';
 export type { Migration } from './migrations';
@@ -40,8 +56,8 @@ export { AbstractBaseModel, BaseModel } from './base';
 export type {
     IModelConstructorParams,
     ModelFieldDescriptor,
-    ModelFields,
     ModelFieldType,
+    ModelFields,
     PackageType,
     PaginationResult,
     RelationshipConfig,
@@ -54,32 +70,58 @@ export type {
  */
 export {
     Account,
-    accountsTable,
+    AuditLog,
     // Auth.js SQL models (Edge-safe)
     Authenticator,
-    authenticatorsTable,
+    // Multi-tenant/RBAC models and tables
+    Organization,
+    OrganizationMember,
+    Permission,
+    Role,
     ScheduledTask,
-    scheduledTasksTable,
     Session,
-    sessionsTable,
     Tag,
-    tagsTable,
     User,
-    usersTable,
+    UserRole,
     VerificationToken,
+    accountsTable,
+    auditLogsTable,
+    authenticatorsTable,
+    organizationMembersTable,
+    organizationsTable,
+    permissionsTable,
+    rolesTable,
+    scheduledTasksTable,
+    sessionsTable,
+    tagsTable,
+    userRolesTable,
+    usersTable,
     verificationTokensTable,
 } from './models';
 export type {
     AccountType,
+    AuditLogType,
     AuthenticatorType,
     NewAccountType,
+    NewAuditLogType,
     NewAuthenticatorType,
+    NewOrganizationMemberType,
+    NewOrganizationType,
+    NewPermissionType,
+    NewRoleType,
     NewSessionType,
     NewTagType,
+    NewUserRoleType,
     NewUserType,
     NewVerificationTokenType,
+    OrganizationMemberType,
+    // Multi-tenant/RBAC types
+    OrganizationType,
+    PermissionType,
+    RoleType,
     SessionType,
     TagType,
+    UserRoleType,
     UserType,
     VerificationTokenType,
 } from './models';

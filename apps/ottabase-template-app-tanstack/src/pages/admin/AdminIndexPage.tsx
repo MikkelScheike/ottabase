@@ -1,6 +1,18 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
-import { Activity, Clock, Database, FileText, Layers, Palette, UserPlus } from 'lucide-react';
+import {
+    Activity,
+    Building2,
+    Clock,
+    Database,
+    FileText,
+    Layers,
+    Palette,
+    Shield,
+    ShieldCheck,
+    UserPlus,
+    Users,
+} from 'lucide-react';
 
 export function AdminIndexPage() {
     const adminLinks = [
@@ -16,6 +28,41 @@ export function AdminIndexPage() {
             description: 'Manage blog themes and plugins (activate theme, enable/disable plugins).',
             href: '/admin/blog/studio',
             icon: Palette,
+            disabled: false,
+        },
+        {
+            title: 'Organizations',
+            description: 'Manage multi-tenant organizations, members, and settings.',
+            href: '/organizations',
+            icon: Building2,
+            disabled: false,
+        },
+        {
+            title: 'RBAC Administration',
+            description: 'Manage roles, permissions, and access control for multi-tenant security.',
+            href: '/admin/rbac',
+            icon: Shield,
+            disabled: false,
+        },
+        {
+            title: 'Audit Logs',
+            description: 'View and search audit logs for security and compliance tracking.',
+            href: '/admin/audit',
+            icon: FileText,
+            disabled: false,
+        },
+        {
+            title: 'RLS Security Demo',
+            description: 'Interactive demo of Row-Level Security with live security tests and policy overview.',
+            href: '/admin/security/rls',
+            icon: ShieldCheck,
+            disabled: false,
+        },
+        {
+            title: 'User Management',
+            description: 'View and manage all users, assign roles, and control organization access.',
+            href: '/admin/users',
+            icon: Users,
             disabled: false,
         },
         {
@@ -61,14 +108,6 @@ export function AdminIndexPage() {
             external: true,
             disabled: false,
         },
-        // Add placeholders for future panels
-        // {
-        //   title: "User Management (Future)",
-        //   description: "Manage users, roles, and permissions.",
-        //   href: "/admin/users",
-        //   icon: ShieldAlert,
-        //   disabled: true
-        // }
     ];
 
     return (
