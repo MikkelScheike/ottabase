@@ -33,6 +33,20 @@ const api = createApiClient({
 });
 ```
 
+### Optional behavior tweaks
+
+Use `skipUnauthorizedHandler: true` when you want to handle a 401 response explicitly (`/api/blog/posts/unlock` is one
+example). This tells the client not to run the global `onUnauthorized` callback so you can surface a local error message
+instead of redirecting to the login screen.
+
+```ts
+await api('/api/blog/posts/unlock', {
+    method: 'POST',
+    body: { slug: 'secret-post', password: 'guess' },
+    skipUnauthorizedHandler: true,
+});
+```
+
 ## Error Handling
 
 ```typescript

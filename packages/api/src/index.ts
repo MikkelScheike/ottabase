@@ -118,6 +118,9 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
     /** Skip auth token injection for this request */
     skipAuth?: boolean;
 
+    /** Skip invoking the unauthorized handler (useful for local 401 handling, Protected Post unlock etc.) */
+    skipUnauthorizedHandler?: boolean;
+
     /** URL query parameters */
     params?: Record<string, string | number | boolean | undefined | null>;
 
@@ -188,6 +191,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
 
         const {
             skipAuth = false,
+            skipUnauthorizedHandler = false,
             params,
             body,
             timeout = defaultTimeout,
@@ -267,7 +271,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
                 );
 
                 // Call error handlers
-                if (onUnauthorized && apiError.isUnauthorized()) {
+                if (onUnauthorized && apiError.isUnauthorized() && !skipUnauthorizedHandler) {
                     onUnauthorized(apiError);
                 }
 

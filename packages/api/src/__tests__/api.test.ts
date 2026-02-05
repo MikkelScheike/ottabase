@@ -186,6 +186,30 @@ describe('API Client', () => {
             expect(onUnauthorized).toHaveBeenCalled();
         });
 
+        it('should skip onUnauthorized when skipUnauthorizedHandler is true', async () => {
+            const mockFetch = vi.fn(() =>
+                Promise.resolve({
+                    ok: false,
+                    status: 401,
+                    statusText: 'Unauthorized',
+                    headers: new Headers({ 'content-type': 'application/json' }),
+                    json: () => Promise.resolve({ error: 'Unauthorized' }),
+                } as Response),
+            );
+            global.fetch = mockFetch;
+
+            const onUnauthorized = vi.fn();
+            const api = createApiClient({ onUnauthorized });
+
+            try {
+                await api('/protected', { skipUnauthorizedHandler: true });
+            } catch (error) {
+                // expected
+            }
+
+            expect(onUnauthorized).not.toHaveBeenCalled();
+        });
+
         it('should handle shorthand method syntax', async () => {
             const mockFetch = vi.fn(() =>
                 Promise.resolve({
