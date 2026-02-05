@@ -65,6 +65,27 @@ export interface RegisterResponse {
         image?: string | null;
         [key: string]: any;
     };
+    organizationId?: string | null;
+    organizationRole?: string | null;
+    assignedRole?: string | null;
+    requiresEmailVerification?: boolean;
+    verificationSent?: boolean;
+}
+
+/**
+ * Email verification response
+ */
+export interface EmailVerificationResponse {
+    success: boolean;
+    error?: string;
+}
+
+/**
+ * Password reset response
+ */
+export interface PasswordResetResponse {
+    success: boolean;
+    error?: string;
 }
 
 /**
@@ -324,6 +345,11 @@ export async function registerWithCredentials(
         return {
             success: true,
             user: payload.user,
+            organizationId: payload.organizationId ?? null,
+            organizationRole: payload.organizationRole ?? null,
+            assignedRole: payload.assignedRole ?? null,
+            requiresEmailVerification: payload.requiresEmailVerification ?? false,
+            verificationSent: payload.verificationSent ?? false,
         };
     } catch (error) {
         return {
@@ -464,5 +490,147 @@ export async function getCsrfToken(options?: AuthClientOptions): Promise<string 
     } catch (error) {
         console.error('Failed to get CSRF token:', error);
         return null;
+    }
+}
+
+/**
+ * Request an email verification (resend)
+ */
+export async function requestEmailVerification(
+    email: string,
+    options?: { clientOptions?: AuthClientOptions },
+): Promise<EmailVerificationResponse> {
+    const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+
+    try {
+        const response = await fetch(`${baseUrl}/verify-email/resend`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Failed to send verification email' }));
+            return {
+                success: false,
+                error: error.error || 'Failed to send verification email',
+            };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to send verification email',
+        };
+    }
+}
+
+/**
+ * Verify email with token (used by verification page)
+ */
+export async function verifyEmail(
+    token: string,
+    email: string,
+    options?: { clientOptions?: AuthClientOptions },
+): Promise<EmailVerificationResponse> {
+    const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+
+    try {
+        const params = new URLSearchParams({ token, email });
+        const response = await fetch(`${baseUrl}/verify-email?${params.toString()}`, {
+            method: 'GET',
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Email verification failed' }));
+            return {
+                success: false,
+                error: error.error || 'Email verification failed',
+            };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Email verification failed',
+        };
+    }
+}
+
+/**
+ * Request a password reset email
+ */
+export async function requestPasswordReset(
+    email: string,
+    options?: { clientOptions?: AuthClientOptions },
+): Promise<PasswordResetResponse> {
+    const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+
+    try {
+        const response = await fetch(`${baseUrl}/password/reset/request`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Failed to request password reset' }));
+            return {
+                success: false,
+                error: error.error || 'Failed to request password reset',
+            };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to request password reset',
+        };
+    }
+}
+
+/**
+ * Reset password with token
+ */
+export async function resetPassword(
+    data: { email: string; token: string; password: string },
+    options?: { clientOptions?: AuthClientOptions },
+): Promise<PasswordResetResponse> {
+    const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+
+    try {
+        const response = await fetch(`${baseUrl}/password/reset/confirm`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Password reset failed' }));
+            return {
+                success: false,
+                error: error.error || 'Password reset failed',
+            };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Password reset failed',
+        };
     }
 }

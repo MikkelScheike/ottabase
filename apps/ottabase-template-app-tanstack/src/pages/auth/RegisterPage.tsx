@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from '@tanstack/react-router';
 import { RegisterForm, type RegisterFormData } from '@ottabase/auth/components';
 import { useSession } from '@/lib/auth';
-import { registerWithCredentials, signInWithCredentials } from '@/lib/auth-api';
+import { registerWithCredentials, requestEmailVerification, signInWithCredentials } from '@/lib/auth-api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, Button } from '@ottabase/ui-shadcn';
 import { ArrowLeft } from 'lucide-react';
 import { clearStoredReferralCode, getStoredReferralCode, getReferralExpiryInfo } from '@/lib/referrals';
@@ -15,6 +15,9 @@ export function RegisterPage() {
     const [success, setSuccess] = useState(false);
     const [referralCode, setReferralCode] = useState<string | null>(null);
     const [referralExpiry, setReferralExpiry] = useState<{ daysRemaining: number } | null>(null);
+    const [verificationRequired, setVerificationRequired] = useState(false);
+    const [verificationSent, setVerificationSent] = useState(false);
+    const [registeredEmail, setRegisteredEmail] = useState<string | null>(null);
 
     // Check for stored referral code on mount
     useEffect(() => {
@@ -42,6 +45,16 @@ export function RegisterPage() {
                 throw new Error(registerResult.error || 'Registration failed');
             }
 
+            if (registerResult.requiresEmailVerification) {
+                setVerificationRequired(true);
+                setVerificationSent(!!registerResult.verificationSent);
+                setRegisteredEmail(data.email);
+                clearStoredReferralCode();
+                setSuccess(true);
+                setIsLoading(false);
+                return;
+            }
+
             const signInResult = await signInWithCredentials(
                 { email: data.email, password: data.password },
                 { redirect: false },
@@ -64,6 +77,23 @@ export function RegisterPage() {
             }, 1000);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Registration failed');
+            setIsLoading(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!registeredEmail) return;
+        setIsLoading(true);
+        setError(undefined);
+        try {
+            const result = await requestEmailVerification(registeredEmail);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to resend verification email');
+            }
+            setVerificationSent(true);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to resend verification email');
+        } finally {
             setIsLoading(false);
         }
     };
@@ -103,19 +133,41 @@ export function RegisterPage() {
                         <CardDescription>Fill in your details to create a new account</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <RegisterForm
-                            onSubmit={handleRegister}
-                            isLoading={isLoading}
-                            error={error}
-                            success={success}
-                            successMessage="Account created! Redirecting to dashboard..."
-                            showTermsCheckbox
-                            termsText="I agree to the Terms of Service and Privacy Policy"
-                            onTermsClick={() => {
-                                // TODO: Open terms modal or navigate to terms page
-                                console.log('Show terms');
-                            }}
-                        />
+                        {verificationRequired ? (
+                            <div className="space-y-4 text-sm">
+                                <div className="rounded-lg border border-muted bg-muted/40 p-4">
+                                    <p className="font-medium">Check your email to verify your account</p>
+                                    <p className="text-muted-foreground mt-1">
+                                        We sent a verification link to <strong>{registeredEmail}</strong>. You must
+                                        verify your email before signing in.
+                                    </p>
+                                </div>
+                                {error && <p className="text-sm text-destructive">{error}</p>}
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="w-full"
+                                    onClick={handleResendVerification}
+                                    disabled={isLoading}
+                                >
+                                    {verificationSent ? 'Resend verification email' : 'Send verification email'}
+                                </Button>
+                            </div>
+                        ) : (
+                            <RegisterForm
+                                onSubmit={handleRegister}
+                                isLoading={isLoading}
+                                error={error}
+                                success={success}
+                                successMessage="Account created! Redirecting to dashboard..."
+                                showTermsCheckbox
+                                termsText="I agree to the Terms of Service and Privacy Policy"
+                                onTermsClick={() => {
+                                    // TODO: Open terms modal or navigate to terms page
+                                    console.log('Show terms');
+                                }}
+                            />
+                        )}
                     </CardContent>
                 </Card>
 

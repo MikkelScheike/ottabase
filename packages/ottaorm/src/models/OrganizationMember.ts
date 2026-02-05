@@ -9,7 +9,6 @@ import {
     type OrganizationMemberType,
     type NewOrganizationMemberType,
 } from './OrganizationMember.schema';
-import { getConnection } from '../context';
 import { usersTable } from './User.schema';
 import { organizationsTable } from './Organization.schema';
 
@@ -152,7 +151,7 @@ export class OrganizationMember extends BaseModel {
      * Add a user to an organization
      */
     static async addMember(data: NewOrganizationMemberType): Promise<OrganizationMemberType> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [member] = await db
             .insert(organizationMembersTable)
@@ -169,7 +168,7 @@ export class OrganizationMember extends BaseModel {
      * Remove a user from an organization
      */
     static async removeMember(userId: string, organizationId: string): Promise<boolean> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const result = await db
             .delete(organizationMembersTable)
@@ -191,7 +190,7 @@ export class OrganizationMember extends BaseModel {
         organizationId: string,
         role: 'owner' | 'admin' | 'member',
     ): Promise<OrganizationMemberType | undefined> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [updated] = await db
             .update(organizationMembersTable)
@@ -215,7 +214,7 @@ export class OrganizationMember extends BaseModel {
         organizationId: string,
         status: 'active' | 'invited' | 'suspended',
     ): Promise<OrganizationMemberType | undefined> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [updated] = await db
             .update(organizationMembersTable)
@@ -242,7 +241,7 @@ export class OrganizationMember extends BaseModel {
             limit?: number;
         },
     ): Promise<Array<OrganizationMemberType & { user?: any }>> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         let conditions = [eq(organizationMembersTable.organizationId, organizationId)];
 
@@ -292,7 +291,7 @@ export class OrganizationMember extends BaseModel {
             role?: 'owner' | 'admin' | 'member';
         },
     ): Promise<Array<OrganizationMemberType & { organization?: any }>> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         let conditions = [eq(organizationMembersTable.userId, userId)];
 
@@ -331,7 +330,7 @@ export class OrganizationMember extends BaseModel {
      * Check if user is member of organization
      */
     static async isMember(userId: string, organizationId: string): Promise<boolean> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [member] = await db
             .select()
@@ -352,7 +351,7 @@ export class OrganizationMember extends BaseModel {
      * Check if user has specific role in organization
      */
     static async hasRole(userId: string, organizationId: string, role: 'owner' | 'admin' | 'member'): Promise<boolean> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [member] = await db
             .select()
@@ -374,7 +373,7 @@ export class OrganizationMember extends BaseModel {
      * Check if user is owner or admin
      */
     static async isOwnerOrAdmin(userId: string, organizationId: string): Promise<boolean> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [member] = await db
             .select()
@@ -396,7 +395,7 @@ export class OrganizationMember extends BaseModel {
      * Get member details
      */
     static async getMember(userId: string, organizationId: string): Promise<OrganizationMemberType | undefined> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [member] = await db
             .select()

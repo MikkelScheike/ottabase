@@ -15,7 +15,7 @@
 // ============================================================
 
 import { Auth, type AuthConfig } from '@auth/core';
-import type { D1Database } from '@cloudflare/workers-types';
+import type { D1Database, KVNamespace } from '@cloudflare/workers-types';
 import { createOttabaseAuthConfig } from './config';
 import type { ProviderEnv } from './providers';
 import {
@@ -35,6 +35,7 @@ export interface AuthEnv extends ProviderEnv {
     NEXTAUTH_URL?: string;
     ENVIRONMENT?: string;
     OBCF_D1?: D1Database;
+    OBCF_KV?: KVNamespace;
 }
 
 /**
@@ -136,6 +137,13 @@ async function defaultCredentialsAuthorize(
  */
 export interface CreateAuthConfigOptions extends CredentialsAuthorizeOptions {
     /**
+     * Session strategy
+     * - "jwt": Use JSON Web Tokens (recommended for edge/serverless)
+     * - "database": Store sessions in database (requires more D1 queries)
+     */
+    sessionStrategy?: 'jwt' | 'database';
+
+    /**
      * Session max age in seconds (default: 30 days)
      */
     sessionMaxAge?: number;
@@ -172,6 +180,7 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
     const sessionMaxAge =
         options?.sessionMaxAge ??
         (Number.isFinite(envSessionMaxAge) && envSessionMaxAge > 0 ? envSessionMaxAge : undefined);
+    const sessionStrategy = options?.sessionStrategy ?? 'jwt';
 
     if (!env.OBCF_D1) {
         throw new Error('OBCF_D1 database binding is required for authentication');
@@ -238,7 +247,7 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
     const config = createOttabaseAuthConfig({
         d1: env.OBCF_D1,
         providers,
-        sessionStrategy: 'jwt',
+        sessionStrategy,
         sessionMaxAge: sessionMaxAge ?? 30 * 24 * 60 * 60, // 30 days
         authConfig: {
             secret: env.AUTH_SECRET || 'dev-secret-change-in-production',
@@ -270,6 +279,25 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
              */
             trustHost: true,
             callbacks: {
+                async signIn({ user, account }) {
+                    if (!env.OBCF_D1) return true;
+                    if (!user?.id || !account?.provider) return true;
+
+                    // Auto-mark verified for OAuth providers (non-credentials)
+                    if (account.provider !== 'credentials') {
+                        try {
+                            await env.OBCF_D1.prepare(
+                                `UPDATE users SET email_verified = ? WHERE id = ? AND (email_verified IS NULL OR email_verified = '')`,
+                            )
+                                .bind(new Date().toISOString(), user.id)
+                                .run();
+                        } catch (error) {
+                            console.warn('Failed to auto-verify OAuth user email:', error);
+                        }
+                    }
+
+                    return true;
+                },
                 async redirect({ url, baseUrl }) {
                     // Ensure redirects go to the frontend URL, not the backend
                     // If url is relative, make it absolute using the frontend baseUrl
@@ -284,7 +312,98 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                     return url;
                 },
                 async jwt({ token, user }) {
-                    if (user) {
+                    if (!env.OBCF_D1) {
+                        return token;
+                    }
+
+                    // Ensure token has stable identifiers for revocation checks
+                    if (!token.jti) {
+                        token.jti = crypto.randomUUID();
+                    }
+                    if (!token.issuedAt) {
+                        token.issuedAt = Math.floor(Date.now() / 1000);
+                    }
+
+                    // Check for user-level revocation (logout / password reset)
+                    if (env.OBCF_KV && token.id) {
+                        try {
+                            const revokedAtRaw = await env.OBCF_KV.get(`auth:revoked:user:${token.id}`);
+                            if (revokedAtRaw) {
+                                const revokedAt = Number(revokedAtRaw);
+                                const issuedAt = Number(token.issuedAt || 0);
+                                if (Number.isFinite(revokedAt) && issuedAt > 0 && issuedAt <= revokedAt) {
+                                    return null;
+                                }
+                            }
+                        } catch (error) {
+                            console.warn('Failed to check session revocation:', error);
+                        }
+                    }
+
+                    async function loadUserContext(userId: string) {
+                        const d1 = env.OBCF_D1;
+                        if (!d1) {
+                            return { organizationId: null, roles: [], permissions: [] };
+                        }
+
+                        let organizationId: string | null = null;
+                        let roles: string[] = [];
+                        let permissions: string[] = [];
+
+                        try {
+                            const membership = await d1
+                                .prepare(
+                                    `SELECT organization_id as organizationId
+                                 FROM organization_members
+                                 WHERE user_id = ? AND status = 'active'
+                                 ORDER BY joined_at ASC
+                                 LIMIT 1`,
+                                )
+                                .bind(userId)
+                                .first<any>();
+
+                            if (membership?.organizationId) {
+                                organizationId = membership.organizationId;
+                            }
+                        } catch (error) {
+                            console.warn('Failed to load organization membership for auth:', error);
+                        }
+
+                        if (organizationId) {
+                            try {
+                                const roleResult = await d1
+                                    .prepare(
+                                        `SELECT r.name as name, r.permissions as permissions
+                                     FROM user_roles ur
+                                     JOIN roles r ON r.id = ur.role_id
+                                     WHERE ur.user_id = ? AND ur.organization_id = ?`,
+                                    )
+                                    .bind(userId, organizationId)
+                                    .all<any>();
+
+                                roles = (roleResult?.results || []).map((row: any) => String(row.name)).filter(Boolean);
+
+                                const permissionsSet = new Set<string>();
+                                for (const row of roleResult?.results || []) {
+                                    try {
+                                        const parsed = row.permissions ? JSON.parse(String(row.permissions)) : [];
+                                        if (Array.isArray(parsed)) {
+                                            parsed.forEach((perm) => permissionsSet.add(String(perm)));
+                                        }
+                                    } catch {
+                                        // ignore bad permissions
+                                    }
+                                }
+                                permissions = Array.from(permissionsSet);
+                            } catch (error) {
+                                console.warn('Failed to load user roles for auth:', error);
+                            }
+                        }
+
+                        return { organizationId, roles, permissions };
+                    }
+
+                    if (user && user.id) {
                         token.id = user.id;
                         token.email = user.email;
                         token.name = user.name;
@@ -295,6 +414,44 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                                 ? emailVerified.toISOString()
                                 : String(emailVerified)
                             : null;
+
+                        const providedOrgId = (user as any).organizationId;
+                        const providedRoles = (user as any).roles;
+                        const providedPermissions = (user as any).permissions;
+
+                        if (providedOrgId) {
+                            token.organizationId = providedOrgId;
+                        }
+                        if (Array.isArray(providedRoles)) {
+                            token.roles = providedRoles;
+                        }
+                        if (Array.isArray(providedPermissions)) {
+                            token.permissions = providedPermissions;
+                        }
+
+                        if (!token.organizationId || !Array.isArray(token.roles) || !Array.isArray(token.permissions)) {
+                            const context = await loadUserContext(user.id);
+                            if (context.organizationId) {
+                                token.organizationId = context.organizationId;
+                            }
+                            if (!Array.isArray(token.roles)) {
+                                token.roles = context.roles;
+                            }
+                            if (!Array.isArray(token.permissions)) {
+                                token.permissions = context.permissions;
+                            }
+                        }
+                    } else if (token?.id && (!token.organizationId || !Array.isArray(token.roles))) {
+                        const context = await loadUserContext(String(token.id));
+                        if (context.organizationId) {
+                            token.organizationId = context.organizationId;
+                        }
+                        if (!Array.isArray(token.roles)) {
+                            token.roles = context.roles;
+                        }
+                        if (!Array.isArray(token.permissions)) {
+                            token.permissions = context.permissions;
+                        }
                     }
                     return token;
                 },
@@ -309,8 +466,33 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         if (token.emailVerified) {
                             session.user.emailVerified = new Date(token.emailVerified as string);
                         }
+                        if (token.organizationId) {
+                            (session.user as any).organizationId = token.organizationId as string;
+                        }
+                        if (token.roles) {
+                            (session.user as any).roles = token.roles as string[];
+                        }
+                        if (token.permissions) {
+                            (session.user as any).permissions = token.permissions as string[];
+                        }
                     }
                     return session;
+                },
+            },
+            events: {
+                async signOut(message: any) {
+                    if (!env.OBCF_KV) return;
+                    const userId =
+                        message?.token?.id || message?.session?.user?.id || message?.session?.user?.id?.toString();
+                    if (typeof userId !== 'string' || !userId) return;
+                    try {
+                        const revokedAt = Math.floor(Date.now() / 1000);
+                        await env.OBCF_KV.put(`auth:revoked:user:${userId}`, String(revokedAt), {
+                            expirationTtl: sessionMaxAge ?? 30 * 24 * 60 * 60,
+                        });
+                    } catch (error) {
+                        console.warn('Failed to revoke session on signOut:', error);
+                    }
                 },
             },
             ...options?.authConfig,

@@ -50,8 +50,11 @@ import {
     Authenticator,
     Organization,
     OrganizationMember,
+    Permission,
+    Role,
     ScheduledTask,
     Session,
+    UserRole,
     VerificationToken,
 } from '@ottabase/ottaorm/models';
 import { uploadFileToCloudflareImages, uploadFileToR2 } from '@ottabase/ottaupload/server';
@@ -62,7 +65,7 @@ import { ServiceError, errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import { paginatedJsonResponse, parsePaginationParams } from '@ottabase/utils/pagination';
 import { isEmail } from '@ottabase/utils/string';
-import { isValidUrl } from '@ottabase/utils/url';
+import { isValidUrl, makeSlug } from '@ottabase/utils/url';
 import { getAllSchemas } from './ottabase/db/schemas-helper';
 import { processReferralAttribution } from './ottabase/helpers/referral-attribution';
 import { appMigrations } from './ottabase/migrations';
@@ -116,6 +119,183 @@ function normalizeEmail(email: string): string {
 function isStrongPassword(password: string): boolean {
     if (password.length < 8) return false;
     return /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(password);
+}
+
+function isValidIpAddress(rawValue: string | null): string {
+    if (!rawValue) {
+        return 'unknown';
+    }
+
+    // Some headers (like X-Forwarded-For) can contain multiple IPs.
+    const candidate = rawValue.split(',')[0]!.trim();
+    if (!candidate) {
+        return 'unknown';
+    }
+
+    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
+    const ipv6Regex = /^[0-9a-fA-F:]+$/;
+
+    if (ipv4Regex.test(candidate)) {
+        const parts = candidate.split('.');
+        const validOctets = parts.every((part) => {
+            const n = Number(part);
+            return Number.isInteger(n) && n >= 0 && n <= 255;
+        });
+        if (!validOctets) {
+            return 'unknown';
+        }
+        return candidate;
+    }
+
+    if (ipv6Regex.test(candidate) && candidate.includes(':')) {
+        return candidate;
+    }
+
+    return 'unknown';
+}
+
+function getClientIpAddress(request: Request): string {
+    // NOTE: IP addresses from headers are not trustworthy and must not be
+    // used for authentication, authorization, or other security decisions.
+    const headerCandidates = ['CF-Connecting-IP', 'X-Forwarded-For', 'X-Real-IP'];
+
+    for (const header of headerCandidates) {
+        const headerValue = request.headers.get(header);
+        const validIp = isValidIpAddress(headerValue);
+        if (validIp !== 'unknown') {
+            return validIp;
+        }
+    }
+
+    return 'unknown';
+}
+
+function base64UrlEncode(bytes: Uint8Array): string {
+    let binary = '';
+    for (const byte of bytes) {
+        binary += String.fromCharCode(byte);
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function createSecureToken(bytes = 32): string {
+    const buffer = crypto.getRandomValues(new Uint8Array(bytes));
+    return base64UrlEncode(buffer);
+}
+
+async function resolveMailer(env: CloudflareEnv) {
+    const from = env.EMAIL_FROM || 'noreply@example.com';
+    let mailer: any = null;
+    let provider: 'resend' | 'ses' | 'nodemailer' | null = null;
+
+    if (env.EMAIL_RESEND_API_KEY) {
+        mailer = createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY });
+        provider = 'resend';
+    } else if (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) {
+        mailer = createSESMailer({
+            accessKeyId: env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+            region: env.AWS_REGION || 'us-east-1',
+        });
+        provider = 'ses';
+    } else if (env.EMAIL_SERVER) {
+        const { createNodemailerMailer } = await import('@ottabase/email/providers/nodemailer');
+        mailer = createNodemailerMailer({ server: env.EMAIL_SERVER });
+        provider = 'nodemailer';
+    }
+
+    return { mailer, from, provider };
+}
+
+async function createVerificationToken(
+    env: CloudflareEnv,
+    identifier: string,
+    ttlSeconds: number,
+): Promise<{ token: string; expiresAt: string }> {
+    if (!env.OBCF_D1) {
+        throw new Error('D1 database binding not configured');
+    }
+
+    const token = createSecureToken(32);
+    const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+
+    try {
+        await env.OBCF_D1.prepare(`DELETE FROM verification_tokens WHERE identifier = ?`).bind(identifier).run();
+    } catch {
+        // ignore cleanup errors
+    }
+
+    await VerificationToken.create({
+        identifier,
+        token,
+        expires: expiresAt,
+    });
+
+    return { token, expiresAt };
+}
+
+async function getRateLimitData(env: CloudflareEnv, key: string) {
+    let rateLimitData: {
+        success: boolean;
+        limit: number;
+        remaining: number;
+        resetAfter: number;
+    } | null = null;
+
+    if (env.OBCF_RATE_LIMITER) {
+        try {
+            const limiter = createRateLimitingClient({
+                rateLimiter: env.OBCF_RATE_LIMITER,
+            });
+            const result = await limiter.limit({ key });
+            if (result.success) {
+                const { success, limit, remaining, resetAfter } = result.data;
+                if (limit !== undefined && remaining !== undefined && resetAfter !== undefined) {
+                    rateLimitData = { success, limit, remaining, resetAfter };
+                }
+            }
+        } catch {
+            // ignore - fall back
+        }
+    }
+
+    if (!rateLimitData) {
+        rateLimitData = await simulateRateLimit(env, key);
+    }
+
+    return rateLimitData;
+}
+
+async function enforceRateLimit(request: Request, env: CloudflareEnv, key: string): Promise<Response | null> {
+    const rateLimitData = await getRateLimitData(env, key);
+    if (!rateLimitData) {
+        return errorResponse('Rate limiter not available', 500, {
+            hint: 'Enable OBCF_RATE_LIMITER or OBCF_KV for rate limiting',
+            code: 'CONFIG_ERROR',
+        });
+    }
+
+    const { success, limit, remaining, resetAfter } = rateLimitData;
+    const headers = new Headers({
+        'RateLimit-Limit': String(limit),
+        'RateLimit-Remaining': String(remaining),
+        'RateLimit-Reset': String(resetAfter),
+    });
+
+    if (!success) {
+        return new Response(
+            JSON.stringify({
+                error: 'Too many requests. Please try again later.',
+                code: 'RATE_LIMITED',
+                limit,
+                remaining,
+                resetAfter,
+            }),
+            { status: 429, headers },
+        );
+    }
+
+    return null;
 }
 
 function getAuthOptions(env: CloudflareEnv): CreateAuthConfigOptions {
@@ -256,6 +436,10 @@ function initDbConnection(env: CloudflareEnv): void {
         // Multi-tenant models
         Organization,
         OrganizationMember,
+        // RBAC models
+        Role,
+        UserRole,
+        Permission,
         // Blog models
         Post,
         PostTag,
@@ -413,6 +597,302 @@ export default {
                     200,
                 );
                 return withAuthCors(response);
+            }
+
+            // ============================================================
+            // Email Verification & Password Reset
+            // ============================================================
+
+            if (url.pathname === '/api/auth/verify-email/resend' && request.method === 'POST') {
+                const ip = getClientIpAddress(request);
+                const rateLimit = await enforceRateLimit(request, env, `auth:verify-resend:${ip}`);
+                if (rateLimit) return withAuthCors(rateLimit);
+
+                if (!env.OBCF_D1) {
+                    return withAuthCors(
+                        errorResponse('D1 database binding not configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                registerConnection('default', createD1Driver(env.OBCF_D1));
+
+                const body = await readJson<{ email?: string }>(request);
+                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
+
+                if (!email || !isEmail(email)) {
+                    return withAuthCors(
+                        errorResponse('Valid email is required', 400, {
+                            code: 'VALIDATION_ERROR',
+                        }),
+                    );
+                }
+
+                const user = await User.first({ email });
+                if (!user) {
+                    // Avoid leaking whether user exists
+                    return withAuthCors(jsonResponse({ success: true, sent: true }));
+                }
+
+                if (user.get('emailVerified')) {
+                    return withAuthCors(jsonResponse({ success: true, alreadyVerified: true }));
+                }
+
+                const { mailer, from } = await resolveMailer(env);
+                if (!mailer) {
+                    return withAuthCors(
+                        errorResponse('No email provider configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                registerAppEmailTemplates();
+                const identifier = `verify:${email}`;
+                const { token } = await createVerificationToken(env, identifier, 24 * 60 * 60);
+
+                const verifyUrl = new URL(request.url);
+                verifyUrl.pathname = '/api/auth/verify-email';
+                verifyUrl.searchParams.set('token', token);
+                verifyUrl.searchParams.set('email', email);
+
+                await sendTemplatedEmail(mailer, {
+                    from,
+                    to: email,
+                    template: 'minimalist',
+                    subject: 'Verify your email',
+                    variables: {
+                        subject: 'Verify your email',
+                        header: 'Verify your email',
+                        body: `<p>Welcome! Please verify your email to activate your account.</p>
+<p><a href="${verifyUrl.toString()}">Verify email</a></p>
+<p>If you did not create this account, you can ignore this email.</p>`,
+                        footer: `<p>For security, this link expires in 24 hours.</p>`,
+                    },
+                });
+
+                return withAuthCors(jsonResponse({ success: true, sent: true }));
+            }
+
+            if (url.pathname === '/api/auth/verify-email' && request.method === 'GET') {
+                if (!env.OBCF_D1) {
+                    return withAuthCors(
+                        errorResponse('D1 database binding not configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                registerConnection('default', createD1Driver(env.OBCF_D1));
+
+                const token = url.searchParams.get('token') || '';
+                const email = normalizeEmail(url.searchParams.get('email') || '');
+
+                if (!token || !email) {
+                    return withAuthCors(
+                        errorResponse('Invalid verification link', 400, {
+                            code: 'INVALID_TOKEN',
+                        }),
+                    );
+                }
+
+                const identifier = `verify:${email}`;
+                const verification = await VerificationToken.findByIdentifierAndToken(identifier, token);
+                if (!verification) {
+                    return withAuthCors(
+                        errorResponse('Verification token is invalid or expired', 400, {
+                            code: 'INVALID_TOKEN',
+                        }),
+                    );
+                }
+
+                const expiresAt = new Date(String(verification.get('expires')));
+                if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+                    await VerificationToken.deleteByIdentifierAndToken(identifier, token);
+                    return withAuthCors(
+                        errorResponse('Verification token is invalid or expired', 400, {
+                            code: 'TOKEN_EXPIRED',
+                        }),
+                    );
+                }
+
+                const user = await User.first({ email });
+                if (user) {
+                    user.set('emailVerified', new Date());
+                    await user.save();
+                }
+
+                await VerificationToken.deleteByIdentifierAndToken(identifier, token);
+
+                const accept = request.headers.get('Accept') || '';
+                if (accept.includes('text/html')) {
+                    const redirectUrl = env.AUTH_URL || env.NEXTAUTH_URL || new URL(request.url).origin;
+                    return Response.redirect(`${redirectUrl}/login?verified=1`, 303);
+                }
+
+                return withAuthCors(jsonResponse({ success: true }));
+            }
+
+            if (url.pathname === '/api/auth/password/reset/request' && request.method === 'POST') {
+                const ip = getClientIpAddress(request);
+                const rateLimit = await enforceRateLimit(request, env, `auth:password-reset:${ip}`);
+                if (rateLimit) return withAuthCors(rateLimit);
+
+                if (!env.OBCF_D1) {
+                    return withAuthCors(
+                        errorResponse('D1 database binding not configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                registerConnection('default', createD1Driver(env.OBCF_D1));
+
+                const body = await readJson<{ email?: string }>(request);
+                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
+
+                if (!email || !isEmail(email)) {
+                    return withAuthCors(
+                        errorResponse('Valid email is required', 400, {
+                            code: 'VALIDATION_ERROR',
+                        }),
+                    );
+                }
+
+                const user = await User.first({ email });
+                if (!user) {
+                    return withAuthCors(jsonResponse({ success: true, sent: true }));
+                }
+
+                const { mailer, from } = await resolveMailer(env);
+                if (!mailer) {
+                    return withAuthCors(
+                        errorResponse('No email provider configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                registerAppEmailTemplates();
+                const identifier = `reset:${email}`;
+                const { token } = await createVerificationToken(env, identifier, 60 * 60);
+
+                const resetUrl = new URL(env.AUTH_URL || env.NEXTAUTH_URL || request.url);
+                resetUrl.pathname = '/reset-password';
+                resetUrl.searchParams.set('token', token);
+                resetUrl.searchParams.set('email', email);
+
+                await sendTemplatedEmail(mailer, {
+                    from,
+                    to: email,
+                    template: 'minimalist',
+                    subject: 'Reset your password',
+                    variables: {
+                        subject: 'Reset your password',
+                        header: 'Reset your password',
+                        body: `<p>We received a request to reset your password.</p>
+<p><a href="${resetUrl.toString()}">Reset password</a></p>
+<p>If you did not request a password reset, you can ignore this email.</p>`,
+                        footer: `<p>This link expires in 60 minutes.</p>`,
+                    },
+                });
+
+                return withAuthCors(jsonResponse({ success: true, sent: true }));
+            }
+
+            if (url.pathname === '/api/auth/password/reset/confirm' && request.method === 'POST') {
+                const ip = getClientIpAddress(request);
+                const rateLimit = await enforceRateLimit(request, env, `auth:password-reset-confirm:${ip}`);
+                if (rateLimit) return withAuthCors(rateLimit);
+
+                if (!env.OBCF_D1) {
+                    return withAuthCors(
+                        errorResponse('D1 database binding not configured', 500, {
+                            code: 'CONFIG_ERROR',
+                        }),
+                    );
+                }
+
+                registerConnection('default', createD1Driver(env.OBCF_D1));
+
+                const body = await readJson<{ email?: string; token?: string; password?: string }>(request);
+                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
+                const token = typeof body.token === 'string' ? body.token : '';
+                const password = typeof body.password === 'string' ? body.password : '';
+
+                const fieldErrors: Record<string, string[]> = {};
+
+                if (!email || !isEmail(email)) {
+                    fieldErrors.email = ['Valid email is required'];
+                }
+                if (!token) {
+                    fieldErrors.token = ['Reset token is required'];
+                }
+                if (!password) {
+                    fieldErrors.password = ['Password is required'];
+                } else if (!isStrongPassword(password)) {
+                    fieldErrors.password = [
+                        'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol',
+                    ];
+                }
+
+                if (Object.keys(fieldErrors).length > 0) {
+                    return withAuthCors(
+                        errorResponse('Validation failed', 400, {
+                            code: 'VALIDATION_ERROR',
+                            fieldErrors,
+                        }),
+                    );
+                }
+
+                const identifier = `reset:${email}`;
+                const verification = await VerificationToken.findByIdentifierAndToken(identifier, token);
+                if (!verification) {
+                    return withAuthCors(
+                        errorResponse('Reset token is invalid or expired', 400, {
+                            code: 'INVALID_TOKEN',
+                        }),
+                    );
+                }
+
+                const expiresAt = new Date(String(verification.get('expires')));
+                if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
+                    await VerificationToken.deleteByIdentifierAndToken(identifier, token);
+                    return withAuthCors(
+                        errorResponse('Reset token is invalid or expired', 400, {
+                            code: 'TOKEN_EXPIRED',
+                        }),
+                    );
+                }
+
+                const user = await User.first({ email });
+                if (!user) {
+                    return withAuthCors(
+                        errorResponse('User not found', 404, {
+                            code: 'NOT_FOUND',
+                        }),
+                    );
+                }
+
+                const passwordHash = await hashPassword(password);
+                user.set('passwordHash', passwordHash);
+                await user.save();
+
+                await VerificationToken.deleteByIdentifierAndToken(identifier, token);
+
+                if (env.OBCF_KV) {
+                    try {
+                        const revokedAt = Math.floor(Date.now() / 1000);
+                        await env.OBCF_KV.put(`auth:revoked:user:${user.get('id')}`, String(revokedAt), {
+                            expirationTtl: Number(env.AUTH_SESSION_MAX_AGE) || 30 * 24 * 60 * 60,
+                        });
+                    } catch {
+                        // ignore revocation errors
+                    }
+                }
+
+                return withAuthCors(jsonResponse({ success: true }));
             }
 
             // ============================================================
@@ -1242,55 +1722,6 @@ export default {
                     });
                 }
 
-                function isValidIpAddress(rawValue: string | null): string {
-                    if (!rawValue) {
-                        return 'unknown';
-                    }
-
-                    // Some headers (like X-Forwarded-For) can contain multiple IPs.
-                    const candidate = rawValue.split(',')[0]!.trim();
-                    if (!candidate) {
-                        return 'unknown';
-                    }
-
-                    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-                    const ipv6Regex = /^[0-9a-fA-F:]+$/;
-
-                    if (ipv4Regex.test(candidate)) {
-                        const parts = candidate.split('.');
-                        const validOctets = parts.every((part) => {
-                            const n = Number(part);
-                            return Number.isInteger(n) && n >= 0 && n <= 255;
-                        });
-                        if (!validOctets) {
-                            return 'unknown';
-                        }
-                        return candidate;
-                    }
-
-                    if (ipv6Regex.test(candidate) && candidate.includes(':')) {
-                        return candidate;
-                    }
-
-                    return 'unknown';
-                }
-
-                function getClientIpAddress(request: Request): string {
-                    // NOTE: IP addresses from headers are not trustworthy and must not be
-                    // used for authentication, authorization, or other security decisions.
-                    const headerCandidates = ['CF-Connecting-IP', 'X-Forwarded-For', 'X-Real-IP'];
-
-                    for (const header of headerCandidates) {
-                        const headerValue = request.headers.get(header);
-                        const validIp = isValidIpAddress(headerValue);
-                        if (validIp !== 'unknown') {
-                            return validIp;
-                        }
-                    }
-
-                    return 'unknown';
-                }
-
                 // Extract IP and user agent
                 const ipAddress = getClientIpAddress(request);
                 const userAgent = request.headers.get('User-Agent') || 'unknown';
@@ -1322,11 +1753,11 @@ export default {
 
                 registerConnection('default', createD1Driver(env.OBCF_D1));
 
-                // TODO: Get userId from session
-                const userId = url.searchParams.get('userId');
+                const session = await getSession(request, env as any, getAuthOptions(env));
+                const userId = session?.user?.id;
 
                 if (!userId) {
-                    return errorResponse('userId is required', 400);
+                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
                 }
 
                 const stats = await ReferralTracking.getStats(userId);
@@ -1344,11 +1775,11 @@ export default {
 
                 registerConnection('default', createD1Driver(env.OBCF_D1));
 
-                // TODO: Get userId from session
-                const userId = url.searchParams.get('userId');
+                const session = await getSession(request, env as any, getAuthOptions(env));
+                const userId = session?.user?.id;
 
                 if (!userId) {
-                    return errorResponse('userId is required', 400);
+                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
                 }
 
                 const user = await User.find(userId);
@@ -1386,13 +1817,14 @@ export default {
                 registerConnection('default', createD1Driver(env.OBCF_D1));
 
                 const body = await readJson<{
-                    userId?: string;
                     referralUsername?: string;
                 }>(request);
 
-                // TODO: Get userId from session instead
-                if (!body.userId || !body.referralUsername) {
-                    return errorResponse('userId and referralUsername are required', 400);
+                const session = await getSession(request, env as any, getAuthOptions(env));
+                const userId = session?.user?.id;
+
+                if (!userId || !body.referralUsername) {
+                    return errorResponse('referralUsername is required', 400);
                 }
 
                 // Validate username format
@@ -1407,14 +1839,14 @@ export default {
 
                 // Check if username is already taken
                 const existing = await User.findByReferralUsername(body.referralUsername);
-                if (existing && existing.get('id') !== body.userId) {
+                if (existing && existing.get('id') !== userId) {
                     return errorResponse('Username already taken', 400, {
                         code: 'USERNAME_TAKEN',
                     });
                 }
 
                 // Update user
-                const user = await User.find(body.userId);
+                const user = await User.find(userId);
                 if (!user) {
                     return errorResponse('User not found', 404);
                 }
@@ -1438,11 +1870,11 @@ export default {
 
                 registerConnection('default', createD1Driver(env.OBCF_D1));
 
-                // TODO: Get userId from session
-                const userId = url.searchParams.get('userId');
+                const session = await getSession(request, env as any, getAuthOptions(env));
+                const userId = session?.user?.id;
 
                 if (!userId) {
-                    return errorResponse('userId is required', 400);
+                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
                 }
 
                 const { page, perPage } = parsePaginationParams(url.searchParams);
@@ -1489,6 +1921,10 @@ export default {
                         }),
                     );
                 }
+
+                const ip = getClientIpAddress(request);
+                const rateLimit = await enforceRateLimit(request, env, `auth:register:${ip}`);
+                if (rateLimit) return withAuthCors(rateLimit);
 
                 registerConnection('default', createD1Driver(env.OBCF_D1));
 
@@ -1551,7 +1987,54 @@ export default {
                         passwordHash,
                     });
 
-                    const newUserId = newUser.get('id');
+                    const newUserId = newUser.get('id') as string;
+
+                    let organizationId: string | null = null;
+                    let organizationRole: string | null = null;
+                    let assignedRole: string | null = null;
+
+                    try {
+                        await Role.ensureDefaultRoles();
+
+                        const baseName = (name || email.split('@')[0] || 'Workspace').trim();
+                        const orgName = `${baseName}'s Workspace`;
+                        const baseSlug = makeSlug(orgName) || `org-${newUserId.slice(0, 8)}`;
+
+                        let slug = baseSlug;
+                        let attempt = 0;
+                        while (await Organization.findBySlug(slug)) {
+                            attempt += 1;
+                            slug = `${baseSlug}-${attempt}`;
+                            if (attempt > 8) {
+                                slug = `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
+                                break;
+                            }
+                        }
+
+                        const organization = await Organization.create({
+                            name: orgName,
+                            slug,
+                            ownerId: newUserId,
+                        });
+
+                        organizationId = organization.get('id') as string;
+                        organizationRole = 'owner';
+
+                        await OrganizationMember.create({
+                            userId: newUserId,
+                            organizationId,
+                            role: organizationRole,
+                            status: 'active',
+                        });
+
+                        const memberRole = (await Role.findByName('member')) || (await Role.findByName('viewer'));
+                        if (memberRole) {
+                            await newUser.assignRole(memberRole.get('id') as string, organizationId);
+                            assignedRole = memberRole.get('name') as string;
+                        }
+                    } catch (error) {
+                        console.warn('Failed to initialize organization or roles:', error);
+                    }
 
                     // Process referral attribution if referralCode provided
                     let attributionResult;
@@ -1562,12 +2045,62 @@ export default {
                         });
                     }
 
+                    const requireVerified =
+                        env.AUTH_REQUIRE_EMAIL_VERIFIED === 'true' || env.AUTH_REQUIRE_EMAIL_VERIFIED === '1';
+                    let verificationSent = false;
+
+                    if (requireVerified) {
+                        const { mailer, from } = await resolveMailer(env);
+                        if (!mailer) {
+                            return withAuthCors(
+                                errorResponse('Email verification requires a configured email provider', 500, {
+                                    code: 'CONFIG_ERROR',
+                                }),
+                            );
+                        }
+
+                        registerAppEmailTemplates();
+                        const identifier = `verify:${email}`;
+                        const { token } = await createVerificationToken(env, identifier, 24 * 60 * 60);
+
+                        const verifyUrl = new URL(request.url);
+                        verifyUrl.pathname = '/api/auth/verify-email';
+                        verifyUrl.searchParams.set('token', token);
+                        verifyUrl.searchParams.set('email', email);
+
+                        await sendTemplatedEmail(mailer, {
+                            from,
+                            to: email,
+                            template: 'minimalist',
+                            subject: 'Verify your email',
+                            variables: {
+                                subject: 'Verify your email',
+                                header: 'Verify your email',
+                                body: `<p>Thanks for signing up! Please verify your email to activate your account.</p>
+<p><a href="${verifyUrl.toString()}">Verify email</a></p>
+<p>If you did not create this account, you can ignore this email.</p>`,
+                                footer: `<p>This link expires in 24 hours.</p>`,
+                            },
+                        });
+                        verificationSent = true;
+                    }
+
                     const userJson = newUser.toJson();
                     delete (userJson as any).passwordHash;
+                    if (organizationId) {
+                        (userJson as any).organizationId = organizationId;
+                        (userJson as any).organizationRole = organizationRole;
+                        (userJson as any).role = assignedRole;
+                    }
 
                     const response = jsonResponse({
                         success: true,
                         user: userJson,
+                        organizationId,
+                        organizationRole,
+                        assignedRole,
+                        requiresEmailVerification: requireVerified,
+                        verificationSent,
                         referralAttribution: attributionResult || null,
                     });
                     return withAuthCors(response);
@@ -1587,6 +2120,24 @@ export default {
             // Handles all Auth.js routes: /api/auth/signin, /api/auth/signout,
             // /api/auth/session, /api/auth/callback/*, etc.
             if (url.pathname.startsWith('/api/auth/')) {
+                if (request.method === 'POST') {
+                    const ip = getClientIpAddress(request);
+                    let bucket: string | null = null;
+
+                    if (url.pathname.includes('/callback/credentials')) {
+                        bucket = 'signin';
+                    } else if (url.pathname.includes('/signin/email')) {
+                        bucket = 'magiclink';
+                    } else if (url.pathname.includes('/signout')) {
+                        bucket = 'signout';
+                    }
+
+                    if (bucket) {
+                        const rateLimit = await enforceRateLimit(request, env, `auth:${bucket}:${ip}`);
+                        if (rateLimit) return withAuthCors(rateLimit);
+                    }
+                }
+
                 const response = await handleAuthRequest(request, env as any, getAuthOptions(env));
                 return withAuthCors(response);
             }
@@ -1623,6 +2174,105 @@ export default {
 
                 return errorResponse('Method not allowed', 405, {
                     code: 'METHOD_NOT_ALLOWED',
+                });
+            }
+
+            // ============================================================
+            // Audit Logs (Authenticated)
+            // ============================================================
+            if (url.pathname === '/api/audit/logs' && request.method === 'GET') {
+                if (!env.OBCF_D1) {
+                    return errorResponse('D1 database binding not configured', 500, {
+                        code: 'CONFIG_ERROR',
+                    });
+                }
+
+                const session = await getSession(request, env as any, getAuthOptions(env));
+                const userId = session?.user?.id;
+                const isDev =
+                    !env.ENVIRONMENT ||
+                    env.ENVIRONMENT === 'development' ||
+                    env.ENVIRONMENT === 'dev' ||
+                    env.ENVIRONMENT === 'test';
+
+                if (!userId && !isDev) {
+                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
+                }
+
+                const sessionUser = session?.user as any | undefined;
+                const userOrgId = sessionUser?.organizationId as string | undefined;
+                const roles = (sessionUser?.roles as string[]) || [];
+                const permissions = (sessionUser?.permissions as string[]) || [];
+
+                const isAdmin =
+                    isDev ||
+                    roles.includes('admin') ||
+                    permissions.includes('*:*') ||
+                    permissions.includes('audit:*') ||
+                    permissions.includes('audit:read');
+
+                const { page, perPage } = parsePaginationParams(url.searchParams);
+                const search = (url.searchParams.get('search') || '').trim().toLowerCase();
+                const action = url.searchParams.get('action') || '';
+                const resourceType = url.searchParams.get('entityType') || '';
+                const requestedUserId = url.searchParams.get('userId') || '';
+                const requestedOrgId = url.searchParams.get('organizationId') || '';
+
+                const effectiveUserId = isAdmin ? requestedUserId || null : userId;
+                const effectiveOrgId = isAdmin ? requestedOrgId || null : userOrgId || null;
+
+                const conditions: string[] = [];
+                const values: any[] = [];
+
+                if (effectiveUserId) {
+                    conditions.push('user_id = ?');
+                    values.push(effectiveUserId);
+                }
+
+                if (effectiveOrgId) {
+                    conditions.push('organization_id = ?');
+                    values.push(effectiveOrgId);
+                }
+
+                if (action) {
+                    conditions.push('action = ?');
+                    values.push(action);
+                }
+
+                if (resourceType) {
+                    conditions.push('resource_type = ?');
+                    values.push(resourceType);
+                }
+
+                if (search) {
+                    const like = `%${search}%`;
+                    conditions.push(
+                        `(LOWER(user_email) LIKE ? OR LOWER(resource_type) LIKE ? OR LOWER(resource_id) LIKE ? OR LOWER(action) LIKE ?)`,
+                    );
+                    values.push(like, like, like, like);
+                }
+
+                const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+                const offset = (page - 1) * perPage;
+
+                const countResult = await env.OBCF_D1.prepare(`SELECT count(*) as total FROM audit_logs ${whereClause}`)
+                    .bind(...values)
+                    .first<any>();
+
+                const total = Number(countResult?.total || 0);
+
+                const results = await env.OBCF_D1.prepare(
+                    `SELECT * FROM audit_logs ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
+                )
+                    .bind(...values, perPage, offset)
+                    .all<any>();
+
+                return paginatedJsonResponse({
+                    data: results.results || [],
+                    total,
+                    page,
+                    perPage,
+                    path: '/api/audit/logs',
                 });
             }
 

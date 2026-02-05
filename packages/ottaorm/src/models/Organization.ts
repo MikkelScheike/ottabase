@@ -5,7 +5,7 @@
 import { eq, and, sql } from 'drizzle-orm';
 import { BaseModel, type PackageType, type ModelFields } from '../base/BaseModel';
 import { organizationsTable, type OrganizationType, type NewOrganizationType } from './Organization.schema';
-import { getConnection } from '../context';
+import { organizationMembersTable } from './OrganizationMember.schema';
 
 /**
  * Organization (Tenant) model
@@ -222,7 +222,7 @@ export class Organization extends BaseModel {
      * Find organization by slug
      */
     static async findBySlug(slug: string): Promise<OrganizationType | undefined> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const [organization] = await db
             .select()
@@ -267,15 +267,14 @@ export class Organization extends BaseModel {
      * Get organization member count
      */
     static async getMemberCount(id: string): Promise<number> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
-        const result = await db.execute(sql`
-            SELECT COUNT(*) as count
-            FROM organization_members
-            WHERE organization_id = ${id}
-        `);
+        const [result] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(organizationMembersTable)
+            .where(eq(organizationMembersTable.organizationId, id));
 
-        return Number(result.rows[0]?.count || 0);
+        return Number(result?.count ?? 0);
     }
 
     /**
@@ -300,7 +299,7 @@ export class Organization extends BaseModel {
      * Get all active organizations
      */
     static async getActive(limit?: number): Promise<OrganizationType[]> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         let query = db
             .select()
@@ -319,7 +318,7 @@ export class Organization extends BaseModel {
      * Search organizations by name or slug
      */
     static async search(query: string, limit: number = 20): Promise<OrganizationType[]> {
-        const db = getConnection(this.connection);
+        const db = this.getDriver().getDb();
 
         const searchPattern = `%${query}%`;
 

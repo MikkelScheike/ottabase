@@ -22,6 +22,7 @@ import { ProviderState } from '@ottabase/state';
 import { ProviderUIBase } from '@ottabase/ui-base';
 import { ProviderCodeHighlight } from '@ottabase/ui-code-highlight';
 import { ShadcnProviders } from '@ottabase/ui-shadcn/providers';
+import { ApiError } from '@ottabase/api';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import React from 'react';
 
@@ -37,6 +38,18 @@ export function Providers({ children }: { children: React.ReactNode }) {
         heading: headingFontFamily.style.fontFamily,
         monospace: monospaceFontFamily.style.fontFamily,
     };
+    const queryConfig = {
+        defaultOptions: {
+            queries: {
+                retry: (failureCount: number, error: unknown) => {
+                    const status =
+                        error instanceof ApiError ? error.status : (error as { status?: number } | null)?.status;
+                    if (status === 403) return false;
+                    return failureCount < 3;
+                },
+            },
+        },
+    };
 
     return (
         <ProviderState>
@@ -48,7 +61,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             >
                 <LanguageManager />
                 <BlogStudioProvider>
-                    <OttaQueryProvider apiClient={api}>
+                    <OttaQueryProvider apiClient={api} config={queryConfig}>
                         <ProviderUIBase
                             preventFOUC={appConfig.ui.preventFOUC}
                             preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}

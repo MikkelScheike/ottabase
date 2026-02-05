@@ -30,6 +30,9 @@ export interface User {
     image?: string | null;
     emailVerified?: Date | string | null;
     role?: string;
+    organizationId?: string | null;
+    roles?: string[];
+    permissions?: string[];
     [key: string]: any;
 }
 

@@ -94,7 +94,7 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
     const loadData = async () => {
         try {
             setLoading(true);
-            const response = await api(`/api/referrals/user?userId=${userId}`);
+            const response = await api('/api/referrals/user');
 
             if (!response.ok) {
                 throw new Error('Failed to load referral data');
@@ -115,9 +115,7 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
     const loadTrackingData = async () => {
         try {
             setTrackingLoading(true);
-            const response = await api(
-                `/api/referrals/tracking?userId=${userId}&page=${trackingPage}&perPage=${trackingPerPage}`,
-            );
+            const response = await api(`/api/referrals/tracking?page=${trackingPage}&perPage=${trackingPerPage}`);
 
             if (!response.ok) {
                 throw new Error('Failed to load activity data');
@@ -151,7 +149,6 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    userId,
                     referralUsername: newUsername,
                 }),
             });

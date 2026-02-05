@@ -1,7 +1,22 @@
 import { useSession } from '@/lib/auth';
-import { sendMagicLink, signInWithCredentials, signInWithProvider } from '@/lib/auth-api';
+import { requestPasswordReset, sendMagicLink, signInWithCredentials, signInWithProvider } from '@/lib/auth-api';
 import { getLoginConfig, LoginForm } from '@ottabase/auth/components';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
+import {
+    Button,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    Input,
+    Label,
+} from '@ottabase/ui-shadcn';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -13,6 +28,10 @@ export function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [magicLinkSent, setMagicLinkSent] = useState(false);
     const [warnings, setWarnings] = useState<string[]>([]);
+    const [forgotOpen, setForgotOpen] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotStatus, setForgotStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+    const [forgotError, setForgotError] = useState<string | null>(null);
 
     // Auto-detect configured providers from env
     // This will check process.env for OAuth provider credentials
@@ -169,6 +188,27 @@ export function LoginPage() {
         }
     };
 
+    const handleForgotPassword = async () => {
+        if (!forgotEmail.trim()) {
+            setForgotError('Please enter your email address');
+            return;
+        }
+
+        setForgotStatus('sending');
+        setForgotError(null);
+
+        try {
+            const result = await requestPasswordReset(forgotEmail.trim());
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to send reset email');
+            }
+            setForgotStatus('sent');
+        } catch (err) {
+            setForgotError(err instanceof Error ? err.message : 'Failed to send reset email');
+            setForgotStatus('idle');
+        }
+    };
+
     return (
         <div className="flex min-h-[80vh] items-center justify-center">
             <div className="w-full max-w-md space-y-4">
@@ -207,6 +247,12 @@ export function LoginPage() {
                     onSocialLogin={handleSocialLogin}
                     onCredentialsLogin={handleCredentialsLogin}
                     onMagicLinkSend={handleMagicLinkSend}
+                    onForgotPassword={() => {
+                        setForgotEmail('');
+                        setForgotStatus('idle');
+                        setForgotError(null);
+                        setForgotOpen(true);
+                    }}
                     isLoading={isLoading}
                     error={error}
                     magicLinkSuccess={magicLinkSent}
@@ -253,6 +299,45 @@ export function LoginPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reset your password</DialogTitle>
+                        <DialogDescription>
+                            Enter the email address associated with your account. We&apos;ll send you a password reset
+                            link.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-2">
+                        <Label htmlFor="forgot-email">Email</Label>
+                        <Input
+                            id="forgot-email"
+                            type="email"
+                            value={forgotEmail}
+                            onChange={(e) => setForgotEmail(e.target.value)}
+                            placeholder="you@example.com"
+                        />
+                        {forgotError && <p className="text-sm text-destructive">{forgotError}</p>}
+                        {forgotStatus === 'sent' && (
+                            <p className="text-sm text-green-600">Reset email sent. Check your inbox.</p>
+                        )}
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setForgotOpen(false)}
+                            disabled={forgotStatus === 'sending'}
+                        >
+                            Cancel
+                        </Button>
+                        <Button type="button" onClick={handleForgotPassword} disabled={forgotStatus === 'sending'}>
+                            {forgotStatus === 'sending' ? 'Sending...' : 'Send reset link'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

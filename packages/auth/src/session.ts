@@ -20,6 +20,9 @@ export interface OttabaseSession extends Session {
         email?: string | null;
         image?: string | null;
         emailVerified?: Date | null;
+        organizationId?: string | null;
+        roles?: string[];
+        permissions?: string[];
     };
 }
 
@@ -138,6 +141,9 @@ export interface SessionData {
         email?: string | null;
         image?: string | null;
         emailVerified?: Date | null;
+        organizationId?: string | null;
+        roles?: string[];
+        permissions?: string[];
     } | null;
 }
 
@@ -173,6 +179,9 @@ export function serializeSession(session: Session | null): SessionData {
             email: session.user.email ?? null,
             image: session.user.image ?? null,
             emailVerified: session.user.emailVerified ?? null,
+            organizationId: (session.user as any).organizationId ?? null,
+            roles: (session.user as any).roles ?? undefined,
+            permissions: (session.user as any).permissions ?? undefined,
         },
     };
 }

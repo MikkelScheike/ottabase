@@ -491,6 +491,26 @@ const registerRoute = new Route({
     ),
 });
 
+const verifyEmailRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/verify-email',
+    component: lazyRouteComponent(() =>
+        import('@/pages/auth/VerifyEmailPage').then((m) => ({
+            default: m.VerifyEmailPage,
+        })),
+    ),
+});
+
+const resetPasswordRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/reset-password',
+    component: lazyRouteComponent(() =>
+        import('@/pages/auth/ResetPasswordPage').then((m) => ({
+            default: m.ResetPasswordPage,
+        })),
+    ),
+});
+
 const dashboardRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/dashboard',
@@ -821,6 +841,8 @@ const routeTree = rootRoute.addChildren([
     demoLayoutRoute,
     loginRoute,
     registerRoute,
+    verifyEmailRoute,
+    resetPasswordRoute,
     dashboardRoute,
     shortlinksRoute,
     migrationStatusRoute,

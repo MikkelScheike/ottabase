@@ -36,6 +36,13 @@ export const DEFAULT_ROLES = [
         permissions: ['users:read', 'users:update'],
         isSystem: true,
     },
+    {
+        id: '00000000-0000-0000-0000-000000000005',
+        name: 'member',
+        description: 'Default member access',
+        permissions: ['*:read'],
+        isSystem: true,
+    },
 ];
 
 /**

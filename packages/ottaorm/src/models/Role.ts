@@ -229,6 +229,12 @@ export class Role extends BaseModel {
                 permissions: JSON.stringify(['*:read']),
                 isSystem: true,
             },
+            {
+                name: 'member',
+                description: 'Default member access',
+                permissions: JSON.stringify(['*:read']),
+                isSystem: true,
+            },
         ];
 
         const created = [];

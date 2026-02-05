@@ -7,6 +7,7 @@
 
 import { useRBACToast } from '@/hooks/useToast';
 import { useSession } from '@/lib/auth';
+import { requestEmailVerification } from '@/lib/auth-api';
 import { api } from '@/lib/api';
 import {
     Avatar,
@@ -37,6 +38,8 @@ export function UserProfilePage() {
 
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+    const [verificationStatus, setVerificationStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
+    const [verificationError, setVerificationError] = useState<string | null>(null);
 
     const normalize = useCallback((value: string) => value.trim(), []);
 
@@ -109,20 +112,32 @@ export function UserProfilePage() {
                 return;
             }
 
-            const updatedUser = await api<Record<string, any>>('/api/users/me', {
+            const response = await api<Record<string, any>>('/api/users/me', {
                 method: 'PATCH',
                 body: updates,
             });
 
-            updateUser({
-                name: updatedUser.name,
-                email: updatedUser.email,
-                image: updatedUser.image,
-            });
+            const updatedUser = (
+                response && typeof response === 'object' && 'data' in response
+                    ? (response as { data?: Record<string, any> }).data
+                    : response
+            ) as Record<string, any> | undefined;
+
+            const safeUpdates: Record<string, any> = {};
+            if (updatedUser?.name !== undefined) safeUpdates.name = updatedUser.name;
+            if (updatedUser?.email !== undefined) safeUpdates.email = updatedUser.email;
+            if (updatedUser?.image !== undefined) safeUpdates.image = updatedUser.image;
+            if (updatedUser?.emailVerified !== undefined) safeUpdates.emailVerified = updatedUser.emailVerified;
+            if (updatedUser?.createdAt !== undefined) safeUpdates.createdAt = updatedUser.createdAt;
+            if (updatedUser?.updatedAt !== undefined) safeUpdates.updatedAt = updatedUser.updatedAt;
+
+            if (Object.keys(safeUpdates).length > 0) {
+                updateUser(safeUpdates);
+            }
 
             setFormData({
-                name: updatedUser.name || '',
-                email: updatedUser.email || '',
+                name: updatedUser?.name ?? user.name ?? '',
+                email: updatedUser?.email ?? user.email ?? '',
             });
             setHasChanges(false);
             toast.success('Profile updated', 'Your profile has been updated successfully');
@@ -130,6 +145,30 @@ export function UserProfilePage() {
             toast.error('Update failed', 'Failed to update profile');
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleResendVerification = async () => {
+        if (!user?.email) {
+            toast.error('Email required', 'Please add an email address first.');
+            return;
+        }
+
+        setVerificationStatus('sending');
+        setVerificationError(null);
+
+        try {
+            const result = await requestEmailVerification(user.email);
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to send verification email');
+            }
+            setVerificationStatus('sent');
+            toast.success('Verification sent', 'Check your inbox for the verification link.');
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to send verification email';
+            setVerificationError(message);
+            toast.error('Verification failed', message);
+            setVerificationStatus('idle');
         }
     };
 
@@ -261,6 +300,25 @@ export function UserProfilePage() {
                             )}
                         </div>
                     </div>
+                    {!user.emailVerified && (
+                        <div className="space-y-2">
+                            <p className="text-sm text-muted-foreground">
+                                Verify your email to unlock all account features.
+                            </p>
+                            {verificationError && <p className="text-sm text-destructive">{verificationError}</p>}
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handleResendVerification}
+                                disabled={verificationStatus === 'sending'}
+                            >
+                                {verificationStatus === 'sending' ? 'Sending...' : 'Resend verification email'}
+                            </Button>
+                            {verificationStatus === 'sent' && (
+                                <p className="text-xs text-green-600">Verification email sent.</p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Account Created */}
                     <div className="space-y-2">

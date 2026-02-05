@@ -151,6 +151,11 @@ export function ApiErrorDisplay({
 }) {
     const apiError = isApiError(error) ? error : null;
     const message = apiError?.message || (error instanceof Error ? error.message : 'An error occurred');
+    const authMessage = apiError?.isUnauthorized()
+        ? 'You must be signed in to access this resource.'
+        : apiError?.isForbidden()
+          ? 'You do not have permission to view this data. Check your organization access or role.'
+          : null;
 
     // Choose color based on error type
     const isWarning = apiError?.status === 501 || apiError?.code === 'NOT_IMPLEMENTED';
@@ -163,6 +168,7 @@ export function ApiErrorDisplay({
                 <p className={`font-medium ${textClasses}`}>{message}</p>
 
                 {apiError?.details && <p className={`text-sm opacity-80 ${textClasses}`}>{apiError.details}</p>}
+                {authMessage && <p className={`text-sm ${textClasses}`}>{authMessage}</p>}
 
                 {apiError?.hint && (
                     <p

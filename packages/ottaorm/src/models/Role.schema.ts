@@ -7,7 +7,7 @@ import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 /**
  * Role table schema for RBAC
  *
- * Built-in roles: admin, editor, viewer
+ * Built-in roles: admin, editor, viewer, member
  * Custom roles can be added as needed
  */
 export const rolesTable = sqliteTable('roles', {

@@ -16,6 +16,24 @@ function getAuthToken(): string | null {
     return null;
 }
 
+function getOrganizationId(): string | null {
+    try {
+        const stored = localStorage.getItem('currentOrgId');
+        if (stored) return stored;
+    } catch {
+        // ignore
+    }
+
+    try {
+        const sessionRaw = localStorage.getItem('auth_session');
+        if (!sessionRaw) return null;
+        const session = JSON.parse(sessionRaw) as { user?: { organizationId?: string | null } };
+        return session.user?.organizationId ?? null;
+    } catch {
+        return null;
+    }
+}
+
 /**
  * Global error handler for API errors.
  * Shows toast notifications for errors.
@@ -105,8 +123,15 @@ export const api = createApiClient({
             window.location.href = '/login';
         }
     },
-    defaultHeaders: {
-        Accept: 'application/json',
+    defaultHeaders: () => {
+        const headers: Record<string, string> = {
+            Accept: 'application/json',
+        };
+        const organizationId = getOrganizationId();
+        if (organizationId) {
+            headers['X-Organization-Id'] = organizationId;
+        }
+        return headers;
     },
     timeout: 30000,
 });

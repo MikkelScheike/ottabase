@@ -108,7 +108,7 @@ export interface ApiClientConfig {
     onUnauthorized?: (error: ApiError) => void;
 
     /** Default headers to include in all requests */
-    defaultHeaders?: Record<string, string>;
+    defaultHeaders?: Record<string, string> | (() => Record<string, string> | Promise<Record<string, string>>);
 
     /** Default timeout in milliseconds (default: 30000) */
     timeout?: number;
@@ -212,8 +212,9 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
         }
 
         // Build headers
+        const resolvedDefaultHeaders = typeof defaultHeaders === 'function' ? await defaultHeaders() : defaultHeaders;
         const headers: Record<string, string> = {
-            ...defaultHeaders,
+            ...resolvedDefaultHeaders,
             ...requestHeaders,
         };
 
