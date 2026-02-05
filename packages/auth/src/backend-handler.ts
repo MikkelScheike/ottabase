@@ -349,6 +349,7 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         let organizationId: string | null = null;
                         let roles: string[] = [];
                         let permissions: string[] = [];
+                        let createdAt: string | null = null;
 
                         try {
                             const membership = await d1
@@ -400,7 +401,24 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                             }
                         }
 
-                        return { organizationId, roles, permissions };
+                        try {
+                            const profile = await d1
+                                .prepare(
+                                    `SELECT created_at as createdAt
+                                 FROM users
+                                 WHERE id = ?
+                                 LIMIT 1`,
+                                )
+                                .bind(userId)
+                                .first<any>();
+                            if (profile?.createdAt) {
+                                createdAt = String(profile.createdAt);
+                            }
+                        } catch (error) {
+                            console.warn('Failed to load user profile for auth:', error);
+                        }
+
+                        return { organizationId, roles, permissions, createdAt };
                     }
 
                     async function refreshProfileIfNeeded(userId: string) {
@@ -417,7 +435,7 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                             }
 
                             const dbUser = await env.OBCF_D1.prepare(
-                                `SELECT name, email, image, email_verified as emailVerified FROM users WHERE id = ? LIMIT 1`,
+                                `SELECT name, email, image, email_verified as emailVerified, created_at as createdAt FROM users WHERE id = ? LIMIT 1`,
                             )
                                 .bind(userId)
                                 .first<any>();
@@ -431,6 +449,9 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                                 token.emailVerified = dbUser.emailVerified
                                     ? new Date(dbUser.emailVerified).toISOString()
                                     : null;
+                                if (dbUser.createdAt) {
+                                    token.createdAt = String(dbUser.createdAt);
+                                }
                                 (token as any).profileVersion = version;
                             }
                         } catch (error) {
@@ -475,6 +496,9 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                             if (!Array.isArray(token.permissions)) {
                                 token.permissions = context.permissions;
                             }
+                            if (context.createdAt) {
+                                token.createdAt = context.createdAt;
+                            }
                         }
                         if (env.OBCF_KV) {
                             const profileVersionKey = `auth:profile:version:${user.id}`;
@@ -494,6 +518,9 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         }
                         if (!Array.isArray(token.permissions)) {
                             token.permissions = context.permissions;
+                        }
+                        if (context.createdAt) {
+                            token.createdAt = context.createdAt;
                         }
                     }
                     if (token?.id) {
@@ -520,6 +547,9 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         }
                         if (token.permissions) {
                             (session.user as any).permissions = token.permissions as string[];
+                        }
+                        if (token.createdAt) {
+                            (session.user as any).createdAt = token.createdAt;
                         }
                     }
                     return session;

@@ -535,6 +535,20 @@ async function getSecurityContext(request: Request, session: any | null): Promis
     };
 }
 
+async function getUserLinkedAccounts(
+    userId: string,
+): Promise<Array<{ provider: string; type: string; createdAt: string | null }>> {
+    const accounts = await Account.forUser(userId);
+    return accounts.map((account) => {
+        const json = account.toJson();
+        return {
+            provider: json.provider ?? 'unknown',
+            type: json.type ?? 'oauth',
+            createdAt: json.createdAt ? new Date(json.createdAt).toISOString() : null,
+        };
+    });
+}
+
 export default {
     async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
         try {
@@ -917,7 +931,9 @@ export default {
                     if (!user) {
                         return errorResponse('User not found', 404, { code: 'NOT_FOUND' });
                     }
-                    return jsonResponse(user.toJson(), 200);
+                    const userJson = user.toJson();
+                    const linkedAccounts = await getUserLinkedAccounts(userId);
+                    return jsonResponse({ ...userJson, linkedAccounts }, 200);
                 }
 
                 if (request.method === 'PATCH') {
@@ -978,7 +994,9 @@ export default {
                         }
                     }
 
-                    return jsonResponse(updated.toJson(), 200);
+                    const userJson = updated.toJson();
+                    const linkedAccounts = await getUserLinkedAccounts(userId);
+                    return jsonResponse({ ...userJson, linkedAccounts }, 200);
                 }
 
                 return errorResponse('Method not allowed', 405);

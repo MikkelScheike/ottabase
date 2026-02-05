@@ -27,6 +27,12 @@ import {
 import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
+interface LinkedAccountRecord {
+    provider: string;
+    type: string;
+    createdAt?: string | null;
+}
+
 export function UserProfilePage() {
     const { user, updateUser, refreshSession } = useSession({ skipAutoSync: true });
     const toast = useRBACToast();
@@ -35,6 +41,9 @@ export function UserProfilePage() {
         name: user?.name || '',
         email: user?.email || '',
     });
+
+    const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccountRecord[]>([]);
+    const [isAccountsLoading, setIsAccountsLoading] = useState(true);
 
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
@@ -59,6 +68,32 @@ export function UserProfilePage() {
         });
         setHasChanges(false);
     }, [user?.name, user?.email]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function loadLinkedAccounts() {
+            setIsAccountsLoading(true);
+            try {
+                const data = await api<{ linkedAccounts?: LinkedAccountRecord[] }>('/api/users/me');
+                if (!cancelled) {
+                    setLinkedAccounts(data?.linkedAccounts || []);
+                }
+            } catch (error) {
+                console.error('Failed to load linked accounts', error);
+            } finally {
+                if (!cancelled) {
+                    setIsAccountsLoading(false);
+                }
+            }
+        }
+
+        loadLinkedAccounts();
+
+        return () => {
+            cancelled = true;
+        };
+    }, []);
 
     const userInitials = user?.name
         ? user.name
@@ -139,6 +174,9 @@ export function UserProfilePage() {
                 name: updatedUser?.name ?? user.name ?? '',
                 email: updatedUser?.email ?? user.email ?? '',
             });
+            if (updatedUser?.linkedAccounts) {
+                setLinkedAccounts(updatedUser.linkedAccounts);
+            }
             if (refreshSession) {
                 await refreshSession();
             }
@@ -333,6 +371,46 @@ export function UserProfilePage() {
                             {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
                         </p>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Linked Providers</CardTitle>
+                    <CardDescription>Sign-in methods associated with this account</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                    {isAccountsLoading ? (
+                        <p className="text-sm text-muted-foreground">Loading linked providers...</p>
+                    ) : linkedAccounts.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            Only credential-based (email/password) sign-in is available.
+                        </p>
+                    ) : (
+                        <div className="flex flex-wrap gap-2">
+                            {linkedAccounts.map((account) => (
+                                <div
+                                    key={`${account.provider}-${account.createdAt || 'unknown'}`}
+                                    className="border border-border rounded-lg px-3 py-2 flex flex-col gap-1"
+                                >
+                                    <span className="text-base font-semibold">{account.provider}</span>
+                                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
+                                        {account.type}
+                                    </span>
+                                    {account.createdAt && (
+                                        <span className="text-xs text-muted-foreground">
+                                            Connected{' '}
+                                            {new Date(account.createdAt).toLocaleDateString(undefined, {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric',
+                                            })}
+                                        </span>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 

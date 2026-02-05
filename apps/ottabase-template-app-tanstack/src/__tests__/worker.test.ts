@@ -1,5 +1,5 @@
 import { getSession } from '@ottabase/auth/backend';
-import { User } from '@ottabase/ottaorm';
+import { Account, User } from '@ottabase/ottaorm';
 import { Shortlink } from '@ottabase/shortlinks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../../cloudflare-worker';
@@ -62,6 +62,20 @@ describe('Cloudflare Worker API', () => {
     });
 
     describe('/api/users/me', () => {
+        let accountForUserSpy: ReturnType<typeof vi.spyOn>;
+
+        beforeEach(() => {
+            accountForUserSpy = vi
+                .spyOn(Account, 'forUser')
+                .mockResolvedValue([
+                    { toJson: () => ({ provider: 'google', type: 'oauth', createdAt: '2026-01-01T00:00:00Z' }) } as any,
+                ]);
+        });
+
+        afterEach(() => {
+            accountForUserSpy.mockRestore();
+        });
+
         it('should return current user', async () => {
             const userJson = { id: 'user-1', name: 'Ada', email: 'ada@example.com' };
             (getSession as any).mockResolvedValue({ user: { id: 'user-1' } });
@@ -72,7 +86,8 @@ describe('Cloudflare Worker API', () => {
             const resp = await worker.fetch(createRequest('/api/users/me'), env);
             expect(resp.status).toBe(200);
             const data = (await resp.json()) as any;
-            expect(data).toEqual(userJson);
+            expect(data).toMatchObject(userJson);
+            expect(Array.isArray(data.linkedAccounts)).toBe(true);
 
             findSpy.mockRestore();
         });
@@ -98,6 +113,7 @@ describe('Cloudflare Worker API', () => {
             expect(resp.status).toBe(200);
             const data = (await resp.json()) as any;
             expect(data.name).toBe('Ada Lovelace');
+            expect(data.linkedAccounts?.[0]?.provider).toBe('google');
 
             updateSpy.mockRestore();
         });
