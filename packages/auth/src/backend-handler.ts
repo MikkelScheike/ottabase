@@ -403,6 +403,41 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         return { organizationId, roles, permissions };
                     }
 
+                    async function refreshProfileIfNeeded(userId: string) {
+                        if (!env.OBCF_D1 || !env.OBCF_KV) return;
+                        try {
+                            const profileVersionKey = `auth:profile:version:${userId}`;
+                            const versionRaw = await env.OBCF_KV.get(profileVersionKey);
+                            if (!versionRaw) return;
+
+                            const version = Number(versionRaw);
+                            const tokenVersion = Number((token as any).profileVersion || 0);
+                            if (!Number.isFinite(version) || version <= tokenVersion) {
+                                return;
+                            }
+
+                            const dbUser = await env.OBCF_D1.prepare(
+                                `SELECT name, email, image, email_verified as emailVerified FROM users WHERE id = ? LIMIT 1`,
+                            )
+                                .bind(userId)
+                                .first<any>();
+
+                            if (dbUser) {
+                                token.name = dbUser.name ?? token.name;
+                                token.email = dbUser.email ?? token.email;
+                                if (dbUser.image !== undefined) {
+                                    token.image = dbUser.image;
+                                }
+                                token.emailVerified = dbUser.emailVerified
+                                    ? new Date(dbUser.emailVerified).toISOString()
+                                    : null;
+                                (token as any).profileVersion = version;
+                            }
+                        } catch (error) {
+                            console.warn('Failed to refresh profile from KV version:', error);
+                        }
+                    }
+
                     if (user && user.id) {
                         token.id = user.id;
                         token.email = user.email;
@@ -441,6 +476,14 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                                 token.permissions = context.permissions;
                             }
                         }
+                        if (env.OBCF_KV) {
+                            const profileVersionKey = `auth:profile:version:${user.id}`;
+                            const versionRaw = await env.OBCF_KV.get(profileVersionKey);
+                            const version = Number(versionRaw || 0);
+                            if (Number.isFinite(version)) {
+                                (token as any).profileVersion = version;
+                            }
+                        }
                     } else if (token?.id && (!token.organizationId || !Array.isArray(token.roles))) {
                         const context = await loadUserContext(String(token.id));
                         if (context.organizationId) {
@@ -452,6 +495,9 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                         if (!Array.isArray(token.permissions)) {
                             token.permissions = context.permissions;
                         }
+                    }
+                    if (token?.id) {
+                        await refreshProfileIfNeeded(String(token.id));
                     }
                     return token;
                 },

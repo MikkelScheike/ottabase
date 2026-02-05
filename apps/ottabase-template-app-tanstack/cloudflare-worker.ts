@@ -965,6 +965,19 @@ export default {
                     }
 
                     const updated = await User.update(userId, updates);
+
+                    // Signal profile changes for JWT refresh (KV-based versioning)
+                    if (env.OBCF_KV) {
+                        try {
+                            const version = Date.now();
+                            await env.OBCF_KV.put(`auth:profile:version:${userId}`, String(version), {
+                                expirationTtl: Number(env.AUTH_SESSION_MAX_AGE) || 30 * 24 * 60 * 60,
+                            });
+                        } catch (error) {
+                            console.warn('Failed to bump profile version in KV:', error);
+                        }
+                    }
+
                     return jsonResponse(updated.toJson(), 200);
                 }
 

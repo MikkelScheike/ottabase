@@ -7,7 +7,7 @@
 //
 // ============================================================
 
-import { userAtom } from '@/ottabase/state/appState';
+import { isAuthenticatedAtom, userAtom } from '@/ottabase/state/appState';
 import { useSession as useAuthSession, type UseSessionOptions } from '@ottabase/auth/react';
 import { useSetAtom } from 'jotai';
 import { useEffect } from 'react';
@@ -21,11 +21,13 @@ export { type Session, type User, type UseSessionOptions } from '@ottabase/auth/
 export function useSession(options?: UseSessionOptions) {
     const sessionData = useAuthSession(options);
     const setGlobalUser = useSetAtom(userAtom);
+    const setGlobalIsAuthenticated = useSetAtom(isAuthenticatedAtom);
 
     // Sync auth user to global state
     useEffect(() => {
         setGlobalUser(sessionData.user);
-    }, [sessionData.user, setGlobalUser]);
+        setGlobalIsAuthenticated(sessionData.isAuthenticated);
+    }, [sessionData.user, sessionData.isAuthenticated, setGlobalUser, setGlobalIsAuthenticated]);
 
     return sessionData;
 }

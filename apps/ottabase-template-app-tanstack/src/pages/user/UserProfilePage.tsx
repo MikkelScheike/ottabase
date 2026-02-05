@@ -28,7 +28,7 @@ import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 export function UserProfilePage() {
-    const { user, updateUser } = useSession({ skipAutoSync: true });
+    const { user, updateUser, refreshSession } = useSession({ skipAutoSync: true });
     const toast = useRBACToast();
 
     const [formData, setFormData] = useState({
@@ -139,6 +139,9 @@ export function UserProfilePage() {
                 name: updatedUser?.name ?? user.name ?? '',
                 email: updatedUser?.email ?? user.email ?? '',
             });
+            if (refreshSession) {
+                await refreshSession();
+            }
             setHasChanges(false);
             toast.success('Profile updated', 'Your profile has been updated successfully');
         } catch (error) {

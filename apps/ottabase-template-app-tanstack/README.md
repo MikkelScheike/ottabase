@@ -33,11 +33,30 @@ curl -X POST http://localhost:3004/api/ottaorm/init
 
 ## Authentication
 
-This template ships with Auth.js + D1 integration:
+This template ships with Auth.js + D1 integration and tighter session handling:
 
-- UI: `/login`, `/register`, `/dashboard`
-- Backend: `/api/auth/*` and `/api/auth/register`
-- Credentials are stored in D1 `users.password_hash` (PBKDF2)
+- **UI**: `/login`, `/register`, `/dashboard`, `/profile`
+- **Backend**: `/api/auth/*`, `/api/auth/register`, `/api/users/me`
+- **Session freshness**: Profile edits bump `auth:profile:version:{userId}` in KV so the next `/api/auth/session`
+  refresh pulls the updated name/image without polling D1 constantly.
+- **Rate limiting**: Auth endpoints run through the shared rate limiter (per IP bucket for signin, register, signout).
+- **Email flows**: `/api/auth/verify-email`, `/api/auth/verify-email/resend`, `/api/auth/password/reset/request`,
+  `/api/auth/password/reset/confirm`.
+- **Credentials storage**: PBKDF2 hashes in `users.password_hash`, email verification/roles stored alongside.
+- **Session sync tip**: If you mutate `/api/users/me`, call `refreshSession()` (or `updateUser()`) so the cached local
+  session picks up the KV-triggered profile version bump immediately.
+
+### Auth API Endpoints
+
+| Endpoint                           | Method  | Notes                                                                                                                                                   |
+| ---------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/api/auth/register`               | `POST`  | Credentials registration + auto organization/role setup. Returns `{ user, organizationId, organizationRole, assignedRole, requiresEmailVerification }`. |
+| `/api/auth/verify-email`           | `POST`  | Consume verification token from email link after registration or resend.                                                                                |
+| `/api/auth/verify-email/resend`    | `POST`  | Sends a new verification token; rate-limited by `enforceRateLimit`.                                                                                     |
+| `/api/auth/password/reset/request` | `POST`  | Sends reset token email (supports Resend/Ses/KV mailers).                                                                                               |
+| `/api/auth/password/reset/confirm` | `POST`  | Applies a new password and revokes existing JWTs via `auth:revoked:user:{userId}`.                                                                      |
+| `/api/users/me`                    | `GET`   | Returns the authenticated user (filters out password data).                                                                                             |
+| `/api/users/me`                    | `PATCH` | Updates profile fields (`name`, `image`), enforces validation, and bumps `auth:profile:version` in KV for session refresh.                              |
 
 ### Required Env (production)
 
