@@ -34,8 +34,11 @@ export default defineConfig({
     },
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, './src'),
             '@ottabase/cf-realtime/server': path.resolve(__dirname, './src/test-mocks/cf-realtime-server.ts'),
+            '@ottabase/ottaorm/models': path.resolve(__dirname, '../../packages/ottaorm/src/models'),
+            '@ottabase/auth/backend': path.resolve(__dirname, '../../packages/auth/src/backend-handler'),
+            '@ottabase/utils/http-response': path.resolve(__dirname, '../../packages/utils/src/http-response'),
+            '@ottabase/utils/http-errors': path.resolve(__dirname, '../../packages/utils/src/http-errors'),
         },
     },
 });
