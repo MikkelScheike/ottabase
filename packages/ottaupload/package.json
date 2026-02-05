@@ -58,7 +58,7 @@
     "dependencies": {
         "@ottabase/cf": "workspace:*",
         "@ottabase/db": "workspace:*",
-        "zod": "^3.24.1"
+        "zod": "catalog:"
     },
     "peerDependencies": {
         "react": "catalog:",

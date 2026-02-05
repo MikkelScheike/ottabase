@@ -7,12 +7,12 @@
         "src"
     ],
     "peerDependencies": {
-        "tailwindcss": ">=3.4.17 <4",
-        "tailwindcss-animate": ">=1.0.7",
-        "postcss": ">=8.0.0",
-        "@tailwindcss/forms": ">=0.5.10",
-        "@tailwindcss/typography": ">=0.5.16",
-        "postcss-preset-mantine": ">=1.18.0"
+        "tailwindcss": "catalog:",
+        "tailwindcss-animate": "catalog:",
+        "postcss": "catalog:",
+        "@tailwindcss/forms": "catalog:",
+        "@tailwindcss/typography": "catalog:",
+        "postcss-preset-mantine": "catalog:"
     },
     "dependencies": {
         "tailwind-merge": "catalog:"

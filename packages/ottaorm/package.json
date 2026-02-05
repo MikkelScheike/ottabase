@@ -57,11 +57,11 @@
         "@ottabase/db": "workspace:*"
     },
     "peerDependencies": {
-        "@cloudflare/workers-types": ">=4.0.0",
-        "@tanstack/react-query": ">=5.0.0",
-        "drizzle-orm": ">=0.30.0",
-        "mongodb": ">=6.0.0",
-        "react": ">=18.0.0"
+        "@cloudflare/workers-types": "catalog:",
+        "@tanstack/react-query": "catalog:",
+        "drizzle-orm": "catalog:",
+        "mongodb": "catalog:",
+        "react": "catalog:"
     },
     "peerDependenciesMeta": {
         "mongodb": {

@@ -56,8 +56,8 @@
         "@ottabase/ottaupload": "workspace:*"
     },
     "peerDependencies": {
-        "react": ">=18.0.0",
-        "react-dom": ">=18.0.0"
+        "react": "catalog:",
+        "react-dom": "catalog:"
     },
     "devDependencies": {
         "@types/react": "catalog:",

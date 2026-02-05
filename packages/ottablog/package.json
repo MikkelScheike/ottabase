@@ -20,7 +20,7 @@
     },
     "peerDependencies": {
         "drizzle-orm": "catalog:",
-        "react": "^18 || ^19",
+        "react": "catalog:",
         "@ottabase/ottaorm": "workspace:*",
         "@ottabase/ottarenderer": "workspace:*"
     },

@@ -36,8 +36,8 @@
         "lucide-react": "catalog:"
     },
     "peerDependencies": {
-        "react": ">=18.0.0",
-        "react-dom": ">=18.0.0"
+        "react": "catalog:",
+        "react-dom": "catalog:"
     },
     "devDependencies": {
         "typescript": "catalog:",

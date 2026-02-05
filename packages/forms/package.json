@@ -33,9 +33,9 @@
     },
     "peerDependencies": {
         "@ottabase/ottaorm": "workspace:*",
-        "@tanstack/react-query": ">=5.0.0",
-        "react": ">=18.0.0",
-        "react-dom": ">=18.0.0"
+        "@tanstack/react-query": "catalog:",
+        "react": "catalog:",
+        "react-dom": "catalog:"
     },
     "devDependencies": {
         "@ottabase/ottaorm": "workspace:*",

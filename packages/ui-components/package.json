@@ -67,8 +67,8 @@
         "next-themes": "catalog:"
     },
     "peerDependencies": {
-        "@mantine/core": "^8.3.1",
-        "@tabler/icons-react": "^3.35.0",
+        "@mantine/core": "catalog:",
+        "@tabler/icons-react": "catalog:",
         "next-themes": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:"

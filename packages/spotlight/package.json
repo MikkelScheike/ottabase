@@ -42,7 +42,7 @@
     },
     "peerDependencies": {
         "@radix-ui/react-dialog": "^1.1.4",
-        "@tabler/icons-react": "^3.35.0",
+        "@tabler/icons-react": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:"
     },

@@ -48,7 +48,7 @@
         "@ottabase/logger": "workspace:*"
     },
     "peerDependencies": {
-        "@cloudflare/workers-types": ">=4.0.0"
+        "@cloudflare/workers-types": "catalog:"
     },
     "peerDependenciesMeta": {
         "@cloudflare/workers-types": {

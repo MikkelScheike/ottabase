@@ -35,7 +35,7 @@
     "author": "",
     "license": "MIT",
     "peerDependencies": {
-        "jotai": "^2.14.0"
+        "jotai": "catalog:"
     },
     "devDependencies": {
         "@types/node": "catalog:",

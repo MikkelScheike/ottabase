@@ -25,11 +25,11 @@
         "test:coverage": "vitest --coverage"
     },
     "dependencies": {
-        "highlight.js": "^11.11.1"
+        "highlight.js": "catalog:"
     },
     "peerDependencies": {
         "@mantine/code-highlight": "^8.3.1",
-        "@mantine/core": "^8.3.1",
+        "@mantine/core": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:"
     },
