@@ -2,6 +2,19 @@
 
 Monorepo using **pnpm workspaces** + **Turborepo**. TanStack Router + Vite app with Cloudflare Workers deployment.
 
+## 🤖 AI Guidelines (MUST FOLLOW)
+
+1. **OttaORM First**: All data models MUST inherit from `BaseModel`. Do not write raw SQL or vanilla Drizzle queries
+   unless absolutely necessary for performance. Logic belongs in the Model class, not in "Controllers" or "Services".
+2. **Schema Integrity**: NEVER edit `schema.prisma` directly. Use the modular schema system in
+   `packages/db/prisma/schemas/` and run `db:generate`.
+3. **Workspace Protocol**: Always use `workspace:*` for internal package dependencies. Use `catalog:` for shared
+   external dependencies (React, Drizzle, etc.).
+4. **Don't Reinvent**: Check `@ottabase/utils` for internal helpers (date, string, currency) and `@ottabase/ui-shadcn`
+   for UI components before creating new ones.
+5. **Edge Runtime**: This is a Cloudflare Workers project. Avoid Node.js-only APIs (fs, child_process) in app code.
+6. **Fat Models**: Encapsulate logic in models. E.g., `user.activate()` instead of `authService.activate(user)`.
+
 ## Structure
 
 ```
@@ -206,16 +219,12 @@ import { makeSlug, isValidUrl } from '@ottabase/utils/url';
 import { changeCase, isEmail } from '@ottabase/utils/string';
 ```
 
-### @ottabase/ottaupload
+### @ottabase/ottablog
 
-File uploads to R2 or Cloudflare Images.
+Blog engine core logic and models.
 
 ```typescript
-// Client
-import { FileUploader, useFileUpload } from '@ottabase/ottaupload/client';
-
-// Server
-import { uploadFileToR2 } from '@ottabase/ottaupload/server';
+import { Post, Tag } from '@ottabase/ottablog';
 ```
 
 ### @ottabase/queue
@@ -425,10 +434,6 @@ pnpm dev:worker                   # Worker only
 # Build
 pnpm build                        # Everything
 pnpm build:pkg                    # Packages only
-pnpm build --filter=@ottabase/ui-mantine
-
-# Test
-pnpm test
 pnpm test --filter=@ottabase/ottaorm
 
 # Quality
