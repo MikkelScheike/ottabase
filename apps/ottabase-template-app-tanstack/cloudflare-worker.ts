@@ -1,565 +1,112 @@
-import {
-    getSession,
-    handleAuthRequest,
-    hashPassword,
-    verifyPassword,
-    type CreateAuthConfigOptions,
-} from '@ottabase/auth/backend';
-import { getLoginConfig } from '@ottabase/auth/components';
-import { RealtimeActor, RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
-import { createImagesClient } from '@ottabase/cf/images';
-import { createKVClient } from '@ottabase/cf/kv';
-import { createR2Client } from '@ottabase/cf/r2';
-import { createRateLimitingClient } from '@ottabase/cf/rate-limiting';
-import { createD1Driver } from '@ottabase/db/drizzle-d1';
-import {
-    createResendMailer,
-    createSESMailer,
-    sendTemplatedEmail,
-    type TemplateContent,
-    type TemplateVariables,
-} from '@ottabase/email';
-import {
-    OttablogPlugin,
-    OttablogTheme,
-    Post,
-    PostCategory,
-    PostSeries,
-    PostTag,
-    PostTagLink,
-    PostVersion,
-    StudioManager,
-} from '@ottabase/ottablog';
-import {
-    Tag,
-    User,
-    autoInit,
-    clearConnection,
-    executeSecureCrudRequest,
-    getAllModelsMetadata,
-    hasConnection,
-    // RLS imports
-    initRLS,
-    parseCrudRequest,
-    registerConnection,
-    registerModels,
-    type SecurityContext,
-} from '@ottabase/ottaorm';
-import {
-    Account,
-    Authenticator,
-    Organization,
-    OrganizationMember,
-    Permission,
-    Role,
-    ScheduledTask,
-    Session,
-    UserRole,
-    VerificationToken,
-} from '@ottabase/ottaorm/models';
-import { uploadFileToCloudflareImages, uploadFileToR2 } from '@ottabase/ottaupload/server';
-import { dispatch, dispatchBatch } from '@ottabase/queue';
-import { ReferralTracking } from '@ottabase/referrals';
-import { Shortlink, buildRedirectResponse } from '@ottabase/shortlinks';
-import { ServiceError, errorResponse } from '@ottabase/utils/http-errors';
+import { RealtimeActor } from '@ottabase/cf-realtime/server';
+import { errorResponse, ServiceError } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
-import { paginatedJsonResponse, parsePaginationParams } from '@ottabase/utils/pagination';
-import { isEmail } from '@ottabase/utils/string';
-import { isValidUrl, makeSlug } from '@ottabase/utils/url';
-import { getAllSchemas } from './ottabase/db/schemas-helper';
-import { processReferralAttribution } from './ottabase/helpers/referral-attribution';
-import { appMigrations } from './ottabase/migrations';
-import { Todo } from './ottabase/models/Todo';
+import { queueHandler } from './ottabase/queue';
+import { initDbConnection } from './worker/lib/db-utils';
 import {
-    deleteDLQJob,
-    getDLQJob,
-    getDLQJobs,
-    getFailedJobs,
-    getQueueStats,
-    getRecentProcessedJobs,
-    incrementDispatchStats,
-    purgeDLQ,
-    queueHandler,
-    retryAllDLQJobs,
-    retryDLQJob,
-} from './ottabase/queue';
-import { registerAppEmailTemplates } from './src/email/templates';
+    handleAuthConfig,
+    handleVerifyEmail,
+    handleVerifyEmailResend,
+    handlePasswordResetConfirm,
+    handlePasswordResetRequest,
+    handleUserProfile,
+    handleAuthRegister,
+    handleAuthJsRequest,
+} from './worker/routes/auth';
+import { handleEmailProviders, handleEmailTest } from './worker/routes/email';
+import { handleAdminCronCreate, handleAdminCronList, handleCronTask } from './worker/routes/admin-cron';
+import {
+    handleBlogStudioActivateTheme,
+    handleBlogStudioPluginConfig,
+    handleBlogStudioPluginEnable,
+    handleBlogStudioState,
+    handleBlogPostBySlug,
+    handleBlogPostUnlock,
+    handleBlogPostsList,
+} from './worker/routes/blog';
+import { handleOttaormCrud } from './worker/routes/ottaorm-crud';
+import {
+    handleShortlinkById,
+    handleShortlinkExplicitGo,
+    handleShortlinkFallback,
+    handleShortlinksCreate,
+    handleShortlinksList,
+} from './worker/routes/shortlinks';
+import {
+    handleReferralStats,
+    handleReferralTrackingList,
+    handleReferralTrack,
+    handleReferralUser,
+    handleReferralUsernameUpdate,
+} from './worker/routes/referrals';
+import { handleDemo, handleDemoError, handleAuditLogs } from './worker/routes/demo';
+import {
+    handleCloudflareImages,
+    handleCloudflareKV,
+    handleCloudflareR2,
+    handleUpload,
+    handleUploadFile,
+} from './worker/routes/cloudflare-storage';
+import { handleD1Init, handleD1TodoById, handleD1Todos } from './worker/routes/cloudflare-d1';
+import { handleCloudflareQueue } from './worker/routes/cloudflare-queue';
+import {
+    handleAdminQueuesDLQJob,
+    handleAdminQueuesDLQList,
+    handleAdminQueuesDLQPurge,
+    handleAdminQueuesDLQRetryAll,
+    handleAdminQueuesDLQRetryJob,
+    handleAdminQueuesFailed,
+    handleAdminQueuesOverview,
+    handleAdminQueuesPending,
+    handleAdminQueuesProcessed,
+    handleAdminQueuesResetStats,
+} from './worker/routes/admin-queues';
+import { handleRateLimiting } from './worker/routes/cloudflare-rate';
+import {
+    handleRealtimeBroadcast,
+    handleRealtimeStats,
+    handleRealtimeWebsocket,
+} from './worker/routes/cloudflare-realtime';
+import { handleModelsMetadata, handleOttaormInit } from './worker/routes/ottaorm-init';
+import {
+    handleAdminDbRowDelete,
+    handleAdminDbTableData,
+    handleAdminDbTableDelete,
+    handleAdminDbTables,
+} from './worker/routes/admin-db';
+import type { CloudflareEnv } from './cloudflare-env';
 
 export { RealtimeActor };
 
 const SPA_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
+function normalizePath(path: string): string {
+    if (path !== '/' && path.endsWith('/')) {
+        return path.slice(0, -1);
+    }
+    return path;
+}
+
 function isHtmlRequest(request: Request): boolean {
     const url = new URL(request.url);
     const pathname = url.pathname;
 
-    // If the path has a file extension, it's not an HTML request
     if (/\.[a-zA-Z0-9]+$/.test(pathname)) {
         return false;
     }
 
-    // For routes without extensions, check the Accept header as fallback
     const accept = request.headers.get('Accept');
     return !!accept && accept.includes('text/html');
-}
-
-async function readJson<T = any>(request: Request): Promise<T> {
-    try {
-        return (await request.json()) as T;
-    } catch {
-        // @ts-expect-error - ok
-        return {};
-    }
-}
-
-function normalizeEmail(email: string): string {
-    return email.trim().toLowerCase();
-}
-
-function isStrongPassword(password: string): boolean {
-    if (password.length < 8) return false;
-    return /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(password);
-}
-
-function isValidIpAddress(rawValue: string | null): string {
-    if (!rawValue) {
-        return 'unknown';
-    }
-
-    // Some headers (like X-Forwarded-For) can contain multiple IPs.
-    const candidate = rawValue.split(',')[0]!.trim();
-    if (!candidate) {
-        return 'unknown';
-    }
-
-    const ipv4Regex = /^(?:\d{1,3}\.){3}\d{1,3}$/;
-    const ipv6Regex = /^[0-9a-fA-F:]+$/;
-
-    if (ipv4Regex.test(candidate)) {
-        const parts = candidate.split('.');
-        const validOctets = parts.every((part) => {
-            const n = Number(part);
-            return Number.isInteger(n) && n >= 0 && n <= 255;
-        });
-        if (!validOctets) {
-            return 'unknown';
-        }
-        return candidate;
-    }
-
-    if (ipv6Regex.test(candidate) && candidate.includes(':')) {
-        return candidate;
-    }
-
-    return 'unknown';
-}
-
-function getClientIpAddress(request: Request): string {
-    // NOTE: IP addresses from headers are not trustworthy and must not be
-    // used for authentication, authorization, or other security decisions.
-    const headerCandidates = ['CF-Connecting-IP', 'X-Forwarded-For', 'X-Real-IP'];
-
-    for (const header of headerCandidates) {
-        const headerValue = request.headers.get(header);
-        const validIp = isValidIpAddress(headerValue);
-        if (validIp !== 'unknown') {
-            return validIp;
-        }
-    }
-
-    return 'unknown';
-}
-
-function base64UrlEncode(bytes: Uint8Array): string {
-    let binary = '';
-    for (const byte of bytes) {
-        binary += String.fromCharCode(byte);
-    }
-    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
-
-function createSecureToken(bytes = 32): string {
-    const buffer = crypto.getRandomValues(new Uint8Array(bytes));
-    return base64UrlEncode(buffer);
-}
-
-async function resolveMailer(env: CloudflareEnv) {
-    const from = env.EMAIL_FROM || 'noreply@example.com';
-    let mailer: any = null;
-    let provider: 'resend' | 'ses' | 'nodemailer' | null = null;
-
-    if (env.EMAIL_RESEND_API_KEY) {
-        mailer = createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY });
-        provider = 'resend';
-    } else if (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) {
-        mailer = createSESMailer({
-            accessKeyId: env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
-            region: env.AWS_REGION || 'us-east-1',
-        });
-        provider = 'ses';
-    } else if (env.EMAIL_SERVER) {
-        const { createNodemailerMailer } = await import('@ottabase/email/providers/nodemailer');
-        mailer = createNodemailerMailer({ server: env.EMAIL_SERVER });
-        provider = 'nodemailer';
-    }
-
-    return { mailer, from, provider };
-}
-
-async function createVerificationToken(
-    env: CloudflareEnv,
-    identifier: string,
-    ttlSeconds: number,
-): Promise<{ token: string; expiresAt: string }> {
-    if (!env.OBCF_D1) {
-        throw new Error('D1 database binding not configured');
-    }
-
-    const token = createSecureToken(32);
-    const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
-
-    try {
-        await env.OBCF_D1.prepare(`DELETE FROM verification_tokens WHERE identifier = ?`).bind(identifier).run();
-    } catch {
-        // ignore cleanup errors
-    }
-
-    await VerificationToken.create({
-        identifier,
-        token,
-        expires: expiresAt,
-    });
-
-    return { token, expiresAt };
-}
-
-async function getRateLimitData(env: CloudflareEnv, key: string) {
-    let rateLimitData: {
-        success: boolean;
-        limit: number;
-        remaining: number;
-        resetAfter: number;
-    } | null = null;
-
-    if (env.OBCF_RATE_LIMITER) {
-        try {
-            const limiter = createRateLimitingClient({
-                rateLimiter: env.OBCF_RATE_LIMITER,
-            });
-            const result = await limiter.limit({ key });
-            if (result.success) {
-                const { success, limit, remaining, resetAfter } = result.data;
-                if (limit !== undefined && remaining !== undefined && resetAfter !== undefined) {
-                    rateLimitData = { success, limit, remaining, resetAfter };
-                }
-            }
-        } catch {
-            // ignore - fall back
-        }
-    }
-
-    if (!rateLimitData) {
-        rateLimitData = await simulateRateLimit(env, key);
-    }
-
-    return rateLimitData;
-}
-
-async function enforceRateLimit(request: Request, env: CloudflareEnv, key: string): Promise<Response | null> {
-    const rateLimitData = await getRateLimitData(env, key);
-    if (!rateLimitData) {
-        return errorResponse('Rate limiter not available', 500, {
-            hint: 'Enable OBCF_RATE_LIMITER or OBCF_KV for rate limiting',
-            code: 'CONFIG_ERROR',
-        });
-    }
-
-    const { success, limit, remaining, resetAfter } = rateLimitData;
-    const headers = new Headers({
-        'RateLimit-Limit': String(limit),
-        'RateLimit-Remaining': String(remaining),
-        'RateLimit-Reset': String(resetAfter),
-    });
-
-    if (!success) {
-        return new Response(
-            JSON.stringify({
-                error: 'Too many requests. Please try again later.',
-                code: 'RATE_LIMITED',
-                limit,
-                remaining,
-                resetAfter,
-            }),
-            { status: 429, headers },
-        );
-    }
-
-    return null;
-}
-
-function getAuthOptions(env: CloudflareEnv): CreateAuthConfigOptions {
-    const options: CreateAuthConfigOptions = {
-        authConfig: {
-            pages: {
-                signIn: '/login',
-                error: '/login',
-            },
-        },
-    };
-
-    const maxAge = Number(env.AUTH_SESSION_MAX_AGE);
-    if (Number.isFinite(maxAge) && maxAge > 0) {
-        options.sessionMaxAge = maxAge;
-    }
-
-    const requireVerified = env.AUTH_REQUIRE_EMAIL_VERIFIED === 'true' || env.AUTH_REQUIRE_EMAIL_VERIFIED === '1';
-    if (requireVerified) {
-        options.requireVerifiedEmail = true;
-    }
-
-    const disableCredentials = env.AUTH_DISABLE_CREDENTIALS === 'true' || env.AUTH_DISABLE_CREDENTIALS === '1';
-    if (disableCredentials) {
-        options.disableCredentials = true;
-    }
-
-    const verbose = env.AUTH_VERBOSE === 'true' || env.AUTH_VERBOSE === '1';
-    if (verbose) {
-        options.verbose = true;
-    }
-
-    return options;
-}
-
-async function simulateRateLimit(env: CloudflareEnv, key: string) {
-    if (!env.OBCF_KV) return null;
-
-    const kv = createKVClient({ namespace: env.OBCF_KV as any });
-    const rateLimitKey = `ratelimit:${key}`;
-
-    const LIMIT = 10;
-    const PERIOD = 60; // seconds
-
-    const result = await kv.getText(rateLimitKey);
-
-    let count = 0;
-    let firstRequestTime = Date.now();
-    const now = Date.now();
-
-    if (result.success && result.data) {
-        try {
-            const parsed = JSON.parse(result.data);
-            count = parsed.count || 0;
-            firstRequestTime = parsed.firstRequestTime || now;
-        } catch {
-            // ignore
-        }
-    }
-
-    let elapsed = (now - firstRequestTime) / 1000;
-    if (elapsed >= PERIOD) {
-        count = 0;
-        firstRequestTime = now;
-        elapsed = 0;
-    }
-
-    count++;
-    const isAllowed = count <= LIMIT;
-    const remaining = Math.max(0, LIMIT - count);
-    const resetAfter = Math.max(1, Math.ceil(PERIOD - elapsed));
-
-    await kv.put(rateLimitKey, JSON.stringify({ count, firstRequestTime }), {
-        expirationTtl: PERIOD + 10,
-    });
-
-    return {
-        success: isAllowed,
-        limit: LIMIT,
-        remaining,
-        resetAfter,
-    };
-}
-
-function initAdminCron(env: CloudflareEnv): Response | null {
-    if (!env.OBCF_D1) {
-        return errorResponse('D1 database binding not configured', 500, {
-            code: 'CONFIG_ERROR',
-        });
-    }
-
-    registerConnection('default', createD1Driver(env.OBCF_D1));
-    return null;
-}
-
-async function checkMigrationAuth(request: Request, env: CloudflareEnv): Promise<boolean> {
-    const isDev = env.ENVIRONMENT === 'development' || !env.ENVIRONMENT;
-    if (isDev) return true;
-
-    if (!env.MIGRATION_SECRET) return false;
-
-    let providedSecret: string | null = null;
-    const url = new URL(request.url);
-    providedSecret = url.searchParams.get('secret');
-
-    if (!providedSecret && request.method === 'POST') {
-        const body = await readJson<{ secret?: string }>(request);
-        providedSecret = body.secret ?? null;
-    }
-
-    if (!providedSecret) {
-        const authHeader = request.headers.get('authorization');
-        if (authHeader?.startsWith('Bearer ')) {
-            providedSecret = authHeader.substring(7);
-        }
-    }
-
-    return providedSecret === env.MIGRATION_SECRET;
-}
-
-function initDbConnection(env: CloudflareEnv): void {
-    if (!env.OBCF_D1) return;
-
-    if (hasConnection('default')) {
-        clearConnection('default');
-    }
-
-    registerConnection('default', createD1Driver(env.OBCF_D1));
-    registerModels([
-        // Core models
-        User,
-        Tag,
-        Account,
-        Authenticator,
-        Session,
-        VerificationToken,
-        ScheduledTask,
-        // Multi-tenant models
-        Organization,
-        OrganizationMember,
-        // RBAC models
-        Role,
-        UserRole,
-        Permission,
-        // Blog models
-        Post,
-        PostTag,
-        PostTagLink,
-        PostCategory,
-        PostSeries,
-        PostVersion,
-        OttablogPlugin,
-        OttablogTheme,
-        // Package models
-        Shortlink,
-        ReferralTracking,
-        // App models
-        Todo,
-    ]);
-
-    // Initialize Row-Level Security (RLS) system
-    // This registers all pre-configured security policies for tenant isolation
-    initRLS();
-}
-
-/**
- * Extract security context from authenticated session
- *
- * This function converts an Auth.js session into a SecurityContext for RLS.
- * It extracts the user ID and organization ID from the session.
- *
- * Organization ID can come from:
- * 1. Session user object (if JWT contains organizationId)
- * 2. X-Organization-Id header (for explicit org switching)
- * 3. Request subdomain (e.g., acme.yourapp.com → org-acme)
- * 4. Query parameter ?organizationId=org-123
- *
- * @param request - The incoming request
- * @param session - The authenticated session from Auth.js
- * @returns SecurityContext for RLS enforcement
- */
-async function getSecurityContext(request: Request, session: any | null): Promise<SecurityContext> {
-    const url = new URL(request.url);
-
-    // Extract userId from session
-    const userId = session?.user?.id;
-
-    // Extract organizationId from multiple sources (priority order). Use null as single sentinel for "no org".
-    let organizationId: string | null = null;
-
-    // 1. From session/JWT (if your JWT includes organizationId)
-    if (session?.user?.organizationId) {
-        organizationId = session.user.organizationId;
-    }
-
-    // 2. From header (explicit org selection)
-    if (!organizationId) {
-        const orgHeader = request.headers.get('x-organization-id');
-        if (orgHeader && orgHeader !== 'null') {
-            organizationId = orgHeader;
-        }
-    }
-
-    // 3. From subdomain (e.g., acme.yourapp.com → org-acme)
-    if (!organizationId) {
-        const host = request.headers.get('host') || url.hostname;
-        const subdomain = host.split('.')[0];
-        // Only use subdomain if it's not 'www' or the main domain
-        if (subdomain && subdomain !== 'www' && subdomain !== 'localhost' && !host.startsWith('127.0.0.1')) {
-            organizationId = `org-${subdomain}`;
-        }
-    }
-
-    // 4. From query parameter
-    if (!organizationId) {
-        const orgQuery = url.searchParams.get('organizationId');
-        if (orgQuery && orgQuery !== 'null') {
-            organizationId = orgQuery;
-        }
-    }
-
-    // Extract app context (optional)
-    const appId = request.headers.get('x-app-id') || 'web';
-
-    // Extract roles from session (if available)
-    const roles = session?.user?.roles as string[] | undefined;
-
-    // Extract permissions from session (if available)
-    const permissions = session?.user?.permissions as string[] | undefined;
-
-    return {
-        userId,
-        organizationId,
-        appId,
-        roles,
-        permissions,
-    };
-}
-
-async function getUserLinkedAccounts(
-    userId: string,
-): Promise<Array<{ provider: string; type: string; createdAt: string | null }>> {
-    const accounts = await Account.forUser(userId);
-    return accounts.map((account) => {
-        const json = account.toJson();
-        return {
-            provider: json.provider ?? 'unknown',
-            type: json.type ?? 'oauth',
-            createdAt: json.createdAt ? new Date(json.createdAt).toISOString() : null,
-        };
-    });
 }
 
 export default {
     async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
         try {
-            // ============================================================
-            // CRITICAL: Register DB connection FIRST for ALL requests
-            // This must happen BEFORE any code that might import models
-            // ============================================================
             initDbConnection(env);
 
             const url = new URL(request.url);
             const origin = request.headers.get('Origin') || '*';
+            const normalizedPathname = normalizePath(url.pathname);
             const authCorsHeaders = {
                 'Access-Control-Allow-Origin': origin,
                 'Access-Control-Allow-Credentials': 'true',
@@ -586,2840 +133,293 @@ export default {
                 }
             };
 
-            if (url.pathname.startsWith('/api/') && request.method === 'OPTIONS') {
+            if (normalizedPathname.startsWith('/api/') && request.method === 'OPTIONS') {
                 return new Response(null, {
                     status: 204,
                     headers: authCorsHeaders,
                 });
             }
 
-            if (url.pathname === '/api/health') {
-                return Response.json({
+            if (normalizedPathname === '/api/health') {
+                return jsonResponse({
                     ok: true,
                     name: 'ottabase-template-app-tanstack',
                     timestamp: Date.now(),
                 });
             }
 
-            if (url.pathname === '/api/auth/config' && request.method === 'GET') {
-                const config = getLoginConfig(env as any);
-                const response = jsonResponse(
-                    {
-                        ...config,
-                        authSecretConfigured: !!env.AUTH_SECRET,
-                    },
-                    200,
-                );
-                return withAuthCors(response);
+            if (normalizedPathname === '/api/auth/config' && request.method === 'GET') {
+                return handleAuthConfig({ request, env, url, withAuthCors });
             }
 
-            // ============================================================
-            // Email Verification & Password Reset
-            // ============================================================
-
-            if (url.pathname === '/api/auth/verify-email/resend' && request.method === 'POST') {
-                const ip = getClientIpAddress(request);
-                const rateLimit = await enforceRateLimit(request, env, `auth:verify-resend:${ip}`);
-                if (rateLimit) return withAuthCors(rateLimit);
-
-                if (!env.OBCF_D1) {
-                    return withAuthCors(
-                        errorResponse('D1 database binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{ email?: string }>(request);
-                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-
-                if (!email || !isEmail(email)) {
-                    return withAuthCors(
-                        errorResponse('Valid email is required', 400, {
-                            code: 'VALIDATION_ERROR',
-                        }),
-                    );
-                }
-
-                const user = await User.first({ email });
-                if (!user) {
-                    // Avoid leaking whether user exists
-                    return withAuthCors(jsonResponse({ success: true, sent: true }));
-                }
-
-                if (user.get('emailVerified')) {
-                    return withAuthCors(jsonResponse({ success: true, alreadyVerified: true }));
-                }
-
-                const { mailer, from } = await resolveMailer(env);
-                if (!mailer) {
-                    return withAuthCors(
-                        errorResponse('No email provider configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                registerAppEmailTemplates();
-                const identifier = `verify:${email}`;
-                const { token } = await createVerificationToken(env, identifier, 24 * 60 * 60);
-
-                const verifyUrl = new URL(request.url);
-                verifyUrl.pathname = '/api/auth/verify-email';
-                verifyUrl.searchParams.set('token', token);
-                verifyUrl.searchParams.set('email', email);
-
-                await sendTemplatedEmail(mailer, {
-                    from,
-                    to: email,
-                    template: 'minimalist',
-                    subject: 'Verify your email',
-                    variables: {
-                        subject: 'Verify your email',
-                        header: 'Verify your email',
-                        body: `<p>Welcome! Please verify your email to activate your account.</p>
-<p><a href="${verifyUrl.toString()}">Verify email</a></p>
-<p>If you did not create this account, you can ignore this email.</p>`,
-                        footer: `<p>For security, this link expires in 24 hours.</p>`,
-                    },
-                });
-
-                return withAuthCors(jsonResponse({ success: true, sent: true }));
+            if (normalizedPathname === '/api/auth/verify-email/resend' && request.method === 'POST') {
+                return handleVerifyEmailResend({ request, env, url, withAuthCors });
             }
 
-            if (url.pathname === '/api/auth/verify-email' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return withAuthCors(
-                        errorResponse('D1 database binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const token = url.searchParams.get('token') || '';
-                const email = normalizeEmail(url.searchParams.get('email') || '');
-
-                if (!token || !email) {
-                    return withAuthCors(
-                        errorResponse('Invalid verification link', 400, {
-                            code: 'INVALID_TOKEN',
-                        }),
-                    );
-                }
-
-                const identifier = `verify:${email}`;
-                const verification = await VerificationToken.findByIdentifierAndToken(identifier, token);
-                if (!verification) {
-                    return withAuthCors(
-                        errorResponse('Verification token is invalid or expired', 400, {
-                            code: 'INVALID_TOKEN',
-                        }),
-                    );
-                }
-
-                const expiresAt = new Date(String(verification.get('expires')));
-                if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
-                    await VerificationToken.deleteByIdentifierAndToken(identifier, token);
-                    return withAuthCors(
-                        errorResponse('Verification token is invalid or expired', 400, {
-                            code: 'TOKEN_EXPIRED',
-                        }),
-                    );
-                }
-
-                const user = await User.first({ email });
-                if (user) {
-                    user.set('emailVerified', new Date());
-                    await user.save();
-                }
-
-                await VerificationToken.deleteByIdentifierAndToken(identifier, token);
-
-                const accept = request.headers.get('Accept') || '';
-                if (accept.includes('text/html')) {
-                    const redirectUrl = env.AUTH_URL || env.NEXTAUTH_URL || new URL(request.url).origin;
-                    return Response.redirect(`${redirectUrl}/login?verified=1`, 303);
-                }
-
-                return withAuthCors(jsonResponse({ success: true }));
+            if (normalizedPathname === '/api/auth/verify-email' && request.method === 'GET') {
+                return handleVerifyEmail({ request, env, url, withAuthCors });
             }
 
-            if (url.pathname === '/api/auth/password/reset/request' && request.method === 'POST') {
-                const ip = getClientIpAddress(request);
-                const rateLimit = await enforceRateLimit(request, env, `auth:password-reset:${ip}`);
-                if (rateLimit) return withAuthCors(rateLimit);
-
-                if (!env.OBCF_D1) {
-                    return withAuthCors(
-                        errorResponse('D1 database binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{ email?: string }>(request);
-                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-
-                if (!email || !isEmail(email)) {
-                    return withAuthCors(
-                        errorResponse('Valid email is required', 400, {
-                            code: 'VALIDATION_ERROR',
-                        }),
-                    );
-                }
-
-                const user = await User.first({ email });
-                if (!user) {
-                    return withAuthCors(jsonResponse({ success: true, sent: true }));
-                }
-
-                const { mailer, from } = await resolveMailer(env);
-                if (!mailer) {
-                    return withAuthCors(
-                        errorResponse('No email provider configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                registerAppEmailTemplates();
-                const identifier = `reset:${email}`;
-                const { token } = await createVerificationToken(env, identifier, 60 * 60);
-
-                const resetUrl = new URL(env.AUTH_URL || env.NEXTAUTH_URL || request.url);
-                resetUrl.pathname = '/reset-password';
-                resetUrl.searchParams.set('token', token);
-                resetUrl.searchParams.set('email', email);
-
-                await sendTemplatedEmail(mailer, {
-                    from,
-                    to: email,
-                    template: 'minimalist',
-                    subject: 'Reset your password',
-                    variables: {
-                        subject: 'Reset your password',
-                        header: 'Reset your password',
-                        body: `<p>We received a request to reset your password.</p>
-<p><a href="${resetUrl.toString()}">Reset password</a></p>
-<p>If you did not request a password reset, you can ignore this email.</p>`,
-                        footer: `<p>This link expires in 60 minutes.</p>`,
-                    },
-                });
-
-                return withAuthCors(jsonResponse({ success: true, sent: true }));
+            if (normalizedPathname === '/api/auth/password/reset/request' && request.method === 'POST') {
+                return handlePasswordResetRequest({ request, env, url, withAuthCors });
             }
 
-            if (url.pathname === '/api/auth/password/reset/confirm' && request.method === 'POST') {
-                const ip = getClientIpAddress(request);
-                const rateLimit = await enforceRateLimit(request, env, `auth:password-reset-confirm:${ip}`);
-                if (rateLimit) return withAuthCors(rateLimit);
-
-                if (!env.OBCF_D1) {
-                    return withAuthCors(
-                        errorResponse('D1 database binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{ email?: string; token?: string; password?: string }>(request);
-                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-                const token = typeof body.token === 'string' ? body.token : '';
-                const password = typeof body.password === 'string' ? body.password : '';
-
-                const fieldErrors: Record<string, string[]> = {};
-
-                if (!email || !isEmail(email)) {
-                    fieldErrors.email = ['Valid email is required'];
-                }
-                if (!token) {
-                    fieldErrors.token = ['Reset token is required'];
-                }
-                if (!password) {
-                    fieldErrors.password = ['Password is required'];
-                } else if (!isStrongPassword(password)) {
-                    fieldErrors.password = [
-                        'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol',
-                    ];
-                }
-
-                if (Object.keys(fieldErrors).length > 0) {
-                    return withAuthCors(
-                        errorResponse('Validation failed', 400, {
-                            code: 'VALIDATION_ERROR',
-                            fieldErrors,
-                        }),
-                    );
-                }
-
-                const identifier = `reset:${email}`;
-                const verification = await VerificationToken.findByIdentifierAndToken(identifier, token);
-                if (!verification) {
-                    return withAuthCors(
-                        errorResponse('Reset token is invalid or expired', 400, {
-                            code: 'INVALID_TOKEN',
-                        }),
-                    );
-                }
-
-                const expiresAt = new Date(String(verification.get('expires')));
-                if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() < Date.now()) {
-                    await VerificationToken.deleteByIdentifierAndToken(identifier, token);
-                    return withAuthCors(
-                        errorResponse('Reset token is invalid or expired', 400, {
-                            code: 'TOKEN_EXPIRED',
-                        }),
-                    );
-                }
-
-                const user = await User.first({ email });
-                if (!user) {
-                    return withAuthCors(
-                        errorResponse('User not found', 404, {
-                            code: 'NOT_FOUND',
-                        }),
-                    );
-                }
-
-                const passwordHash = await hashPassword(password);
-                user.set('passwordHash', passwordHash);
-                await user.save();
-
-                await VerificationToken.deleteByIdentifierAndToken(identifier, token);
-
-                if (env.OBCF_KV) {
-                    try {
-                        const revokedAt = Math.floor(Date.now() / 1000);
-                        await env.OBCF_KV.put(`auth:revoked:user:${user.get('id')}`, String(revokedAt), {
-                            expirationTtl: Number(env.AUTH_SESSION_MAX_AGE) || 30 * 24 * 60 * 60,
-                        });
-                    } catch {
-                        // ignore revocation errors
-                    }
-                }
-
-                return withAuthCors(jsonResponse({ success: true }));
+            if (normalizedPathname === '/api/auth/password/reset/confirm' && request.method === 'POST') {
+                return handlePasswordResetConfirm({ request, env, url, withAuthCors });
             }
 
-            // ============================================================
-            // Current User Profile
-            // ============================================================
-            if (url.pathname === '/api/users/me') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const session = await getSession(request, env as any, getAuthOptions(env));
-                const userId = session?.user?.id;
-
-                if (!userId) {
-                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
-                }
-
-                if (request.method === 'GET') {
-                    const user = await User.find(userId);
-                    if (!user) {
-                        return errorResponse('User not found', 404, { code: 'NOT_FOUND' });
-                    }
-                    const userJson = user.toJson();
-                    const linkedAccounts = await getUserLinkedAccounts(userId);
-                    return jsonResponse({ ...userJson, linkedAccounts }, 200);
-                }
-
-                if (request.method === 'PATCH') {
-                    const body = await readJson<{
-                        name?: string;
-                        image?: string | null;
-                    }>(request);
-
-                    const updates: Record<string, any> = {};
-                    const fieldErrors: Record<string, string[]> = {};
-
-                    if (body.name !== undefined) {
-                        const name = typeof body.name === 'string' ? body.name.trim() : '';
-                        if (!name) {
-                            fieldErrors.name = ['Name is required'];
-                        } else if (name.length < 2) {
-                            fieldErrors.name = ['Name must be at least 2 characters'];
-                        } else {
-                            updates.name = name;
-                        }
-                    }
-
-                    if (body.image !== undefined) {
-                        const image = typeof body.image === 'string' ? body.image.trim() : '';
-                        if (!image) {
-                            updates.image = null;
-                        } else if (!isValidUrl(image)) {
-                            fieldErrors.image = ['Image must be a valid URL'];
-                        } else {
-                            updates.image = image;
-                        }
-                    }
-
-                    if (Object.keys(fieldErrors).length > 0) {
-                        return errorResponse('Validation failed', 400, {
-                            code: 'VALIDATION_ERROR',
-                            fieldErrors,
-                        });
-                    }
-
-                    if (Object.keys(updates).length === 0) {
-                        return errorResponse('No changes provided', 400, {
-                            code: 'NO_CHANGES',
-                        });
-                    }
-
-                    const updated = await User.update(userId, updates);
-
-                    // Signal profile changes for JWT refresh (KV-based versioning)
-                    if (env.OBCF_KV) {
-                        try {
-                            const version = Date.now();
-                            await env.OBCF_KV.put(`auth:profile:version:${userId}`, String(version), {
-                                expirationTtl: Number(env.AUTH_SESSION_MAX_AGE) || 30 * 24 * 60 * 60,
-                            });
-                        } catch (error) {
-                            console.warn('Failed to bump profile version in KV:', error);
-                        }
-                    }
-
-                    const userJson = updated.toJson();
-                    const linkedAccounts = await getUserLinkedAccounts(userId);
-                    return jsonResponse({ ...userJson, linkedAccounts }, 200);
-                }
-
-                return errorResponse('Method not allowed', 405);
+            if (normalizedPathname === '/api/users/me') {
+                return handleUserProfile({ request, env, url, withAuthCors });
             }
 
-            // Check available email providers
-            if (url.pathname === '/api/email/providers' && request.method === 'GET') {
-                const providers = {
-                    resend: {
-                        available: !!env.EMAIL_RESEND_API_KEY,
-                        required: ['EMAIL_RESEND_API_KEY'],
-                        optional: ['EMAIL_FROM'],
-                    },
-                    ses: {
-                        available: !!(env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY),
-                        required: ['AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY'],
-                        optional: ['AWS_REGION', 'EMAIL_FROM'],
-                    },
-                    nodemailer: {
-                        available: !!env.EMAIL_SERVER,
-                        required: ['EMAIL_SERVER'],
-                        optional: ['EMAIL_FROM'],
-                    },
-                };
-
-                return jsonResponse(providers);
+            if (normalizedPathname === '/api/email/providers' && request.method === 'GET') {
+                return handleEmailProviders({ request, env, url });
             }
 
-            if (url.pathname === '/api/email/test' && request.method === 'POST') {
-                const body = await readJson<{
-                    recipients?: string[];
-                    template?: string;
-                    emailType?: string;
-                    subject?: string;
-                    content?: TemplateContent;
-                    variables?: TemplateVariables;
-                    provider?: 'auto' | 'resend' | 'ses' | 'nodemailer';
-                }>(request);
-
-                const from = env.EMAIL_FROM || 'noreply@example.com';
-                const recipients = body.recipients || [];
-
-                if (!recipients.length) {
-                    return errorResponse('Recipients list is required', 400, {
-                        code: 'VALIDATION_ERROR',
-                    });
-                }
-
-                registerAppEmailTemplates();
-
-                let mailer;
-                const selectedProvider = body.provider || 'auto';
-
-                if (selectedProvider === 'nodemailer' || selectedProvider === 'auto') {
-                    if (env.EMAIL_SERVER) {
-                        const { createNodemailerMailer } = await import('@ottabase/email/providers/nodemailer');
-                        mailer = createNodemailerMailer({ server: env.EMAIL_SERVER });
-                    } else if (selectedProvider === 'nodemailer') {
-                        return errorResponse('EMAIL_SERVER must be configured for Nodemailer provider', 400, {
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-                }
-
-                if (!mailer && (selectedProvider === 'ses' || selectedProvider === 'auto')) {
-                    if (env.AWS_ACCESS_KEY_ID && env.AWS_SECRET_ACCESS_KEY) {
-                        mailer = createSESMailer({
-                            accessKeyId: env.AWS_ACCESS_KEY_ID,
-                            secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
-                            region: env.AWS_REGION || 'us-east-1',
-                        });
-                    } else if (selectedProvider === 'ses') {
-                        return errorResponse(
-                            'AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be configured for SES provider',
-                            400,
-                            {
-                                code: 'CONFIG_ERROR',
-                            },
-                        );
-                    }
-                }
-
-                if (!mailer && (selectedProvider === 'resend' || selectedProvider === 'auto')) {
-                    if (env.EMAIL_RESEND_API_KEY) {
-                        mailer = createResendMailer({ apiKey: env.EMAIL_RESEND_API_KEY });
-                    } else if (selectedProvider === 'resend') {
-                        return errorResponse('EMAIL_RESEND_API_KEY must be configured for Resend provider', 400, {
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-                }
-
-                if (!mailer) {
-                    return errorResponse(
-                        'No email provider configured. Set EMAIL_SERVER, EMAIL_RESEND_API_KEY, or AWS SES credentials',
-                        400,
-                        {
-                            code: 'CONFIG_ERROR',
-                        },
-                    );
-                }
-                const results = await Promise.all(
-                    recipients.map(async (email) => {
-                        const response = await sendTemplatedEmail(mailer, {
-                            from,
-                            to: email,
-                            template: body.template || 'default',
-                            subject: body.subject || 'Test Email',
-                            variables: body.variables,
-                            content: body.content || {
-                                header: 'Test Email',
-                                body: '<p>Hello from Ottabase.</p>',
-                                footer: '<p>Sent from /api/email/test</p>',
-                            },
-                        });
-
-                        return {
-                            email,
-                            ok: response.success,
-                        };
-                    }),
-                );
-
-                return jsonResponse(
-                    {
-                        ok: true,
-                        emailType: body.emailType,
-                        results,
-                    },
-                    200,
-                );
+            if (normalizedPathname === '/api/email/test' && request.method === 'POST') {
+                return handleEmailTest({ request, env, url });
             }
 
-            // ============================================================
-            // Admin Cron API
-            // ============================================================
-
-            // List tasks and stats
-            if (url.pathname === '/api/admin/cron' && request.method === 'GET') {
-                const initErr = initAdminCron(env);
-                if (initErr) return initErr;
-
-                // Get all tasks
-                const tasks = await ScheduledTask.all();
-
-                // Calculate stats
-                const activeCount = tasks.filter((t) => t.get('isActive')).length;
-                const totalRuns = tasks.reduce((sum, t) => sum + ((t.get('runCount') as number) || 0), 0);
-                const totalFails = tasks.reduce((sum, t) => sum + ((t.get('failCount') as number) || 0), 0);
-
-                // Get registered handlers (mock for now, would come from registry)
-                const registeredHandlers = [
-                    'cleanup:sessions',
-                    'cleanup:temp-files',
-                    'email:send-queue',
-                    'backup:database',
-                    'analytics:aggregate',
-                ];
-
-                return jsonResponse({
-                    tasks: tasks.map((t) => t.toJson()),
-                    registeredHandlers,
-                    stats: {
-                        total: tasks.length,
-                        active: activeCount,
-                        totalRuns,
-                        totalFails,
-                    },
-                });
+            if (normalizedPathname === '/api/admin/cron' && request.method === 'GET') {
+                return handleAdminCronList({ request, env });
             }
 
-            // Create task
-            if (url.pathname === '/api/admin/cron' && request.method === 'POST') {
-                const initErr = initAdminCron(env);
-                if (initErr) return initErr;
-
-                const body = await readJson<{
-                    name?: string;
-                    description?: string;
-                    schedule?: string;
-                    taskType?: string;
-                    task?: string;
-                    payload?: string;
-                    isActive?: boolean;
-                }>(request);
-
-                if (!body.name || !body.schedule || !body.task) {
-                    return errorResponse('name, schedule, and task are required', 400, {
-                        code: 'VALIDATION_ERROR',
-                    });
-                }
-
-                try {
-                    const newTask = await ScheduledTask.create({
-                        name: body.name,
-                        description: body.description,
-                        schedule: body.schedule,
-                        taskType: body.taskType || 'handler',
-                        task: body.task,
-                        payload: body.payload || null,
-                        isActive: body.isActive ?? true,
-                    });
-
-                    return jsonResponse(newTask.toJson(), 201);
-                } catch (error) {
-                    return errorResponse(error instanceof Error ? error.message : 'Failed to create task', 400, {
-                        code: 'VALIDATION_ERROR',
-                    });
-                }
+            if (normalizedPathname === '/api/admin/cron' && request.method === 'POST') {
+                return handleAdminCronCreate({ request, env });
             }
 
-            // Handle specific task operations
-            const cronTaskMatch = url.pathname.match(/^\/api\/admin\/cron\/(.+)$/);
+            const cronTaskMatch = normalizedPathname.match(/^\/api\/admin\/cron\/(.+)$/);
             if (cronTaskMatch) {
-                const initErr = initAdminCron(env);
-                if (initErr) return initErr;
-
                 const taskId = cronTaskMatch[1];
-                const isToggle = taskId.endsWith('/toggle');
-                const isRun = taskId.endsWith('/run');
-
-                // Clean ID if it has action suffix
-                const cleanId = isToggle ? taskId.replace('/toggle', '') : isRun ? taskId.replace('/run', '') : taskId;
-
-                const task = await ScheduledTask.find(cleanId);
-
-                if (!task) {
-                    return errorResponse('Task not found', 404);
-                }
-
-                // Toggle active status
-                if (isToggle && request.method === 'POST') {
-                    await task.toggle();
-                    return jsonResponse({ success: true, task: task.toJson() });
-                }
-
-                // Run task manually
-                if (isRun && request.method === 'POST') {
-                    await task.markRunning();
-                    // In a real implementation, this would dispatch the task immediately
-                    // For now, we'll just acknowledge the request
-                    return jsonResponse({
-                        success: true,
-                        message: 'Task execution started',
-                        task: task.toJson(),
-                    });
-                }
-
-                // Delete task
-                if (request.method === 'DELETE' && !isToggle && !isRun) {
-                    await ScheduledTask.delete(cleanId);
-                    return jsonResponse({ success: true, message: 'Task deleted' });
-                }
+                const action = taskId.endsWith('/toggle') ? 'toggle' : taskId.endsWith('/run') ? 'run' : null;
+                return (
+                    handleCronTask({ request, env }, taskId, action) ??
+                    errorResponse('Not found', 404, { code: 'NOT_FOUND' })
+                );
             }
 
-            // Blog Studio API: themes and plugins state
-            // ============================================================
-            if (url.pathname.startsWith('/api/blog/studio/')) {
+            if (normalizedPathname.startsWith('/api/blog/studio/')) {
                 if (!env.OBCF_D1) {
                     return errorResponse('D1 database binding not configured', 500, {
                         code: 'CONFIG_ERROR',
                     });
                 }
 
-                const appId: string | null = null; // could come from session later
-
-                // GET /api/blog/studio/state
-                if (url.pathname === '/api/blog/studio/state' && request.method === 'GET') {
-                    const state = await StudioManager.getState(appId);
-                    // Seed default theme and plugin if none exist
-                    if (state.themes.length === 0) {
-                        await OttablogTheme.create({
-                            themeId: 'default',
-                            name: 'Default',
-                            description: 'Clean, modern default theme',
-                            appId,
-                            isActive: true,
-                        });
-                    }
-                    if (state.plugins.length === 0) {
-                        await OttablogPlugin.create({
-                            pluginId: 'content-injector-plugin',
-                            name: 'Content Injector Plugin',
-                            description: 'Injects custom content into posts',
-                            appId,
-                            enabled: false,
-                        });
-                    }
-                    const finalState = await StudioManager.getState(appId);
-                    return jsonResponse(finalState);
+                if (normalizedPathname === '/api/blog/studio/state' && request.method === 'GET') {
+                    return handleBlogStudioState({ request, env, url });
                 }
 
-                // POST /api/blog/studio/theme/activate
-                if (url.pathname === '/api/blog/studio/theme/activate' && request.method === 'POST') {
-                    const body = await readJson<{ themeId: string }>(request);
-                    const themeId = body?.themeId;
-                    if (!themeId) {
-                        return errorResponse('themeId is required', 400, { code: 'VALIDATION_ERROR' });
-                    }
-                    let themeRow = await OttablogTheme.findByThemeId(themeId, { appId: appId ?? undefined });
-                    if (!themeRow) {
-                        await OttablogTheme.create({
-                            themeId,
-                            name: themeId,
-                            appId,
-                            isActive: false,
-                        });
-                        themeRow = await OttablogTheme.findByThemeId(themeId, { appId: appId ?? undefined });
-                    }
-                    if (themeRow) {
-                        await themeRow.activate({ appId: appId ?? undefined });
-                    }
-                    return jsonResponse({ success: true });
+                if (normalizedPathname === '/api/blog/studio/theme/activate' && request.method === 'POST') {
+                    return handleBlogStudioActivateTheme({ request, env, url });
                 }
 
-                // POST /api/blog/studio/plugin/enable
-                if (url.pathname === '/api/blog/studio/plugin/enable' && request.method === 'POST') {
-                    const body = await readJson<{ pluginId: string; enabled: boolean }>(request);
-                    const pluginId = body?.pluginId;
-                    const enabled = body?.enabled ?? true;
-                    if (!pluginId) {
-                        return errorResponse('pluginId is required', 400, { code: 'VALIDATION_ERROR' });
-                    }
-                    let pluginRow = await OttablogPlugin.findByPluginId(pluginId, { appId: appId ?? undefined });
-                    if (!pluginRow) {
-                        await OttablogPlugin.create({
-                            pluginId,
-                            name: pluginId,
-                            appId,
-                            enabled,
-                        });
-                    } else {
-                        pluginRow.set('enabled', enabled);
-                        await pluginRow.save();
-                    }
-                    return jsonResponse({ success: true });
+                if (normalizedPathname === '/api/blog/studio/plugin/enable' && request.method === 'POST') {
+                    return handleBlogStudioPluginEnable({ request, env, url });
                 }
 
-                // POST /api/blog/studio/plugin/config
-                if (url.pathname === '/api/blog/studio/plugin/config' && request.method === 'POST') {
-                    const body = await readJson<{ pluginId: string; config: Record<string, unknown> }>(request);
-                    const pluginId = body?.pluginId;
-                    const config = body?.config;
-                    if (!pluginId) {
-                        return errorResponse('pluginId is required', 400, { code: 'VALIDATION_ERROR' });
-                    }
-                    const pluginRow = await OttablogPlugin.findByPluginId(pluginId, { appId: appId ?? undefined });
-                    if (!pluginRow) {
-                        return errorResponse('Plugin not found', 404, { code: 'NOT_FOUND' });
-                    }
-                    await pluginRow.updateConfig(config ?? {});
-                    return jsonResponse({ success: true });
+                if (normalizedPathname === '/api/blog/studio/plugin/config' && request.method === 'POST') {
+                    return handleBlogStudioPluginConfig({ request, env, url });
                 }
             }
 
-            // Public Blog API (list + by-slug with stripped body for protected posts; unlock)
-            // ============================================================
-            if (url.pathname.startsWith('/api/blog/posts') && env.OBCF_D1) {
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                /** Strip private fields; optionally hide content/footnotes for protected posts */
-                function publicPostJson(record: Post, options?: { includeContent?: boolean }): Record<string, unknown> {
-                    const j = record.toJson() as Record<string, unknown>;
-                    const { privateNotes, ...rest } = j;
-                    if (rest.isProtected && !options?.includeContent) {
-                        const { content, footnotes, ...restNoContent } = rest;
-                        return { ...restNoContent, content: null, footnotes: null };
-                    }
-                    return rest;
+            if (normalizedPathname.startsWith('/api/blog/posts') && env.OBCF_D1) {
+                if (normalizedPathname === '/api/blog/posts' && request.method === 'GET') {
+                    return handleBlogPostsList({ request, env, url });
                 }
 
-                // GET /api/blog/posts - list published posts (stripped for protected)
-                if (url.pathname === '/api/blog/posts' && request.method === 'GET') {
-                    const page = Math.max(1, parseInt(url.searchParams.get('page') || '1', 10));
-                    const perPage = Math.min(50, Math.max(1, parseInt(url.searchParams.get('perPage') || '15', 10)));
-                    const appId = url.searchParams.get('appId') || null;
-                    const contentType = url.searchParams.get('contentType') || null;
-                    const seriesId = url.searchParams.get('seriesId') || null;
-                    const where: Record<string, unknown> = { status: 'published' };
-                    if (appId) where.appId = appId;
-                    if (contentType) where.contentType = contentType;
-                    if (seriesId) where.seriesId = seriesId;
-                    const result = await Post.paginate(page, perPage, where, {
-                        orderBy: 'publishedAt',
-                        orderDirection: 'desc',
-                    });
-                    const data = result.data.map((r) => publicPostJson(r));
-                    return jsonResponse({
-                        data,
-                        pagination: {
-                            page: result.page,
-                            perPage: result.perPage,
-                            total: result.total,
-                            totalPages: result.totalPages,
-                        },
-                    });
-                }
-
-                // GET /api/blog/posts/by-slug/:slug - single published post (stripped if protected)
-                const bySlugMatch = url.pathname.match(/^\/api\/blog\/posts\/by-slug\/([^/]+)$/);
+                const bySlugMatch = normalizedPathname.match(/^\/api\/blog\/posts\/by-slug\/([^/]+)$/);
                 if (bySlugMatch && request.method === 'GET') {
                     const slug = decodeURIComponent(bySlugMatch[1]);
-                    const appId = url.searchParams.get('appId') || null;
-                    const where: Record<string, unknown> = { slug, status: 'published' };
-                    if (appId) where.appId = appId;
-                    const record = await Post.first(where);
-                    if (!record) {
-                        return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
-                    }
-                    return jsonResponse(publicPostJson(record));
+                    return handleBlogPostBySlug({ request, env, url }, slug);
                 }
 
-                // POST /api/blog/posts/unlock - verify password, return full post
-                if (url.pathname === '/api/blog/posts/unlock' && request.method === 'POST') {
-                    const body = await readJson<{ slug: string; password: string }>(request);
-                    const slug = body?.slug?.trim();
-                    const password = body?.password;
-                    if (!slug || password === undefined || password === null) {
-                        return errorResponse('slug and password are required', 400, { code: 'VALIDATION_ERROR' });
-                    }
-                    const appId = url.searchParams.get('appId') || null;
-                    const where: Record<string, unknown> = { slug, status: 'published' };
-                    if (appId) where.appId = appId;
-                    const record = await Post.first(where);
-                    if (!record) {
-                        return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
-                    }
-                    const isProtected = record.get('isProtected');
-                    const passwordHash = record.get('passwordHash');
-                    if (!isProtected || !passwordHash) {
-                        return jsonResponse(publicPostJson(record, { includeContent: true }));
-                    }
-                    const valid = await verifyPassword(String(password), String(passwordHash));
-                    if (!valid) {
-                        return errorResponse('Invalid password', 401, { code: 'INVALID_PASSWORD' });
-                    }
-                    return jsonResponse(publicPostJson(record, { includeContent: true }));
+                if (normalizedPathname === '/api/blog/posts/unlock' && request.method === 'POST') {
+                    return handleBlogPostUnlock({ request, env, url });
                 }
             }
-
-            // Generic OttaORM CRUD API
-            // ============================================================
-            // Handles all registered models via /api/ottaorm/{model}/{id?}
-            // GET    /api/ottaorm/shortlinks              - List all (paginated)
-            // GET    /api/ottaorm/shortlinks/123          - Get by ID
-            // GET    /api/ottaorm/shortlinks?field=X&value=Y - Get by field/value
-            // POST   /api/ottaorm/shortlinks              - Create
-            // PATCH  /api/ottaorm/shortlinks/123          - Update
-            // DELETE /api/ottaorm/shortlinks/123          - Delete
-            // Query params: page, per_page, sort, order, where (JSON), field, value
-            // ============================================================
 
             if (
-                url.pathname.startsWith('/api/ottaorm/') &&
-                url.pathname !== '/api/ottaorm/init' &&
-                url.pathname !== '/api/ottaorm/models-metadata'
+                normalizedPathname.startsWith('/api/ottaorm/') &&
+                normalizedPathname !== '/api/ottaorm/init' &&
+                normalizedPathname !== '/api/ottaorm/models-metadata'
             ) {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                // Connection and models are already registered at the top of fetch()
-
-                // ============================================================
-                // RLS-PROTECTED CRUD with Auth Integration
-                // ============================================================
-                // 1. Extract authenticated session from Auth.js
-                // 2. Build security context (userId, organizationId, roles, permissions)
-                // 3. Apply Row-Level Security policies automatically
-                // 4. All queries are filtered by security context
-                // ============================================================
-
-                // Get authenticated session
-                const session = await getSession(request, env as any, getAuthOptions(env));
-
-                // Extract security context from session and request
-                const securityContext = await getSecurityContext(request, session);
-
-                // Parse the request into a CrudRequest
-                const crudRequest = await parseCrudRequest(request, url, '/api/ottaorm');
-
-                if (!crudRequest) {
-                    return errorResponse('Invalid CRUD request', 400, {
-                        code: 'INVALID_REQUEST',
-                        hint: 'Use /api/ottaorm/{model}/{id?} format',
-                    });
-                }
-
-                if (crudRequest.model === 'users') {
-                    return errorResponse('Users CRUD is disabled', 403, {
-                        code: 'CRUD_DISABLED',
-                        hint: 'Use /api/users/me for profile access',
-                    });
-                }
-
-                // Hash post password when setting/changing (posts model only)
-                if (
-                    crudRequest.model === 'posts' &&
-                    crudRequest.body &&
-                    (crudRequest.method === 'POST' || crudRequest.method === 'PATCH')
-                ) {
-                    const isProtected = (crudRequest.body as any).isProtected;
-                    const password = (crudRequest.body as any).password;
-                    if (isProtected === true && typeof password !== 'string') {
-                        let hasExistingPassword = false;
-                        if (crudRequest.method === 'PATCH' && crudRequest.id) {
-                            const existing = await Post.find(crudRequest.id);
-                            hasExistingPassword = !!existing?.get('passwordHash');
-                        }
-                        if (!hasExistingPassword) {
-                            return errorResponse('Password is required to protect a post', 400, {
-                                code: 'VALIDATION_ERROR',
-                                fieldErrors: { password: ['Password is required when enabling protection'] },
-                            });
-                        }
-                    }
-
-                    if (typeof password === 'string') {
-                        const plain = password;
-                        (crudRequest.body as any).passwordHash = await hashPassword(plain);
-                        delete (crudRequest.body as any).password;
-                    }
-                }
-
-                // Handle the CRUD operation with RLS protection
-                // This automatically enforces tenant isolation, user ownership, and permission checks
-                const result = await executeSecureCrudRequest(crudRequest, securityContext);
-
-                // Return response based on result
-                if (!result.success) {
-                    // Log error for debugging
-                    console.error(`[CRUD Error] ${crudRequest.method} ${crudRequest.model}:`, {
-                        error: result.error,
-                        code: result.code,
-                        details: result.details,
-                        hint: result.hint,
-                    });
-
-                    return errorResponse(result.error || 'Unknown error', result.status, {
-                        code: result.code,
-                        details: result.details,
-                        hint: result.hint,
-                        messages: result.messages,
-                        fieldErrors: result.fieldErrors,
-                    });
-                }
-
-                return jsonResponse(result.data, result.status);
+                return handleOttaormCrud({ request, env, url });
             }
 
-            // ============================================================
-            // Shortlink Management (Legacy - use /api/ottaorm/shortlinks instead)
-            // ============================================================
-
-            // List all shortlinks (paginated)
-            if (url.pathname === '/api/shortlinks' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                // Parse pagination params from query string (defaults applied automatically)
-                const { page, perPage, orderBy, order } = parsePaginationParams(url.searchParams);
-
-                // Optional filters
-                const appId = url.searchParams.get('appId');
-                const type = url.searchParams.get('type');
-
-                // Build where conditions
-                const whereConditions: Record<string, any> = {};
-                if (appId) whereConditions.appId = appId;
-                if (type) whereConditions.type = type;
-
-                // Use OttaORM's paginate method
-                const paginationResult = await Shortlink.paginate(
-                    page,
-                    perPage,
-                    Object.keys(whereConditions).length > 0 ? whereConditions : undefined,
-                    { orderBy, orderDirection: order },
-                );
-
-                // Return paginated response
-                return paginatedJsonResponse({
-                    data: paginationResult.data.map((s) => s.toJson()),
-                    total: paginationResult.total,
-                    page: paginationResult.page,
-                    perPage: paginationResult.perPage,
-                    path: '/api/shortlinks',
-                });
+            if (normalizedPathname === '/api/shortlinks' && request.method === 'GET') {
+                return handleShortlinksList({ request, env, url });
             }
 
-            // Create shortlink
-            if (url.pathname === '/api/shortlinks' && request.method === 'POST') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{
-                    fullUrl?: string;
-                    shortCode?: string;
-                    type?: string;
-                    appId?: string;
-                    expiryDate?: string | null;
-                }>(request);
-
-                if (!body.fullUrl || !body.shortCode) {
-                    return errorResponse('fullUrl and shortCode are required', 400);
-                }
-
-                // Check if shortCode already exists
-                const existing = await Shortlink.findByCode(body.shortCode);
-                if (existing) {
-                    return errorResponse('Short code already exists', 409, {
-                        code: 'DUPLICATE_SHORT_CODE',
-                    });
-                }
-
-                try {
-                    const shortlink = await Shortlink.create({
-                        fullUrl: body.fullUrl,
-                        shortCode: body.shortCode,
-                        type: body.type || 'redirect',
-                        appId: body.appId || 'default',
-                        expiryDate: body.expiryDate ? new Date(body.expiryDate) : null,
-                    });
-
-                    return jsonResponse({
-                        success: true,
-                        data: shortlink.toJson(),
-                    });
-                } catch (error) {
-                    return errorResponse(error instanceof Error ? error.message : 'Failed to create shortlink', 400, {
-                        code: 'VALIDATION_ERROR',
-                    });
-                }
+            if (normalizedPathname === '/api/shortlinks' && request.method === 'POST') {
+                return handleShortlinksCreate({ request, env, url });
             }
 
-            // Update shortlink
-            const shortlinkUpdateMatch = url.pathname.match(/^\/api\/shortlinks\/(.+)$/);
-            if (shortlinkUpdateMatch && request.method === 'PATCH') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
+            const shortlinkUpdateMatch = normalizedPathname.match(/^\/api\/shortlinks\/(.+)$/);
+            if (shortlinkUpdateMatch && shortlinkUpdateMatch[1]) {
                 const id = shortlinkUpdateMatch[1];
-                const body = await readJson<{
-                    fullUrl?: string;
-                    shortCode?: string;
-                    type?: string;
-                    expiryDate?: string | null;
-                }>(request);
-
-                const shortlink = await Shortlink.find(id);
-                if (!shortlink) {
-                    return errorResponse('Shortlink not found', 404);
-                }
-
-                // If updating shortCode, check for duplicates
-                if (body.shortCode && body.shortCode !== shortlink.get('shortCode')) {
-                    const existing = await Shortlink.findByCode(body.shortCode);
-                    if (existing) {
-                        return errorResponse('Short code already exists', 409, {
-                            code: 'DUPLICATE_SHORT_CODE',
-                        });
-                    }
-                    shortlink.set('shortCode', body.shortCode);
-                }
-
-                if (body.fullUrl) shortlink.set('fullUrl', body.fullUrl);
-                if (body.type) shortlink.set('type', body.type);
-                if (body.expiryDate !== undefined) {
-                    shortlink.set('expiryDate', body.expiryDate ? new Date(body.expiryDate) : null);
-                }
-
-                try {
-                    await shortlink.save();
-                    return jsonResponse({
-                        success: true,
-                        data: shortlink.toJson(),
-                    });
-                } catch (error) {
-                    return errorResponse(error instanceof Error ? error.message : 'Failed to update shortlink', 400, {
-                        code: 'VALIDATION_ERROR',
-                    });
-                }
-            }
-
-            // Delete shortlink
-            if (shortlinkUpdateMatch && request.method === 'DELETE') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const id = shortlinkUpdateMatch[1];
-                const shortlink = await Shortlink.find(id);
-                if (!shortlink) {
-                    return errorResponse('Shortlink not found', 404);
-                }
-
-                await Shortlink.delete(id);
-                return jsonResponse({
-                    success: true,
-                    message: 'Shortlink deleted successfully',
-                });
-            }
-
-            // ============================================================
-            // Referral System API
-            // ============================================================
-
-            // Track referral click
-            if (url.pathname === '/api/referrals/track' && request.method === 'POST') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{
-                    referralCode?: string;
-                    referer?: string;
-                    meta?: Record<string, any>;
-                }>(request);
-
-                if (!body.referralCode) {
-                    return errorResponse('referralCode is required', 400);
-                }
-
-                // Find the user by referral username
-                const referrer = await User.findByReferralUsername(body.referralCode);
-
-                if (!referrer) {
-                    return errorResponse('Invalid referral code', 404, {
-                        code: 'INVALID_REFERRAL_CODE',
-                    });
-                }
-
-                // Extract IP and user agent
-                const ipAddress = getClientIpAddress(request);
-                const userAgent = request.headers.get('User-Agent') || 'unknown';
-
-                // Create tracking record
-                const tracking = await ReferralTracking.create({
-                    userId: referrer.get('id'),
-                    referralCode: body.referralCode,
-                    status: 'pending',
-                    ipAddress,
-                    userAgent,
-                    referer: body.referer || request.headers.get('Referer') || null,
-                    meta: body.meta || {},
-                });
-
-                return jsonResponse({
-                    success: true,
-                    tracking: tracking.toJson(),
-                });
-            }
-
-            // Get referral stats
-            if (url.pathname === '/api/referrals/stats' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const session = await getSession(request, env as any, getAuthOptions(env));
-                const userId = session?.user?.id;
-
-                if (!userId) {
-                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
-                }
-
-                const stats = await ReferralTracking.getStats(userId);
-
-                return jsonResponse(stats);
-            }
-
-            // Get user referral data
-            if (url.pathname === '/api/referrals/user' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const session = await getSession(request, env as any, getAuthOptions(env));
-                const userId = session?.user?.id;
-
-                if (!userId) {
-                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
-                }
-
-                const user = await User.find(userId);
-
-                if (!user) {
-                    return errorResponse('User not found', 404);
-                }
-
-                const stats = await ReferralTracking.getStats(userId);
-                const trackingRecords = await ReferralTracking.forUser(userId, {
-                    limit: 100,
-                });
-
-                return jsonResponse({
-                    user: {
-                        id: user.get('id'),
-                        name: user.get('name'),
-                        email: user.get('email'),
-                        referralUsername: user.get('referralUsername'),
-                        referredById: user.get('referredById'),
-                    },
-                    stats,
-                    tracking: trackingRecords.map((t) => t.toJson()),
-                });
-            }
-
-            // Update referral username
-            if (url.pathname === '/api/referrals/username' && request.method === 'PUT') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{
-                    referralUsername?: string;
-                }>(request);
-
-                const session = await getSession(request, env as any, getAuthOptions(env));
-                const userId = session?.user?.id;
-
-                if (!userId || !body.referralUsername) {
-                    return errorResponse('referralUsername is required', 400);
-                }
-
-                // Validate username format
-                const { validateReferralUsername } = await import('@ottabase/referrals');
-                const validation = validateReferralUsername(body.referralUsername);
-
-                if (!validation.valid) {
-                    return errorResponse(validation.error || 'Invalid username', 400, {
-                        code: 'INVALID_USERNAME',
-                    });
-                }
-
-                // Check if username is already taken
-                const existing = await User.findByReferralUsername(body.referralUsername);
-                if (existing && existing.get('id') !== userId) {
-                    return errorResponse('Username already taken', 400, {
-                        code: 'USERNAME_TAKEN',
-                    });
-                }
-
-                // Update user
-                const user = await User.find(userId);
-                if (!user) {
-                    return errorResponse('User not found', 404);
-                }
-
-                user.set('referralUsername', body.referralUsername);
-                await user.save();
-
-                return jsonResponse({
-                    success: true,
-                    user: user.toJson(),
-                });
-            }
-
-            // List tracking records (with filters and pagination)
-            if (url.pathname === '/api/referrals/tracking' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const session = await getSession(request, env as any, getAuthOptions(env));
-                const userId = session?.user?.id;
-
-                if (!userId) {
-                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
-                }
-
-                const { page, perPage } = parsePaginationParams(url.searchParams);
-                const status = url.searchParams.get('status') as 'pending' | 'completed' | 'invalid' | null;
-
-                const offset = (page - 1) * perPage;
-                const trackingRecords = await ReferralTracking.forUser(userId, {
-                    status: status || undefined,
-                    limit: perPage,
-                    offset,
-                });
-
-                // Get total count
-                const allRecords = await ReferralTracking.forUser(userId, {
-                    status: status || undefined,
-                });
-
-                return paginatedJsonResponse({
-                    data: trackingRecords.map((t) => t.toJson()),
-                    total: allRecords.length,
-                    page,
-                    perPage,
-                    path: '/api/referrals/tracking',
-                });
-            }
-
-            // ============================================================
-            // Custom Registration with Referral Attribution
-            // ============================================================
-
-            if (url.pathname === '/api/auth/register' && request.method === 'POST') {
-                if (!env.OBCF_D1) {
-                    return withAuthCors(
-                        errorResponse('D1 database binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        }),
-                    );
-                }
-
-                if (env.AUTH_DISABLE_CREDENTIALS === 'true' || env.AUTH_DISABLE_CREDENTIALS === '1') {
-                    return withAuthCors(
-                        errorResponse('Credentials registration is disabled', 403, {
-                            code: 'CREDENTIALS_DISABLED',
-                        }),
-                    );
-                }
-
-                const ip = getClientIpAddress(request);
-                const rateLimit = await enforceRateLimit(request, env, `auth:register:${ip}`);
-                if (rateLimit) return withAuthCors(rateLimit);
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const body = await readJson<{
-                    email?: string;
-                    password?: string;
-                    name?: string;
-                    referralCode?: string;
-                }>(request);
-
-                const email = typeof body.email === 'string' ? normalizeEmail(body.email) : '';
-                const password = typeof body.password === 'string' ? body.password : '';
-                const name = typeof body.name === 'string' ? body.name.trim() : '';
-
-                const fieldErrors: Record<string, string[]> = {};
-
-                if (!email) {
-                    fieldErrors.email = ['Email is required'];
-                } else if (!isEmail(email)) {
-                    fieldErrors.email = ['Invalid email address'];
-                }
-
-                if (!password) {
-                    fieldErrors.password = ['Password is required'];
-                } else if (!isStrongPassword(password)) {
-                    fieldErrors.password = [
-                        'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol',
-                    ];
-                }
-
-                if (name && name.length < 2) {
-                    fieldErrors.name = ['Name must be at least 2 characters'];
-                }
-
-                if (Object.keys(fieldErrors).length > 0) {
-                    return withAuthCors(
-                        errorResponse('Validation failed', 400, {
-                            code: 'VALIDATION_ERROR',
-                            fieldErrors,
-                        }),
-                    );
-                }
-
-                try {
-                    const existing = await User.first({ email });
-                    if (existing) {
-                        return withAuthCors(
-                            errorResponse('Email already in use', 409, {
-                                code: 'EMAIL_EXISTS',
-                            }),
-                        );
-                    }
-
-                    const passwordHash = await hashPassword(password);
-
-                    const newUser = await User.create({
-                        email,
-                        name: name || null,
-                        emailVerified: null,
-                        passwordHash,
-                    });
-
-                    const newUserId = newUser.get('id') as string;
-
-                    let organizationId: string | null = null;
-                    let organizationRole: string | null = null;
-                    let assignedRole: string | null = null;
-
-                    try {
-                        await Role.ensureDefaultRoles();
-
-                        const baseName = (name || email.split('@')[0] || 'Workspace').trim();
-                        const orgName = `${baseName}'s Workspace`;
-                        const baseSlug = makeSlug(orgName) || `org-${newUserId.slice(0, 8)}`;
-
-                        let slug = baseSlug;
-                        let attempt = 0;
-                        while (await Organization.findBySlug(slug)) {
-                            attempt += 1;
-                            slug = `${baseSlug}-${attempt}`;
-                            if (attempt > 8) {
-                                slug = `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
-                                break;
-                            }
-                        }
-
-                        const organization = await Organization.create({
-                            name: orgName,
-                            slug,
-                            ownerId: newUserId,
-                        });
-
-                        organizationId = organization.get('id') as string;
-                        organizationRole = 'owner';
-
-                        await OrganizationMember.create({
-                            userId: newUserId,
-                            organizationId,
-                            role: organizationRole,
-                            status: 'active',
-                        });
-
-                        const memberRole = (await Role.findByName('member')) || (await Role.findByName('viewer'));
-                        if (memberRole) {
-                            await newUser.assignRole(memberRole.get('id') as string, organizationId);
-                            assignedRole = memberRole.get('name') as string;
-                        }
-                    } catch (error) {
-                        console.warn('Failed to initialize organization or roles:', error);
-                    }
-
-                    // Process referral attribution if referralCode provided
-                    let attributionResult;
-                    if (body.referralCode) {
-                        attributionResult = await processReferralAttribution({
-                            newUserId,
-                            referralCode: body.referralCode,
-                        });
-                    }
-
-                    const requireVerified =
-                        env.AUTH_REQUIRE_EMAIL_VERIFIED === 'true' || env.AUTH_REQUIRE_EMAIL_VERIFIED === '1';
-                    let verificationSent = false;
-
-                    if (requireVerified) {
-                        const { mailer, from } = await resolveMailer(env);
-                        if (!mailer) {
-                            return withAuthCors(
-                                errorResponse('Email verification requires a configured email provider', 500, {
-                                    code: 'CONFIG_ERROR',
-                                }),
-                            );
-                        }
-
-                        registerAppEmailTemplates();
-                        const identifier = `verify:${email}`;
-                        const { token } = await createVerificationToken(env, identifier, 24 * 60 * 60);
-
-                        const verifyUrl = new URL(request.url);
-                        verifyUrl.pathname = '/api/auth/verify-email';
-                        verifyUrl.searchParams.set('token', token);
-                        verifyUrl.searchParams.set('email', email);
-
-                        await sendTemplatedEmail(mailer, {
-                            from,
-                            to: email,
-                            template: 'minimalist',
-                            subject: 'Verify your email',
-                            variables: {
-                                subject: 'Verify your email',
-                                header: 'Verify your email',
-                                body: `<p>Thanks for signing up! Please verify your email to activate your account.</p>
-<p><a href="${verifyUrl.toString()}">Verify email</a></p>
-<p>If you did not create this account, you can ignore this email.</p>`,
-                                footer: `<p>This link expires in 24 hours.</p>`,
-                            },
-                        });
-                        verificationSent = true;
-                    }
-
-                    const userJson = newUser.toJson();
-                    delete (userJson as any).passwordHash;
-                    if (organizationId) {
-                        (userJson as any).organizationId = organizationId;
-                        (userJson as any).organizationRole = organizationRole;
-                        (userJson as any).role = assignedRole;
-                    }
-
-                    const response = jsonResponse({
-                        success: true,
-                        user: userJson,
-                        organizationId,
-                        organizationRole,
-                        assignedRole,
-                        requiresEmailVerification: requireVerified,
-                        verificationSent,
-                        referralAttribution: attributionResult || null,
-                    });
-                    return withAuthCors(response);
-                } catch (error) {
-                    const message = error instanceof Error ? error.message : 'Registration failed';
-                    if (typeof message === 'string' && message.toLowerCase().includes('unique')) {
-                        return withAuthCors(errorResponse('Email already in use', 409, { code: 'EMAIL_EXISTS' }));
-                    }
-                    console.error('Registration error:', error);
-                    return withAuthCors(errorResponse(message, 500));
-                }
-            }
-
-            // ============================================================
-            // Authentication - Auth.js Routes
-            // ============================================================
-            // Handles all Auth.js routes: /api/auth/signin, /api/auth/signout,
-            // /api/auth/session, /api/auth/callback/*, etc.
-            if (url.pathname.startsWith('/api/auth/')) {
-                if (request.method === 'POST') {
-                    const ip = getClientIpAddress(request);
-                    let bucket: string | null = null;
-
-                    if (url.pathname.includes('/callback/credentials')) {
-                        bucket = 'signin';
-                    } else if (url.pathname.includes('/signin/email')) {
-                        bucket = 'magiclink';
-                    } else if (url.pathname.includes('/signout')) {
-                        bucket = 'signout';
-                    }
-
-                    if (bucket) {
-                        const rateLimit = await enforceRateLimit(request, env, `auth:${bucket}:${ip}`);
-                        if (rateLimit) return withAuthCors(rateLimit);
-                    }
-                }
-
-                const response = await handleAuthRequest(request, env as any, getAuthOptions(env));
-                return withAuthCors(response);
-            }
-
-            // ============================================================
-            // API Client Demo
-            // ============================================================
-
-            if (url.pathname === '/api/demo') {
-                if (request.method === 'GET') {
-                    return jsonResponse({
-                        message: 'Hello from GET',
-                        method: 'GET',
-                        timestamp: Date.now(),
-                    });
-                }
-
-                if (request.method === 'POST') {
-                    const body = await readJson<{ name?: string }>(request);
-                    return jsonResponse({
-                        message: `Hello, ${body.name || 'World'}!`,
-                        method: 'POST',
-                        timestamp: Date.now(),
-                    });
-                }
-
-                if (request.method === 'DELETE') {
-                    return jsonResponse({
-                        message: 'Resource deleted',
-                        method: 'DELETE',
-                        timestamp: Date.now(),
-                    });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // ============================================================
-            // Audit Logs (Authenticated)
-            // ============================================================
-            if (url.pathname === '/api/audit/logs' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const session = await getSession(request, env as any, getAuthOptions(env));
-                const userId = session?.user?.id;
-                const isDev =
-                    !env.ENVIRONMENT ||
-                    env.ENVIRONMENT === 'development' ||
-                    env.ENVIRONMENT === 'dev' ||
-                    env.ENVIRONMENT === 'test';
-
-                if (!userId && !isDev) {
-                    return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
-                }
-
-                const sessionUser = session?.user as any | undefined;
-                const userOrgId = sessionUser?.organizationId as string | undefined;
-                const roles = (sessionUser?.roles as string[]) || [];
-                const permissions = (sessionUser?.permissions as string[]) || [];
-
-                const isAdmin =
-                    isDev ||
-                    roles.includes('admin') ||
-                    permissions.includes('*:*') ||
-                    permissions.includes('audit:*') ||
-                    permissions.includes('audit:read');
-
-                const { page, perPage } = parsePaginationParams(url.searchParams);
-                const search = (url.searchParams.get('search') || '').trim().toLowerCase();
-                const action = url.searchParams.get('action') || '';
-                const resourceType = url.searchParams.get('entityType') || '';
-                const requestedUserId = url.searchParams.get('userId') || '';
-                const requestedOrgId = url.searchParams.get('organizationId') || '';
-
-                const effectiveUserId = isAdmin ? requestedUserId || null : userId;
-                const effectiveOrgId = isAdmin ? requestedOrgId || null : userOrgId || null;
-
-                const conditions: string[] = [];
-                const values: any[] = [];
-
-                if (effectiveUserId) {
-                    conditions.push('user_id = ?');
-                    values.push(effectiveUserId);
-                }
-
-                if (effectiveOrgId) {
-                    conditions.push('organization_id = ?');
-                    values.push(effectiveOrgId);
-                }
-
-                if (action) {
-                    conditions.push('action = ?');
-                    values.push(action);
-                }
-
-                if (resourceType) {
-                    conditions.push('resource_type = ?');
-                    values.push(resourceType);
-                }
-
-                if (search) {
-                    const like = `%${search}%`;
-                    conditions.push(
-                        `(LOWER(user_email) LIKE ? OR LOWER(resource_type) LIKE ? OR LOWER(resource_id) LIKE ? OR LOWER(action) LIKE ?)`,
-                    );
-                    values.push(like, like, like, like);
-                }
-
-                const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-                const offset = (page - 1) * perPage;
-
-                const countResult = await env.OBCF_D1.prepare(`SELECT count(*) as total FROM audit_logs ${whereClause}`)
-                    .bind(...values)
-                    .first<any>();
-
-                const total = Number(countResult?.total || 0);
-
-                const results = await env.OBCF_D1.prepare(
-                    `SELECT * FROM audit_logs ${whereClause} ORDER BY created_at DESC LIMIT ? OFFSET ?`,
-                )
-                    .bind(...values, perPage, offset)
-                    .all<any>();
-
-                return paginatedJsonResponse({
-                    data: results.results || [],
-                    total,
-                    page,
-                    perPage,
-                    path: '/api/audit/logs',
-                });
-            }
-
-            if (url.pathname === '/api/demo/error') {
-                return errorResponse('Something went wrong', 500, {
-                    code: 'DEMO_ERROR',
-                    hint: 'This is a demo error response with multiple messages',
-                    messages: [
-                        'Primary error: Database connection failed',
-                        'Secondary issue: Authentication token expired',
-                        'Additional context: Rate limit may have been exceeded',
-                    ],
-                });
-            }
-
-            // ============================================================
-            // Cloudflare demos
-            // ============================================================
-
-            // KV: /api/cloudflare/kv
-            if (url.pathname === '/api/cloudflare/kv') {
-                if (!env.OBCF_KV) {
-                    return errorResponse('KV namespace binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const kv = createKVClient({ namespace: env.OBCF_KV as any });
-
-                if (request.method === 'GET') {
-                    const key = url.searchParams.get('key');
-                    if (!key) return errorResponse('Key is required', 400);
-
-                    const result = await kv.getText(key);
-                    if (!result.success) {
-                        return errorResponse('Failed to get value', 500, {
-                            details: result.error.message,
-                        });
-                    }
-
-                    return jsonResponse({ value: result.data });
-                }
-
-                if (request.method === 'POST') {
-                    const body = await readJson<{
-                        key?: string;
-                        value?: string;
-                        ttl?: number | string;
-                    }>(request);
-                    if (!body.key || !body.value) {
-                        return errorResponse('Key and value are required', 400);
-                    }
-
-                    const expirationTtl = body.ttl ? parseInt(String(body.ttl), 10) : undefined;
-                    const result = await kv.put(body.key, body.value, { expirationTtl });
-                    if (!result.success) {
-                        return errorResponse('Failed to set value', 500, {
-                            details: result.error.message,
-                        });
-                    }
-                    return jsonResponse({ success: true });
-                }
-
-                if (request.method === 'DELETE') {
-                    const key = url.searchParams.get('key');
-                    if (!key) return errorResponse('Key is required', 400);
-
-                    const result = await kv.delete(key);
-                    if (!result.success) {
-                        return errorResponse('Failed to delete value', 500, {
-                            details: result.error.message,
-                        });
-                    }
-                    return jsonResponse({ success: true });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // R2: /api/cloudflare/r2
-            if (url.pathname === '/api/cloudflare/r2') {
-                if (!env.OBCF_R2) {
-                    return errorResponse('R2 bucket binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                if (request.method === 'GET') {
-                    if (url.searchParams.get('list') === 'true') {
-                        const listing = await env.OBCF_R2.list({ limit: 100 });
-                        return jsonResponse({ objects: listing.objects });
-                    }
-
-                    const key = url.searchParams.get('key');
-                    if (!key) return errorResponse('key is required', 400);
-
-                    const object = await env.OBCF_R2.get(key);
-                    if (!object) return errorResponse('Object not found', 404);
-
-                    const headers = new Headers();
-                    object.writeHttpMetadata(headers);
-                    headers.set('etag', object.httpEtag);
-                    headers.set('Content-Disposition', `attachment; filename=\"${key}\"`);
-
-                    return new Response(object.body, { headers });
-                }
-
-                if (request.method === 'POST') {
-                    const formData = await request.formData();
-                    const file = formData.get('file');
-                    const key = formData.get('key');
-
-                    if (!key || typeof key !== 'string') {
-                        return errorResponse('key is required', 400);
-                    }
-                    if (!(file instanceof File)) {
-                        return errorResponse('file is required', 400);
-                    }
-
-                    await env.OBCF_R2.put(key, await file.arrayBuffer(), {
-                        httpMetadata: {
-                            contentType: file.type || 'application/octet-stream',
-                        },
-                    });
-
-                    // Construct public URL - assuming domain is same as worker or configured R2 public domain
-                    // For simple R2 buckets without public access, this might just be the key or we might need presigned urls.
-                    // But for this demo, we'll return a URL that points to this worker's GET endpoint
-                    const publicUrl = `/api/cloudflare/r2?key=${encodeURIComponent(key)}`;
-
-                    return jsonResponse({ success: true, data: { url: publicUrl } });
-                }
-
-                if (request.method === 'DELETE') {
-                    const key = url.searchParams.get('key');
-                    if (!key) return errorResponse('key is required', 400);
-                    await env.OBCF_R2.delete(key);
-                    return jsonResponse({ success: true });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // Upload: /api/upload
-            if (url.pathname === '/api/upload') {
-                if (request.method === 'POST') {
-                    try {
-                        const formData = await request.formData();
-                        const file = formData.get('file');
-                        const provider = (formData.get('provider') as string) || 'r2';
-
-                        if (!(file instanceof File)) {
-                            return errorResponse('file is required', 400);
-                        }
-
-                        // Handle different providers
-                        if (provider === 'cloudflare-images') {
-                            // Cloudflare Images provider
-                            const accountId = env.CLOUDFLARE_ACCOUNT_ID as string;
-                            const apiToken = env.CLOUDFLARE_API_TOKEN as string;
-
-                            if (!accountId || !apiToken) {
-                                return errorResponse(
-                                    'Cloudflare Images not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN',
-                                    500,
-                                    { code: 'CONFIG_ERROR' },
-                                );
-                            }
-
-                            const result = await uploadFileToCloudflareImages(
-                                file,
-                                {
-                                    accountId,
-                                    apiToken,
-                                },
-                                {
-                                    maxFileSize: 10 * 1024 * 1024, // 10MB max for images
-                                },
-                            );
-
-                            if (result.success) {
-                                return jsonResponse({
-                                    success: true,
-                                    url: result.url,
-                                    key: result.key,
-                                    provider: 'cloudflare-images',
-                                });
-                            } else {
-                                const errorCode = (result as any).code;
-                                const status = errorCode === 'CONFIG_ERROR' ? 500 : 400;
-                                return errorResponse(
-                                    result.error || 'Upload failed',
-                                    status,
-                                    errorCode ? { code: errorCode } : undefined,
-                                );
-                            }
-                        } else {
-                            // R2 provider (default)
-                            if (!env.OBCF_R2) {
-                                return errorResponse('R2 bucket binding not configured', 500, {
-                                    code: 'CONFIG_ERROR',
-                                });
-                            }
-
-                            // Create R2 client
-                            const r2Client = createR2Client({ bucket: env.OBCF_R2 });
-
-                            // Upload file
-                            const result = await uploadFileToR2(file, r2Client, {
-                                maxFileSize: 50 * 1024 * 1024, // 50MB max
-                            });
-
-                            if (result.success) {
-                                return jsonResponse({
-                                    success: true,
-                                    url: result.url,
-                                    key: result.key,
-                                    provider: 'r2',
-                                });
-                            } else {
-                                return errorResponse(result.error || 'Upload failed', 400);
-                            }
-                        }
-                    } catch (error) {
-                        return errorResponse(error instanceof Error ? error.message : 'Upload failed', 500);
-                    }
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // Upload file download: /api/upload/file/:key
-            if (url.pathname.startsWith('/api/upload/file/')) {
-                if (!env.OBCF_R2) {
-                    return errorResponse('R2 bucket binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const key = url.pathname.replace('/api/upload/file/', '');
-                if (!key) {
-                    return errorResponse('key is required', 400);
-                }
-
-                const object = await env.OBCF_R2.get(key);
-                if (!object) {
-                    return errorResponse('File not found', 404);
-                }
-
-                const headers = new Headers();
-                object.writeHttpMetadata(headers);
-                headers.set('etag', object.httpEtag);
-
-                return new Response(object.body, { headers });
-            }
-
-            // Images: /api/cloudflare/images
-            if (url.pathname === '/api/cloudflare/images') {
-                // @ts-ignore - Env variables might not be typed in CloudflareEnv yet
-                const accountId = env.CF_IMAGES_ACCOUNT_ID;
-                // @ts-ignore
-                const apiToken = env.CF_IMAGES_API_TOKEN;
-
-                if (!accountId || !apiToken) {
-                    return errorResponse('Cloudflare Images credentials not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const imagesClient = createImagesClient({ accountId, apiToken });
-
-                if (request.method === 'POST') {
-                    const formData = await request.formData();
-                    const file = formData.get('file');
-
-                    if (!(file instanceof File)) {
-                        return errorResponse('file is required', 400);
-                    }
-
-                    // Upload to CF Images
-                    const result = await imagesClient.upload(file);
-
-                    if (!result.success) {
-                        return errorResponse(result.error.message, 500);
-                    }
-
-                    // Return the first variant as the URL (public)
-                    const variants = result.data.variants;
-                    const publicUrl = variants && variants.length > 0 ? variants[0] : null;
-
-                    return jsonResponse({
-                        success: true,
-                        data: {
-                            url: publicUrl,
-                            variants: variants,
-                            id: result.data.id,
-                        },
-                    });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // D1 demo (raw SQL): /api/cloudflare/d1/*
-            if (url.pathname === '/api/cloudflare/d1/init' && request.method === 'POST') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured. Check wrangler.jsonc', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                // Ensure the app-specific table exists (matches Todo model schema)
-                // Using .batch() instead of .exec() to avoid Wrangler dev mode duration metadata error
-                await env.OBCF_D1.batch([
-                    env.OBCF_D1.prepare(`
-          CREATE TABLE IF NOT EXISTS todos (
-            id TEXT PRIMARY KEY,
-            title TEXT NOT NULL,
-            completed INTEGER NOT NULL DEFAULT 0,
-            user_id TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL
-          )
-        `),
-                ]);
-
-                // Verify connection using OttaORM
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-                const count = (await Todo.all()).length;
-
-                return jsonResponse({
-                    success: true,
-                    message: 'Database initialized successfully',
-                    info: `Found ${count} existing todos`,
-                });
-            }
-
-            if (url.pathname === '/api/cloudflare/d1/todos') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                if (request.method === 'GET') {
-                    const todos = await Todo.all({
-                        orderBy: 'createdAt',
-                        orderDirection: 'desc',
-                    });
-                    return jsonResponse({ todos: todos.map((t) => t.toJson()) });
-                }
-
-                if (request.method === 'POST') {
-                    const body = await readJson<{ title?: string }>(request);
-                    if (!body.title || typeof body.title !== 'string') {
-                        return errorResponse('Title is required and must be a string', 400);
-                    }
-
-                    const todo = await Todo.create({
-                        id: crypto.randomUUID(),
-                        title: body.title.trim(),
-                        completed: false,
-                        createdAt: new Date(),
-                        updatedAt: new Date(),
-                    });
-
-                    return jsonResponse({
-                        success: true,
-                        message: 'Todo created successfully',
-                        todo: todo.toJson(),
-                    });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            const d1TodoMatch = url.pathname.match(/^\/api\/cloudflare\/d1\/todos\/(.+)$/);
-            if (d1TodoMatch) {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                const id = d1TodoMatch[1];
-                if (!id) return errorResponse('Invalid id', 400);
-
                 if (request.method === 'PATCH') {
-                    const body = await readJson<{ completed?: boolean }>(request);
-                    if (typeof body.completed !== 'boolean') {
-                        return errorResponse('Completed must be a boolean', 400);
-                    }
-
-                    const todo = await Todo.find(id);
-                    if (!todo) return errorResponse('Todo not found', 404);
-
-                    todo.set('completed', body.completed);
-                    await todo.save();
-
-                    return jsonResponse({
-                        success: true,
-                        message: 'Todo updated successfully',
-                        todo: todo.toJson(),
-                    });
+                    return handleShortlinkById({ request, env, url }, id, 'PATCH');
                 }
-
                 if (request.method === 'DELETE') {
-                    const todo = await Todo.find(id);
-                    if (!todo) return errorResponse('Todo not found', 404);
-
-                    // Use static delete method instead of instance destroy
-                    await Todo.delete(id);
-
-                    return jsonResponse({
-                        success: true,
-                        message: 'Todo deleted successfully',
-                    });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // Queues: /api/cloudflare/queues
-            if (url.pathname === '/api/cloudflare/queues') {
-                if (request.method === 'POST') {
-                    if (!env.OBCF_QUEUE) {
-                        return errorResponse('Queue binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-
-                    const body = await readJson<{
-                        type?: string;
-                        payload?: unknown;
-                        message?: { action?: string; userId?: string; data?: unknown };
-                        batch?: Array<{ action?: string; userId?: string; data?: unknown }>;
-                        delay?: number;
-                    }>(request);
-
-                    // New dispatch API: { type, payload, delay? }
-                    if (body.type && body.payload !== undefined) {
-                        const result = await dispatch(
-                            env.OBCF_QUEUE,
-                            body.type,
-                            body.payload,
-                            body.delay ? { delay: body.delay } : undefined,
-                        );
-
-                        if (!result.success) {
-                            return errorResponse('Failed to dispatch job', 500, {
-                                details: result.error.message,
-                            });
-                        }
-
-                        // Store in KV for demo display
-                        if (env.OBCF_KV) {
-                            try {
-                                const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                                const key = `queue:message:${Date.now()}`;
-                                await kv.put(
-                                    key,
-                                    JSON.stringify({
-                                        action: body.type,
-                                        data: body.payload,
-                                        sentAt: new Date().toISOString(),
-                                        type: 'single',
-                                    }),
-                                    { expirationTtl: 3600 },
-                                );
-                            } catch {
-                                // ignore
-                            }
-                        }
-
-                        // Increment dispatch stats
-                        await incrementDispatchStats(env, body.type);
-
-                        return jsonResponse({
-                            success: true,
-                            message: `Job dispatched: ${body.type}`,
-                        });
-                    }
-
-                    // Legacy batch API for demo compatibility
-                    if (Array.isArray(body.batch)) {
-                        const jobs = body.batch.map((msg) => ({
-                            type: msg.action || 'batch-task',
-                            payload: { userId: msg.userId, data: msg.data, ...msg },
-                        }));
-
-                        const result = await dispatchBatch(env.OBCF_QUEUE, jobs);
-                        if (!result.success) {
-                            return errorResponse('Failed to dispatch batch', 500, {
-                                details: result.error.message,
-                            });
-                        }
-
-                        // Store in KV for demo display
-                        if (env.OBCF_KV) {
-                            try {
-                                const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                                const timestamp = Date.now();
-                                for (let i = 0; i < body.batch.length; i++) {
-                                    const key = `queue:message:${timestamp}:${i}`;
-                                    await kv.put(
-                                        key,
-                                        JSON.stringify({
-                                            ...(body.batch[i] as any),
-                                            sentAt: new Date().toISOString(),
-                                            type: 'batch',
-                                        }),
-                                        { expirationTtl: 3600 },
-                                    );
-                                }
-                            } catch {
-                                // ignore demo history errors
-                            }
-                        }
-
-                        // Increment dispatch stats for each job type
-                        const jobTypeCounts = jobs.reduce(
-                            (acc, job) => {
-                                acc[job.type] = (acc[job.type] || 0) + 1;
-                                return acc;
-                            },
-                            {} as Record<string, number>,
-                        );
-                        for (const [jobType, count] of Object.entries(jobTypeCounts)) {
-                            await incrementDispatchStats(env, jobType, count);
-                        }
-
-                        return jsonResponse({
-                            success: true,
-                            message: `Dispatched ${body.batch.length} jobs to queue`,
-                            count: body.batch.length,
-                        });
-                    }
-
-                    // Legacy single message API for demo compatibility
-                    if (body.message) {
-                        const msg = body.message;
-                        const jobType = msg.action || 'batch-task';
-                        const payload = {
-                            userId: msg.userId,
-                            data: msg.data,
-                            action: msg.action,
-                        };
-
-                        const result = await dispatch(env.OBCF_QUEUE, jobType, payload);
-                        if (!result.success) {
-                            return errorResponse('Failed to dispatch job', 500, {
-                                details: result.error.message,
-                            });
-                        }
-
-                        // Store in KV for demo display
-                        if (env.OBCF_KV) {
-                            try {
-                                const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                                const key = `queue:message:${Date.now()}`;
-                                await kv.put(
-                                    key,
-                                    JSON.stringify({
-                                        ...(msg as any),
-                                        sentAt: new Date().toISOString(),
-                                        type: 'single',
-                                    }),
-                                    { expirationTtl: 3600 },
-                                );
-                            } catch {
-                                // ignore
-                            }
-                        }
-
-                        // Increment dispatch stats
-                        await incrementDispatchStats(env, jobType);
-
-                        return jsonResponse({
-                            success: true,
-                            message: 'Job dispatched to queue',
-                        });
-                    }
-
-                    return errorResponse('Either { type, payload } or { message } or { batch } is required', 400);
-                }
-
-                if (request.method === 'GET') {
-                    if (!env.OBCF_KV) {
-                        return errorResponse('KV binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-
-                    const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                    const listResult = await kv.list({ prefix: 'queue:message:' });
-                    if (!listResult.success) {
-                        return errorResponse('Failed to list messages', 500);
-                    }
-
-                    const messages: any[] = [];
-                    for (const key of listResult.data.keys.slice(0, 20)) {
-                        const result = await kv.get(key.name);
-                        if (result.success && result.data) {
-                            try {
-                                const message = JSON.parse(result.data as string);
-                                messages.push({ key: key.name, ...message });
-                            } catch {
-                                // ignore
-                            }
-                        }
-                    }
-
-                    messages.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-
-                    return jsonResponse({ messages });
-                }
-
-                return errorResponse('Method not allowed', 405, {
-                    code: 'METHOD_NOT_ALLOWED',
-                });
-            }
-
-            // Admin Queue Management: /api/admin/queues
-            if (url.pathname === '/api/admin/queues' || url.pathname.startsWith('/api/admin/queues/')) {
-                // Get queue stats and overview
-                if (url.pathname === '/api/admin/queues' && request.method === 'GET') {
-                    const stats = await getQueueStats(env);
-
-                    // Get pending messages count from KV
-                    let pendingCount = 0;
-                    if (env.OBCF_KV) {
-                        const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                        const listResult = await kv.list({ prefix: 'queue:message:' });
-                        if (listResult.success) {
-                            pendingCount = listResult.data.keys.length;
-                        }
-                    }
-
-                    // Registered handlers info
-                    const registeredHandlers = [
-                        { type: 'send-email', description: 'Send email notifications' },
-                        {
-                            type: 'process-order',
-                            description: 'Process order transactions',
-                        },
-                        {
-                            type: 'generate-report',
-                            description: 'Generate reports asynchronously',
-                        },
-                        {
-                            type: 'sync-data',
-                            description: 'Synchronize data between systems',
-                        },
-                        {
-                            type: 'batch-task',
-                            description: 'Generic batch processing task',
-                        },
-                    ];
-
-                    return jsonResponse({
-                        stats,
-                        pendingCount,
-                        registeredHandlers,
-                        queueBinding: env.OBCF_QUEUE ? 'configured' : 'not configured',
-                    });
-                }
-
-                // Get recent processed jobs
-                if (url.pathname === '/api/admin/queues/processed' && request.method === 'GET') {
-                    const limit = parseInt(url.searchParams.get('limit') || '50');
-                    const jobs = await getRecentProcessedJobs(env, Math.min(limit, 100));
-                    return jsonResponse({ jobs });
-                }
-
-                // Get failed jobs
-                if (url.pathname === '/api/admin/queues/failed' && request.method === 'GET') {
-                    const limit = parseInt(url.searchParams.get('limit') || '50');
-                    const jobs = await getFailedJobs(env, Math.min(limit, 100));
-                    return jsonResponse({ jobs });
-                }
-
-                // Get pending (dispatched but not processed) jobs
-                if (url.pathname === '/api/admin/queues/pending' && request.method === 'GET') {
-                    if (!env.OBCF_KV) {
-                        return errorResponse('KV binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-
-                    const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                    const limit = parseInt(url.searchParams.get('limit') || '50');
-                    const listResult = await kv.list({
-                        prefix: 'queue:message:',
-                        limit: Math.min(limit, 100),
-                    });
-
-                    if (!listResult.success) {
-                        return errorResponse('Failed to list pending jobs', 500);
-                    }
-
-                    const jobs: any[] = [];
-                    for (const key of listResult.data.keys) {
-                        const result = await kv.get(key.name);
-                        if (result.success && result.data) {
-                            try {
-                                const message = JSON.parse(result.data as string);
-                                jobs.push({ key: key.name, ...message });
-                            } catch {
-                                // ignore
-                            }
-                        }
-                    }
-
-                    jobs.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
-
-                    return jsonResponse({ jobs });
-                }
-
-                // Reset queue stats (for testing/admin purposes)
-                if (url.pathname === '/api/admin/queues/reset-stats' && request.method === 'POST') {
-                    if (!env.OBCF_KV) {
-                        return errorResponse('KV binding not configured', 500, {
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-
-                    const kv = createKVClient({ namespace: env.OBCF_KV as any });
-                    await kv.put(
-                        'queue:stats',
-                        JSON.stringify({
-                            totalDispatched: 0,
-                            totalProcessed: 0,
-                            totalFailed: 0,
-                            totalDLQ: 0,
-                            byJobType: {},
-                            lastUpdated: new Date().toISOString(),
-                        }),
-                    );
-
-                    return jsonResponse({ success: true, message: 'Stats reset' });
-                }
-
-                // ================================================================
-                // Dead Letter Queue (DLQ) Endpoints
-                // ================================================================
-
-                // List DLQ jobs with pagination
-                if (url.pathname === '/api/admin/queues/dlq' && request.method === 'GET') {
-                    const limit = parseInt(url.searchParams.get('limit') || '50');
-                    const cursor = url.searchParams.get('cursor') || undefined;
-                    const result = await getDLQJobs(env, Math.min(limit, 100), cursor);
-                    return jsonResponse(result);
-                }
-
-                // Retry all DLQ jobs
-                if (url.pathname === '/api/admin/queues/dlq/retry-all' && request.method === 'POST') {
-                    const result = await retryAllDLQJobs(env);
-                    return jsonResponse(result);
-                }
-
-                // Purge all DLQ jobs
-                if (url.pathname === '/api/admin/queues/dlq' && request.method === 'DELETE') {
-                    const deleted = await purgeDLQ(env);
-                    return jsonResponse({ success: true, deleted });
-                }
-
-                // Handle individual DLQ job operations: /api/admin/queues/dlq/:id
-                const dlqJobMatch = url.pathname.match(/^\/api\/admin\/queues\/dlq\/([^/]+)$/);
-                if (dlqJobMatch) {
-                    const jobId = dlqJobMatch[1];
-
-                    // Get single DLQ job
-                    if (request.method === 'GET') {
-                        const job = await getDLQJob(env, jobId);
-                        if (!job) {
-                            return errorResponse('Job not found', 404, { code: 'NOT_FOUND' });
-                        }
-                        return jsonResponse({ job });
-                    }
-
-                    // Delete DLQ job
-                    if (request.method === 'DELETE') {
-                        const deleted = await deleteDLQJob(env, jobId);
-                        if (!deleted) {
-                            return errorResponse('Job not found', 404, { code: 'NOT_FOUND' });
-                        }
-                        return jsonResponse({ success: true });
-                    }
-                }
-
-                // Retry single DLQ job: /api/admin/queues/dlq/:id/retry
-                const dlqRetryMatch = url.pathname.match(/^\/api\/admin\/queues\/dlq\/([^/]+)\/retry$/);
-                if (dlqRetryMatch && request.method === 'POST') {
-                    const jobId = dlqRetryMatch[1];
-                    const result = await retryDLQJob(env, jobId);
-                    if (!result.success) {
-                        return errorResponse(result.error || 'Retry failed', 400, {
-                            code: 'RETRY_FAILED',
-                        });
-                    }
-                    return jsonResponse({ success: true, message: 'Job re-queued' });
-                }
-
-                return errorResponse('Not found', 404, { code: 'NOT_FOUND' });
-            }
-
-            // Rate limiting: /api/cloudflare/rate-limiting
-            if (url.pathname === '/api/cloudflare/rate-limiting' && request.method === 'POST') {
-                const body = await readJson<{ key?: string }>(request);
-                if (!body.key) return errorResponse('Key is required', 400);
-
-                let rateLimitData: {
-                    success: boolean;
-                    limit: number;
-                    remaining: number;
-                    resetAfter: number;
-                } | null = null;
-
-                if (env.OBCF_RATE_LIMITER) {
-                    try {
-                        const limiter = createRateLimitingClient({
-                            rateLimiter: env.OBCF_RATE_LIMITER,
-                        });
-                        const result = await limiter.limit({ key: body.key });
-                        if (result.success) {
-                            const { success, limit, remaining, resetAfter } = result.data;
-                            if (limit !== undefined && remaining !== undefined && resetAfter !== undefined) {
-                                rateLimitData = { success, limit, remaining, resetAfter };
-                            }
-                        }
-                    } catch {
-                        // ignore - will fall back
-                    }
-                }
-
-                if (!rateLimitData) {
-                    rateLimitData = await simulateRateLimit(env, body.key);
-                    if (!rateLimitData) {
-                        return errorResponse('Rate limiter not available', 500, {
-                            hint: 'Enable OBCF_RATE_LIMITER binding or ensure OBCF_KV is configured for local dev simulation',
-                            code: 'CONFIG_ERROR',
-                        });
-                    }
-                }
-
-                const { success, limit, remaining, resetAfter } = rateLimitData;
-
-                const headers = {
-                    'X-RateLimit-Limit': limit.toString(),
-                    'X-RateLimit-Remaining': remaining.toString(),
-                    'X-RateLimit-Reset': resetAfter.toString(),
-                };
-
-                if (!success) {
-                    return errorResponse('Rate limit exceeded', 429, {
-                        code: 'RATE_LIMITED',
-                        details: `Limit: ${limit}, Remaining: ${remaining}, Reset After: ${resetAfter}`,
-                        status: 429,
-                    } as any); // status is handled by errorResponse
-                }
-
-                return jsonResponse(
-                    {
-                        success: true,
-                        message: 'Request allowed',
-                        limit,
-                        remaining,
-                        resetAfter,
-                    },
-                    { headers },
-                );
-            }
-
-            // Realtime: /api/cloudflare/realtime/*
-            if (url.pathname === '/api/cloudflare/realtime/ws') {
-                if (!env.OBCF_REALTIME) {
-                    return errorResponse('Realtime is not available in this environment', 501, {
-                        details: 'The Durable Object binding (OBCF_REALTIME) is not configured.',
-                        hint: 'Deploy with `wrangler deploy` to enable Durable Objects.',
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                if (request.headers.get('Upgrade') !== 'websocket') {
-                    return errorResponse('Expected WebSocket upgrade', 426, {
-                        code: 'UPGRADE_REQUIRED',
-                    });
-                }
-
-                const id = env.OBCF_REALTIME.idFromName('global');
-                const stub = env.OBCF_REALTIME.get(id);
-                return stub.fetch(request as any) as unknown as Response;
-            }
-
-            if (url.pathname === '/api/cloudflare/realtime/broadcast' && request.method === 'POST') {
-                if (!env.OBCF_REALTIME) {
-                    return errorResponse('Realtime is not available in this environment', 501, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const body = await readJson<{
-                    channels?: string[];
-                    event?: string;
-                    data?: unknown;
-                    persistForOffline?: boolean;
-                }>(request);
-
-                if (!body.channels || !Array.isArray(body.channels) || body.channels.length === 0) {
-                    return errorResponse('channels array is required', 400);
-                }
-                if (!body.event) {
-                    return errorResponse('event is required', 400);
-                }
-
-                const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
-                const result = await broadcaster.broadcast({
-                    channels: body.channels,
-                    event: body.event,
-                    data: body.data,
-                    persistForOffline: body.persistForOffline ?? false,
-                    metadata: { sentAt: Date.now(), source: 'api' },
-                });
-
-                if (!result.success) {
-                    return errorResponse('Failed to broadcast message', 500, {
-                        details: result.error,
-                    });
-                }
-
-                return jsonResponse({
-                    success: true,
-                    channelsCount: body.channels.length,
-                });
-            }
-
-            if (url.pathname === '/api/cloudflare/realtime/stats' && request.method === 'GET') {
-                if (!env.OBCF_REALTIME) {
-                    return errorResponse('Realtime is not available in this environment', 501, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const broadcaster = new RealtimeBroadcaster(env.OBCF_REALTIME);
-                const stats = await broadcaster.getStats();
-                return jsonResponse(
-                    stats ?? {
-                        totalConnections: 0,
-                        channels: [],
-                        offlineMessagesQueued: 0,
-                    },
-                );
-            }
-
-            // ============================================================
-            // OttaORM Init
-            // ============================================================
-
-            console.log('[DEBUG] Checking init route:', url.pathname, request.method);
-
-            // GET /api/ottaorm/models-metadata
-            if (url.pathname === '/api/ottaorm/models-metadata' && request.method === 'GET') {
-                const metadataMap = getAllModelsMetadata();
-
-                const models = Array.from(metadataMap.entries()).map(([entityName, entry]) => ({
-                    entityName,
-                    modelName: entry.metadata.modelName,
-                    packageName: entry.metadata.packageName,
-                    packageType: entry.metadata.packageType,
-                    tableName: entry.metadata.tableName,
-                    displayName: entry.model.displayName,
-                    displayNamePlural: entry.model.displayNamePlural,
-                }));
-
-                return jsonResponse({
-                    models,
-                    total: models.length,
-                });
-            }
-
-            if (url.pathname === '/api/ottaorm/init' && (request.method === 'GET' || request.method === 'POST')) {
-                console.log('[DEBUG] Init route matched!');
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const isAuthorized = await checkMigrationAuth(request, env);
-                if (!isAuthorized) {
-                    return errorResponse('Unauthorized - MIGRATION_SECRET required in production', 401, {
-                        code: 'UNAUTHORIZED',
-                    });
-                }
-
-                // ============================================================
-                // AUTOMATED MIGRATIONS
-                // ============================================================
-                // This automatically:
-                // 1. Detects all tables from CORE schemas (@ottabase/ottaorm)
-                // 2. Detects all tables from APP-SPECIFIC schemas (Todo, etc.)
-                // 3. Detects all tables from ENABLED PACKAGES (shortlinks, etc.)
-                // 4. Creates tables that don't exist
-                // 5. Adds new columns to existing tables
-                // 6. Runs custom migrations (core + app + package)
-                //
-                // Just define your Models and call this endpoint!
-                // ============================================================
-                const driver = createD1Driver(env.OBCF_D1);
-
-                // Get ALL schemas: core + app + packages
-                const allSchemas = getAllSchemas();
-
-                const result = await autoInit({
-                    driver,
-                    schema: allSchemas,
-                    customMigrations: appMigrations,
-                    verbose: true,
-                });
-
-                return jsonResponse(result);
-            }
-
-            // ============================================================
-            // Shortlink Explicit Redirect: /shortlinks/go?code=xyz
-            // ============================================================
-            if (url.pathname === '/shortlinks/go') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500, {
-                        code: 'CONFIG_ERROR',
-                    });
-                }
-
-                const code = url.searchParams.get('code') || url.searchParams.get('s') || url.searchParams.get('id');
-
-                if (!code) {
-                    return errorResponse('Missing shortlink code', 400, {
-                        hint: 'Use /shortlinks/go?code=... or ?s=...',
-                    });
-                }
-
-                registerConnection('default', createD1Driver(env.OBCF_D1));
-
-                try {
-                    const shortlink = await Shortlink.findByCode(code);
-
-                    if (!shortlink) {
-                        return errorResponse('Shortlink not found', 404, {
-                            code: 'LINK_NOT_FOUND',
-                        });
-                    }
-
-                    // Track usage
-                    shortlink.trackClick().catch((err) => {
-                        console.error('Failed to track shortlink click:', err);
-                    });
-
-                    return buildRedirectResponse(shortlink);
-                } catch (error) {
-                    console.error('Shortlink explicit redirect error:', error);
-                    return errorResponse('Failed to process shortlink', 500);
+                    return handleShortlinkById({ request, env, url }, id, 'DELETE');
                 }
             }
 
-            // ============================================================
-            // Shortlink Redirect Handler
-            // ============================================================
-            // Handle shortlink redirects (e.g., go.example.com/gh)
-            // Must be checked before static assets to intercept shortcodes
-            if (
-                env.OBCF_D1 &&
-                !url.pathname.startsWith('/api/') &&
-                !url.pathname.startsWith('/@') &&
-                url.pathname !== '/' &&
-                !/\.[a-zA-Z0-9]+$/.test(url.pathname)
-            ) {
-                try {
-                    registerConnection('default', createD1Driver(env.OBCF_D1));
+            if (normalizedPathname === '/api/referrals/track' && request.method === 'POST') {
+                return handleReferralTrack({ request, env, url });
+            }
 
-                    // Extract shortcode from path (remove leading slash)
-                    const shortCode = url.pathname.substring(1);
+            if (normalizedPathname === '/api/referrals/stats' && request.method === 'GET') {
+                return handleReferralStats({ request, env, url });
+            }
 
-                    const shortlink = await Shortlink.findByCode(shortCode);
+            if (normalizedPathname === '/api/referrals/user' && request.method === 'GET') {
+                return handleReferralUser({ request, env, url });
+            }
 
-                    if (shortlink) {
-                        // Track the click asynchronously (don't wait for it), but log failures
-                        shortlink.trackClick().catch((error) => {
-                            console.error('Shortlink click tracking error:', error);
-                        });
+            if (normalizedPathname === '/api/referrals/username' && request.method === 'PUT') {
+                return handleReferralUsernameUpdate({ request, env, url });
+            }
 
-                        return buildRedirectResponse(shortlink);
-                    }
-                } catch (error) {
-                    console.error('Shortlink redirect error:', error);
-                    // Continue to serve assets if shortlink lookup fails
+            if (normalizedPathname === '/api/referrals/tracking' && request.method === 'GET') {
+                return handleReferralTrackingList({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/auth/register' && request.method === 'POST') {
+                return handleAuthRegister({ request, env, url, withAuthCors });
+            }
+
+            if (normalizedPathname.startsWith('/api/auth/')) {
+                return handleAuthJsRequest({ request, env, url, withAuthCors });
+            }
+
+            if (normalizedPathname === '/api/demo') {
+                return handleDemo({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/audit/logs' && request.method === 'GET') {
+                return handleAuditLogs({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/demo/error') {
+                return handleDemoError();
+            }
+
+            if (normalizedPathname === '/api/cloudflare/kv') {
+                return handleCloudflareKV({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/r2') {
+                return handleCloudflareR2({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/upload') {
+                return handleUpload({ request, env, url });
+            }
+
+            if (normalizedPathname.startsWith('/api/upload/file/')) {
+                return handleUploadFile({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/images') {
+                return handleCloudflareImages({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/d1/init' && request.method === 'POST') {
+                return handleD1Init({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/d1/todos') {
+                return handleD1Todos({ request, env, url });
+            }
+
+            const d1TodoMatch = normalizedPathname.match(/^\/api\/cloudflare\/d1\/todos\/(.+)$/);
+            if (d1TodoMatch && d1TodoMatch[1]) {
+                const id = d1TodoMatch[1];
+                if (request.method === 'PATCH' || request.method === 'DELETE') {
+                    return handleD1TodoById({ request, env, url }, id, request.method as 'PATCH' | 'DELETE');
                 }
             }
 
-            // Serve built assets. If the asset isn't found and the client is requesting HTML,
-            // fall back to `index.html` to support client-side routing.
+            if (normalizedPathname === '/api/cloudflare/queues') {
+                return handleCloudflareQueue({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues' && request.method === 'GET') {
+                return handleAdminQueuesOverview({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/processed' && request.method === 'GET') {
+                return handleAdminQueuesProcessed({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/failed' && request.method === 'GET') {
+                return handleAdminQueuesFailed({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/pending' && request.method === 'GET') {
+                return handleAdminQueuesPending({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/reset-stats' && request.method === 'POST') {
+                return handleAdminQueuesResetStats({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/dlq' && request.method === 'GET') {
+                return handleAdminQueuesDLQList({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/dlq/retry-all' && request.method === 'POST') {
+                return handleAdminQueuesDLQRetryAll({ request, env, url });
+            }
+
+            if (normalizedPathname === '/api/admin/queues/dlq' && request.method === 'DELETE') {
+                return handleAdminQueuesDLQPurge({ request, env, url });
+            }
+
+            const dlqJobMatch = url.pathname.match(/^\/api\/admin\/queues\/dlq\/([^/]+)$/);
+            if (dlqJobMatch && dlqJobMatch[1]) {
+                return handleAdminQueuesDLQJob({ request, env, url }, dlqJobMatch[1]);
+            }
+
+            const dlqRetryMatch = url.pathname.match(/^\/api\/admin\/queues\/dlq\/([^/]+)\/retry$/);
+            if (dlqRetryMatch && request.method === 'POST') {
+                return handleAdminQueuesDLQRetryJob({ request, env, url }, dlqRetryMatch[1]);
+            }
+
+            if (normalizedPathname === '/api/cloudflare/rate-limiting' && request.method === 'POST') {
+                return handleRateLimiting({ request, env });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/realtime/ws') {
+                return handleRealtimeWebsocket({ request, env });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/realtime/broadcast' && request.method === 'POST') {
+                return handleRealtimeBroadcast({ request, env });
+            }
+
+            if (normalizedPathname === '/api/cloudflare/realtime/stats' && request.method === 'GET') {
+                return handleRealtimeStats({ request, env });
+            }
+
+            if (normalizedPathname === '/api/ottaorm/models-metadata' && request.method === 'GET') {
+                return handleModelsMetadata();
+            }
+
+            if (normalizedPathname === '/api/ottaorm/init' && (request.method === 'GET' || request.method === 'POST')) {
+                return handleOttaormInit({ request, env });
+            }
+
+            if (normalizedPathname === '/shortlinks/go') {
+                return handleShortlinkExplicitGo({ request, env, url });
+            }
+
+            const shortlinkFallbackResponse = await handleShortlinkFallback({ request, env, url });
+            if (shortlinkFallbackResponse) {
+                return shortlinkFallbackResponse;
+            }
+
             if (!env.OBCF_ASSETS) {
                 return errorResponse('Assets binding not configured', 500, {
                     code: 'CONFIG_ERROR',
@@ -3428,7 +428,6 @@ export default {
 
             const response = await env.OBCF_ASSETS.fetch(request);
 
-            // Handle SPA routes on direct navigation/refresh
             if (isHtmlRequest(request)) {
                 if (response.status === 404 || SPA_REDIRECT_STATUSES.has(response.status)) {
                     const indexUrl = new URL(request.url);
@@ -3437,141 +436,29 @@ export default {
                 }
             }
 
-            // ============================================================
-            // Admin DB Management API
-            // ============================================================
-
-            // List all tables
             if (url.pathname === '/api/admin/db/tables' && request.method === 'GET') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500);
-                }
-
-                try {
-                    const result = await env.OBCF_D1.prepare(
-                        `SELECT name FROM sqlite_schema WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '_cf_%' ORDER BY name`,
-                    ).all();
-
-                    return jsonResponse({
-                        tables: result.results.map((r: any) => r.name),
-                    });
-                } catch (e) {
-                    return errorResponse(e instanceof Error ? e.message : 'Failed to list tables', 500);
-                }
+                return handleAdminDbTables({ request, env, url });
             }
 
-            // Get table data
             const dbTableMatch = url.pathname.match(/^\/api\/admin\/db\/tables\/([a-zA-Z0-9_]+)$/);
             if (dbTableMatch) {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500);
-                }
                 const tableName = dbTableMatch[1];
-
-                // GET: Fetch table data
                 if (request.method === 'GET') {
-                    const { page = 1, perPage = 25 } = parsePaginationParams(url.searchParams);
-                    const offset = (page - 1) * perPage;
-
-                    try {
-                        // Get table info (columns)
-                        const columnsResult = await env.OBCF_D1.prepare(`PRAGMA table_info("${tableName}")`).all();
-                        const columns = columnsResult.results;
-
-                        // Get total count
-                        const countResult = await env.OBCF_D1.prepare(
-                            `SELECT count(*) as total FROM "${tableName}"`,
-                        ).first();
-                        const total = (countResult as any)?.total || 0;
-
-                        // Get rows
-                        // Note: NOT SECURE for public facing apps, but okay for admin internal use if properly protected
-                        // We validate tableName via regex in the route match above
-                        const rowsResult = await env.OBCF_D1.prepare(`SELECT * FROM "${tableName}" LIMIT ? OFFSET ?`)
-                            .bind(perPage, offset)
-                            .all();
-
-                        return jsonResponse({
-                            tableName,
-                            columns,
-                            rows: rowsResult.results,
-                            pagination: {
-                                page,
-                                perPage,
-                                total,
-                                totalPages: Math.ceil(total / perPage),
-                            },
-                        });
-                    } catch (e) {
-                        return errorResponse(e instanceof Error ? e.message : 'Failed to fetch table data', 500);
-                    }
+                    return handleAdminDbTableData({ request, env, url, tableName });
                 }
-
-                // DELETE: Drop table
                 if (request.method === 'DELETE') {
-                    try {
-                        // Verify table exists first
-                        const tableExists = await env.OBCF_D1.prepare(
-                            `SELECT name FROM sqlite_schema WHERE type='table' AND name = ?`,
-                        )
-                            .bind(tableName)
-                            .first();
-
-                        if (!tableExists) {
-                            return errorResponse('Table not found', 404);
-                        }
-
-                        await env.OBCF_D1.prepare(`DROP TABLE "${tableName}"`).run();
-
-                        return jsonResponse({
-                            success: true,
-                            message: `Table ${tableName} dropped successfully`,
-                        });
-                    } catch (e) {
-                        return errorResponse(e instanceof Error ? e.message : 'Failed to drop table', 500);
-                    }
+                    return handleAdminDbTableDelete({ request, env, url, tableName });
                 }
             }
 
-            // Delete row
             const dbRowDeleteMatch = url.pathname.match(/^\/api\/admin\/db\/tables\/([a-zA-Z0-9_]+)\/(.+)$/);
             if (dbRowDeleteMatch && request.method === 'DELETE') {
-                if (!env.OBCF_D1) {
-                    return errorResponse('D1 database binding not configured', 500);
-                }
-
                 const tableName = dbRowDeleteMatch[1];
-                const id = dbRowDeleteMatch[2];
+                const rowId = dbRowDeleteMatch[2];
                 const pkField = url.searchParams.get('pk') || 'id';
-
-                try {
-                    // Verify table exists first to avoid SQL injection on tableName (though regex helps)
-                    // and to ensure we are deleting from a valid table
-                    const tableExists = await env.OBCF_D1.prepare(
-                        `SELECT name FROM sqlite_schema WHERE type='table' AND name = ?`,
-                    )
-                        .bind(tableName)
-                        .first();
-
-                    if (!tableExists) {
-                        return errorResponse('Table not found', 404);
-                    }
-
-                    // Execute delete
-                    // Using strict identifier quoting for table name and PK field
-                    const query = `DELETE FROM "${tableName}" WHERE "${pkField}" = ?`;
-                    await env.OBCF_D1.prepare(query).bind(id).run();
-
-                    return jsonResponse({
-                        success: true,
-                        message: `Deleted row where ${pkField} = ${id}`,
-                    });
-                } catch (e) {
-                    return errorResponse(e instanceof Error ? e.message : 'Failed to delete row', 500);
-                }
+                return handleAdminDbRowDelete({ request, env, url, tableName }, rowId, pkField);
             }
 
-            // Last route specific match - return 404 if nothing else matched
             return errorResponse('Not found', 404);
         } catch (err) {
             console.error('Worker unhandled error:', err);
@@ -3585,8 +472,5 @@ export default {
             });
         }
     },
-
-    // Queue consumer handler
-    // Processes jobs from the Cloudflare Queue using registered handlers
     queue: queueHandler,
 };
