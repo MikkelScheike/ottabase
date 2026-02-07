@@ -5,7 +5,8 @@
  * GitHub-like minimal UI with dark mode support
  */
 
-import { useState } from 'react';
+import { TableSkeleton } from '@/components/LoadingSkeletons';
+import { api } from '@/lib/api';
 import {
     Avatar,
     AvatarFallback,
@@ -25,59 +26,47 @@ import {
     TableHeader,
     TableRow,
 } from '@ottabase/ui-shadcn';
-import { Users, Search, Mail, Calendar, Shield } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { TableSkeleton } from '@/components/LoadingSkeletons';
+import { Calendar, Mail, Search, Shield, Users } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface User {
     id: string;
     name: string | null;
-    email: string;
-    emailVerified: Date | null;
+    email: string | null;
+    emailVerified: string | null;
     image: string | null;
-    createdAt: Date;
-    role: 'admin' | 'user';
+    createdAt: string;
+    role?: 'admin' | 'user';
 }
 
 export function UserManagementPage() {
     const [searchTerm, setSearchTerm] = useState('');
-    const [isLoading] = useState(false);
 
-    // TODO: Replace with actual API call
-    const mockUsers: User[] = [
-        {
-            id: 'user-1',
-            name: 'John Doe',
-            email: 'john@example.com',
-            emailVerified: new Date('2024-01-15'),
-            image: null,
-            createdAt: new Date('2024-01-15'),
-            role: 'admin',
-        },
-        {
-            id: 'user-2',
-            name: 'Jane Smith',
-            email: 'jane@example.com',
-            emailVerified: new Date('2024-02-20'),
-            image: null,
-            createdAt: new Date('2024-02-20'),
-            role: 'user',
-        },
-        {
-            id: 'user-3',
-            name: null,
-            email: 'bob@example.com',
-            emailVerified: null,
-            image: null,
-            createdAt: new Date('2024-03-10'),
-            role: 'user',
-        },
-    ];
+    const { data: allUsers = [], isLoading } = useQuery({
+        queryKey: ['admin', 'users'],
+        queryFn: async () => {
+            const response = await api<{
+                data: Array<User | { entity: string; data: User }>;
+            }>('/api/admin/users');
 
-    const users = mockUsers.filter(
-        (user) =>
-            user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email.toLowerCase().includes(searchTerm.toLowerCase()),
+            // Support both flat and nested payloads while filtering out invalid entries.
+            return response.data
+                .map((item) => ('data' in item ? item.data : item))
+                .filter((user): user is User => !!user && typeof user.id === 'string');
+        },
+        staleTime: 2 * 60 * 1000,
+    });
+
+    const users = useMemo(
+        () =>
+            allUsers.filter(
+                (user) =>
+                    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
+            ),
+        [allUsers, searchTerm],
     );
 
     const getUserInitials = (user: User) => {
@@ -89,7 +78,7 @@ export function UserManagementPage() {
                 .join('')
                 .toUpperCase();
         }
-        return user.email[0].toUpperCase();
+        return user.email?.[0]?.toUpperCase() || '?';
     };
 
     return (
@@ -113,26 +102,26 @@ export function UserManagementPage() {
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Total Users</CardDescription>
-                        <CardTitle className="text-2xl">{mockUsers.length}</CardTitle>
+                        <CardTitle className="text-2xl">{allUsers.length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Admins</CardDescription>
-                        <CardTitle className="text-2xl">{mockUsers.filter((u) => u.role === 'admin').length}</CardTitle>
+                        <CardTitle className="text-2xl">{allUsers.filter((u) => u.role === 'admin').length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Verified</CardDescription>
-                        <CardTitle className="text-2xl">{mockUsers.filter((u) => u.emailVerified).length}</CardTitle>
+                        <CardTitle className="text-2xl">{allUsers.filter((u) => u.emailVerified).length}</CardTitle>
                     </CardHeader>
                 </Card>
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>This Month</CardDescription>
                         <CardTitle className="text-2xl">
-                            {mockUsers.filter((u) => new Date(u.createdAt).getMonth() === new Date().getMonth()).length}
+                            {allUsers.filter((u) => new Date(u.createdAt).getMonth() === new Date().getMonth()).length}
                         </CardTitle>
                     </CardHeader>
                 </Card>
@@ -191,7 +180,7 @@ export function UserManagementPage() {
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Mail className="h-4 w-4 text-muted-foreground" />
-                                                {user.email}
+                                                {user.email || 'No email'}
                                             </div>
                                         </TableCell>
                                         <TableCell>
@@ -221,7 +210,7 @@ export function UserManagementPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="sm" asChild>
-                                                <Link to={`/admin/users/${user.id}`}>View</Link>
+                                                <Link to={`/admin/users/${user.id}/rbac`}>View</Link>
                                             </Button>
                                         </TableCell>
                                     </TableRow>

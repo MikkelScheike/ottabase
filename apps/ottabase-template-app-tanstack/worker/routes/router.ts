@@ -65,6 +65,13 @@ import {
     handleAdminDbTableDelete,
     handleAdminDbTables,
 } from './admin-db';
+import { handleAdminUsers, handleAdminUserById } from './admin-users';
+import {
+    handleAdminRolesList,
+    handleAdminRoleCreate,
+    handleAdminRoleUpdate,
+    handleAdminRoleDelete,
+} from './admin-roles';
 import type { CloudflareEnv } from '../../cloudflare-env';
 import { errorResponse } from '@ottabase/utils/http-errors';
 
@@ -213,6 +220,19 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
         return handleCloudflareR2(context);
     }
 
+    if (route === '/api/admin/users') {
+        return handleAdminUsers(context);
+    }
+
+    const adminUserMatch = route.match(/^\/api\/admin\/users\/([^/]+)$/);
+    if (adminUserMatch) {
+        return handleAdminUserById(context, adminUserMatch[1]);
+    }
+
+    if (route === '/api/admin/roles') {
+        return handleAdminRolesList(context);
+    }
+
     if (route === '/api/admin/db/tables') {
         return handleAdminDbTables(context);
     }
@@ -304,6 +324,10 @@ async function handlePostRoutes(context: ApiRouteContext): Promise<Response | nu
         return handleUpload(context);
     }
 
+    if (route === '/api/admin/roles') {
+        return handleAdminRoleCreate(context);
+    }
+
     if (route === '/api/ottaorm/init') {
         return handleOttaormInit(context);
     }
@@ -331,6 +355,11 @@ async function handlePatchRoutes(context: ApiRouteContext): Promise<Response | n
     const d1TodoMatch = route.match(/^\/api\/cloudflare\/d1\/todos\/(.+)$/);
     if (d1TodoMatch) {
         return handleD1TodoById(context, d1TodoMatch[1], 'PATCH');
+    }
+
+    const adminRolePatchMatch = route.match(/^\/api\/admin\/roles\/([^/]+)$/);
+    if (adminRolePatchMatch) {
+        return handleAdminRoleUpdate(context, adminRolePatchMatch[1]);
     }
 
     return null;
@@ -365,6 +394,11 @@ async function handleDeleteRoutes(context: ApiRouteContext): Promise<Response | 
     const d1TodoMatch = route.match(/^\/api\/cloudflare\/d1\/todos\/(.+)$/);
     if (d1TodoMatch) {
         return handleD1TodoById(context, d1TodoMatch[1], 'DELETE');
+    }
+
+    const adminRoleDeleteMatch = route.match(/^\/api\/admin\/roles\/([^/]+)$/);
+    if (adminRoleDeleteMatch) {
+        return handleAdminRoleDelete(context, adminRoleDeleteMatch[1]);
     }
 
     return null;
