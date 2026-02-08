@@ -716,6 +716,16 @@ const adminSecurityRLSRoute = new Route({
     ),
 });
 
+const adminKillSwitchesRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/security/kill-switches',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/security/KillSwitchesPage').then((m) => ({
+            default: m.default,
+        })),
+    ),
+});
+
 demoLayoutRoute.addChildren([
     demoIndexRoute,
     demoMantineRoute,
@@ -771,6 +781,7 @@ const routeTree = rootRoute.addChildren([
     adminRBACPermissionsRoute,
     adminAuditRoute,
     adminSecurityRLSRoute,
+    adminKillSwitchesRoute,
     adminUsersRoute,
     adminUserRBACRoute,
     blogListRoute,

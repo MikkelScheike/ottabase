@@ -62,6 +62,7 @@ import { handleAuditLogs, handleDemo, handleDemoError } from './demo';
 import { handleEmailProviders, handleEmailTest } from './email';
 import { handleOttaormCrud } from './ottaorm-crud';
 import { handleModelsMetadata, handleOttaormInit } from './ottaorm-init';
+import { checkKillSwitches, getKillSwitchStatus } from '../lib/killswitch';
 import {
     handleReferralStats,
     handleReferralTrack,
@@ -120,6 +121,12 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
             ok: true,
             name: 'ottabase-template-app-tanstack',
             timestamp: Date.now(),
+        });
+    }
+
+    if (route === '/api/system/kill-switches') {
+        return jsonResponse({
+            ...getKillSwitchStatus(context.env),
         });
     }
 

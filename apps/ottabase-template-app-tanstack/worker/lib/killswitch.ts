@@ -3,13 +3,20 @@ import { errorResponse } from '@ottabase/utils/http-errors';
 const LOCKDOWN_HTML =
     '<!doctype html><html><head><meta charset="utf-8"><title>LOCKDOWN</title></head><body style="font-family:system-ui;padding:2rem;text-align:center;">LOCKDOWN ENFORCED</body></html>';
 
-function isTrue(value: any): boolean {
+export function isTrue(value: any): boolean {
     const v = String(value ?? '').toLowerCase();
     return v === 'true' || v === '1' || v === 'yes';
 }
 
+export function getKillSwitchStatus(env: Record<string, any>) {
+    return {
+        readonly: isTrue(env.KILLSWITCH_READONLY_MODE),
+        lockdown: isTrue(env.KILLSWITCH_LOCKDOWN),
+    };
+}
+
 export function checkKillSwitches(request: Request, env: Record<string, any>): Response | null {
-    const lockdown = isTrue(env.KILLSWITCH_LOCKDOWN);
+    const { readonly, lockdown } = getKillSwitchStatus(env);
     if (lockdown) {
         return new Response(LOCKDOWN_HTML, {
             status: 503,
@@ -20,7 +27,6 @@ export function checkKillSwitches(request: Request, env: Record<string, any>): R
         });
     }
 
-    const readonly = isTrue(env.KILLSWITCH_READONLY_MODE);
     if (readonly) {
         const method = request.method.toUpperCase();
         if (method === 'POST' || method === 'PUT' || method === 'PATCH' || method === 'DELETE') {

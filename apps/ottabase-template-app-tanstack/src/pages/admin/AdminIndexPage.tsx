@@ -13,6 +13,7 @@ import {
     ShieldCheck,
     UserPlus,
     Users,
+    Power,
 } from 'lucide-react';
 
 export function AdminIndexPage() {
@@ -113,6 +114,14 @@ export function AdminIndexPage() {
             description: 'Manage DB-driven cron jobs, view run history, and schedule new tasks.',
             href: '/admin/cron',
             icon: Clock,
+            disabled: false,
+        },
+        {
+            title: 'Platform Kill Switches',
+            description:
+                'Configure global read-only mode or full lockdown (KILLSWITCH_READONLY_MODE / KILLSWITCH_LOCKDOWN).',
+            href: '/admin/security/kill-switches',
+            icon: Power,
             disabled: false,
         },
         {
