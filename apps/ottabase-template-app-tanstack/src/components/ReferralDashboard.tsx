@@ -94,19 +94,17 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
     const loadData = async () => {
         try {
             setLoading(true);
-            const response = await api('/api/referrals/user');
-
-            if (!response.ok) {
-                throw new Error('Failed to load referral data');
-            }
-
-            const data = await response.json();
-            setData(data);
-            setNewUsername(data.user.referralUsername || '');
+            const result = await api<ReferralData>('/api/referrals/user');
+            setData(result);
+            setNewUsername(result.user.referralUsername || '');
+            setError(null);
         } catch (err) {
             const errorMsg = err instanceof Error ? err.message : 'Failed to load data';
             setError(errorMsg);
-            toast.error(errorMsg);
+            // If API returns 404/empty, don't spam toast for normal empty state
+            if (!/not found/i.test(errorMsg)) {
+                toast.error(errorMsg);
+            }
         } finally {
             setLoading(false);
         }
@@ -115,25 +113,26 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
     const loadTrackingData = async () => {
         try {
             setTrackingLoading(true);
-            const response = await api(`/api/referrals/tracking?page=${trackingPage}&perPage=${trackingPerPage}`);
-
-            if (!response.ok) {
-                throw new Error('Failed to load activity data');
-            }
-
-            const data = await response.json();
-            setTrackingData(data);
+            const result = await api<TrackingData>(
+                `/api/referrals/tracking?page=${trackingPage}&perPage=${trackingPerPage}`,
+            );
+            setTrackingData(result);
         } catch (err) {
             toast.error('Failed to load activity data');
             console.error(err);
+            setTrackingData({
+                data: [],
+                pagination: { page: trackingPage, perPage: trackingPerPage, total: 0, totalPages: 1 },
+            });
         } finally {
             setTrackingLoading(false);
         }
     };
 
     const handleUpdateUsername = async () => {
+        const trimmed = newUsername.trim();
         // Validate
-        const validation = validateReferralUsername(newUsername);
+        const validation = validateReferralUsername(trimmed);
         if (!validation.valid) {
             setUsernameError(validation.error || 'Invalid username');
             return;
@@ -143,26 +142,16 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
         setUpdating(true);
 
         try {
-            const response = await api('/api/referrals/username', {
+            await api('/api/referrals/username', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    referralUsername: newUsername,
-                }),
+                body: { referralUsername: trimmed },
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Failed to update username');
-            }
-
-            // Reload data
             await loadData();
             toast.success('Username updated successfully!');
-        } catch (err) {
-            const errorMsg = err instanceof Error ? err.message : 'Failed to update username';
+        } catch (err: any) {
+            const errorMsg =
+                err?.message || err?.error || (err?.response?.error as string) || 'Failed to update username';
             setUsernameError(errorMsg);
             toast.error(errorMsg);
         } finally {
