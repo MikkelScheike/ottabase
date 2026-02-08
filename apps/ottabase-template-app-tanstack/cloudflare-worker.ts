@@ -5,6 +5,7 @@ import { initDbConnection } from './worker/lib/db-utils';
 import { handleShortlinkFallback } from './worker/routes/shortlinks';
 import { resolveApiRoute } from './worker/routes/router';
 import { resolvePlatformState, handleBootstrapRoute, interceptIfNotReady } from './worker/bootstrap';
+import { checkKillSwitches } from './worker/lib/killswitch';
 import type { CloudflareEnv } from './cloudflare-env';
 
 export { RealtimeActor };
@@ -37,7 +38,13 @@ export default {
             const normalizedPathname = normalizePath(url.pathname);
 
             // -------------------------------------------------------
-            // Bootstrap gate — resolve platform state before anything
+            // Global kill switches
+            // -------------------------------------------------------
+            const killed = checkKillSwitches(request, env);
+            if (killed) return killed;
+
+            // -------------------------------------------------------
+            // Bootstrap gate – resolve platform state before anything
             // -------------------------------------------------------
             const platformState = await resolvePlatformState(env);
 
