@@ -45,6 +45,20 @@ function handleApiError(error: ApiError): void {
         return;
     }
 
+    if (error.status === 503) {
+        const code = (error.code || '').toUpperCase();
+        const message =
+            code === 'READONLY_MODE'
+                ? 'The platform is in read-only mode'
+                : error.message?.toLowerCase().includes('lockdown')
+                  ? 'Lockdown enforced'
+                  : 'Service temporarily unavailable';
+        toast.error(message, {
+            description: error.hint || 'Please try again shortly.',
+        });
+        return;
+    }
+
     // Show different toast styles based on error type
     if (error.isUnauthorized()) {
         toast.error('Session expired', {
