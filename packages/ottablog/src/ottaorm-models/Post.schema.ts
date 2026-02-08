@@ -97,6 +97,10 @@ export const postsTable = sqliteTable(
         authorEmail: text('author_email'),
         authorAvatar: text('author_avatar'),
 
+        // Tenancy / ownership
+        organizationId: text('organization_id'),
+        userId: text('user_id'),
+
         // Reading time estimate (stored for performance)
         readingTimeMinutes: integer('reading_time_minutes'),
         wordCount: integer('word_count'),
@@ -143,12 +147,16 @@ export const postsTable = sqliteTable(
     (table) => [
         // Unique slug per appId
         uniqueIndex('posts_app_id_slug_unique_idx').on(table.appId, table.slug),
+        // Unique slug per organization + app (multi-tenant)
+        uniqueIndex('posts_org_app_slug_unique_idx').on(table.organizationId, table.appId, table.slug),
 
         // Published posts query: status + publishedAt (DESC) for sorting
         index('posts_status_published_at_idx').on(table.status, table.publishedAt),
 
         // Multi-tenant filtering: appId + status + publishedAt for common queries
         index('posts_app_id_status_published_at_idx').on(table.appId, table.status, table.publishedAt),
+        // Organization filtering: organizationId + status + publishedAt
+        index('posts_org_id_status_published_at_idx').on(table.organizationId, table.status, table.publishedAt),
 
         // Content type filtering: appId + contentType + status
         index('posts_app_id_content_type_status_idx').on(table.appId, table.contentType, table.status),
@@ -168,8 +176,13 @@ export const postsTable = sqliteTable(
         // Scheduled posts: publishAt for auto-publish scheduling
         index('posts_publish_at_idx').on(table.publishAt),
 
+        // Multi-tenant sorting by publish date
+        index('posts_org_app_published_at_idx').on(table.organizationId, table.appId, table.publishedAt),
+
         // App ID single index for other multi-tenant filtering
         index('posts_app_id_idx').on(table.appId),
+        // Org ID single index
+        index('posts_org_id_idx').on(table.organizationId),
     ],
 );
 

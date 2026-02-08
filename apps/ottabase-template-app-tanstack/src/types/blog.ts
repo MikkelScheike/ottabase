@@ -58,6 +58,8 @@ export interface BlogPost {
     updatedAt: string;
     maxVersionsToKeep: number | null;
     appId: string | null;
+    organizationId: string | null;
+    userId: string | null;
 }
 
 /**
@@ -115,6 +117,8 @@ export interface BlogPostVersion {
     changeNote?: string | null;
     createdAt: string;
     wordCount: number | null;
+    organizationId: string | null;
+    appId: string | null;
 }
 
 /**

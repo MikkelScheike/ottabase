@@ -70,6 +70,12 @@ export interface ModelRLSConfig {
     policy: RLSPolicy;
 
     /**
+     * Context fields that must be injected/validated on write operations.
+     * Common examples: organizationId (tenant), appId (app scoping), userId (ownership).
+     */
+    contextFields?: Array<'organizationId' | 'appId' | 'userId'>;
+
+    /**
      * Soft delete field (if any)
      */
     softDeleteField?: string;
@@ -160,6 +166,7 @@ export const RLSPolicies = {
         filter: (context) => ({
             organizationId: context.organizationId,
             userId: context.userId,
+            ...(context.appId ? { appId: context.appId } : {}),
         }),
     }),
 };

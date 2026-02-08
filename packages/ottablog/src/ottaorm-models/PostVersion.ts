@@ -35,6 +35,36 @@ export class PostVersion extends BaseModel {
         createdAt: 'date' as const,
     };
 
+    static writable = {
+        create: [
+            'postId',
+            'versionNumber',
+            'title',
+            'content',
+            'excerpt',
+            'privateNotes',
+            'footnotes',
+            'wordCount',
+            'changedBy',
+            'changeNote',
+            'organizationId',
+            'appId',
+            'createdAt',
+        ],
+        update: [
+            'title',
+            'content',
+            'excerpt',
+            'privateNotes',
+            'footnotes',
+            'wordCount',
+            'changedBy',
+            'changeNote',
+            'organizationId',
+            'appId',
+        ],
+    };
+
     protected static fields: ModelFields = {
         id: {
             type: 'id',
@@ -54,6 +84,20 @@ export class PostVersion extends BaseModel {
             tableConfig: {
                 visible: false,
             },
+        },
+        organizationId: {
+            type: 'string',
+            editable: false,
+            filterable: true,
+            uiConfig: { label: 'Organization ID' },
+            tableConfig: { visible: false },
+        },
+        appId: {
+            type: 'string',
+            editable: false,
+            filterable: true,
+            uiConfig: { label: 'App ID' },
+            tableConfig: { visible: false },
         },
         versionNumber: {
             type: 'number',
@@ -232,6 +276,8 @@ export class PostVersion extends BaseModel {
             wordCount?: number | null;
             changedBy?: string | null;
             changeNote?: string | null;
+            organizationId?: string | null;
+            appId?: string | null;
         },
     ) {
         const versionNumber = await this.getNextVersionNumber(postId);
@@ -246,6 +292,8 @@ export class PostVersion extends BaseModel {
             wordCount: postData.wordCount,
             changedBy: postData.changedBy,
             changeNote: postData.changeNote,
+            organizationId: postData.organizationId ?? undefined,
+            appId: postData.appId ?? undefined,
         });
     }
 }

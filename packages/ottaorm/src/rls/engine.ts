@@ -90,7 +90,7 @@ export class RLSEngine {
         this.checkAccess(model, context, policy);
 
         // Validate data matches security context
-        this.validateDataIntegrity(model, policy, context, data, operation);
+        this.validateDataIntegrity(model, policy, context, data, operation, config);
     }
 
     /**
@@ -203,6 +203,7 @@ export class RLSEngine {
         context: SecurityContext,
         data: Record<string, any>,
         operation: 'create' | 'update' | 'delete',
+        config: ModelRLSConfig,
     ): void {
         // For tenant-scoped models, ensure organizationId matches
         if (policy.level === 'tenant' && policy.field) {
@@ -240,6 +241,35 @@ export class RLSEngine {
                     `User write attempt blocked: data.${policy.field}=${dataUserId} != context.userId=${context.userId}`,
                     {
                         type: 'unauthorized_access',
+                        model,
+                        context,
+                        attemptedAccess: { operation, data },
+                    },
+                );
+            }
+        }
+
+        // Optional: enforce specific context fields even for custom policies
+        const fieldsToEnforce = config.contextFields ?? [];
+        for (const field of fieldsToEnforce) {
+            const contextValue =
+                field === 'organizationId'
+                    ? context.organizationId
+                    : field === 'appId'
+                      ? context.appId
+                      : context.userId;
+
+            // Inject on create if missing
+            if (operation === 'create' && data[field] === undefined && contextValue !== undefined) {
+                data[field] = contextValue;
+            }
+
+            // Validate if provided
+            if (data[field] !== undefined && data[field] !== contextValue) {
+                throw new RLSError(
+                    `Context enforcement failed: data.${field}=${data[field]} != context.${field}=${contextValue}`,
+                    {
+                        type: field === 'organizationId' ? 'cross_tenant_write' : 'unauthorized_access',
                         model,
                         context,
                         attemptedAccess: { operation, data },

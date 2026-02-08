@@ -74,6 +74,7 @@ import {
     X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSession } from '@/lib/auth';
 
 interface BlogPost {
     id: string;
@@ -101,6 +102,8 @@ interface BlogPost {
     maxVersionsToKeep: number | null;
     wordCount: number | null;
     appId: string | null;
+    organizationId: string | null;
+    userId: string | null;
 }
 
 interface BlogSeries {
@@ -124,6 +127,8 @@ interface BlogPostVersion {
     changeNote?: string | null;
     createdAt: string;
     wordCount: number | null;
+    organizationId: string | null;
+    appId: string | null;
 }
 
 const blogPostHooks = createModelHooks<BlogPost>({ entityName: 'posts' });
@@ -178,6 +183,7 @@ interface BlogEditorFormProps {
 
 function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps) {
     const navigate = useNavigate();
+    const { user } = useSession({ skipAutoSync: true });
 
     // Form state - initialized from props
     const [title, setTitle] = useState(initialData?.title || '');
@@ -185,7 +191,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const [excerpt, setExcerpt] = useState(initialData?.excerpt || '');
     const [contentType, setContentType] = useState<ContentType>(initialData?.contentType || 'blog');
     const [status, setStatus] = useState<PostStatus>(initialData?.status || 'draft');
-    const [authorName, setAuthorName] = useState(initialData?.authorName || '');
+    const [authorName, setAuthorName] = useState(initialData?.authorName || user?.name || '');
     const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured || false);
     const [allowComments, setAllowComments] = useState(initialData?.allowComments ?? true);
     const [isProtected, setIsProtected] = useState(initialData?.isProtected ?? false);
@@ -277,7 +283,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         setExcerpt(initialData.excerpt ?? '');
         setContentType(initialData.contentType ?? 'blog');
         setStatus(initialData.status ?? 'draft');
-        setAuthorName(initialData.authorName ?? '');
+        setAuthorName(initialData.authorName ?? user?.name ?? '');
         setIsFeatured(initialData.isFeatured ?? false);
         setAllowComments(initialData.allowComments ?? true);
         setIsProtected(initialData.isProtected ?? false);
@@ -291,7 +297,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         setSeriesId(initialData.seriesId ?? null);
         setSeriesOrder(initialData.seriesOrder ?? null);
         setMaxVersionsToKeep(initialData.maxVersionsToKeep ?? null);
-    }, [initialData]);
+    }, [initialData, user]);
 
     // Content editors - initialData is guaranteed to be available in edit mode
     const mainEditor = useOttaEditor({
@@ -657,6 +663,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                         privateNotes: initialData.privateNotes,
                         footnotes: initialData.footnotes,
                         wordCount: initialData.wordCount,
+                        changedBy: user?.id ?? undefined,
                     });
                 } catch (error) {
                     console.error('Failed to create version:', error);

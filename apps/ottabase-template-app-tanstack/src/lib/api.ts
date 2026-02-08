@@ -7,6 +7,7 @@
 
 import { createApiClient, type ApiError } from '@ottabase/api';
 import { toast } from 'sonner';
+import { APP_ID } from '@/ottabase/config/app.config';
 
 /**
  * Get auth token from storage/context.
@@ -126,6 +127,7 @@ export const api = createApiClient({
     defaultHeaders: () => {
         const headers: Record<string, string> = {
             Accept: 'application/json',
+            'X-App-Id': APP_ID,
         };
         const organizationId = getOrganizationId();
         if (organizationId) {

@@ -42,7 +42,7 @@ export const appConfig = createAppConfig({
             referrals: {
                 enabled: true,
                 trackClicks: true, // Set to false to disable click tracking (only track conversions)
-                expiryDays: 90, // How long stored referral codes are valid
+                expiryDays: 90, // How long stored referral codes are valid by default
             },
             crudHub: {
                 apiBaseUrl: '/api/crudhub',
@@ -61,14 +61,32 @@ export const appConfig = createAppConfig({
     },
 });
 
-// Export specific config parts for convenience (matching main template app structure)
+// Freeze the config to prevent runtime mutations
+Object.freeze(appConfig);
+
+// Meta
 export const APP_META = appConfig.meta;
 export const UI_FRAMEWORK_DEFAULT = appConfig.uiFramework;
+
+// App Info
+export const APP_ID = appConfig.appId;
+export const APP_NAME = APP_META.appName;
+export const APP_TITLE = APP_META.title;
+export const APP_DESCRIPTION = APP_META.description;
+
+// UI
 export const PREVENT_FOUC = appConfig.ui.preventFOUC;
 export const PREVENT_FOUC_INSIDE_IFRAME = appConfig.ui.preventFOUCInsideIframe;
-export const PREFIX_STORAGE_APP = `${appConfig.storage.prefix}.`;
-export const SERVER_ERROR_HTTP_CODE = appConfig.api.serverErrorHttpCode;
 export const UI_DEBOUNCE_MS = appConfig.ui.debounceMs;
+export const UI_LAYOUT = appConfig.ui.layout;
+export const ENFORCE_GOOGLE_FONTS = appConfig.ui.enforceGoogleFonts;
+
+// Storage
+export const PREFIX_STORAGE_APP = `${appConfig.storage.prefix}.`;
+export const STORAGE_PREFIX = appConfig.storage.prefix;
+
+// API
+export const SERVER_ERROR_HTTP_CODE = appConfig.api.serverErrorHttpCode;
 
 // CrudHub
 export const CRUDHUB_API_BASE_URL = appConfig.features.crudHub.apiBaseUrl;
@@ -89,22 +107,6 @@ export const SPOTLIGHT_CONFIG = appConfig.features.spotlight;
 // Referrals
 export const REFERRALS_CONFIG = appConfig.features.referrals;
 
-// Layout
-export const UI_LAYOUT = appConfig.ui.layout;
-
-// Google Fonts
-export const ENFORCE_GOOGLE_FONTS = appConfig.ui.enforceGoogleFonts;
-
 // Theme / Colors
 export const THEME_COLOR_DEFAULT = appConfig.theme.colorDefault;
 export const THEME_COLORS = appConfig.theme.colors;
-
-// Export the full config for modern usage
-export default appConfig;
-
-// Export commonly used values
-export const APP_ID = appConfig.appId;
-export const APP_NAME = APP_META.appName;
-export const APP_TITLE = APP_META.title;
-export const APP_DESCRIPTION = APP_META.description;
-export const STORAGE_PREFIX = appConfig.storage.prefix;

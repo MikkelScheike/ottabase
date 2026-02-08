@@ -53,6 +53,10 @@ export const postVersionsTable = sqliteTable(
         // Word count at this version
         wordCount: integer('word_count'),
 
+        // Tenancy / app context
+        organizationId: text('organization_id'),
+        appId: text('app_id'),
+
         // Who made this change (optional)
         changedBy: text('changed_by'),
 
@@ -73,6 +77,10 @@ export const postVersionsTable = sqliteTable(
 
         // Find versions by creation date for cleanup/archival
         index('post_versions_created_at_idx').on(table.createdAt),
+
+        // App/Org scoping
+        index('post_versions_app_id_idx').on(table.appId),
+        index('post_versions_org_id_idx').on(table.organizationId),
     ],
 );
 

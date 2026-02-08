@@ -499,7 +499,11 @@ const adminBlogRoute = new Route({
     path: '/admin/blog',
     component: lazyRouteComponent(() =>
         import('@/pages/admin/blog/AdminBlogListPage').then((m) => ({
-            default: m.AdminBlogListPage,
+            default: () => (
+                <ProtectedRoute requiredPermissions={['posts:*']}>
+                    <m.AdminBlogListPage />
+                </ProtectedRoute>
+            ),
         })),
     ),
 });
@@ -509,7 +513,11 @@ const adminBlogNewRoute = new Route({
     path: '/admin/blog/new',
     component: lazyRouteComponent(() =>
         import('@/pages/admin/blog/AdminBlogEditorPage').then((m) => ({
-            default: m.AdminBlogEditorPage,
+            default: () => (
+                <ProtectedRoute requiredPermissions={['posts:*']}>
+                    <m.AdminBlogEditorPage />
+                </ProtectedRoute>
+            ),
         })),
     ),
 });
@@ -519,7 +527,11 @@ const adminBlogEditRoute = new Route({
     path: '/admin/blog/$postId/edit',
     component: lazyRouteComponent(() =>
         import('@/pages/admin/blog/AdminBlogEditorPage').then((m) => ({
-            default: m.AdminBlogEditorPage,
+            default: () => (
+                <ProtectedRoute requiredPermissions={['posts:*']}>
+                    <m.AdminBlogEditorPage />
+                </ProtectedRoute>
+            ),
         })),
     ),
 });
@@ -529,7 +541,11 @@ const adminBlogStudioRoute = new Route({
     path: '/admin/blog/studio',
     component: lazyRouteComponent(() =>
         import('@/pages/admin/blog/AdminBlogStudioPage').then((m) => ({
-            default: m.AdminBlogStudioPage,
+            default: () => (
+                <ProtectedRoute requiredPermissions={['posts:*']}>
+                    <m.AdminBlogStudioPage />
+                </ProtectedRoute>
+            ),
         })),
     ),
 });

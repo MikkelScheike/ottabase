@@ -51,6 +51,12 @@ export interface AppState<TUser extends BaseUser = BaseUser> {
     /** The name of the app */
     appName: string;
 
+    /** Current application identifier (for multi-app setups) */
+    appId?: string;
+
+    /** Current organization/tenant identifier */
+    organizationId?: string | null;
+
     /** Current theme mode ('light' or 'dark') */
     theme: Theme;
 

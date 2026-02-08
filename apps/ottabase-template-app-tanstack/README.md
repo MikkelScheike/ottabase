@@ -45,6 +45,8 @@ This template ships with Auth.js + D1 integration and tighter session handling:
 - **Credentials storage**: PBKDF2 hashes in `users.password_hash`, email verification/roles stored alongside.
 - **Session sync tip**: If you mutate `/api/users/me`, call `refreshSession()` (or `updateUser()`) so the cached local
   session picks up the KV-triggered profile version bump immediately.
+- **Tenant/app headers**: The client now sets `X-App-Id: ottabase-template-app` and, when available, `X-Organization-Id`
+  from the current session into all API calls; these values are also mirrored in global state atoms for UI needs.
 
 ### Auth API Endpoints
 

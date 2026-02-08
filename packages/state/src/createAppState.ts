@@ -5,6 +5,8 @@ import type { AppState, AppStateConfig, BaseUser } from './types';
  * Default state values
  */
 const DEFAULT_STATE: Omit<AppState, 'appName'> = {
+    appId: undefined,
+    organizationId: null,
     theme: 'light',
     themeInfo: {
         name: 'default',
@@ -68,6 +70,8 @@ export function createAppState<TUser extends BaseUser = BaseUser>(config: AppSta
     const zoomAtom = createAtom('zoom');
     const isLoadingAtom = createAtom('isLoading');
     const languageAtom = createAtom('language');
+    const appIdAtom = createAtom('appId');
+    const organizationIdAtom = createAtom('organizationId');
 
     return {
         /** The main atom containing entire global state */
@@ -87,6 +91,8 @@ export function createAppState<TUser extends BaseUser = BaseUser>(config: AppSta
             zoomAtom,
             isLoadingAtom,
             languageAtom,
+            appIdAtom,
+            organizationIdAtom,
         },
     };
 }

@@ -120,6 +120,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'posts',
         policy: RLSPolicies.Hierarchical(false), // Tenant + User scoped
+        contextFields: ['organizationId', 'appId', 'userId'],
         auditEnabled: true,
     },
 
@@ -127,6 +128,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'series',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 
@@ -134,6 +136,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'categories',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 
@@ -141,6 +144,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'post_tags',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 
@@ -148,6 +152,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'post_tag_links',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 
@@ -155,6 +160,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'post_versions',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['organizationId', 'appId'],
         auditEnabled: true,
     },
 
@@ -162,6 +168,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'ottablog_themes',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 
@@ -169,6 +176,7 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'ottablog_plugins',
         policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 

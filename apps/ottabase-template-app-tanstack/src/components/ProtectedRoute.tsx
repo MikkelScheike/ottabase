@@ -6,11 +6,20 @@ import { Spinner } from '@ottabase/ui-shadcn';
 interface ProtectedRouteProps {
     children: ReactNode;
     redirectTo?: string;
+    requiredPermissions?: string[];
+    requiredRoles?: string[];
+    fallback?: ReactNode;
 }
 
-export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRouteProps) {
+export function ProtectedRoute({
+    children,
+    redirectTo = '/login',
+    requiredPermissions,
+    requiredRoles,
+    fallback,
+}: ProtectedRouteProps) {
     const navigate = useNavigate();
-    const { isAuthenticated, isLoading } = useSession({ skipAutoSync: true });
+    const { isAuthenticated, isLoading, user } = useSession({ skipAutoSync: true });
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -31,6 +40,23 @@ export function ProtectedRoute({ children, redirectTo = '/login' }: ProtectedRou
 
     if (!isAuthenticated) {
         return null; // Will redirect via useEffect
+    }
+
+    const hasRequiredRoles =
+        !requiredRoles || requiredRoles.length === 0 || requiredRoles.some((role) => user?.roles?.includes(role));
+
+    const hasRequiredPermissions =
+        !requiredPermissions ||
+        requiredPermissions.length === 0 ||
+        requiredPermissions.every((perm) => user?.permissions?.includes('*:*') || user?.permissions?.includes(perm));
+
+    if (!hasRequiredRoles || !hasRequiredPermissions) {
+        if (fallback) return <>{fallback}</>;
+        return (
+            <div className="flex min-h-[50vh] items-center justify-center text-sm text-muted-foreground">
+                Access denied
+            </div>
+        );
     }
 
     return <>{children}</>;
