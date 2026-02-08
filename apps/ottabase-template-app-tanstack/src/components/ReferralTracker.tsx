@@ -40,16 +40,7 @@ export function ReferralTracker() {
         const existingCode = getStoredReferralCode();
 
         if (existingCode) {
-            console.log('Already have a stored referral code (first-touch wins):', existingCode);
-
-            // Optionally track the click (even though code won't be stored)
-            if (REFERRALS_CONFIG?.trackClicks) {
-                trackReferralClick(referralCode).catch((error) => {
-                    console.error('Failed to track referral click:', error);
-                });
-            }
-
-            // Clean URL
+            // First-touch wins: do not re-track or overwrite local storage
             cleanReferralFromUrl();
             return;
         }

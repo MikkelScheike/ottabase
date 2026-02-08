@@ -50,7 +50,7 @@ export function isValidIpAddress(rawValue: string | null): string {
 }
 
 export function getClientIpAddress(request: Request): string {
-    const headerCandidates = ['CF-Connecting-IP', 'X-Forwarded-For', 'X-Real-IP'];
+    const headerCandidates = ['CF-Connecting-IP', 'X-Forwarded-For', 'X-Real-IP', 'True-Client-IP', 'Fastly-Client-IP'];
 
     for (const header of headerCandidates) {
         const headerValue = request.headers.get(header);
@@ -60,7 +60,16 @@ export function getClientIpAddress(request: Request): string {
         }
     }
 
-    return 'unknown';
+    // Fallback to host (useful in local dev)
+    const host = request.headers.get('host');
+    const hostIp = host ? host.split(':')[0] : null;
+    const validHostIp = isValidIpAddress(hostIp);
+    if (validHostIp !== 'unknown') {
+        return validHostIp;
+    }
+
+    // Final fallback to loopback for local development
+    return '127.0.0.1';
 }
 
 export function base64UrlEncode(bytes: Uint8Array): string {

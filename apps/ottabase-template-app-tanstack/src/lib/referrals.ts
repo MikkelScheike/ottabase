@@ -98,23 +98,20 @@ export function clearStoredReferralCode(): void {
  */
 export async function trackReferralClick(referralCode: string, meta?: Record<string, any>): Promise<boolean> {
     try {
-        const response: Response = await api('/api/referrals/track', {
+        const response = await api<{ success: boolean }>('/api/referrals/track', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
+            body: {
                 referralCode,
                 referer: typeof document !== 'undefined' ? document.referrer : undefined,
                 meta: {
                     ...meta,
                     utm: extractUtmParams(),
                 },
-            }),
+            },
         });
 
-        if (!response.ok) {
-            console.error('Failed to track referral:', await response.text());
+        if (!response || (response as any).success === false) {
+            console.error('Failed to track referral: API returned failure');
             return false;
         }
 
