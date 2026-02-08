@@ -2,12 +2,19 @@
 // @ottabase/ottaorm - RBAC Seed Script
 // ============================================================
 
-import { Role, Permission } from '../models';
+import { Permission, Role } from '../models';
 
 /**
  * Default system roles
  */
 export const DEFAULT_ROLES = [
+    {
+        id: '00000000-0000-0000-0000-000000000000',
+        name: 'owner',
+        description: 'System owner with full privileges',
+        permissions: ['*:*'],
+        isSystem: true,
+    },
     {
         id: '00000000-0000-0000-0000-000000000001',
         name: 'admin',
@@ -105,8 +112,8 @@ export async function seedRoles(): Promise<void> {
             description: roleData.description,
             permissions: JSON.stringify(roleData.permissions),
             isSystem: roleData.isSystem,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         });
 
         console.log(`  ✓ Created role: ${roleData.name}`);
@@ -136,8 +143,8 @@ export async function seedPermissions(): Promise<void> {
             description: permData.description,
             resource: permData.resource,
             action: permData.action,
-            createdAt: new Date(),
-            updatedAt: new Date(),
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
         });
 
         console.log(`  ✓ Created permission: ${permData.name}`);

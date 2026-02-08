@@ -73,6 +73,19 @@ function toDbColumn(field: string): string {
     return toSnakeCase(field);
 }
 
+function toTimestamp(value: unknown): number | null {
+    if (value === null || value === undefined) return null;
+    if (value instanceof Date) {
+        const ts = value.getTime();
+        return Number.isFinite(ts) ? ts : null;
+    }
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+    }
+    const parsed = new Date(String(value)).getTime();
+    return Number.isFinite(parsed) ? parsed : null;
+}
+
 /**
  * Handle errors in adapter operations
  */
@@ -154,15 +167,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                         `INSERT INTO users (id, name, email, email_verified, image, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
                     )
-                    .bind(
-                        id,
-                        user.name,
-                        user.email,
-                        user.emailVerified?.toISOString() || null,
-                        user.image,
-                        nowMs,
-                        nowMs,
-                    )
+                    .bind(id, user.name, user.email, toTimestamp(user.emailVerified), user.image, nowMs, nowMs)
                     .run();
 
                 return {
@@ -188,7 +193,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
                 return {
                     ...result,
-                    emailVerified: result.emailVerified ? new Date(result.emailVerified as unknown as string) : null,
+                    emailVerified: toTimestamp(result.emailVerified) as unknown as Date | null,
                 };
             } catch (error) {
                 return handleError(error, 'getUser', onError);
@@ -206,7 +211,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
                 return {
                     ...result,
-                    emailVerified: result.emailVerified ? new Date(result.emailVerified as unknown as string) : null,
+                    emailVerified: toTimestamp(result.emailVerified) as unknown as Date | null,
                 };
             } catch (error) {
                 return handleError(error, 'getUserByEmail', onError);
@@ -235,7 +240,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
                 return {
                     ...result,
-                    emailVerified: result.emailVerified ? new Date(result.emailVerified as unknown as string) : null,
+                    emailVerified: toTimestamp(result.emailVerified) as unknown as Date | null,
                 };
             } catch (error) {
                 return handleError(error, 'getUserByAccount', onError);
@@ -257,7 +262,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                 }
                 if (user.emailVerified !== undefined) {
                     updates.push('email_verified = ?');
-                    values.push(user.emailVerified?.toISOString() || null);
+                    values.push(toTimestamp(user.emailVerified));
                 }
                 if (user.image !== undefined) {
                     updates.push('image = ?');
@@ -281,7 +286,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
                 return {
                     ...result!,
-                    emailVerified: result!.emailVerified ? new Date(result!.emailVerified as unknown as string) : null,
+                    emailVerified: toTimestamp(result!.emailVerified) as unknown as Date | null,
                 };
             } catch (error) {
                 return handleError(error, 'updateUser', onError);
@@ -359,19 +364,23 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
             try {
                 const id = crypto.randomUUID();
                 const nowMs = Date.now();
+                const expiresMs = toTimestamp(session.expires);
+                if (!expiresMs) {
+                    throw new Error('Invalid session expiry');
+                }
 
                 await d1Binding
                     .prepare(
                         `INSERT INTO sessions (id, session_token, user_id, expires, created_at, updated_at)
              VALUES (?, ?, ?, ?, ?, ?)`,
                     )
-                    .bind(id, session.sessionToken, session.userId, session.expires.toISOString(), nowMs, nowMs)
+                    .bind(id, session.sessionToken, session.userId, expiresMs, nowMs, nowMs)
                     .run();
 
                 return {
                     sessionToken: session.sessionToken,
                     userId: session.userId,
-                    expires: session.expires,
+                    expires: expiresMs as any,
                 };
             } catch (error) {
                 return handleError(error, 'createSession', onError);
@@ -407,7 +416,8 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                 if (!result) return null;
 
                 // Check if session is expired
-                if (new Date(result.expires) < new Date()) {
+                const expiresMs = toTimestamp(result.expires);
+                if (!expiresMs || expiresMs < Date.now()) {
                     await d1Binding.prepare(`DELETE FROM sessions WHERE session_token = ?`).bind(sessionToken).run();
                     return null;
                 }
@@ -422,11 +432,11 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                     session: {
                         sessionToken: result.sessionToken,
                         userId: result.userId,
-                        expires: new Date(result.expires),
+                        expires: expiresMs as any,
                     },
                     user: {
                         ...user,
-                        emailVerified: user.emailVerified ? new Date(user.emailVerified) : null,
+                        emailVerified: toTimestamp(user.emailVerified),
                     },
                 };
             } catch (error) {
@@ -443,7 +453,11 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
                 if (session.expires !== undefined) {
                     updates.push('expires = ?');
-                    values.push(session.expires.toISOString());
+                    const expiresMs = toTimestamp(session.expires);
+                    if (!expiresMs) {
+                        throw new Error('Invalid session expiry');
+                    }
+                    values.push(expiresMs);
                 }
 
                 updates.push('updated_at = ?');
@@ -466,7 +480,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                 return {
                     sessionToken: result!.sessionToken,
                     userId: result!.userId,
-                    expires: new Date(result!.expires),
+                    expires: (toTimestamp(result!.expires) ?? Date.now()) as any,
                 };
             } catch (error) {
                 return handleError(error, 'updateSession', onError);
@@ -487,15 +501,19 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
 
         async createVerificationToken(token: VerificationToken): Promise<VerificationToken> {
             try {
+                const expiresMs = toTimestamp(token.expires);
+                if (!expiresMs) {
+                    throw new Error('Invalid verification token expiry');
+                }
                 await d1Binding
                     .prepare(
                         `INSERT INTO verification_tokens (identifier, token, expires)
              VALUES (?, ?, ?)`,
                     )
-                    .bind(token.identifier, token.token, token.expires.toISOString())
+                    .bind(token.identifier, token.token, expiresMs)
                     .run();
 
-                return token;
+                return { ...token, expires: expiresMs as any };
             } catch (error) {
                 return handleError(error, 'createVerificationToken', onError);
             }
@@ -526,7 +544,7 @@ export function createDrizzleD1AuthAdapter(d1: D1Database, options: DrizzleD1Aut
                 return {
                     identifier: result.identifier,
                     token: result.token,
-                    expires: new Date(result.expires),
+                    expires: (toTimestamp(result.expires) ?? Date.now()) as any,
                 };
             } catch (error) {
                 return handleError(error, 'useVerificationToken', onError);
