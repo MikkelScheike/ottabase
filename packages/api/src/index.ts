@@ -112,6 +112,9 @@ export interface ApiClientConfig {
 
     /** Default timeout in milliseconds (default: 30000) */
     timeout?: number;
+
+    /** Deduplicate in-flight requests with identical inputs (default: true) */
+    dedupe?: boolean;
 }
 
 export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
@@ -132,6 +135,15 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
 
     /** Custom headers for this request */
     headers?: Record<string, string>;
+
+    /** Disable in-flight request deduplication for this request */
+    dedupe?: boolean;
+
+    /** Optional custom dedupe key for this request */
+    dedupeKey?: string;
+
+    /** Optional identifier for logging/debugging deduped calls */
+    callerId?: string;
 }
 
 /** HTTP methods supported by the shorthand syntax */
@@ -143,6 +155,48 @@ export interface ApiFunction {
     <T = unknown>(endpoint: string, options?: ApiRequestOptions): Promise<T>;
     /** Shorthand call with just HTTP method */
     <T = unknown>(endpoint: string, method: HttpMethod): Promise<T>;
+}
+
+// ============================================================
+// In-flight Request Deduplication
+// ============================================================
+
+// DO NOT REMOVE: This dedupe layer prevents duplicate in-flight requests from multiple
+// callers by sharing the same fetch Promise and cloning the Response for safe reads.
+// It builds a dedupe key from url + method + normalized headers + body + timeout +
+// fetch options (cache/credentials/mode/redirect).
+// Optional: set `callerId` per request to tag deduped logs without stack parsing.
+
+const inFlightRequests = new Map<string, Promise<Response>>();
+
+function normalizeHeaders(headers: Record<string, string>): Record<string, string> {
+    const entries = Object.entries(headers).sort(([a], [b]) => a.localeCompare(b));
+    const normalized: Record<string, string> = {};
+    for (const [key, value] of entries) {
+        normalized[key.toLowerCase()] = value;
+    }
+    return normalized;
+}
+
+function buildDedupeKey(params: {
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+    body: string | undefined;
+    timeout: number;
+    fetchOptions: Pick<RequestInit, 'cache' | 'credentials' | 'mode' | 'redirect'>;
+}): string {
+    return JSON.stringify({
+        url: params.url,
+        method: params.method,
+        headers: normalizeHeaders(params.headers),
+        body: params.body ?? null,
+        timeout: params.timeout,
+        cache: params.fetchOptions.cache ?? null,
+        credentials: params.fetchOptions.credentials ?? null,
+        mode: params.fetchOptions.mode ?? null,
+        redirect: params.fetchOptions.redirect ?? null,
+    });
 }
 
 // ============================================================
@@ -179,6 +233,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
         onUnauthorized,
         defaultHeaders = {},
         timeout: defaultTimeout = 30000,
+        dedupe: dedupeDefault = true,
     } = config;
 
     return async function api<T = unknown>(
@@ -196,6 +251,9 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
             body,
             timeout = defaultTimeout,
             headers: requestHeaders = {},
+            dedupe,
+            dedupeKey,
+            callerId,
             ...fetchOptions
         } = options;
 
@@ -235,39 +293,81 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
             headers['Content-Type'] = 'application/json';
         }
 
+        const requestBody = body !== undefined ? JSON.stringify(body) : undefined;
+
+        const shouldDedupe = dedupe ?? dedupeDefault;
+        const inFlightKey = shouldDedupe
+            ? (dedupeKey ??
+              buildDedupeKey({
+                  url,
+                  method: fetchOptions.method ?? 'GET',
+                  headers,
+                  body: requestBody,
+                  timeout,
+                  fetchOptions,
+              }))
+            : null;
+
         // Create abort controller for timeout
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-        try {
+        const executeFetch = async (): Promise<Response> => {
             const response = await fetch(url, {
                 ...fetchOptions,
                 headers,
-                body: body !== undefined ? JSON.stringify(body) : undefined,
+                body: requestBody,
                 signal: controller.signal,
             });
-
             clearTimeout(timeoutId);
+            return response;
+        };
+
+        try {
+            let response: Response;
+            if (shouldDedupe && inFlightKey) {
+                const existing = inFlightRequests.get(inFlightKey);
+                if (existing) {
+                    console.log('[ottabase/api] Deduped in-flight request', {
+                        url,
+                        method: fetchOptions.method ?? 'GET',
+                        inFlightCount: inFlightRequests.size,
+                        callerId,
+                    });
+                    clearTimeout(timeoutId);
+                    response = await existing;
+                } else {
+                    const fetchPromise = executeFetch().finally(() => {
+                        inFlightRequests.delete(inFlightKey);
+                    });
+                    inFlightRequests.set(inFlightKey, fetchPromise);
+                    response = await fetchPromise;
+                }
+            } else {
+                response = await executeFetch();
+            }
+
+            const responseForRead = shouldDedupe ? response.clone() : response;
 
             // Handle non-OK responses
-            if (!response.ok) {
+            if (!responseForRead.ok) {
                 let errorData: ApiErrorResponse;
 
                 try {
-                    errorData = await response.json();
+                    errorData = await responseForRead.json();
                 } catch {
                     errorData = {
-                        error: response.statusText || `HTTP ${response.status}`,
+                        error: responseForRead.statusText || `HTTP ${responseForRead.status}`,
                     };
                 }
 
                 const apiError = new ApiError(
                     {
                         ...errorData,
-                        error: errorData.error || response.statusText,
-                        status: response.status,
+                        error: errorData.error || responseForRead.statusText,
+                        status: responseForRead.status,
                     },
-                    response,
+                    responseForRead,
                 );
 
                 // Call error handlers
@@ -283,7 +383,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
             }
 
             // Handle empty responses
-            const contentType = response.headers.get('content-type');
+            const contentType = responseForRead.headers.get('content-type');
             if (!contentType || !contentType.includes('application/json')) {
                 // For non-JSON responses, there is no typed payload. Callers should use
                 // a union type (e.g. `T | void`) when invoking this helper for endpoints
@@ -292,13 +392,13 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
             }
 
             // Handle 204 No Content
-            if (response.status === 204) {
+            if (responseForRead.status === 204) {
                 // 204 responses are defined to have no body. Callers should use a union
                 // type (e.g. `T | void`) for endpoints that may return 204.
                 return undefined as unknown as T;
             }
 
-            return await response.json();
+            return await responseForRead.json();
         } catch (error) {
             clearTimeout(timeoutId);
 

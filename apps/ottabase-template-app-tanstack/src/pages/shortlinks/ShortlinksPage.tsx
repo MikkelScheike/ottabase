@@ -2,7 +2,6 @@ import { api, isApiError } from '@/lib/api';
 import type { PaginatedResponse, Pagination } from '@/lib/api-types';
 import type { ShortlinkRecord } from '@ottabase/shortlinks';
 import {
-    Badge,
     AlertDialog,
     AlertDialogAction,
     AlertDialogCancel,
@@ -11,6 +10,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    Badge,
     Button,
     Card,
     CardContent,
@@ -61,6 +61,7 @@ export function ShortlinksPage() {
             setError(null);
             const response = await api<ShortlinksResponse>(
                 `/api/ottaorm/shortlinks?page=${page}&per_page=${itemsPerPage}`,
+                { method: 'GET', callerId: 'ShortlinksPage:fetchShortlinks' },
             );
             if (response.data) {
                 setShortlinks(response.data);

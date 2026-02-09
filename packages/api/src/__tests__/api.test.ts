@@ -1,5 +1,35 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createApiClient, ApiError, isApiError, getErrorMessage, getErrorMessages } from '../index';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { ApiError, createApiClient, getErrorMessage, getErrorMessages, isApiError } from '../index';
+
+type MockResponseOptions = {
+    ok?: boolean;
+    status?: number;
+    statusText?: string;
+    headers?: Record<string, string>;
+    jsonData?: unknown;
+};
+
+const defaultHeaders = { 'content-type': 'application/json' };
+
+function createMockResponse(options: MockResponseOptions = {}): Response {
+    const { ok = true, status = 200, statusText = 'OK', headers = defaultHeaders, jsonData = {} } = options;
+
+    return {
+        ok,
+        status,
+        statusText,
+        headers: new Headers(headers),
+        json: vi.fn(() => Promise.resolve(jsonData)),
+        clone: () =>
+            createMockResponse({
+                ok,
+                status,
+                statusText,
+                headers,
+                jsonData,
+            }),
+    } as Response;
+}
 
 describe('API Client', () => {
     beforeEach(() => {
@@ -13,14 +43,7 @@ describe('API Client', () => {
         });
 
         it('should make GET requests', async () => {
-            const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({ message: 'Hello' }),
-                } as Response),
-            );
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse({ jsonData: { message: 'Hello' } })));
             global.fetch = mockFetch;
 
             const api = createApiClient({ baseUrl: 'https://api.example.com' });
@@ -31,14 +54,7 @@ describe('API Client', () => {
         });
 
         it('should handle POST requests with body', async () => {
-            const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 201,
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({ id: 1 }),
-                } as Response),
-            );
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse({ status: 201, jsonData: { id: 1 } })));
             global.fetch = mockFetch;
 
             const api = createApiClient();
@@ -52,14 +68,7 @@ describe('API Client', () => {
         });
 
         it('should inject auth token when provided', async () => {
-            const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({}),
-                } as Response),
-            );
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse()));
             global.fetch = mockFetch;
 
             const api = createApiClient({
@@ -67,19 +76,12 @@ describe('API Client', () => {
             });
             await api('/protected');
 
-            const headers = mockFetch.mock.calls[0][1].headers;
+            const headers = mockFetch.mock.calls[0][1].headers as Record<string, string>;
             expect(headers['Authorization']).toBe('Bearer test-token-123');
         });
 
         it('should skip auth when skipAuth is true', async () => {
-            const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({}),
-                } as Response),
-            );
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse()));
             global.fetch = mockFetch;
 
             const api = createApiClient({
@@ -87,19 +89,12 @@ describe('API Client', () => {
             });
             await api('/public', { skipAuth: true });
 
-            const headers = mockFetch.mock.calls[0][1].headers;
+            const headers = mockFetch.mock.calls[0][1].headers as Record<string, string>;
             expect(headers['Authorization']).toBeUndefined();
         });
 
         it('should add query params to URL', async () => {
-            const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve([]),
-                } as Response),
-            );
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse({ jsonData: [] })));
             global.fetch = mockFetch;
 
             const api = createApiClient({ baseUrl: '/api' });
@@ -112,17 +107,17 @@ describe('API Client', () => {
 
         it('should handle error responses', async () => {
             const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: false,
-                    status: 404,
-                    statusText: 'Not Found',
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () =>
-                        Promise.resolve({
+                Promise.resolve(
+                    createMockResponse({
+                        ok: false,
+                        status: 404,
+                        statusText: 'Not Found',
+                        jsonData: {
                             error: 'Resource not found',
                             messages: ['Post not found'],
-                        }),
-                } as Response),
+                        },
+                    }),
+                ),
             );
             global.fetch = mockFetch;
 
@@ -140,13 +135,14 @@ describe('API Client', () => {
 
         it('should call onError callback on error', async () => {
             const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: false,
-                    status: 500,
-                    statusText: 'Server Error',
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({ error: 'Server error' }),
-                } as Response),
+                Promise.resolve(
+                    createMockResponse({
+                        ok: false,
+                        status: 500,
+                        statusText: 'Server Error',
+                        jsonData: { error: 'Server error' },
+                    }),
+                ),
             );
             global.fetch = mockFetch;
 
@@ -164,13 +160,14 @@ describe('API Client', () => {
 
         it('should call onUnauthorized for 401 responses', async () => {
             const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: false,
-                    status: 401,
-                    statusText: 'Unauthorized',
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({ error: 'Unauthorized' }),
-                } as Response),
+                Promise.resolve(
+                    createMockResponse({
+                        ok: false,
+                        status: 401,
+                        statusText: 'Unauthorized',
+                        jsonData: { error: 'Unauthorized' },
+                    }),
+                ),
             );
             global.fetch = mockFetch;
 
@@ -188,13 +185,14 @@ describe('API Client', () => {
 
         it('should skip onUnauthorized when skipUnauthorizedHandler is true', async () => {
             const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: false,
-                    status: 401,
-                    statusText: 'Unauthorized',
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({ error: 'Unauthorized' }),
-                } as Response),
+                Promise.resolve(
+                    createMockResponse({
+                        ok: false,
+                        status: 401,
+                        statusText: 'Unauthorized',
+                        jsonData: { error: 'Unauthorized' },
+                    }),
+                ),
             );
             global.fetch = mockFetch;
 
@@ -211,20 +209,38 @@ describe('API Client', () => {
         });
 
         it('should handle shorthand method syntax', async () => {
-            const mockFetch = vi.fn(() =>
-                Promise.resolve({
-                    ok: true,
-                    status: 200,
-                    headers: new Headers({ 'content-type': 'application/json' }),
-                    json: () => Promise.resolve({}),
-                } as Response),
-            );
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse()));
             global.fetch = mockFetch;
 
             const api = createApiClient();
             await api('/posts/1', 'DELETE');
 
             expect(mockFetch.mock.calls[0][1].method).toBe('DELETE');
+        });
+
+        it('should dedupe parallel requests with identical inputs', async () => {
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse({ jsonData: { message: 'Hello' } })));
+            global.fetch = mockFetch;
+
+            const api = createApiClient({ baseUrl: 'https://api.example.com' });
+            const [first, second] = await Promise.all([
+                api<{ message: string }>('/hello'),
+                api<{ message: string }>('/hello'),
+            ]);
+
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            expect(first).toEqual({ message: 'Hello' });
+            expect(second).toEqual({ message: 'Hello' });
+        });
+
+        it('should allow opt-out of dedupe per request', async () => {
+            const mockFetch = vi.fn(() => Promise.resolve(createMockResponse()));
+            global.fetch = mockFetch;
+
+            const api = createApiClient();
+            await Promise.all([api('/hello', { dedupe: false }), api('/hello', { dedupe: false })]);
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
         });
     });
 

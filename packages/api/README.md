@@ -30,10 +30,27 @@ const api = createApiClient({
     onError: (error) => toast.error(error.message),
     onUnauthorized: () => redirect('/login'),
     timeout: 30000,
+    dedupe: true,
 });
 ```
 
 ### Optional behavior tweaks
+
+### In-flight request deduping
+
+By default, identical in-flight requests are deduped so parallel callers share a single fetch. This is not caching; once
+the request completes, the next call will hit the network again.
+
+```ts
+// Disable dedupe per request
+await api('/api/metrics', { dedupe: false });
+
+// Provide a custom dedupe key
+await api('/api/metrics', { dedupeKey: 'metrics:today' });
+
+// Tag deduped logs with a caller id
+await api('/api/metrics', { callerId: 'MetricsPage:load' });
+```
 
 Use `skipUnauthorizedHandler: true` when you want to handle a 401 response explicitly (`/api/blog/posts/unlock` is one
 example). This tells the client not to run the global `onUnauthorized` callback so you can surface a local error message
