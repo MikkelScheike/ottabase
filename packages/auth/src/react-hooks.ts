@@ -58,6 +58,10 @@ const activeSessionAtom = atom((get: Getter) => {
 // Auth loading state
 const authLoadingAtom = atom(false);
 
+/** Module-level sync guard to avoid duplicate session fetches across components, no matter how many components mount at once */
+let sessionSyncPromise: Promise<AuthSession | null> | null = null;
+let sessionSyncKey: string | null = null;
+
 // Is authenticated derived atom
 const isAuthenticatedAtom = atom((get: Getter) => {
     const session = get(activeSessionAtom);
@@ -117,13 +121,18 @@ export function useSession(options?: UseSessionOptions) {
         if (options?.skipAutoSync) return;
 
         let mounted = true;
+        const syncKey = options?.baseUrl ?? null;
+
+        if (sessionSyncPromise && sessionSyncKey === syncKey) return;
 
         async function syncSession() {
             setIsLoading(true);
+            sessionSyncKey = syncKey;
             try {
-                const backendSession = await getAuthSession({
+                sessionSyncPromise = getAuthSession({
                     baseUrl: options?.baseUrl,
                 });
+                const backendSession = await sessionSyncPromise;
 
                 if (!mounted) return;
 
@@ -144,6 +153,7 @@ export function useSession(options?: UseSessionOptions) {
                 console.error('Failed to sync session:', error);
             } finally {
                 setIsLoading(false);
+                sessionSyncPromise = null;
             }
         }
 
@@ -223,10 +233,13 @@ export function useSession(options?: UseSessionOptions) {
      */
     const refreshSession = useCallback(async () => {
         setIsLoading(true);
+        const syncKey = options?.baseUrl ?? null;
+        sessionSyncKey = syncKey;
         try {
-            const backendSession = await getAuthSession({
+            sessionSyncPromise = getAuthSession({
                 baseUrl: options?.baseUrl,
             });
+            const backendSession = await sessionSyncPromise;
 
             if (backendSession) {
                 if (rememberSession) {
@@ -244,6 +257,7 @@ export function useSession(options?: UseSessionOptions) {
             console.error('Failed to refresh session:', error);
         } finally {
             setIsLoading(false);
+            sessionSyncPromise = null;
         }
     }, [options?.baseUrl, rememberSession, setPersistentSession, setMemorySession, setIsLoading]);
 
