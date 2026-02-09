@@ -26,22 +26,172 @@ export async function secureCrud(options: SecureCrudOptions): Promise<Response> 
     try {
         // Parse CRUD request
         const pathParts = url.pathname.split('/').filter(Boolean);
-        const model = pathParts[pathParts.length - 2] || pathParts[pathParts.length - 1];
-        const id = pathParts.length > 3 ? pathParts[pathParts.length - 1] : undefined;
-        const method = request.method as 'GET' | 'POST' | 'PATCH' | 'DELETE';
+        let model: string | undefined;
+        let id: string | undefined;
+
+        if (pathParts[0] === 'api' && pathParts[1] === 'ottaorm') {
+            model = pathParts[2];
+            id = pathParts[3];
+        } else {
+            model = pathParts[pathParts.length - 2] || pathParts[pathParts.length - 1];
+            id = pathParts.length > 3 ? pathParts[pathParts.length - 1] : undefined;
+        }
+
+        const method = request.method as 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
 
         // Parse request body
         let body: any = null;
-        if (method === 'POST' || method === 'PATCH') {
+        if (method === 'POST' || method === 'PATCH' || method === 'PUT') {
             const text = await request.text();
-            body = text ? JSON.parse(text) : null;
+            if (text) {
+                try {
+                    body = JSON.parse(text);
+                } catch {
+                    return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+                        status: 400,
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                }
+            }
         }
 
         // Parse query params
         const queryString = url.searchParams.get('query');
-        const query = queryString ? JSON.parse(queryString) : undefined;
+        let query: CrudRequest['query'] | undefined;
+
+        if (queryString) {
+            try {
+                query = JSON.parse(queryString);
+            } catch {
+                return new Response(JSON.stringify({ error: 'Invalid JSON in query parameter' }), {
+                    status: 400,
+                    headers: { 'Content-Type': 'application/json' },
+                });
+            }
+        } else {
+            query = {};
+
+            const whereParam = url.searchParams.get('where');
+            if (whereParam) {
+                try {
+                    query.where = JSON.parse(whereParam);
+                } catch {
+                    return new Response(JSON.stringify({ error: 'Invalid JSON in where parameter' }), {
+                        status: 400,
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                }
+            }
+
+            const orderBy = url.searchParams.get('orderBy') || url.searchParams.get('sort');
+            if (orderBy) query.orderBy = orderBy;
+
+            const orderDirection = url.searchParams.get('orderDirection') || url.searchParams.get('order');
+            if (orderDirection === 'asc' || orderDirection === 'desc') {
+                query.orderDirection = orderDirection;
+            }
+
+            const limit = url.searchParams.get('limit');
+            if (limit) {
+                const parsedLimit = parseInt(limit, 10);
+                if (!Number.isFinite(parsedLimit)) {
+                    return new Response(
+                        JSON.stringify({
+                            error: 'Invalid query parameter',
+                            message: 'limit must be a valid integer',
+                        }),
+                        {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json' },
+                        },
+                    );
+                }
+                query.limit = parsedLimit;
+            }
+
+            const offset = url.searchParams.get('offset');
+            if (offset) {
+                const parsedOffset = parseInt(offset, 10);
+                if (!Number.isFinite(parsedOffset)) {
+                    return new Response(
+                        JSON.stringify({
+                            error: 'Invalid query parameter',
+                            message: 'offset must be a valid integer',
+                        }),
+                        {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json' },
+                        },
+                    );
+                }
+                query.offset = parsedOffset;
+            }
+
+            const page = url.searchParams.get('page');
+            if (page) {
+                const parsedPage = parseInt(page, 10);
+                if (!Number.isFinite(parsedPage)) {
+                    return new Response(
+                        JSON.stringify({
+                            error: 'Invalid query parameter',
+                            message: 'page must be a valid integer',
+                        }),
+                        {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json' },
+                        },
+                    );
+                }
+                query.page = parsedPage;
+            }
+
+            const perPage = url.searchParams.get('perPage') || url.searchParams.get('per_page');
+            if (perPage) {
+                const parsedPerPage = parseInt(perPage, 10);
+                if (!Number.isFinite(parsedPerPage)) {
+                    return new Response(
+                        JSON.stringify({
+                            error: 'Invalid query parameter',
+                            message: 'perPage must be a valid integer',
+                        }),
+                        {
+                            status: 400,
+                            headers: { 'Content-Type': 'application/json' },
+                        },
+                    );
+                }
+                query.perPage = parsedPerPage;
+            }
+
+            const uniqueField = url.searchParams.get('uniqueField');
+            if (uniqueField) query.uniqueField = uniqueField;
+
+            const uniqueValue = url.searchParams.get('uniqueValue');
+            if (uniqueValue !== null) query.uniqueValue = uniqueValue;
+
+            const uniqueIgnoreId = url.searchParams.get('uniqueIgnoreId');
+            if (uniqueIgnoreId) query.uniqueIgnoreId = uniqueIgnoreId;
+
+            const field = url.searchParams.get('field');
+            if (field) query.field = field;
+
+            const value = url.searchParams.get('value');
+            if (value !== null) query.value = value;
+
+            const search = url.searchParams.get('search');
+            if (search !== null) query.search = search;
+
+            if (Object.keys(query).length === 0) query = undefined;
+        }
 
         // Execute secure CRUD operation
+        if (!model) {
+            return new Response(JSON.stringify({ error: 'Model not specified' }), {
+                status: 404,
+                headers: { 'Content-Type': 'application/json' },
+            });
+        }
+
         const result = await executeSecureCrud({
             method,
             model,
@@ -122,6 +272,25 @@ export async function executeSecureCrudRequest(
             };
         }
 
+        // Handle ValidationError from BaseModel.create/update
+        // Returns field-level errors for forms to display inline
+        if (error && typeof error === 'object' && 'fieldErrors' in error && (error as any).name === 'ValidationError') {
+            const err = error as unknown as { message?: string; fieldErrors: Record<string, string> };
+            const raw = err.fieldErrors;
+            const fieldErrors: Record<string, string[]> = {};
+            for (const [k, v] of Object.entries(raw)) {
+                fieldErrors[k] = [v];
+            }
+            return {
+                success: false,
+                error: err.message || 'Validation failed',
+                code: 'VALIDATION_ERROR',
+                fieldErrors,
+                hint: `Validation failed for ${model}`,
+                status: 422,
+            };
+        }
+
         const message = error instanceof Error ? error.message : 'Unknown error';
         const stack = error instanceof Error ? error.stack : undefined;
         console.error(`[executeSecureCrudRequest] Error for ${model}:`, {
@@ -188,10 +357,18 @@ async function executeSecureCrud(params: {
         // Validate write and inject security context
         globalRLS.validateWrite(model, context, body, 'create');
 
+        const policyConfig = globalRLS.getPolicy(model);
+        const extraWritable = new Set<string>();
+        if (policyConfig?.policy?.field) extraWritable.add(policyConfig.policy.field);
+        if (policyConfig?.contextFields) {
+            for (const field of policyConfig.contextFields) extraWritable.add(field);
+        }
+
         const crudRequest: CrudRequest = {
             method: 'POST',
             model,
             body,
+            allowedWritableFields: extraWritable.size > 0 ? Array.from(extraWritable) : undefined,
         };
 
         return handleCrud(crudRequest);
@@ -228,11 +405,19 @@ async function executeSecureCrud(params: {
         // Validate write
         globalRLS.validateWrite(model, context, body, 'update');
 
+        const policyConfig = globalRLS.getPolicy(model);
+        const extraWritable = new Set<string>();
+        if (policyConfig?.policy?.field) extraWritable.add(policyConfig.policy.field);
+        if (policyConfig?.contextFields) {
+            for (const field of policyConfig.contextFields) extraWritable.add(field);
+        }
+
         const crudRequest: CrudRequest = {
             method: method === 'PUT' ? 'PUT' : 'PATCH',
             model,
             id,
             body,
+            allowedWritableFields: extraWritable.size > 0 ? Array.from(extraWritable) : undefined,
         };
 
         return handleCrud(crudRequest);

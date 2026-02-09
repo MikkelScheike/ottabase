@@ -5,9 +5,10 @@
 // ============================================================
 
 import type { DbDriver } from '@ottabase/db/drizzle';
-import { and, asc, desc, eq, inArray, ne } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, like, ne, or, sql } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { getConnection } from '../context';
+import { ValidationError } from '../validation';
 import {
     AbstractBaseModel,
     ModelFieldDescriptor,
@@ -351,6 +352,24 @@ export class BaseModel extends AbstractBaseModel {
     }
 
     /**
+     * Build OR search condition across fields using LIKE
+     */
+    protected static buildSearchCondition(search: string, fields: string[]) {
+        if (!search || fields.length === 0) return null;
+        const table = this.getTable();
+        const conditions = fields
+            .map((field) => {
+                const column = (table as any)[field];
+                if (!column) return null;
+                return like(column, `%${search}%`);
+            })
+            .filter(Boolean) as any[];
+
+        if (conditions.length === 0) return null;
+        return or(...conditions);
+    }
+
+    /**
      * Prepare data for database operations
      * Converts string dates to Date objects based on model casts
      */
@@ -389,18 +408,29 @@ export class BaseModel extends AbstractBaseModel {
     }
 
     /**
-     * Create a new record
+     * Create a new record (validates against Zod schema if fields are defined)
      */
     static async create<T extends typeof BaseModel>(
         this: T,
         data: Record<string, any>,
         driver?: DbDriver,
     ): Promise<InstanceType<T>> {
+        // Validate before create if fields are defined
+        let validatedData = data;
+        if (Object.keys(this.fields).length > 0) {
+            const result = this.validate(data, 'create');
+            if (!result.success) {
+                throw new ValidationError(result.errors);
+            }
+            // Use the validated/coerced data from Zod (guaranteed to exist when success=true)
+            validatedData = result.data!;
+        }
+
         const db = this.getDriver(driver).getDb();
         const table = this.getTable();
 
         // Merge with defaults and prepare for database
-        const createData = this.prepareForDatabase({ ...this.defaults, ...data });
+        const createData = this.prepareForDatabase({ ...this.defaults, ...validatedData });
 
         // Cloudflare Workers (workerd) disallows random generation in module/global scope,
         // so model schemas avoid crypto.randomUUID() defaults. Generate ids at runtime.
@@ -425,7 +455,7 @@ export class BaseModel extends AbstractBaseModel {
     }
 
     /**
-     * Update a record by primary key
+     * Update a record by primary key (validates against Zod schema if fields are defined)
      */
     static async update<T extends typeof BaseModel>(
         this: T,
@@ -433,6 +463,17 @@ export class BaseModel extends AbstractBaseModel {
         data: Record<string, any>,
         driver?: DbDriver,
     ): Promise<InstanceType<T>> {
+        // Validate before update if fields are defined
+        let validatedData = data;
+        if (Object.keys(this.fields).length > 0) {
+            const result = this.validate(data, 'update');
+            if (!result.success) {
+                throw new ValidationError(result.errors);
+            }
+            // Use the validated/coerced data from Zod (guaranteed to exist when success=true)
+            validatedData = result.data!;
+        }
+
         const db = this.getDriver(driver).getDb();
         const table = this.getTable();
         const pkColumn = (table as any)[this.primaryKey];
@@ -442,12 +483,12 @@ export class BaseModel extends AbstractBaseModel {
         }
 
         // Auto-add updatedAt if model has it in casts and value not provided
-        if (this.casts && this.casts.updatedAt && data.updatedAt === undefined) {
-            data.updatedAt = Date.now();
+        if (this.casts && this.casts.updatedAt && validatedData.updatedAt === undefined) {
+            validatedData.updatedAt = Date.now();
         }
 
         // Prepare data for database (convert string dates, etc.)
-        const updateData = this.prepareForDatabase(data);
+        const updateData = this.prepareForDatabase(validatedData);
 
         const result = await db.update(table).set(updateData).where(eq(pkColumn, id)).returning();
 
@@ -485,7 +526,7 @@ export class BaseModel extends AbstractBaseModel {
         const db = this.getDriver(driver).getDb();
         const table = this.getTable();
 
-        let query = db.select().from(table);
+        let query = db.select({ count: sql<number>`count(*)` }).from(table);
 
         if (where) {
             const conditions = this.buildWhereConditions(where);
@@ -495,7 +536,115 @@ export class BaseModel extends AbstractBaseModel {
         }
 
         const results = await query;
-        return results.length;
+        return Number(results[0]?.count ?? 0);
+    }
+
+    /**
+     * Search records with LIKE across searchable fields
+     */
+    static async search<T extends typeof BaseModel>(
+        this: T,
+        search: string,
+        fields: string[],
+        where?: Record<string, any>,
+        options?: {
+            orderBy?: string;
+            orderDirection?: 'asc' | 'desc';
+            limit?: number;
+            offset?: number;
+        },
+        driver?: DbDriver,
+    ): Promise<InstanceType<T>[]> {
+        const db = this.getDriver(driver).getDb();
+        const table = this.getTable();
+
+        const searchCondition = this.buildSearchCondition(search, fields);
+        if (!searchCondition) {
+            return this.where(where || {}, options, driver);
+        }
+
+        const conditions = this.buildWhereConditions(where || {});
+        let query = db.select().from(table);
+
+        if (conditions.length > 0) {
+            query = query.where(and(...conditions, searchCondition));
+        } else {
+            query = query.where(searchCondition);
+        }
+
+        if (options?.orderBy) {
+            const orderColumn = (table as any)[options.orderBy];
+            if (orderColumn) {
+                query = query.orderBy(options.orderDirection === 'desc' ? desc(orderColumn) : asc(orderColumn));
+            }
+        }
+
+        if (options?.limit) {
+            query = query.limit(options.limit);
+        }
+        if (options?.offset) {
+            query = query.offset(options.offset);
+        }
+
+        const results = await query;
+        return results.map((row: any) => new this({ entity: this.entity, data: row }) as InstanceType<T>);
+    }
+
+    /**
+     * Paginate search results
+     */
+    static async searchPaginate<T extends typeof BaseModel>(
+        this: T,
+        search: string,
+        fields: string[],
+        page: number = 1,
+        perPage: number = 15,
+        where?: Record<string, any>,
+        options?: { orderBy?: string; orderDirection?: 'asc' | 'desc' },
+        driver?: DbDriver,
+    ): Promise<PaginationResult<InstanceType<T>>> {
+        const offset = (page - 1) * perPage;
+        const table = this.getTable();
+        const db = this.getDriver(driver).getDb();
+
+        const searchCondition = this.buildSearchCondition(search, fields);
+        const whereConditions = this.buildWhereConditions(where || {});
+
+        let combinedCondition = searchCondition || undefined;
+        if (whereConditions.length > 0) {
+            combinedCondition = searchCondition ? and(...whereConditions, searchCondition) : and(...whereConditions);
+        }
+
+        let dataQuery = db.select().from(table);
+        if (combinedCondition) {
+            dataQuery = dataQuery.where(combinedCondition);
+        }
+        if (options?.orderBy) {
+            const orderColumn = (table as any)[options.orderBy];
+            if (orderColumn) {
+                dataQuery = dataQuery.orderBy(options.orderDirection === 'desc' ? desc(orderColumn) : asc(orderColumn));
+            }
+        }
+        dataQuery = dataQuery.limit(perPage).offset(offset);
+
+        let countQuery = db.select({ count: sql<number>`count(*)` }).from(table);
+        if (combinedCondition) {
+            countQuery = countQuery.where(combinedCondition);
+        }
+
+        const [data, countResult] = await Promise.all([dataQuery, countQuery]);
+        const total = Number(countResult[0]?.count ?? 0);
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
+
+        return {
+            data: data.map((row: any) => new this({ entity: this.entity, data: row }) as InstanceType<T>),
+            total,
+            page,
+            perPage,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPrevPage: page > 1,
+        };
     }
 
     /**

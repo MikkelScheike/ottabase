@@ -5,6 +5,9 @@
 // Extracted from BaseModel to support multi-database patterns
 // ============================================================
 
+import type { z } from 'zod';
+import { buildZodSchema, validateWithSchema } from '../validation';
+
 export type ModelFieldType =
     | 'string'
     | 'number'
@@ -64,6 +67,7 @@ export interface ModelFieldDescriptor {
             | 'date'
             | 'datetime'
             | 'json'
+            | 'editor'
             | 'boolean'
             | 'number'
             | 'email'
@@ -296,6 +300,30 @@ export abstract class AbstractBaseModel {
     }
 
     /**
+     * Get Zod validation schema for this model
+     * Built automatically from field metadata - no manual schema needed
+     */
+    static getZodSchema(mode: 'create' | 'update' = 'create'): z.ZodObject<any> {
+        return buildZodSchema(this.fields, mode, this.writable);
+    }
+
+    /**
+     * Validate data against this model's schema
+     * Returns { success, errors, data } - flat error map for easy form integration
+     */
+    static validate(
+        data: Record<string, unknown>,
+        mode: 'create' | 'update' = 'create',
+    ): {
+        success: boolean;
+        errors: Record<string, string>;
+        data?: Record<string, unknown>;
+    } {
+        const schema = this.getZodSchema(mode);
+        return validateWithSchema(schema, data);
+    }
+
+    /**
      * Get writable fields for create/update operations.
      * If a writable allowlist is defined, it takes precedence.
      * Otherwise, falls back to fields metadata (editable !== false).
@@ -311,6 +339,17 @@ export abstract class AbstractBaseModel {
         if (keys.length === 0) return null;
 
         return keys.filter((key) => fields[key]?.editable !== false);
+    }
+
+    /**
+     * Get searchable fields for list/search operations.
+     * Defaults to fields with searchable: true.
+     */
+    static getSearchableFields(): string[] {
+        const fields = this.fields || {};
+        return Object.entries(fields)
+            .filter(([_, field]) => field.searchable)
+            .map(([key]) => key);
     }
 
     /**
