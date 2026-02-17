@@ -21,6 +21,7 @@ import {
     Paintbrush,
     Palette,
     Settings,
+    SplitSquareHorizontal,
     Type,
     Upload,
     Zap,
@@ -113,6 +114,15 @@ export const DEMO_ITEMS: DemoItem[] = [
         title: 'Image Cropper',
         description:
             'Vanilla image cropper: crop, flip, rotate. Square/rect/circle viewfinder. PNG/JPEG. Zero React. ~2–3 KB gzipped.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/split-pane',
+        icon: SplitSquareHorizontal,
+        label: 'Split Pane',
+        title: 'Split Pane',
+        description:
+            'Minimal, clean split-pane component with support for nested layouts, snap points, and percentage-based sizing',
         buttonVariant: 'outline',
     },
     {
