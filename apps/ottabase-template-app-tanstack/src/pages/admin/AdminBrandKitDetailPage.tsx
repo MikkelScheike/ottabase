@@ -4,6 +4,7 @@
 
 import { buildCSSVarMap, buildPreviewTheme, injectFont } from '@ottabase/brand-engine';
 import { useBrand } from '@ottabase/brand-engine-react';
+import { useApiQuery } from '@ottabase/ottaorm/client';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ottabase/ui-shadcn';
 import {
     IconArrowLeft,
@@ -15,7 +16,6 @@ import {
     IconTypography,
 } from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApiQuery } from '@ottabase/ottaorm/client';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -280,7 +280,7 @@ export function AdminBrandKitDetailPage() {
         kit ??
         ({
             id: 'new',
-            organizationId: null,
+            appId: null,
             name: draft.name || 'New Brand Kit',
             brandName: draft.brandName || 'My App',
             tagline: draft.tagline || null,
@@ -382,7 +382,7 @@ export function AdminBrandKitDetailPage() {
                             parentBrandKitId={draft.parentBrandKitId}
                             currentKitId={isNew ? undefined : kitId}
                             onChange={handleDraftMerge}
-                            nameReadOnly={!isNew && kitForView.organizationId === null}
+                            nameReadOnly={!isNew && kitForView.appId === null}
                         />
                     </TabsContent>
                     <TabsContent value="logo">
