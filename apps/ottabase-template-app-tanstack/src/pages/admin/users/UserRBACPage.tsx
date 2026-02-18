@@ -40,7 +40,8 @@ import {
 import { Shield, Building2, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useRBACToast } from '@/hooks/useToast';
 import { useOrganizations } from '@/hooks/useRBAC';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useApiQuery, createModelHooks } from '@ottabase/ottaorm/client';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { TableSkeleton } from '@/components/LoadingSkeletons';
 import type { MemberRole, BadgeVariant, OrganizationMemberRecord } from '@/types/rbac';
@@ -60,6 +61,8 @@ interface UserOrganization {
     joinedAt: string;
 }
 
+const orgMemberHooks = createModelHooks<OrganizationMemberRecord>({ entityName: 'organization_members' });
+
 export function UserRBACPage() {
     const { userId } = useParams({ from: '/admin/users/$userId/rbac' });
     const toast = useRBACToast();
@@ -70,35 +73,28 @@ export function UserRBACPage() {
     const [selectedOrg, setSelectedOrg] = useState('');
     const [selectedRole, setSelectedRole] = useState<MemberRole>('member');
 
-    // Fetch user details
-    const { data: user, isLoading: isUserLoading } = useQuery({
-        queryKey: ['admin', 'users', userId],
-        queryFn: async () => {
-            const response = await api<{ data: UserRecord }>(`/api/admin/users/${userId}`);
-            return response.data;
-        },
-        enabled: !!userId,
+    const { data: user, isLoading: isUserLoading } = useApiQuery<{ data: UserRecord }, UserRecord>({
+        entity: 'users',
+        queryKey: ['admin', userId],
+        endpoint: `/api/admin/users/${userId}`,
+        transform: (r) => r.data,
+        queryOptions: { enabled: !!userId },
     });
 
-    // Fetch user's organization memberships
-    const { data: userOrgs = [], isLoading: isOrgsLoading } = useQuery({
-        queryKey: ['admin', 'users', userId, 'memberships'],
-        queryFn: async () => {
-            const response = await api<{ data: OrganizationMemberRecord[] }>(
-                `/api/ottaorm/organization_members?where=${encodeURIComponent(JSON.stringify({ userId }))}`,
-            );
-            return response.data.map((m) => {
-                const org = orgs.find((o) => o.id === m.organizationId);
-                return {
-                    id: m.id || `${m.userId}-${m.organizationId}`,
-                    organizationId: m.organizationId,
-                    organizationName: org?.name || m.organizationId,
-                    role: m.role,
-                    joinedAt: m.joinedAt || '',
-                } satisfies UserOrganization;
-            });
-        },
-        enabled: !!userId && orgs.length > 0,
+    const { data: rawMemberships = [], isLoading: isOrgsLoading } = orgMemberHooks.useList(
+        { where: { userId } },
+        { enabled: !!userId },
+    );
+
+    const userOrgs: UserOrganization[] = rawMemberships.map((m) => {
+        const org = orgs.find((o) => o.id === m.organizationId);
+        return {
+            id: m.id || `${m.userId}-${m.organizationId}`,
+            organizationId: m.organizationId,
+            organizationName: org?.name || m.organizationId,
+            role: m.role,
+            joinedAt: m.joinedAt || '',
+        };
     });
 
     const isLoading = isUserLoading || isOrgsLoading;
@@ -116,18 +112,12 @@ export function UserRBACPage() {
         }
     };
 
-    // Mutation: add user to organization
     const addToOrg = useMutation({
+        meta: { entity: 'organization_members' },
         mutationFn: async ({ orgId, role }: { orgId: string; role: MemberRole }) => {
             const response = await api<{ data: OrganizationMemberRecord }>('/api/ottaorm/organization_members', {
                 method: 'POST',
-                body: JSON.stringify({
-                    userId,
-                    organizationId: orgId,
-                    role,
-                    status: 'active',
-                    joinedAt: Date.now(),
-                }),
+                body: JSON.stringify({ userId, organizationId: orgId, role, status: 'active', joinedAt: Date.now() }),
             });
             return response.data;
         },
@@ -136,48 +126,36 @@ export function UserRBACPage() {
             setIsDialogOpen(false);
             setSelectedOrg('');
             setSelectedRole('member');
-            queryClient.invalidateQueries({ queryKey: ['admin', 'users', userId, 'memberships'] });
+            queryClient.invalidateQueries({ queryKey: ['organization_members'] });
         },
-        onError: () => {
-            toast.error('Failed to add', 'Could not add user to organization');
-        },
+        onError: () => toast.error('Failed to add', 'Could not add user to organization'),
     });
 
-    // Mutation: remove user from organization
     const removeMember = useMutation({
-        mutationFn: async (membershipId: string) => {
-            await api(`/api/ottaorm/organization_members/${membershipId}`, {
-                method: 'DELETE',
-            });
-        },
+        meta: { entity: 'organization_members' },
+        mutationFn: (membershipId: string) =>
+            api(`/api/ottaorm/organization_members/${membershipId}`, { method: 'DELETE' }),
         onSuccess: () => {
             toast.rbac.memberRemoved();
-            queryClient.invalidateQueries({ queryKey: ['admin', 'users', userId, 'memberships'] });
+            queryClient.invalidateQueries({ queryKey: ['organization_members'] });
         },
-        onError: () => {
-            toast.error('Failed to remove', 'Could not remove user from organization');
-        },
+        onError: () => toast.error('Failed to remove', 'Could not remove user from organization'),
     });
 
-    // Mutation: update member role
     const updateRole = useMutation({
+        meta: { entity: 'organization_members' },
         mutationFn: async ({ membershipId, role }: { membershipId: string; role: MemberRole }) => {
             const response = await api<{ data: OrganizationMemberRecord }>(
                 `/api/ottaorm/organization_members/${membershipId}`,
-                {
-                    method: 'PATCH',
-                    body: JSON.stringify({ role }),
-                },
+                { method: 'PATCH', body: JSON.stringify({ role }) },
             );
             return response.data;
         },
         onSuccess: () => {
             toast.rbac.memberUpdated();
-            queryClient.invalidateQueries({ queryKey: ['admin', 'users', userId, 'memberships'] });
+            queryClient.invalidateQueries({ queryKey: ['organization_members'] });
         },
-        onError: () => {
-            toast.error('Failed to update', 'Could not update role');
-        },
+        onError: () => toast.error('Failed to update', 'Could not update role'),
     });
 
     const handleAddToOrg = () => {
