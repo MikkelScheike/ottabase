@@ -5,9 +5,22 @@
  * GitHub-like minimal UI with dark mode support
  */
 
-import { useState } from 'react';
-import { useParams, Link } from '@tanstack/react-router';
+import { ApiErrorDisplay } from '@/components/ErrorBoundary';
+import { TableSkeleton } from '@/components/LoadingSkeletons';
+import { useDeleteOrganization, useOrganization, useUpdateOrganization } from '@/hooks/useRBAC';
+import { useRBACToast } from '@/hooks/useToast';
 import {
+    Alert,
+    AlertDescription,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertTitle,
     Badge,
     Button,
     Card,
@@ -23,23 +36,10 @@ import {
     SelectTrigger,
     SelectValue,
     Separator,
-    Alert,
-    AlertDescription,
-    AlertTitle,
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
 } from '@ottabase/ui-shadcn';
-import { Building2, Loader2, Trash2, AlertTriangle } from 'lucide-react';
-import { useOrganization, useUpdateOrganization, useDeleteOrganization } from '@/hooks/useRBAC';
-import { useRBACToast } from '@/hooks/useToast';
-import { TableSkeleton } from '@/components/LoadingSkeletons';
-import { ApiErrorDisplay } from '@/components/ErrorBoundary';
+import { Link, useParams } from '@tanstack/react-router';
+import { AlertTriangle, Building2, Loader2, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 export function OrganizationSettingsPage() {
     const { organizationId } = useParams({ from: '/organizations/$organizationId/settings' });
@@ -60,16 +60,17 @@ export function OrganizationSettingsPage() {
     const [hasChanges, setHasChanges] = useState(false);
 
     // Initialize form data when org loads
-    useState(() => {
-        if (org) {
-            setFormData({
-                name: org.name,
-                slug: org.slug,
-                plan: org.plan,
-                status: org.status,
-            });
-        }
-    });
+    useEffect(() => {
+        if (!org) return;
+
+        setFormData({
+            name: org.name,
+            slug: org.slug,
+            plan: org.plan,
+            status: org.status === 'deleted' ? 'suspended' : org.status,
+        });
+        setHasChanges(false);
+    }, [org]);
 
     const handleChange = (field: string, value: string) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
@@ -243,6 +244,46 @@ export function OrganizationSettingsPage() {
                     <div className="space-y-2">
                         <Label>Created</Label>
                         <p className="text-sm text-muted-foreground">{new Date(org.createdAt).toLocaleString()}</p>
+                    </div>
+
+                    {/* Updated At */}
+                    <div className="space-y-2">
+                        <Label>Last Updated</Label>
+                        <p className="text-sm text-muted-foreground">{new Date(org.updatedAt).toLocaleString()}</p>
+                    </div>
+
+                    {/* Owner ID */}
+                    <div className="space-y-2">
+                        <Label>Owner ID</Label>
+                        <div className="flex items-center gap-2">
+                            <code className="text-sm bg-muted px-3 py-2 rounded flex-1">{org.ownerId}</code>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                    navigator.clipboard.writeText(org.ownerId);
+                                    toast.success('Copied', 'Owner ID copied to clipboard');
+                                }}
+                            >
+                                Copy
+                            </Button>
+                        </div>
+                    </div>
+
+                    {/* Settings */}
+                    <div className="space-y-2">
+                        <Label>Settings</Label>
+                        <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
+                            {JSON.stringify(org.settings ?? {}, null, 2)}
+                        </pre>
+                    </div>
+
+                    {/* Metadata */}
+                    <div className="space-y-2">
+                        <Label>Metadata</Label>
+                        <pre className="text-xs bg-muted p-3 rounded overflow-x-auto">
+                            {JSON.stringify(org.metadata ?? {}, null, 2)}
+                        </pre>
                     </div>
 
                     {/* Save Button */}
