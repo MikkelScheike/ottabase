@@ -9,6 +9,7 @@ import { ApiErrorDisplay } from '@/components/ErrorBoundary';
 import { TableSkeleton } from '@/components/LoadingSkeletons';
 import { useDeleteOrganization, useOrganization, useUpdateOrganization } from '@/hooks/useRBAC';
 import { useRBACToast } from '@/hooks/useToast';
+import { organizationIdAtom } from '@/ottabase/state/appState';
 import {
     Alert,
     AlertDescription,
@@ -38,12 +39,16 @@ import {
     Separator,
 } from '@ottabase/ui-shadcn';
 import { Link, useParams } from '@tanstack/react-router';
+import { useSetAtom } from 'jotai';
 import { AlertTriangle, Building2, Loader2, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+const CURRENT_ORG_KEY = 'ottabase.current-org-id';
 
 export function OrganizationSettingsPage() {
     const { organizationId } = useParams({ from: '/organizations/$organizationId/settings' });
     const toast = useRBACToast();
+    const setOrganizationId = useSetAtom(organizationIdAtom);
 
     const { data: org, isLoading, error, refetch } = useOrganization(organizationId);
     const updateMutation = useUpdateOrganization();
@@ -58,6 +63,16 @@ export function OrganizationSettingsPage() {
 
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
+
+    useEffect(() => {
+        if (!organizationId) return;
+        setOrganizationId(organizationId);
+        try {
+            localStorage.setItem(CURRENT_ORG_KEY, organizationId);
+        } catch {
+            // ignore storage failures
+        }
+    }, [organizationId, setOrganizationId]);
 
     // Initialize form data when org loads
     useEffect(() => {

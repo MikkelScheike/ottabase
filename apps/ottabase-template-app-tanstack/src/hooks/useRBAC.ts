@@ -63,11 +63,21 @@ export function useCreateOrganization() {
     return useMutation({
         meta: { entity: 'organizations' },
         mutationFn: async (data: Partial<OrganizationRecord>) => {
-            const response = await api<{ data: OrganizationRecord }>('/api/ottaorm/organizations', {
+            const response = await api<Record<string, unknown>>('/api/ottaorm/organizations', {
                 method: 'POST',
-                body: JSON.stringify(data),
+                body: data,
             });
-            return response.data;
+
+            const createdOrg =
+                response && typeof response === 'object' && 'data' in response
+                    ? (response.data as OrganizationRecord | undefined)
+                    : (response as OrganizationRecord | undefined);
+
+            if (!createdOrg?.id) {
+                throw new Error('Organization creation returned an invalid payload');
+            }
+
+            return createdOrg;
         },
         onMutate: async (newOrg) => {
             // Cancel outgoing refetches
@@ -100,11 +110,21 @@ export function useUpdateOrganization() {
     return useMutation({
         meta: { entity: 'organizations' },
         mutationFn: async ({ id, data }: { id: string; data: Partial<OrganizationRecord> }) => {
-            const response = await api<{ data: OrganizationRecord }>(`/api/ottaorm/organizations/${id}`, {
+            const response = await api<Record<string, unknown>>(`/api/ottaorm/organizations/${id}`, {
                 method: 'PATCH',
-                body: JSON.stringify(data),
+                body: data,
             });
-            return response.data;
+
+            const updatedOrg =
+                response && typeof response === 'object' && 'data' in response
+                    ? (response.data as OrganizationRecord | undefined)
+                    : (response as OrganizationRecord | undefined);
+
+            if (!updatedOrg?.id) {
+                throw new Error('Organization update returned an invalid payload');
+            }
+
+            return updatedOrg;
         },
         onMutate: async ({ id, data }) => {
             await queryClient.cancelQueries({ queryKey: organizationHooks.queryKeys.detail(id) });
