@@ -87,14 +87,9 @@ export function useCreateOrganization() {
             return { previous };
         },
         onError: (err, newOrg, context) => {
-            // Rollback on error
             if (context?.previous) {
                 queryClient.setQueryData(organizationHooks.queryKeys.lists(), context.previous);
             }
-        },
-        onSettled: () => {
-            // Refetch to ensure sync — meta.entity handles broader invalidation via global observer
-            queryClient.invalidateQueries({ queryKey: organizationHooks.queryKeys.lists() });
         },
     });
 }
@@ -144,10 +139,6 @@ export function useUpdateOrganization() {
                 queryClient.setQueryData(organizationHooks.queryKeys.lists(), context.previousOrgs);
             }
         },
-        onSettled: (data, err, { id }) => {
-            queryClient.invalidateQueries({ queryKey: organizationHooks.queryKeys.detail(id) });
-            queryClient.invalidateQueries({ queryKey: organizationHooks.queryKeys.lists() });
-        },
     });
 }
 
@@ -179,9 +170,6 @@ export function useDeleteOrganization() {
             if (context?.previous) {
                 queryClient.setQueryData(organizationHooks.queryKeys.lists(), context.previous);
             }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: organizationHooks.queryKeys.lists() });
         },
     });
 }
@@ -252,11 +240,6 @@ export function useUpdateMemberRole() {
                 );
             }
         },
-        onSettled: (data, err, { organizationId }) => {
-            queryClient.invalidateQueries({
-                queryKey: orgMemberHooks.queryKeys.list({ where: { organizationId } }),
-            });
-        },
     });
 }
 
@@ -292,11 +275,6 @@ export function useRemoveMember() {
                     context.previous,
                 );
             }
-        },
-        onSettled: (data, err, { organizationId }) => {
-            queryClient.invalidateQueries({
-                queryKey: orgMemberHooks.queryKeys.list({ where: { organizationId } }),
-            });
         },
     });
 }
@@ -347,9 +325,6 @@ export function useUpdateRole() {
             if (context?.previous) {
                 queryClient.setQueryData(roleHooks.queryKeys.lists(), context.previous);
             }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: roleHooks.queryKeys.lists() });
         },
     });
 }
@@ -417,9 +392,6 @@ export function useTogglePermission() {
             if (context?.previous) {
                 queryClient.setQueryData(roleHooks.queryKeys.lists(), context.previous);
             }
-        },
-        onSettled: () => {
-            queryClient.invalidateQueries({ queryKey: roleHooks.queryKeys.lists() });
         },
     });
 }

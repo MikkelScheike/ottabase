@@ -41,8 +41,6 @@ import { Shield, Building2, Plus, Trash2, Loader2 } from 'lucide-react';
 import { useRBACToast } from '@/hooks/useToast';
 import { useOrganizations } from '@/hooks/useRBAC';
 import { useApiQuery, createModelHooks } from '@ottabase/ottaorm/client';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
 import { TableSkeleton } from '@/components/LoadingSkeletons';
 import type { MemberRole, BadgeVariant, OrganizationMemberRecord } from '@/types/rbac';
 
@@ -66,7 +64,6 @@ const orgMemberHooks = createModelHooks<OrganizationMemberRecord>({ entityName: 
 export function UserRBACPage() {
     const { userId } = useParams({ from: '/admin/users/$userId/rbac' });
     const toast = useRBACToast();
-    const queryClient = useQueryClient();
     const { data: orgs = [] } = useOrganizations();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -112,49 +109,23 @@ export function UserRBACPage() {
         }
     };
 
-    const addToOrg = useMutation({
-        meta: { entity: 'organization_members' },
-        mutationFn: async ({ orgId, role }: { orgId: string; role: MemberRole }) => {
-            const response = await api<{ data: OrganizationMemberRecord }>('/api/ottaorm/organization_members', {
-                method: 'POST',
-                body: JSON.stringify({ userId, organizationId: orgId, role, status: 'active', joinedAt: Date.now() }),
-            });
-            return response.data;
-        },
+    const addToOrg = orgMemberHooks.useCreate({
         onSuccess: () => {
             toast.rbac.memberInvited();
             setIsDialogOpen(false);
             setSelectedOrg('');
             setSelectedRole('member');
-            queryClient.invalidateQueries({ queryKey: ['organization_members'] });
         },
         onError: () => toast.error('Failed to add', 'Could not add user to organization'),
     });
 
-    const removeMember = useMutation({
-        meta: { entity: 'organization_members' },
-        mutationFn: (membershipId: string) =>
-            api(`/api/ottaorm/organization_members/${membershipId}`, { method: 'DELETE' }),
-        onSuccess: () => {
-            toast.rbac.memberRemoved();
-            queryClient.invalidateQueries({ queryKey: ['organization_members'] });
-        },
+    const removeMember = orgMemberHooks.useDelete({
+        onSuccess: () => toast.rbac.memberRemoved(),
         onError: () => toast.error('Failed to remove', 'Could not remove user from organization'),
     });
 
-    const updateRole = useMutation({
-        meta: { entity: 'organization_members' },
-        mutationFn: async ({ membershipId, role }: { membershipId: string; role: MemberRole }) => {
-            const response = await api<{ data: OrganizationMemberRecord }>(
-                `/api/ottaorm/organization_members/${membershipId}`,
-                { method: 'PATCH', body: JSON.stringify({ role }) },
-            );
-            return response.data;
-        },
-        onSuccess: () => {
-            toast.rbac.memberUpdated();
-            queryClient.invalidateQueries({ queryKey: ['organization_members'] });
-        },
+    const updateRole = orgMemberHooks.useUpdate({
+        onSuccess: () => toast.rbac.memberUpdated(),
         onError: () => toast.error('Failed to update', 'Could not update role'),
     });
 
@@ -163,16 +134,22 @@ export function UserRBACPage() {
             toast.error('Validation error', 'Please select an organization');
             return;
         }
-        addToOrg.mutate({ orgId: selectedOrg, role: selectedRole });
+        addToOrg.mutate({
+            userId,
+            organizationId: selectedOrg,
+            role: selectedRole,
+            status: 'active',
+            joinedAt: Date.now(),
+        });
     };
 
     const handleRemove = (membershipId: string, orgName: string) => {
         if (!confirm(`Remove user from ${orgName}?`)) return;
-        removeMember.mutate(membershipId);
+        removeMember.mutate(membershipId as string);
     };
 
     const handleRoleChange = (membershipId: string, newRole: MemberRole) => {
-        updateRole.mutate({ membershipId, role: newRole });
+        updateRole.mutate({ id: membershipId, data: { role: newRole } });
     };
 
     const displayUser = user || { id: userId, name: null, email: '', image: null };
