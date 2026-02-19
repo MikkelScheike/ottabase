@@ -46,8 +46,8 @@ export interface DocsSource {
     pages: DocPage[];
 }
 
-/** Built-in theme names */
-export type DocsTheme = 'default' | 'github' | 'notion';
+/** Layout theme names (colors come from Brand Kit) */
+export type DocsTheme = 'compact' | 'standard' | 'spacious';
 
 /** Configuration for the docs viewer */
 export interface DocsConfig {
@@ -59,7 +59,7 @@ export interface DocsConfig {
     sources: DocsSource[];
     /** Base URL path (e.g. "/docs") */
     basePath?: string;
-    /** Theme name — 'default' | 'github' | 'notion' */
+    /** Layout theme — 'compact' | 'standard' | 'spacious' */
     theme?: DocsTheme;
     /** Whether to enable built-in code highlighting with copy buttons */
     enableCodeHighlight?: boolean;

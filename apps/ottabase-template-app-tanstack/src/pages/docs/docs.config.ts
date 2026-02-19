@@ -75,7 +75,7 @@ const packageModules = import.meta.glob('/../../packages/*/README.md', {
 export const docsConfig: DocsConfig = {
     title: 'Ottabase Docs',
     basePath: '/docs',
-    theme: 'github',
+    theme: 'spacious',
     enableCodeHighlight: true,
     sources: [
         createDocsSource('Guides', guidesModules, { basePath: 'guides', order: 0 }),

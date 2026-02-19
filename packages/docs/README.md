@@ -1,7 +1,7 @@
 # @ottabase/docs
 
 Minimal, reusable documentation viewer for Markdown files. Clean layout with left navigation, content area, and right
-table of contents. Three built-in themes inspired by GitHub, Notion, and Mantine.
+table of contents. Colors from Brand Kit; layout themes control spacing and density.
 
 ## Features
 
@@ -9,9 +9,9 @@ table of contents. Three built-in themes inspired by GitHub, Notion, and Mantine
 - 🗂️ Left sidebar with search and grouped navigation
 - 📑 Right table of contents with scroll tracking
 - 📱 Responsive with mobile drawer navigation
-- 🌙 Dark mode support (system preference and `.dark` class)
+- 🌙 Dark mode via Brand Kit
 - ⬅️➡️ Previous/Next page navigation
-- 🎨 Three built-in themes: `default`, `github`, `notion`
+- 🎨 Three layout themes: `compact`, `standard`, `spacious` (colors from Brand Kit) with subtle sidebar switcher
 - 📋 Enhanced code blocks with copy-to-clipboard
 - 🔌 Extensible — CSS custom properties and composable config for easy customization
 - 📦 Zero required runtime dependencies (only React peer dep)
@@ -32,7 +32,7 @@ import '@ottabase/docs/styles.css';
 const config = {
     title: 'My Docs',
     basePath: '/docs',
-    theme: 'github', // 'default' | 'github' | 'notion'
+    theme: 'standard', // 'compact' | 'standard' | 'spacious'
     enableCodeHighlight: true, // Adds copy button to code blocks
     sources: [
         {
@@ -72,7 +72,7 @@ const packageModules = import.meta.glob('/../../packages/*/README.md', {
 });
 const packages = createPackageSource(packageModules, { prefix: '@ottabase/' });
 
-const config = { sources: [guides, packages], theme: 'github' };
+const config = { sources: [guides, packages], theme: 'standard' };
 ```
 
 ## Configuration
@@ -82,33 +82,33 @@ interface DocsConfig {
     title?: string; // Docs site title
     logo?: React.ReactNode; // Logo element for sidebar
     basePath?: string; // Base URL path (e.g. "/docs")
-    theme?: 'default' | 'github' | 'notion'; // Built-in theme
+    theme?: 'compact' | 'standard' | 'spacious'; // Layout theme
     enableCodeHighlight?: boolean; // Copy button on code blocks
     sources: DocsSource[]; // Documentation sources
 }
 ```
 
-## Themes
+## Layout Themes
 
-Three built-in themes, all with dark mode support:
+Three layout themes (colors come from Brand Kit):
 
-| Theme     | Style                                           | Inspiration  |
-| --------- | ----------------------------------------------- | ------------ |
-| `default` | Soft borders, rounded corners, blue accents     | Mantine docs |
-| `github`  | Utilitarian, clean lines, blue links            | GitHub docs  |
-| `notion`  | Warm, readable, large headings, red inline code | Notion       |
+| Theme      | Layout                                         |
+| ---------- | ---------------------------------------------- |
+| `compact`  | Narrow sidebar & content, tight spacing, dense |
+| `standard` | Balanced widths, comfortable spacing (default) |
+| `spacious` | Wide content, generous whitespace, larger type |
 
-Set via config: `{ theme: 'github' }`. Override any CSS custom property for further customization.
+Set via config: `{ theme: 'standard' }` (default before user choice). A subtle switcher (− · +) at the bottom of the
+sidebar lets users change layout at runtime; selection persists in `localStorage` under `ottabase.docs.theme`. Colors
+use `--background`, `--primary`, `--muted`, etc. from Brand Kit.
 
 ## CSS Custom Properties
 
+Layout vars (override per theme):
+
 ```css
-:root {
-    --otta-docs-color-primary: #228be6;
-    --otta-docs-color-bg: #ffffff;
-    --otta-docs-color-text: #212529;
-    --otta-docs-sidebar-width: 260px;
-    --otta-docs-toc-width: 220px;
-    --otta-docs-content-max-width: 780px;
-}
+--otta-docs-sidebar-width: 240px;
+--otta-docs-toc-width: 200px;
+--otta-docs-content-max-width: 720px;
+--otta-docs-radius: 3px;
 ```

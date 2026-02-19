@@ -13,8 +13,9 @@
             "require": "./dist/index.js"
         },
         "./styles.css": "./src/styles.css",
-        "./themes/github.css": "./src/themes/github.css",
-        "./themes/notion.css": "./src/themes/notion.css"
+        "./themes/compact.css": "./src/themes/compact.css",
+        "./themes/standard.css": "./src/themes/standard.css",
+        "./themes/spacious.css": "./src/themes/spacious.css"
     },
     "files": [
         "dist",

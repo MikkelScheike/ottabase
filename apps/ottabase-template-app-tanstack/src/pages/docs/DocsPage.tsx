@@ -10,19 +10,21 @@ export function DocsPage() {
 
     // Extract slug from URL path after /docs/
     const basePath = '/docs';
+    // Guard: only redirect to first doc when actually on /docs. Prevents redirecting back to docs
+    // when navigating away (e.g. clicking logo to /) during route transition.
+    const isOnDocsRoute = location.pathname === basePath || location.pathname.startsWith(`${basePath}/`);
     const rawSlug = location.pathname.replace(`${basePath}/`, '').replace(/^\/+|\/+$/g, '');
     const activeSlug = rawSlug || undefined;
 
-    // Auto-navigate to first page when no slug
+    // Auto-navigate to first page when on docs route with no slug (e.g. /docs or /docs/)
     useEffect(() => {
-        if (!activeSlug && docsConfig.sources.length > 0) {
-            const firstSource = docsConfig.sources.find((s) => s.pages.length > 0);
-            if (firstSource && firstSource.pages[0]) {
-                const slug = buildPageSlug(firstSource, firstSource.pages[0]);
-                navigate({ to: `${basePath}/${slug}` as string });
-            }
+        if (!isOnDocsRoute || activeSlug || docsConfig.sources.length === 0) return;
+        const firstSource = docsConfig.sources.find((s) => s.pages.length > 0);
+        if (firstSource && firstSource.pages[0]) {
+            const slug = buildPageSlug(firstSource, firstSource.pages[0]);
+            navigate({ to: `${basePath}/${slug}` as string });
         }
-    }, [activeSlug, navigate]);
+    }, [isOnDocsRoute, activeSlug, navigate]);
 
     const handleNavigate = (slug: string) => {
         navigate({ to: `${basePath}/${slug}` as string });

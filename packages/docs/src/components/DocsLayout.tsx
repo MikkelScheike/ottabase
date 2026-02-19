@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { DocsConfig } from '../types';
+import type { DocsConfig, DocsTheme } from '../types';
 import { buildPageSlug, findPageBySlug } from '../utils';
 import { DocsSidebar } from './DocsSidebar';
 import { MarkdownRenderer, TableOfContents } from './MarkdownRenderer';
+
+const STORAGE_KEY = 'ottabase.docs.theme';
 
 export interface DocsLayoutProps {
     /** Docs configuration with sources and pages */
@@ -15,15 +17,16 @@ export interface DocsLayoutProps {
     className?: string;
 }
 
-/** Map theme name to CSS class */
+/** Map theme name to CSS class (default: standard) */
 function getThemeClass(theme?: string): string {
     switch (theme) {
-        case 'github':
-            return 'otta-docs-theme-github';
-        case 'notion':
-            return 'otta-docs-theme-notion';
+        case 'compact':
+            return 'otta-docs-theme-compact';
+        case 'spacious':
+            return 'otta-docs-theme-spacious';
+        case 'standard':
         default:
-            return '';
+            return 'otta-docs-theme-standard';
     }
 }
 
@@ -36,7 +39,19 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
     const [activeTocId, setActiveTocId] = useState<string>('');
     const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-    const themeClass = getThemeClass(config.theme);
+    const [themeOverride, setThemeOverride] = useState<DocsTheme | null>(null);
+    const effectiveTheme: DocsTheme = themeOverride ?? config.theme ?? 'standard';
+    const themeClass = getThemeClass(effectiveTheme);
+
+    useEffect(() => {
+        const stored = window.localStorage.getItem(STORAGE_KEY) as DocsTheme | null;
+        if (stored && ['compact', 'standard', 'spacious'].includes(stored)) setThemeOverride(stored);
+    }, []);
+
+    const handleThemeChange = useCallback((theme: DocsTheme) => {
+        setThemeOverride(theme);
+        window.localStorage.setItem(STORAGE_KEY, theme);
+    }, []);
 
     // Resolve active page
     const activePage = activeSlug ? findPageBySlug(config.sources, activeSlug) : config.sources[0]?.pages[0];
@@ -116,6 +131,8 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
                 searchQuery={searchQuery}
                 onSearchChange={setSearchQuery}
                 onNavigate={handleNavigate}
+                currentTheme={effectiveTheme}
+                onThemeChange={handleThemeChange}
                 className={mobileNavOpen ? 'otta-docs-sidebar-open' : ''}
             />
 

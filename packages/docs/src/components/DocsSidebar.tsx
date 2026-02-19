@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import type { DocGroup, DocsConfig } from '../types';
+import type { DocGroup, DocsConfig, DocsTheme } from '../types';
 import { buildPageSlug, organizePages } from '../utils';
 
 interface DocsSidebarProps {
@@ -8,8 +8,16 @@ interface DocsSidebarProps {
     searchQuery: string;
     onSearchChange: (query: string) => void;
     onNavigate: (slug: string) => void;
+    currentTheme?: DocsTheme;
+    onThemeChange?: (theme: DocsTheme) => void;
     className?: string;
 }
+
+const THEMES: { theme: DocsTheme; label: string; symbol: string }[] = [
+    { theme: 'compact', label: 'Compact', symbol: '−' },
+    { theme: 'standard', label: 'Standard', symbol: '·' },
+    { theme: 'spacious', label: 'Spacious', symbol: '+' },
+];
 
 export function DocsSidebar({
     config,
@@ -17,6 +25,8 @@ export function DocsSidebar({
     searchQuery,
     onSearchChange,
     onNavigate,
+    currentTheme,
+    onThemeChange,
     className = '',
 }: DocsSidebarProps) {
     const groups = useMemo<DocGroup[]>(() => {
@@ -81,6 +91,24 @@ export function DocsSidebar({
                     </div>
                 ))}
             </nav>
+
+            {/* Subtle layout switcher (compact / standard / spacious) */}
+            {currentTheme != null && onThemeChange && (
+                <div className="otta-docs-theme-switcher" role="group" aria-label="Layout density">
+                    {THEMES.map(({ theme, label, symbol }) => (
+                        <button
+                            key={theme}
+                            type="button"
+                            title={label}
+                            aria-pressed={currentTheme === theme}
+                            className={`otta-docs-theme-btn ${currentTheme === theme ? 'otta-docs-theme-btn-active' : ''}`}
+                            onClick={() => onThemeChange(theme)}
+                        >
+                            {symbol}
+                        </button>
+                    ))}
+                </div>
+            )}
         </aside>
     );
 }
