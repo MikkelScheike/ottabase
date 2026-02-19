@@ -36,8 +36,8 @@ export const SidebarNav = memo(function SidebarNav({ widthClass = 'w-56' }: { wi
                             to={link.to}
                             className={`px-3 py-2 text-sm rounded-md transition-colors whitespace-nowrap md:whitespace-normal ${
                                 isActive
-                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                                    ? 'bg-sidebar-accent/30 hover:bg-sidebar-accent/40 text-sidebar-accent-foreground font-medium'
+                                    : 'hover:bg-sidebar-accent/20 text-sidebar-foreground'
                             }`}
                         >
                             {link.label}
