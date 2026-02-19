@@ -53,10 +53,12 @@ function BrandKitPreviewPanel({
     }, [theme.typography]);
     return (
         <div
-            className="rounded-xl border bg-background p-4 shadow-sm dark:border-muted"
+            className="rounded-xl border bg-background p-4 dark:border-muted"
             style={
                 {
                     ...varMap,
+                    borderRadius: 'var(--radius)',
+                    boxShadow: 'var(--shadow-md)',
                     // Ensure text inherits preview theme's foreground (fixes dark mode contrast)
                     color: 'hsl(var(--foreground))',
                 } as React.CSSProperties
@@ -98,16 +100,28 @@ function BrandKitPreviewPanel({
                     <div className="flex flex-wrap gap-2">
                         <button
                             type="button"
-                            className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                            className="bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+                            style={{ borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)' }}
                         >
                             Button
                         </button>
                         <button
                             type="button"
-                            className="rounded-md border border-input px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                            className="border border-input px-3 py-1.5 text-sm font-medium hover:bg-accent"
+                            style={{ borderRadius: 'var(--radius)' }}
                         >
                             Outline
                         </button>
+                    </div>
+                    <div
+                        className="p-2 border border-border"
+                        style={{
+                            borderRadius: 'var(--radius)',
+                            boxShadow: 'var(--shadow-xs)',
+                            marginTop: 'var(--spacing-element)',
+                        }}
+                    >
+                        <span className="text-xs">Card with --shadow-xs, --spacing-element</span>
                     </div>
                 </div>
                 <p className="text-xs" style={{ fontFamily: 'var(--font-handwriting)' }}>

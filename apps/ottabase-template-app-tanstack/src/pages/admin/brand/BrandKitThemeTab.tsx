@@ -3,6 +3,8 @@
 // ---------------------------------------------------------------------------
 
 import {
+    DEFAULT_SHADOWS,
+    DEFAULT_SPACING,
     generatePalette,
     generateSemanticDefaults,
     generateSemanticDefaultsDark,
@@ -242,6 +244,41 @@ export function BrandKitThemeTab({
         }
     }, [tokensJson]);
 
+    // Resolved spacing, radius, shadow from tokensJson (with preset defaults)
+    const resolvedSpacing = useMemo(() => {
+        try {
+            const parsed = JSON.parse(tokensJson || '{}') as { spacing?: Record<string, string> };
+            return { ...DEFAULT_SPACING, ...parsed.spacing } as Record<string, string>;
+        } catch {
+            return { ...DEFAULT_SPACING };
+        }
+    }, [tokensJson]);
+    const resolvedRadius = useMemo(() => {
+        try {
+            const parsed = JSON.parse(tokensJson || '{}') as { radius?: string };
+            return parsed.radius ?? '0.5rem';
+        } catch {
+            return '0.5rem';
+        }
+    }, [tokensJson]);
+    const resolvedShadows = useMemo(() => {
+        try {
+            const parsed = JSON.parse(tokensJson || '{}') as { shadow?: Record<string, string> };
+            return { ...DEFAULT_SHADOWS, ...parsed.shadow } as Record<string, string>;
+        } catch {
+            return { ...DEFAULT_SHADOWS };
+        }
+    }, [tokensJson]);
+
+    const hasSpacingRadiusShadowOverrides = useMemo(() => {
+        try {
+            const parsed = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
+            return !!(parsed.spacing || parsed.radius || parsed.shadow);
+        } catch {
+            return false;
+        }
+    }, [tokensJson]);
+
     const handleRestorePresetColors = () => {
         try {
             const parsed = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
@@ -356,6 +393,55 @@ export function BrandKitThemeTab({
         [tokensJson, onTokensChange],
     );
 
+    const handleSpacingRadiusShadowOverrideToggle = useCallback(
+        (enabled: boolean) => {
+            if (enabled) return;
+            try {
+                const parsed = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
+                delete parsed.spacing;
+                delete parsed.radius;
+                delete parsed.shadow;
+                onTokensChange(JSON.stringify(parsed, null, 2));
+            } catch {
+                onTokensChange('{}');
+            }
+        },
+        [tokensJson, onTokensChange],
+    );
+
+    /** Apply spacing/radius/shadow override to tokensJson */
+    const handleSpacingRadiusShadowChange = useCallback(
+        (updates: { spacing?: Record<string, string>; radius?: string; shadow?: Record<string, string> }) => {
+            try {
+                const existing = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
+                if (updates.spacing)
+                    existing.spacing = { ...(existing.spacing as object), ...updates.spacing } as Record<
+                        string,
+                        string
+                    >;
+                if (updates.radius !== undefined) existing.radius = updates.radius;
+                if (updates.shadow)
+                    existing.shadow = { ...(existing.shadow as object), ...updates.shadow } as Record<string, string>;
+                onTokensChange(JSON.stringify(existing, null, 2));
+            } catch {
+                onTokensChange(JSON.stringify(updates, null, 2));
+            }
+        },
+        [tokensJson, onTokensChange],
+    );
+
+    const handleRestoreSpacingRadiusShadow = () => {
+        try {
+            const parsed = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
+            delete parsed.spacing;
+            delete parsed.radius;
+            delete parsed.shadow;
+            onTokensChange(JSON.stringify(parsed, null, 2));
+        } catch {
+            /* keep raw text untouched */
+        }
+    };
+
     // ── Preset section ───────────────────────────────────────────────────
     const presetSection = (
         <Card>
@@ -418,6 +504,18 @@ export function BrandKitThemeTab({
                                         if (customColor.dark)
                                             expandedColor.dark = { ...expandedColor.dark, ...customColor.dark };
                                     }
+                                    // Merge custom spacing, radius, shadow overrides (user edits preserved)
+                                    if (existing.spacing && typeof existing.spacing === 'object')
+                                        expanded.spacing = {
+                                            ...(expanded.spacing as object),
+                                            ...existing.spacing,
+                                        } as Record<string, string>;
+                                    if (existing.radius) expanded.radius = existing.radius;
+                                    if (existing.shadow && typeof existing.shadow === 'object')
+                                        expanded.shadow = {
+                                            ...(expanded.shadow as object),
+                                            ...existing.shadow,
+                                        } as Record<string, string>;
 
                                     onTokensChange(JSON.stringify(expanded, null, 2));
                                 } catch {
@@ -618,6 +716,115 @@ export function BrandKitThemeTab({
         </Card>
     );
 
+    // ── Spacing, radius & shadows override section ───────────────────────
+    const RADIUS_OPTIONS = ['0', '0.125rem', '0.25rem', '0.5rem', '0.75rem', '1rem', '1.5rem', '9999px'];
+    const spacingRadiusShadowSection = (
+        <Card>
+            <CardHeader>
+                <CardTitle>Spacing, radius &amp; shadows</CardTitle>
+                <CardDescription>
+                    Override layout spacing, border radius, and shadow elevation. Preset values apply until you
+                    customize.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {hasSpacingRadiusShadowOverrides && (
+                    <div className="rounded-md border border-amber-300/50 bg-amber-50/70 p-3 text-sm dark:border-amber-700/40 dark:bg-amber-950/20">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-medium">Custom spacing/radius/shadows active</p>
+                                <p className="text-muted-foreground mt-0.5">Overriding preset values.</p>
+                            </div>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={handleRestoreSpacingRadiusShadow}
+                            >
+                                Restore preset
+                            </Button>
+                        </div>
+                    </div>
+                )}
+
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    {/* Spacing */}
+                    <div className="space-y-2">
+                        <Label>Spacing</Label>
+                        <div className="space-y-2">
+                            {(['section', 'card', 'element'] as const).map((key) => (
+                                <div key={key} className="flex items-center gap-2">
+                                    <span className="w-16 shrink-0 text-xs text-muted-foreground capitalize">
+                                        {key}
+                                    </span>
+                                    <Input
+                                        value={resolvedSpacing[key] ?? ''}
+                                        onChange={(e) =>
+                                            handleSpacingRadiusShadowChange({
+                                                spacing: { [key]: e.target.value.trim() || DEFAULT_SPACING[key] },
+                                            })
+                                        }
+                                        placeholder={DEFAULT_SPACING[key]}
+                                        className="font-mono text-sm"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                            Section: page gaps. Card: panel padding. Element: button/input gaps.
+                        </p>
+                    </div>
+
+                    {/* Radius */}
+                    <div className="space-y-2">
+                        <Label>Border radius</Label>
+                        <div className="flex flex-wrap gap-2">
+                            {RADIUS_OPTIONS.map((r) => (
+                                <button
+                                    key={r}
+                                    type="button"
+                                    onClick={() => handleSpacingRadiusShadowChange({ radius: r })}
+                                    className={`rounded-md border px-2 py-1.5 text-xs font-medium transition-colors ${
+                                        resolvedRadius === r
+                                            ? 'border-primary bg-primary/10 text-primary'
+                                            : 'border-input hover:bg-accent'
+                                    }`}
+                                    style={{ borderRadius: r === '9999px' ? '9999px' : r }}
+                                >
+                                    {r === '9999px' ? 'pill' : r}
+                                </button>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">Applied to buttons, cards, inputs.</p>
+                    </div>
+
+                    {/* Shadows */}
+                    <div className="space-y-2">
+                        <Label>Shadow elevation</Label>
+                        <div className="space-y-2">
+                            {(['xs', 'sm', 'md', 'lg', 'xl'] as const).map((level) => (
+                                <div key={level} className="flex items-center gap-2">
+                                    <span className="w-6 shrink-0 text-xs text-muted-foreground">{level}</span>
+                                    <Input
+                                        value={resolvedShadows[level] ?? ''}
+                                        onChange={(e) =>
+                                            handleSpacingRadiusShadowChange({
+                                                shadow: { [level]: e.target.value.trim() || DEFAULT_SHADOWS[level] },
+                                            })
+                                        }
+                                        placeholder={DEFAULT_SHADOWS[level]}
+                                        className="font-mono text-[11px]"
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">xs→xl: light to heavy elevation.</p>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
+
     // ── Token usage reference ────────────────────────────────────────────
     const tokenUsageSection = (
         <Card>
@@ -657,6 +864,13 @@ export function BrandKitThemeTab({
                 <OverrideSection label="Colors" isOverridden={hasCustomColorOverrides} onToggle={handleOverrideToggle}>
                     {colorSection}
                 </OverrideSection>
+                <OverrideSection
+                    label="Spacing, radius & shadows"
+                    isOverridden={hasSpacingRadiusShadowOverrides}
+                    onToggle={handleSpacingRadiusShadowOverrideToggle}
+                >
+                    {spacingRadiusShadowSection}
+                </OverrideSection>
                 {tokenUsageSection}
             </div>
         );
@@ -666,6 +880,7 @@ export function BrandKitThemeTab({
         <div className="space-y-6">
             {presetSection}
             {colorSection}
+            {spacingRadiusShadowSection}
             {tokenUsageSection}
         </div>
     );
