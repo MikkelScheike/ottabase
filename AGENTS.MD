@@ -451,6 +451,7 @@ Install recommended extensions in `.vscode/extensions.json` for Prettier format-
 
 ### IMPORTANT NOTES FOR CODING AGENTS
 
+- **Build commands:** Only run `pnpm build:pkg` (packages) and tests for a particular package with --filter commands. Do not run full app builds (`pnpm build`, `pnpm dev`, etc.). The user handles those when in local development mode. You may run them if you're a cloud agent.
 - Do not make stray .MD files after a task (like SUMMARY.MD)
 - Add comments in code snippets to explain what they do, especially for complex logic.
 - `README.MD`s should be concise, and with examples. Don't be too verbose. Keep text sharply focused on the task at
