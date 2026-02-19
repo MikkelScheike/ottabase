@@ -46,6 +46,7 @@
     flex-direction: column;
     border-right: 1px solid var(--otta-docs-color-border);
     background: var(--otta-docs-color-bg-subtle);
+    border-radius: var(--otta-docs-radius);
     position: sticky;
     top: 0;
     height: 100vh;

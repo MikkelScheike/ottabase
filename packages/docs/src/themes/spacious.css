@@ -9,8 +9,9 @@
     --otta-docs-sidebar-width: 280px;
     --otta-docs-toc-width: 220px;
     --otta-docs-content-max-width: 800px;
-    --otta-docs-radius: 6px;
-    --otta-docs-radius-sm: 4px;
+    /* Radius from Brand Kit (--radius); fallback to theme default when no brand applied */
+    --otta-docs-radius: var(--radius, 6px);
+    --otta-docs-radius-sm: var(--radius, 4px);
 }
 
 .otta-docs-theme-spacious .otta-docs-nav-group-label {
