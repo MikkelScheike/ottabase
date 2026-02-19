@@ -1,7 +1,7 @@
-import { memo, useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { CodeBlock } from '@ottabase/ui-code-highlight';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DocsCodeRenderMode, TocItem } from '../types';
 import { extractToc } from '../utils';
-import { CodeBlock } from '@ottabase/ui-code-highlight';
 
 interface MarkdownRendererProps {
     content: string;
@@ -106,7 +106,7 @@ function CodeBlockRenderer({
     const normalizedLang = normalizeLang(lang);
     if (codeRenderMode === 'ui-code-highlight') {
         return (
-            <div className="otta-docs-code-block otta-docs-code-ui-highlight">
+            <div className="otta-docs-code-block--otta-docs-code-ui-highlight">
                 <CodeBlock
                     code={code}
                     language={normalizedLang}
@@ -116,7 +116,11 @@ function CodeBlockRenderer({
             </div>
         );
     }
-    return <SimpleCodeBlock lang={normalizedLang} code={code} />;
+    return (
+        <div>
+            <SimpleCodeBlock lang={normalizedLang} code={code} />
+        </div>
+    );
 }
 
 /** Simple code block: copy button + lang label, no syntax highlighting */
