@@ -1,18 +1,7 @@
 import { getThemeOrDefault, injectFont } from '@ottabase/brand-engine';
 import { GOOGLE_FONTS, fontToTypography } from '@ottabase/brand-engine/fonts';
-import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-    Label,
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@ottabase/ui-shadcn';
+import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label } from '@ottabase/ui-shadcn';
 import { useCallback, useEffect, useMemo } from 'react';
 import { OverrideSection } from './OverrideSection';
 
@@ -109,6 +98,29 @@ export function BrandKitFontsTab({ tokensJson, themePresetId, onTokensChange, ha
         handwriting: 'Welcome! Your message here.',
     };
 
+    // OttaSelect items per role (id+name for searchable dropdown)
+    const headingFontItems = useMemo(() => {
+        const base = GOOGLE_FONTS.filter((f) => ['sans-serif', 'serif', 'display'].includes(f.category));
+        const custom = GOOGLE_FONTS.some((f) => f.family === fontHeading)
+            ? []
+            : [{ family: fontHeading, category: 'sans-serif' as const }];
+        return [...base, ...custom].map((f) => ({ id: f.family, name: f.family }));
+    }, [fontHeading]);
+    const bodyFontItems = useMemo(() => {
+        const base = GOOGLE_FONTS.filter((f) => ['sans-serif', 'serif', 'display'].includes(f.category));
+        const custom = GOOGLE_FONTS.some((f) => f.family === fontBody)
+            ? []
+            : [{ family: fontBody, category: 'sans-serif' as const }];
+        return [...base, ...custom].map((f) => ({ id: f.family, name: f.family }));
+    }, [fontBody]);
+    const handwritingFontItems = useMemo(() => {
+        const base = GOOGLE_FONTS.filter((f) => f.category === 'handwriting');
+        const custom = GOOGLE_FONTS.some((f) => f.family === fontHandwriting)
+            ? []
+            : [{ family: fontHandwriting, category: 'handwriting' as const }];
+        return [...base, ...custom].map((f) => ({ id: f.family, name: f.family }));
+    }, [fontHandwriting]);
+
     const fontEditor = (
         <Card>
             <CardHeader>
@@ -120,29 +132,16 @@ export function BrandKitFontsTab({ tokensJson, themePresetId, onTokensChange, ha
             <CardContent className="space-y-4">
                 <div>
                     <Label>Heading</Label>
-                    <Select value={fontHeading} onValueChange={(v) => handleFontChange('heading', v)}>
-                        <SelectTrigger className="mt-1.5">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[
-                                ...GOOGLE_FONTS.filter((f) => ['sans-serif', 'serif', 'display'].includes(f.category)),
-                                ...(GOOGLE_FONTS.some((f) => f.family === fontHeading)
-                                    ? []
-                                    : [
-                                          {
-                                              family: fontHeading,
-                                              category: 'sans-serif' as const,
-                                              weights: [400, 600, 700],
-                                          },
-                                      ]),
-                            ].map((f) => (
-                                <SelectItem key={f.family} value={f.family}>
-                                    {f.family}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <OttaSelect
+                        mode="single"
+                        items={headingFontItems}
+                        value={fontHeading ? ({ id: fontHeading, name: fontHeading } as OttaSelectItem) : null}
+                        onChange={(v) => handleFontChange('heading', (v as OttaSelectItem)?.id ?? 'Inter')}
+                        searchable
+                        searchPlaceholder="Search fonts..."
+                        placeholder="Select heading font"
+                        className="mt-1.5"
+                    />
                     <p
                         className="mt-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-lg font-semibold dark:border-muted"
                         style={{ fontFamily: `"${fontHeading}", system-ui, sans-serif` }}
@@ -152,29 +151,16 @@ export function BrandKitFontsTab({ tokensJson, themePresetId, onTokensChange, ha
                 </div>
                 <div>
                     <Label>Body</Label>
-                    <Select value={fontBody} onValueChange={(v) => handleFontChange('body', v)}>
-                        <SelectTrigger className="mt-1.5">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[
-                                ...GOOGLE_FONTS.filter((f) => ['sans-serif', 'serif', 'display'].includes(f.category)),
-                                ...(GOOGLE_FONTS.some((f) => f.family === fontBody)
-                                    ? []
-                                    : [
-                                          {
-                                              family: fontBody,
-                                              category: 'sans-serif' as const,
-                                              weights: [400, 500, 600],
-                                          },
-                                      ]),
-                            ].map((f) => (
-                                <SelectItem key={f.family} value={f.family}>
-                                    {f.family}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <OttaSelect
+                        mode="single"
+                        items={bodyFontItems}
+                        value={fontBody ? ({ id: fontBody, name: fontBody } as OttaSelectItem) : null}
+                        onChange={(v) => handleFontChange('body', (v as OttaSelectItem)?.id ?? 'Inter')}
+                        searchable
+                        searchPlaceholder="Search fonts..."
+                        placeholder="Select body font"
+                        className="mt-1.5"
+                    />
                     <p
                         className="mt-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-sm leading-relaxed dark:border-muted"
                         style={{ fontFamily: `"${fontBody}", sans-serif` }}
@@ -184,29 +170,18 @@ export function BrandKitFontsTab({ tokensJson, themePresetId, onTokensChange, ha
                 </div>
                 <div>
                     <Label>Handwriting</Label>
-                    <Select value={fontHandwriting} onValueChange={(v) => handleFontChange('handwriting', v)}>
-                        <SelectTrigger className="mt-1.5">
-                            <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                            {[
-                                ...GOOGLE_FONTS.filter((f) => f.category === 'handwriting'),
-                                ...(GOOGLE_FONTS.some((f) => f.family === fontHandwriting)
-                                    ? []
-                                    : [
-                                          {
-                                              family: fontHandwriting,
-                                              category: 'handwriting' as const,
-                                              weights: [400, 700],
-                                          },
-                                      ]),
-                            ].map((f) => (
-                                <SelectItem key={f.family} value={f.family}>
-                                    {f.family}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <OttaSelect
+                        mode="single"
+                        items={handwritingFontItems}
+                        value={
+                            fontHandwriting ? ({ id: fontHandwriting, name: fontHandwriting } as OttaSelectItem) : null
+                        }
+                        onChange={(v) => handleFontChange('handwriting', (v as OttaSelectItem)?.id ?? 'Caveat')}
+                        searchable
+                        searchPlaceholder="Search fonts..."
+                        placeholder="Select handwriting font"
+                        className="mt-1.5"
+                    />
                     <p
                         className="mt-2 rounded-md border border-border bg-muted/30 px-3 py-2 text-lg dark:border-muted"
                         style={{ fontFamily: `"${fontHandwriting}", cursive` }}
