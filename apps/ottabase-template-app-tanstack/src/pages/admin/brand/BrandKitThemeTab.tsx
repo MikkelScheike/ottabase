@@ -9,6 +9,7 @@ import {
     generateSemanticDefaults,
     generateSemanticDefaultsDark,
     hexToHsl,
+    PRESET_MAP,
     THEME_PRESET_ITEMS,
     type SemanticPalette,
 } from '@ottabase/brand-engine';
@@ -238,11 +239,31 @@ export function BrandKitThemeTab({
 
     const hasCustomColorOverrides = useMemo(() => {
         try {
-            return !!(JSON.parse(tokensJson || '{}') as { color?: unknown })?.color;
+            const parsed = JSON.parse(tokensJson || '{}') as {
+                color?: { light?: Record<string, string>; dark?: Record<string, string> };
+            };
+            if (!parsed.color?.light) return false;
+            const preset = selectedPreset ?? PRESET_MAP[selectedId];
+            if (!preset?.colors) return !!parsed.color;
+            // Custom override = colors differ from selected preset (restore replaces with preset, so no override)
+            const tokensLight = parsed.color.light ?? {};
+            const presetLight = preset.colors.light ?? {};
+            const tokensDark = parsed.color.dark ?? {};
+            const presetDark = preset.colors.dark ?? {};
+            const allKeys = new Set([
+                ...Object.keys(tokensLight),
+                ...Object.keys(presetLight),
+                ...Object.keys(tokensDark),
+                ...Object.keys(presetDark),
+            ]);
+            for (const k of allKeys) {
+                if (tokensLight[k] !== presetLight[k] || tokensDark[k] !== presetDark[k]) return true;
+            }
+            return false;
         } catch {
             return false;
         }
-    }, [tokensJson]);
+    }, [tokensJson, selectedPreset, selectedId]);
 
     // Resolved spacing, radius, shadow from tokensJson (with preset defaults)
     const resolvedSpacing = useMemo(() => {
@@ -282,8 +303,16 @@ export function BrandKitThemeTab({
     const handleRestorePresetColors = () => {
         try {
             const parsed = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
-            if (!parsed.color) return;
-            delete parsed.color;
+            // Restore to currently selected preset's colors (not default theme)
+            const preset = selectedPreset ?? PRESET_MAP[selectedId];
+            if (preset?.colors) {
+                parsed.color = {
+                    light: { ...preset.colors.light },
+                    dark: { ...preset.colors.dark },
+                };
+            } else {
+                delete parsed.color;
+            }
             onTokensChange(JSON.stringify(parsed, null, 2));
         } catch {
             /* keep raw text untouched when invalid JSON */
@@ -297,18 +326,18 @@ export function BrandKitThemeTab({
     const [lightTokens, setLightTokens] = useState<SemanticPalette | null>(null);
     const [darkTokens, setDarkTokens] = useState<SemanticPalette | null>(null);
 
-    // Sync base color from existing tokensJson on load
+    // Sync color state from tokensJson when it changes (e.g. preset change resets all params)
     useEffect(() => {
         try {
             const t = JSON.parse(tokensJson || '{}') as {
-                color?: { light?: { primary?: string }; dark?: { primary?: string } };
+                color?: { light?: { primary?: string } & Record<string, string>; dark?: Record<string, string> };
             };
             const primary = t?.color?.light?.primary;
             if (primary) {
                 setBaseColor(primary);
                 setHexColor(hslChannelsToHex(primary));
             }
-            // Load existing overrides into editable state
+            // Load colors into editable state (sync on preset change / external tokensJson updates)
             if (t?.color?.light) setLightTokens(t.color.light as SemanticPalette);
             if (t?.color?.dark) setDarkTokens(t.color.dark as SemanticPalette);
         } catch (error) {
@@ -317,8 +346,7 @@ export function BrandKitThemeTab({
                 toast.error(msg);
             }
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); // Only on mount — local edits drive state after this
+    }, [tokensJson]);
 
     const handleColorPickerChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         const hex = e.target.value;
@@ -433,9 +461,25 @@ export function BrandKitThemeTab({
     const handleRestoreSpacingRadiusShadow = () => {
         try {
             const parsed = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
-            delete parsed.spacing;
-            delete parsed.radius;
-            delete parsed.shadow;
+            // Restore to currently selected preset's spacing, radius, shadows
+            const preset = selectedPreset ?? PRESET_MAP[selectedId];
+            if (preset) {
+                const p = preset as {
+                    spacing?: Record<string, string>;
+                    radius?: string;
+                    shadows?: Record<string, string>;
+                };
+                if (p.spacing) parsed.spacing = { ...p.spacing };
+                else delete parsed.spacing;
+                if (p.radius) parsed.radius = p.radius;
+                else delete parsed.radius;
+                if (p.shadows) parsed.shadow = { ...p.shadows };
+                else delete parsed.shadow;
+            } else {
+                delete parsed.spacing;
+                delete parsed.radius;
+                delete parsed.shadow;
+            }
             onTokensChange(JSON.stringify(parsed, null, 2));
         } catch {
             /* keep raw text untouched */
@@ -478,58 +522,19 @@ export function BrandKitThemeTab({
                                   }
                                 | undefined;
                             if (preset) {
-                                try {
-                                    // Parse existing tokens to merge custom color overrides
-                                    const existing = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
-
-                                    // Build expanded tokens: apply full preset (colors, typography, spacing, etc.)
-                                    const expanded: Record<string, unknown> = {
-                                        color: {
-                                            light: preset.colors.light,
-                                            dark: preset.colors.dark,
-                                        },
-                                        typography: preset.typography ?? existing.typography,
-                                        spacing: preset.spacing ?? existing.spacing,
-                                        radius: preset.radius ?? existing.radius,
-                                        shadow: preset.shadows ?? existing.shadow,
-                                        motion: preset.motion ?? existing.motion,
-                                    };
-
-                                    // Merge custom color overrides on top of preset colors
-                                    if (existing.color && typeof existing.color === 'object') {
-                                        const customColor = existing.color as Record<string, Record<string, string>>;
-                                        const expandedColor = expanded.color as Record<string, Record<string, string>>;
-                                        if (customColor.light)
-                                            expandedColor.light = { ...expandedColor.light, ...customColor.light };
-                                        if (customColor.dark)
-                                            expandedColor.dark = { ...expandedColor.dark, ...customColor.dark };
-                                    }
-                                    // Merge custom spacing, radius, shadow overrides (user edits preserved)
-                                    if (existing.spacing && typeof existing.spacing === 'object')
-                                        expanded.spacing = {
-                                            ...(expanded.spacing as object),
-                                            ...existing.spacing,
-                                        } as Record<string, string>;
-                                    if (existing.radius) expanded.radius = existing.radius;
-                                    if (existing.shadow && typeof existing.shadow === 'object')
-                                        expanded.shadow = {
-                                            ...(expanded.shadow as object),
-                                            ...existing.shadow,
-                                        } as Record<string, string>;
-
-                                    onTokensChange(JSON.stringify(expanded, null, 2));
-                                } catch {
-                                    // If parsing fails, use preset as-is
-                                    const expanded = {
-                                        color: { light: preset.colors.light, dark: preset.colors.dark },
-                                        typography: preset.typography,
-                                        spacing: preset.spacing,
-                                        radius: preset.radius,
-                                        shadow: preset.shadows,
-                                        motion: preset.motion,
-                                    };
-                                    onTokensChange(JSON.stringify(expanded, null, 2));
-                                }
+                                // Full reset: use preset values only (no merge of previous custom overrides)
+                                const expanded: Record<string, unknown> = {
+                                    color: {
+                                        light: { ...preset.colors.light },
+                                        dark: { ...preset.colors.dark },
+                                    },
+                                    typography: preset.typography ?? undefined,
+                                    spacing: preset.spacing ?? undefined,
+                                    radius: preset.radius ?? '0.5rem',
+                                    shadow: preset.shadows ?? undefined,
+                                    motion: preset.motion ?? undefined,
+                                };
+                                onTokensChange(JSON.stringify(expanded, null, 2));
                             }
                         }
                     }}
@@ -637,30 +642,30 @@ export function BrandKitThemeTab({
                 )}
 
                 {/* Base color picker + generate */}
-                <div className="flex flex-wrap items-end gap-4">
-                    <div className="space-y-2">
-                        <Label>Brand color</Label>
-                        <div className="flex items-center gap-2">
-                            <Input
-                                type="color"
-                                value={hexColor}
-                                onChange={handleColorPickerChange}
-                                className="h-10 w-12 cursor-pointer p-1"
-                            />
-                            <Input
-                                value={baseColor}
-                                onChange={(e) => setBaseColor(e.target.value)}
-                                placeholder="222 47% 11%"
-                                className="w-44 font-mono"
-                            />
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <Button onClick={handleGenerate} size="sm" variant="outline">
+                <div className="space-y-2">
+                    <Label>Brand color</Label>
+                    <div className="flex h-10 flex-wrap items-center gap-3">
+                        <Input
+                            type="color"
+                            value={hexColor}
+                            onChange={handleColorPickerChange}
+                            className="h-10 w-12 shrink-0 cursor-pointer p-1"
+                        />
+                        <Input
+                            value={baseColor}
+                            onChange={(e) => setBaseColor(e.target.value)}
+                            placeholder="222 47% 11%"
+                            className="h-10 w-44 font-mono"
+                        />
+                        <Button onClick={handleGenerate} variant="outline" className="h-10 shrink-0">
                             <IconRefresh className="mr-2 h-4 w-4" />
                             Generate palette
                         </Button>
-                        <Button onClick={handleApplyToKit} disabled={!lightTokens && !darkTokens}>
+                        <Button
+                            onClick={handleApplyToKit}
+                            disabled={!lightTokens && !darkTokens}
+                            className="h-10 shrink-0"
+                        >
                             <IconPalette className="mr-2 h-4 w-4" />
                             Apply to Brand Kit
                         </Button>
