@@ -158,7 +158,7 @@ export function BrandKitFontsTab({ tokensJson, themePresetId, onTokensChange, ha
                         </SelectTrigger>
                         <SelectContent>
                             {[
-                                ...GOOGLE_FONTS.filter((f) => ['sans-serif', 'serif'].includes(f.category)),
+                                ...GOOGLE_FONTS.filter((f) => ['sans-serif', 'serif', 'display'].includes(f.category)),
                                 ...(GOOGLE_FONTS.some((f) => f.family === fontBody)
                                     ? []
                                     : [

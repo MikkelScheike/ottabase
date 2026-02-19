@@ -366,41 +366,64 @@ export function BrandKitThemeTab({
                     items={themePresetItems}
                     value={selectedItem ? { id: selectedItem.id, name: selectedItem.name, ...selectedItem } : null}
                     onChange={(v) => {
-                        const presetId = v && (v as OttaSelectItem).id !== 'default' ? (v as OttaSelectItem).id : null;
+                        const selectedId = (v as OttaSelectItem)?.id as string | null | undefined;
+                        const presetId = selectedId && selectedId !== 'default' ? selectedId : null;
+                        const expandId = selectedId ?? presetId ?? 'default'; // Use for expansion (default is valid)
 
                         // Update preset ID
                         onThemePresetChange(presetId);
 
-                        // Expand preset and update tokensJson for immediate preview
-                        if (presetId && apiPresets) {
-                            const preset = apiPresets.find((p) => p.name === presetId);
+                        // Expand preset and update tokensJson for immediate preview (colors + typography + full preset)
+                        if (expandId && apiPresets) {
+                            const preset = apiPresets.find((p) => p.name === expandId) as
+                                | {
+                                      name: string;
+                                      colors: { light: Record<string, string>; dark: Record<string, string> };
+                                      typography?: unknown;
+                                      spacing?: unknown;
+                                      radius?: unknown;
+                                      shadows?: unknown;
+                                      motion?: unknown;
+                                  }
+                                | undefined;
                             if (preset) {
                                 try {
-                                    // Parse existing tokens to preserve custom overrides
+                                    // Parse existing tokens to merge custom color overrides
                                     const existing = JSON.parse(tokensJson || '{}') as Record<string, unknown>;
 
-                                    // Build expanded tokens with preset colors
-                                    const expanded = {
+                                    // Build expanded tokens: apply full preset (colors, typography, spacing, etc.)
+                                    const expanded: Record<string, unknown> = {
                                         color: {
                                             light: preset.colors.light,
                                             dark: preset.colors.dark,
                                         },
-                                        // Preserve existing typography, spacing, etc.
-                                        typography: existing.typography,
-                                        spacing: existing.spacing,
-                                        radius: existing.radius,
-                                        shadow: existing.shadow,
-                                        motion: existing.motion,
+                                        typography: preset.typography ?? existing.typography,
+                                        spacing: preset.spacing ?? existing.spacing,
+                                        radius: preset.radius ?? existing.radius,
+                                        shadow: preset.shadows ?? existing.shadow,
+                                        motion: preset.motion ?? existing.motion,
                                     };
+
+                                    // Merge custom color overrides on top of preset colors
+                                    if (existing.color && typeof existing.color === 'object') {
+                                        const customColor = existing.color as Record<string, Record<string, string>>;
+                                        const expandedColor = expanded.color as Record<string, Record<string, string>>;
+                                        if (customColor.light)
+                                            expandedColor.light = { ...expandedColor.light, ...customColor.light };
+                                        if (customColor.dark)
+                                            expandedColor.dark = { ...expandedColor.dark, ...customColor.dark };
+                                    }
 
                                     onTokensChange(JSON.stringify(expanded, null, 2));
                                 } catch {
-                                    // If parsing fails, just use preset colors
+                                    // If parsing fails, use preset as-is
                                     const expanded = {
-                                        color: {
-                                            light: preset.colors.light,
-                                            dark: preset.colors.dark,
-                                        },
+                                        color: { light: preset.colors.light, dark: preset.colors.dark },
+                                        typography: preset.typography,
+                                        spacing: preset.spacing,
+                                        radius: preset.radius,
+                                        shadow: preset.shadows,
+                                        motion: preset.motion,
                                     };
                                     onTokensChange(JSON.stringify(expanded, null, 2));
                                 }
