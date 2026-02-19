@@ -22,6 +22,18 @@ pnpm add @ottabase/ui-code-highlight
 
 ## Usage
 
+Import the styles once in your app (e.g. in root `globals.css`):
+
+```css
+@import '@ottabase/ui-code-highlight/styles.css';
+```
+
+Or via relative path (if package subpath fails with PostCSS):
+
+```css
+@import '../../packages/ui-code-highlight/src/styles.css';
+```
+
 ### Basic Example
 
 ```tsx

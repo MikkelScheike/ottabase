@@ -3,12 +3,12 @@ import { render } from '@testing-library/react';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 describe('MarkdownRenderer — blockquote code block reindexing', () => {
-    it('renders correct code in blockquotes when outer code blocks exist (enableCodeHighlight)', () => {
+    it('renders correct code in blockquotes when outer code blocks exist (simple mode)', () => {
         const md = ['```js', 'const outer = 1;', '```', '', '> ```py', '> inner_val = 2', '> ```'].join('\n');
 
-        const { container } = render(<MarkdownRenderer content={md} enableCodeHighlight={true} />);
+        const { container } = render(<MarkdownRenderer content={md} codeRenderMode="simple" />);
 
-        // Enhanced mode: code blocks are rendered as React components with otta-docs-code-enhanced class
+        // Simple mode: code blocks are rendered as React components with otta-docs-code-enhanced class
         const codeBlocks = container.querySelectorAll('.otta-docs-code-enhanced code');
         expect(codeBlocks).toHaveLength(2);
         expect(codeBlocks[0].textContent).toBe('const outer = 1;');
@@ -18,7 +18,7 @@ describe('MarkdownRenderer — blockquote code block reindexing', () => {
     it('renders correct code in blockquotes when outer code blocks exist (plain mode)', () => {
         const md = ['```js', 'const outer = 1;', '```', '', '> ```py', '> inner_val = 2', '> ```'].join('\n');
 
-        const { container } = render(<MarkdownRenderer content={md} enableCodeHighlight={false} />);
+        const { container } = render(<MarkdownRenderer content={md} codeRenderMode="plain" />);
 
         // Plain mode: code blocks in regular divs
         const codeElements = container.querySelectorAll('.otta-docs-code-block code');
@@ -42,7 +42,7 @@ describe('MarkdownRenderer — blockquote code block reindexing', () => {
             '> ```',
         ].join('\n');
 
-        const { container } = render(<MarkdownRenderer content={md} enableCodeHighlight={true} />);
+        const { container } = render(<MarkdownRenderer content={md} codeRenderMode="simple" />);
 
         const codeBlocks = container.querySelectorAll('.otta-docs-code-enhanced code');
         expect(codeBlocks).toHaveLength(3);

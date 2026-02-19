@@ -1,12 +1,13 @@
-import { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import type { TocItem } from '../types';
+import { memo, useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import type { DocsCodeRenderMode, TocItem } from '../types';
 import { extractToc } from '../utils';
+import { CodeBlock } from '@ottabase/ui-code-highlight';
 
 interface MarkdownRendererProps {
     content: string;
     className?: string;
-    /** Enable syntax highlighting with @ottabase/ui-code-highlight CodeBlock */
-    enableCodeHighlight?: boolean;
+    /** Code block rendering: 'simple' (copy + lang) or 'ui-code-highlight' for syntax highlighting */
+    codeRenderMode?: DocsCodeRenderMode;
 }
 
 /** Extract code blocks from rendered HTML and replace with placeholder divs */
@@ -17,27 +18,42 @@ interface CodeBlockData {
 }
 
 /**
- * Lightweight markdown-to-HTML renderer with optional syntax highlighting.
- * When enableCodeHighlight is true, code blocks get copy-to-clipboard and
- * language labels via @ottabase/ui-code-highlight.
+ * Lightweight markdown-to-HTML renderer.
+ * codeRenderMode 'simple': built-in copy button + lang label.
+ * codeRenderMode 'ui-code-highlight': @ottabase/ui-code-highlight for uniformity.
  */
-export function MarkdownRenderer({ content, className = '', enableCodeHighlight = false }: MarkdownRendererProps) {
-    const { html, codeBlocks } = useMemo(() => renderMarkdownWithBlocks(content), [content]);
+const DEFAULT_CODE_MODE = 'ui-code-highlight';
 
-    if (!enableCodeHighlight || codeBlocks.length === 0) {
+export const MarkdownRenderer = memo(function MarkdownRenderer({
+    content,
+    className = '',
+    codeRenderMode = DEFAULT_CODE_MODE,
+}: MarkdownRendererProps) {
+    const { html, codeBlocks } = useMemo(() => renderMarkdownWithBlocks(content), [content]);
+    const mode = codeRenderMode ?? DEFAULT_CODE_MODE;
+    const useCodeBlocks = mode === 'simple' || mode === 'ui-code-highlight';
+
+    if (!useCodeBlocks || codeBlocks.length === 0) {
         return <div className={`otta-docs-content ${className}`} dangerouslySetInnerHTML={{ __html: html }} />;
     }
 
     return (
         <div className={`otta-docs-content ${className}`}>
-            <MarkdownWithCodeBlocks html={html} codeBlocks={codeBlocks} />
+            <MarkdownWithCodeBlocks html={html} codeBlocks={codeBlocks} codeRenderMode={mode} />
         </div>
     );
-}
+});
 
-/** Render HTML sections interspersed with interactive CodeBlock components */
-function MarkdownWithCodeBlocks({ html, codeBlocks }: { html: string; codeBlocks: CodeBlockData[] }) {
-    // Split out code block placeholders: <!--codeblock:N-->...fallback...<!--/codeblock-->
+/** Render HTML sections interspersed with code block components */
+function MarkdownWithCodeBlocks({
+    html,
+    codeBlocks,
+    codeRenderMode,
+}: {
+    html: string;
+    codeBlocks: CodeBlockData[];
+    codeRenderMode: DocsCodeRenderMode;
+}) {
     const parts = html.split(/<!--codeblock:(\d+)-->[\s\S]*?<!--\/codeblock-->/);
     return (
         <>
@@ -45,7 +61,14 @@ function MarkdownWithCodeBlocks({ html, codeBlocks }: { html: string; codeBlocks
                 if (i % 2 === 1) {
                     const block = codeBlocks[parseInt(part, 10)];
                     if (block) {
-                        return <EnhancedCodeBlock key={block.id} lang={block.lang} code={block.code} />;
+                        return (
+                            <CodeBlockRenderer
+                                key={block.id}
+                                lang={block.lang}
+                                code={block.code}
+                                codeRenderMode={codeRenderMode}
+                            />
+                        );
                     }
                 }
                 if (part) {
@@ -57,8 +80,47 @@ function MarkdownWithCodeBlocks({ html, codeBlocks }: { html: string; codeBlocks
     );
 }
 
-/** Enhanced code block with copy button and language label */
-function EnhancedCodeBlock({ lang, code }: { lang: string; code: string }) {
+/** Normalize language aliases for consistent display and highlight.js */
+function normalizeLang(lang: string): string {
+    const aliases: Record<string, string> = {
+        ts: 'typescript',
+        js: 'javascript',
+        sh: 'bash',
+        shell: 'bash',
+        zsh: 'bash',
+    };
+    const lower = lang?.toLowerCase();
+    return (aliases[lower] ?? lower ?? 'text') || 'text';
+}
+
+/** Renders code block based on codeRenderMode */
+function CodeBlockRenderer({
+    lang,
+    code,
+    codeRenderMode,
+}: {
+    lang: string;
+    code: string;
+    codeRenderMode: DocsCodeRenderMode;
+}) {
+    const normalizedLang = normalizeLang(lang);
+    if (codeRenderMode === 'ui-code-highlight') {
+        return (
+            <div className="otta-docs-code-block otta-docs-code-ui-highlight">
+                <CodeBlock
+                    code={code}
+                    language={normalizedLang}
+                    filename={undefined}
+                    className="otta-docs-code-ui-wrapper"
+                />
+            </div>
+        );
+    }
+    return <SimpleCodeBlock lang={normalizedLang} code={code} />;
+}
+
+/** Simple code block: copy button + lang label, no syntax highlighting */
+function SimpleCodeBlock({ lang, code }: { lang: string; code: string }) {
     const [copied, setCopied] = useState(false);
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -130,7 +192,12 @@ interface TableOfContentsProps {
     className?: string;
 }
 
-export function TableOfContents({ content, activeId, onItemClick, className = '' }: TableOfContentsProps) {
+export const TableOfContents = memo(function TableOfContents({
+    content,
+    activeId,
+    onItemClick,
+    className = '',
+}: TableOfContentsProps) {
     const toc = useMemo<TocItem[]>(() => extractToc(content), [content]);
 
     if (toc.length === 0) return null;
@@ -159,7 +226,7 @@ export function TableOfContents({ content, activeId, onItemClick, className = ''
             </ul>
         </nav>
     );
-}
+});
 
 // --- Markdown to HTML renderer ---
 

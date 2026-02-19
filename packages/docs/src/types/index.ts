@@ -49,6 +49,12 @@ export interface DocsSource {
 /** Layout theme names (colors come from Brand Kit) */
 export type DocsTheme = 'compact' | 'standard' | 'spacious';
 
+/** Code block rendering mode */
+export type DocsCodeRenderMode =
+    | 'plain' // Inline HTML, no React code block components
+    | 'simple' // Built-in: copy button + lang label, no syntax highlighting
+    | 'ui-code-highlight'; // Uses @ottabase/ui-code-highlight for uniformity
+
 /** Configuration for the docs viewer */
 export interface DocsConfig {
     /** Application or docs site title */
@@ -61,6 +67,6 @@ export interface DocsConfig {
     basePath?: string;
     /** Layout theme — 'compact' | 'standard' | 'spacious' */
     theme?: DocsTheme;
-    /** Whether to enable built-in code highlighting with copy buttons */
-    enableCodeHighlight?: boolean;
+    /** Code block rendering: 'simple' or 'ui-code-highlight' (default) */
+    codeRenderMode?: DocsCodeRenderMode;
 }

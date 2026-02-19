@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { DocGroup, DocsConfig, DocsTheme } from '../types';
 import { buildPageSlug, organizePages } from '../utils';
 
@@ -19,7 +19,7 @@ const THEMES: { theme: DocsTheme; label: string; symbol: string }[] = [
     { theme: 'spacious', label: 'Spacious', symbol: '+' },
 ];
 
-export function DocsSidebar({
+export const DocsSidebar = memo(function DocsSidebar({
     config,
     activeSlug,
     searchQuery,
@@ -111,4 +111,4 @@ export function DocsSidebar({
             )}
         </aside>
     );
-}
+});

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useMemo, useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
 
@@ -16,8 +16,9 @@ import sql from 'highlight.js/lib/languages/sql';
 import python from 'highlight.js/lib/languages/python';
 import markdown from 'highlight.js/lib/languages/markdown';
 import plaintext from 'highlight.js/lib/languages/plaintext';
+import ini from 'highlight.js/lib/languages/ini';
 
-// Register languages
+// Register languages (ini supports toml-like syntax)
 hljs.registerLanguage('javascript', javascript);
 hljs.registerLanguage('js', javascript);
 hljs.registerLanguage('typescript', typescript);
@@ -32,6 +33,7 @@ hljs.registerLanguage('json', json);
 hljs.registerLanguage('bash', bash);
 hljs.registerLanguage('shell', bash);
 hljs.registerLanguage('sh', bash);
+hljs.registerLanguage('zsh', bash);
 hljs.registerLanguage('sql', sql);
 hljs.registerLanguage('python', python);
 hljs.registerLanguage('py', python);
@@ -39,6 +41,12 @@ hljs.registerLanguage('markdown', markdown);
 hljs.registerLanguage('md', markdown);
 hljs.registerLanguage('plaintext', plaintext);
 hljs.registerLanguage('text', plaintext);
+hljs.registerLanguage('ini', ini);
+hljs.registerLanguage('toml', ini);
+
+function escapeHtml(text: string): string {
+    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
 
 export interface CodeBlockProps {
     code: string;
@@ -56,12 +64,13 @@ export function CodeBlock({
     className = '',
 }: CodeBlockProps) {
     const [copied, setCopied] = useState(false);
-    const codeRef = useRef<HTMLElement>(null);
 
-    useEffect(() => {
-        if (codeRef.current) {
-            // Highlight the code
-            hljs.highlightElement(codeRef.current);
+    const highlightedHtml = useMemo(() => {
+        try {
+            const result = hljs.highlight(code, { language });
+            return result.value;
+        } catch {
+            return escapeHtml(code);
         }
     }, [code, language]);
 
@@ -74,8 +83,6 @@ export function CodeBlock({
             console.error('Failed to copy code:', err);
         }
     };
-
-    const lines = code.split('\n');
 
     return (
         <div className={`code-block-wrapper rounded-lg overflow-hidden border ${className}`}>
@@ -109,13 +116,14 @@ export function CodeBlock({
             {/* Code content */}
             <div className="code-block-content relative">
                 <pre className={`!m-0 overflow-x-auto ${showLineNumbers ? '!pl-12 !pr-4 !py-4' : '!p-4'}`}>
-                    <code ref={codeRef} className={`language-${language} !bg-transparent`}>
-                        {code}
-                    </code>
+                    <code
+                        className={`hljs language-${language} !bg-transparent`}
+                        dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+                    />
                 </pre>
                 {showLineNumbers && (
                     <div className="code-block-line-numbers absolute top-0 left-0 p-4 pr-2 select-none pointer-events-none text-muted-foreground/40">
-                        {lines.map((_, i) => (
+                        {code.split('\n').map((_, i) => (
                             <div key={i} className="leading-[1.5]">
                                 {i + 1}
                             </div>

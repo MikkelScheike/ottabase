@@ -333,9 +333,19 @@
     font-family: var(--otta-docs-font-mono);
 }
 
-/* Enhanced code blocks with copy button */
+/* Code block: simple mode (copy + lang) */
 .otta-docs-code-enhanced {
     position: relative;
+}
+
+/* Code block: ui-code-highlight mode — wrapper for @ottabase/ui-code-highlight */
+.otta-docs-code-ui-highlight {
+    margin-bottom: 20px;
+}
+
+.otta-docs-code-ui-highlight .code-block-wrapper {
+    border-color: var(--otta-docs-color-code-border);
+    background: var(--otta-docs-color-code-bg);
 }
 
 .otta-docs-code-header {

@@ -76,7 +76,7 @@ export const docsConfig: DocsConfig = {
     title: 'Ottabase Docs',
     basePath: '/docs',
     theme: 'spacious',
-    enableCodeHighlight: true,
+    codeRenderMode: 'ui-code-highlight',
     sources: [
         createDocsSource('Guides', guidesModules, { basePath: 'guides', order: 0 }),
         // Set to empty {} to disable package READMEs

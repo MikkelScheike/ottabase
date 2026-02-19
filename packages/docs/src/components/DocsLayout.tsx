@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DocsConfig, DocsTheme } from '../types';
 import { buildPageSlug, findPageBySlug } from '../utils';
 import { DocsSidebar } from './DocsSidebar';
@@ -53,19 +53,24 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
         window.localStorage.setItem(STORAGE_KEY, theme);
     }, []);
 
-    // Resolve active page
-    const activePage = activeSlug ? findPageBySlug(config.sources, activeSlug) : config.sources[0]?.pages[0];
-
-    // Get previous/next for pagination
-    const allPages = config.sources.flatMap((source) =>
-        source.pages.map((page) => ({
-            slug: buildPageSlug(source, page),
-            title: page.title,
-        })),
+    const activePage = useMemo(
+        () => (activeSlug ? findPageBySlug(config.sources, activeSlug) : config.sources[0]?.pages[0]),
+        [config.sources, activeSlug],
     );
-    const currentIndex = allPages.findIndex((p) => p.slug === activeSlug);
-    const prevPage = currentIndex > 0 ? allPages[currentIndex - 1] : undefined;
-    const nextPage = currentIndex < allPages.length - 1 ? allPages[currentIndex + 1] : undefined;
+
+    const { prevPage, nextPage } = useMemo(() => {
+        const allPages = config.sources.flatMap((source) =>
+            source.pages.map((page) => ({
+                slug: buildPageSlug(source, page),
+                title: page.title,
+            })),
+        );
+        const idx = allPages.findIndex((p) => p.slug === activeSlug);
+        return {
+            prevPage: idx > 0 ? allPages[idx - 1] : undefined,
+            nextPage: idx < allPages.length - 1 && idx >= 0 ? allPages[idx + 1] : undefined,
+        };
+    }, [config.sources, activeSlug]);
 
     const handleNavigate = useCallback(
         (slug: string) => {
@@ -143,7 +148,7 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
                         <article className="otta-docs-article">
                             <MarkdownRenderer
                                 content={activePage.content}
-                                enableCodeHighlight={config.enableCodeHighlight}
+                                codeRenderMode={config.codeRenderMode ?? 'ui-code-highlight'}
                             />
 
                             {/* Prev/Next navigation */}

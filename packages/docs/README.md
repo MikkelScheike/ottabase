@@ -33,7 +33,7 @@ const config = {
     title: 'My Docs',
     basePath: '/docs',
     theme: 'standard', // 'compact' | 'standard' | 'spacious'
-    enableCodeHighlight: true, // Adds copy button to code blocks
+    codeRenderMode: 'ui-code-highlight', // 'plain' | 'simple' | 'ui-code-highlight' (default)
     sources: [
         {
             label: 'Guides',
@@ -72,7 +72,7 @@ const packageModules = import.meta.glob('/../../packages/*/README.md', {
 });
 const packages = createPackageSource(packageModules, { prefix: '@ottabase/' });
 
-const config = { sources: [guides, packages], theme: 'standard' };
+const config = { sources: [guides, packages], theme: 'standard', codeRenderMode: 'ui-code-highlight' };
 ```
 
 ## Configuration
@@ -83,7 +83,7 @@ interface DocsConfig {
     logo?: React.ReactNode; // Logo element for sidebar
     basePath?: string; // Base URL path (e.g. "/docs")
     theme?: 'compact' | 'standard' | 'spacious'; // Layout theme
-    enableCodeHighlight?: boolean; // Copy button on code blocks
+    codeRenderMode?: 'plain' | 'simple' | 'ui-code-highlight'; // Code block rendering
     sources: DocsSource[]; // Documentation sources
 }
 ```
@@ -101,6 +101,14 @@ Three layout themes (colors come from Brand Kit):
 Set via config: `{ theme: 'standard' }` (default before user choice). A subtle switcher (− · +) at the bottom of the
 sidebar lets users change layout at runtime; selection persists in `localStorage` under `ottabase.docs.theme`. Colors
 use `--background`, `--primary`, `--muted`, etc. from Brand Kit.
+
+## Code Render Modes
+
+| Mode                          | Description                                                                |
+| ----------------------------- | -------------------------------------------------------------------------- |
+| `plain`                       | Inline HTML, no copy buttons or syntax highlighting                        |
+| `simple`                      | Copy button + language label, no syntax highlighting                       |
+| `ui-code-highlight` (default) | Uses @ottabase/ui-code-highlight for highlight.js + copy (install as peer) |
 
 ## CSS Custom Properties
 
