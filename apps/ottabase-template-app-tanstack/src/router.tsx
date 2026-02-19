@@ -69,6 +69,9 @@ function HomeRouteComponent() {
                     <Button asChild variant="outline">
                         <Link to="/demo">Go to Demo</Link>
                     </Button>
+                    <Button asChild variant="outline">
+                        <Link to="/docs/">Docs</Link>
+                    </Button>
                     <Button variant="outline" onClick={checkHealth} disabled={loading}>
                         {loading ? 'Checking...' : '/api/health'}
                     </Button>
@@ -116,6 +119,16 @@ const indexRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/',
     component: HomeRouteComponent,
+});
+
+const docsRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/docs/$',
+    component: lazyRouteComponent(() =>
+        import('@/pages/docs/DocsPage').then((m) => ({
+            default: m.DocsPage,
+        })),
+    ),
 });
 
 const demoLayoutRoute = new Route({
@@ -872,6 +885,7 @@ demoLayoutRoute.addChildren([
 
 const routeTree = rootRoute.addChildren([
     indexRoute,
+    docsRoute,
     demoLayoutRoute,
     loginRoute,
     registerRoute,
