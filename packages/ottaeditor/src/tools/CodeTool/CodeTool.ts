@@ -103,7 +103,7 @@ export default class CodeTool implements BlockTool {
             code: data?.code || '',
             language: data?.language || 'plaintext',
             showLineNumbers: data?.showLineNumbers ?? false,
-            lineNumberStart: data?.lineNumberStart ?? 1,
+            lineNumberStart: Math.max(1, Math.floor(Number(data?.lineNumberStart)) || 1),
             maxHeight: data?.maxHeight || '',
             wrapLongLines: data?.wrapLongLines ?? false,
             hideHeader: data?.hideHeader ?? false,
@@ -205,7 +205,7 @@ export default class CodeTool implements BlockTool {
             if (langSelect.value === '__custom__') {
                 this.data.language = langInput.value || 'plaintext';
                 langInput.disabled = false;
-                langInput.placeholder = 'e.g. rust, go';
+                langInput.placeholder = 'e.g. rust, go, kotlin';
             } else {
                 this.data.language = langSelect.value;
                 langInput.disabled = true;
@@ -244,15 +244,15 @@ export default class CodeTool implements BlockTool {
         startLbl.textContent = 'Start';
         const startInput = document.createElement('input');
         startInput.type = 'number';
-        startInput.min = '0';
-        startInput.value = String(this.data.lineNumberStart ?? 1);
+        startInput.min = '1';
+        startInput.value = String(Math.max(1, Math.floor(Number(this.data.lineNumberStart)) || 1));
         startInput.classList.add(CodeTool.CSS.optInput);
         startInput.style.width = '36px';
         startInput.setAttribute('aria-label', 'Line number start');
         startInput.dataset.codeOpt = 'lineStart';
         startInput.addEventListener('input', () => {
             const v = parseInt(startInput.value, 10);
-            this.data.lineNumberStart = !isNaN(v) && v >= 0 ? v : 0;
+            this.data.lineNumberStart = !isNaN(v) && v >= 1 ? v : 1;
         });
         startWrap.appendChild(startLbl);
         startWrap.appendChild(startInput);
@@ -399,10 +399,10 @@ export default class CodeTool implements BlockTool {
         if (this.langInput && !this.langInput.disabled) {
             this.data.language = this.langInput.value.trim() || 'plaintext';
         }
-        // Re-validate on save
+        // Re-validate on save (min 1, invalid -> 1)
         const startEl = this.wrapper?.querySelector<HTMLInputElement>('[data-code-opt="lineStart"]');
         const startVal = parseInt(startEl?.value ?? '', 10);
-        this.data.lineNumberStart = !isNaN(startVal) && startVal >= 0 ? startVal : 0;
+        this.data.lineNumberStart = !isNaN(startVal) && startVal >= 1 ? startVal : 1;
 
         const threshEl = this.wrapper?.querySelector<HTMLInputElement>('[data-code-opt="collapseThresh"]');
         const threshVal = parseInt(threshEl?.value ?? '', 10);

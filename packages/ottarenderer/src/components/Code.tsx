@@ -23,7 +23,6 @@ const Code: RenderFn<CodeBlockData> = ({ data }) => {
             <CodeBlock
                 code={code}
                 language={language || 'plaintext'}
-                filename={undefined}
                 showLineNumbers={data.showLineNumbers}
                 lineNumberStart={data.lineNumberStart}
                 maxHeight={data.maxHeight}

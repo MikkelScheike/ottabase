@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { memo, useMemo, useState } from 'react';
 import { Check, Copy, ChevronDown, ChevronRight } from 'lucide-react';
 import hljs from 'highlight.js/lib/core';
 
@@ -93,7 +93,7 @@ export interface CodeBlockProps {
     className?: string;
 }
 
-export function CodeBlock({
+function CodeBlockInner({
     code,
     language = 'plaintext',
     filename,
@@ -199,25 +199,23 @@ export function CodeBlock({
                         style={preStyle}
                     >
                         {showLineNumbers ? (
-                            <>
-                                {lineHtmls.map((lineHtml, i) => {
-                                    const num = start + i;
-                                    const isHighlighted = highlightSet?.has(num) ?? false;
-                                    return (
-                                        <span key={i} className="code-block-line">
-                                            <span
-                                                className={`code-block-line-num select-none ${isHighlighted ? 'code-line-highlight font-semibold' : ''}`}
-                                            >
-                                                {num}
-                                            </span>
-                                            <span
-                                                className={`hljs language-${language} !bg-transparent`}
-                                                dangerouslySetInnerHTML={{ __html: lineHtml || ' ' }}
-                                            />
+                            lineHtmls.map((lineHtml, i) => {
+                                const num = start + i;
+                                const isHighlighted = highlightSet?.has(num) ?? false;
+                                return (
+                                    <span key={i} className="code-block-line">
+                                        <span
+                                            className={`code-block-line-num select-none ${isHighlighted ? 'code-line-highlight font-semibold' : ''}`}
+                                        >
+                                            {num}
                                         </span>
-                                    );
-                                })}
-                            </>
+                                        <span
+                                            className={`hljs language-${language} !bg-transparent`}
+                                            dangerouslySetInnerHTML={{ __html: lineHtml || ' ' }}
+                                        />
+                                    </span>
+                                );
+                            })
                         ) : (
                             <code
                                 className={`hljs language-${language} !bg-transparent`}
@@ -234,3 +232,5 @@ export function CodeBlock({
         </div>
     );
 }
+
+export const CodeBlock = memo(CodeBlockInner);

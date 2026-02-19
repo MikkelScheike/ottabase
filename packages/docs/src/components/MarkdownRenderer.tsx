@@ -105,22 +105,9 @@ function CodeBlockRenderer({
 }) {
     const normalizedLang = normalizeLang(lang);
     if (codeRenderMode === 'ui-code-highlight') {
-        return (
-            <div className="otta-docs-code-block--otta-docs-code-ui-highlight">
-                <CodeBlock
-                    code={code}
-                    language={normalizedLang}
-                    filename={undefined}
-                    className="otta-docs-code-ui-wrapper"
-                />
-            </div>
-        );
+        return <CodeBlock code={code} language={normalizedLang} />;
     }
-    return (
-        <div>
-            <SimpleCodeBlock lang={normalizedLang} code={code} />
-        </div>
-    );
+    return <SimpleCodeBlock lang={normalizedLang} code={code} />;
 }
 
 /** Simple code block: copy button + lang label, no syntax highlighting */
