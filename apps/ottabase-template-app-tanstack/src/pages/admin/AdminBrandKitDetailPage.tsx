@@ -24,7 +24,7 @@ import { BrandKitAdvancedTab } from './brand/BrandKitAdvancedTab';
 import { BrandKitBrandTab } from './brand/BrandKitBrandTab';
 import { BrandKitFontsTab } from './brand/BrandKitFontsTab';
 import { BrandKitLogoTab } from './brand/BrandKitLogoTab';
-import { BrandKitThemeTab } from './brand/BrandKitThemeTab';
+import { colorSwatchClass, BrandKitThemeTab } from './brand/BrandKitThemeTab';
 
 const VALID_TABS = ['brand', 'logo', 'theme', 'fonts', 'advanced'] as const;
 
@@ -86,7 +86,7 @@ function BrandKitPreviewPanel({
                         {['primary', 'secondary', 'accent', 'muted', 'destructive'].map((token) => (
                             <div
                                 key={token}
-                                className="h-8 w-8 rounded-md border border-border shadow-sm dark:border-muted"
+                                className={`h-8 w-8 rounded-md ${colorSwatchClass}`}
                                 style={{ backgroundColor: `hsl(var(--${token}))` }}
                                 title={token}
                             />

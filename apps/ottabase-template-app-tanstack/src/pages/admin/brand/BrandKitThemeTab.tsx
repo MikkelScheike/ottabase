@@ -88,6 +88,14 @@ const TOKEN_USAGE: Record<string, string> = {
     'popover-foreground': 'Text inside dropdowns & tooltips',
 };
 
+/**
+ * Reusable color swatch – smooth edges (avoids jagged borders).
+ * Uses inset box-shadow instead of border (renders cleaner on small elements),
+ * and translateZ(0) to promote to GPU layer for better anti-aliasing.
+ */
+export const colorSwatchClass =
+    'shrink-0 rounded shadow-[inset_0_0_0_1px_rgba(0,0,0,0.1)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)] [transform:translateZ(0)]';
+
 /** Custom renderer for theme preset items in OttaSelect dropdown (render function, not a component) */
 const themePresetRenderer = ({ item }: ItemRendererProps) => (
     <div className="flex flex-col gap-1.5 flex-1 min-w-0">
@@ -96,7 +104,7 @@ const themePresetRenderer = ({ item }: ItemRendererProps) => (
             {((item.colors as string[]) ?? []).slice(0, 5).map((hsl, i) => (
                 <div
                     key={i}
-                    className="w-5 h-5 rounded border border-border dark:border-muted shrink-0"
+                    className={`w-5 h-5 ${colorSwatchClass}`}
                     style={{ backgroundColor: hslToCss(hsl) }}
                     title={hsl}
                 />
@@ -120,10 +128,7 @@ const TokenSwatch = memo(function TokenSwatch({
     return (
         <div className="flex items-center gap-1.5 rounded-md border p-1.5 bg-card/50 dark:border-muted group">
             <label className="relative shrink-0 cursor-pointer">
-                <div
-                    className="h-7 w-7 rounded border shadow-sm dark:border-muted"
-                    style={{ backgroundColor: hslToCss(value) }}
-                />
+                <div className={`h-7 w-7 ${colorSwatchClass}`} style={{ backgroundColor: hslToCss(value) }} />
                 <input
                     type="color"
                     value={hslChannelsToHex(value)}
@@ -443,8 +448,9 @@ export function BrandKitThemeTab({
                                     .map((hsl: string, i: number) => (
                                         <div
                                             key={i}
-                                            className="w-4 h-4 rounded border border-border dark:border-muted shrink-0"
+                                            className={`w-4 h-4 ${colorSwatchClass}`}
                                             style={{ backgroundColor: hslToCss(hsl) }}
+                                            title={hsl}
                                         />
                                     ))}
                             </div>
@@ -467,7 +473,7 @@ export function BrandKitThemeTab({
                                     title={`${token}: ${value}`}
                                 >
                                     <div
-                                        className="h-7 w-7 rounded border border-border shadow-sm dark:border-muted"
+                                        className={`h-7 w-7 ${colorSwatchClass}`}
                                         style={{ backgroundColor: hslToCss(value) }}
                                     />
                                     <span className="text-[9px] text-muted-foreground leading-tight max-w-[3.5rem] truncate">
@@ -483,11 +489,11 @@ export function BrandKitThemeTab({
                 {primaryGradient && (
                     <div className="space-y-2 pt-1">
                         <p className="text-xs font-medium text-muted-foreground">Primary scale (50–950)</p>
-                        <div className="flex rounded-md overflow-hidden border border-border dark:border-muted">
+                        <div className="flex rounded-md overflow-hidden shadow-[inset_0_0_0_1px_rgba(0,0,0,0.08)] dark:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1)] [transform:translateZ(0)]">
                             {[50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950].map((step) => (
                                 <div
                                     key={step}
-                                    className="flex-1 h-8 relative group"
+                                    className="flex-1 h-8 relative group [transform:translateZ(0)]"
                                     style={{ backgroundColor: primaryGradient[step] }}
                                     title={`${step}: ${primaryGradient[step]}`}
                                 >
@@ -628,7 +634,7 @@ export function BrandKitThemeTab({
                         return (
                             <div key={token} className="flex items-center gap-2 py-1">
                                 <div
-                                    className="h-3.5 w-3.5 shrink-0 rounded-sm border dark:border-muted"
+                                    className={`h-3.5 w-3.5 shrink-0 rounded-sm ${colorSwatchClass}`}
                                     style={{ backgroundColor: color ? hslToCss(color) : 'transparent' }}
                                 />
                                 <span className="text-[11px] font-medium min-w-[5.5rem] shrink-0">
