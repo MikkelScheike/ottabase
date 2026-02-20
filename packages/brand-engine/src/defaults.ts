@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 import type { BrandTheme } from './theme';
-import type { DesignTokens, TokenColors, TokenCursors, TokenMotion, TokenShadows, TokenSpacing } from './tokens';
+import type { TokenColors, TokenCursors, TokenMotion, TokenShadows, TokenSpacing, TokenTypography } from './tokens';
 
 /** Default light-mode colour palette */
 export const DEFAULT_COLORS_LIGHT: TokenColors = {
@@ -119,7 +119,7 @@ export const DEFAULT_SPACING: TokenSpacing = {
 };
 
 /** Default typography for base theme */
-export const DEFAULT_TYPOGRAPHY: DesignTokens['typography'] = {
+export const DEFAULT_TYPOGRAPHY: { heading: TokenTypography; body: TokenTypography; handwriting: TokenTypography } = {
     heading: { fontFamily: 'Inter' },
     body: { fontFamily: 'Inter' },
     handwriting: { fontFamily: 'cursive' },
