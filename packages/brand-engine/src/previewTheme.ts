@@ -12,6 +12,7 @@ import {
     DEFAULT_MOTION,
     DEFAULT_SHADOWS,
     DEFAULT_SPACING,
+    DEFAULT_TYPOGRAPHY,
 } from './defaults';
 import type { ResolvedBrandTheme } from './resolver';
 import type { DesignTokens, TokenColors } from './tokens';
@@ -53,13 +54,14 @@ export function buildPreviewTheme(kitData: PreviewKitData, mode: string = 'light
     const rawPalette = tokens.color?.[mode] ?? tokens.color?.light ?? defaultPalette;
     const colors = { ...defaultPalette, ...rawPalette } as TokenColors;
 
-    // Extract other design tokens with defaults
-    const typography = tokens.typography ?? {
-        heading: { fontFamily: 'Inter' },
-        body: { fontFamily: 'Inter' },
-        handwriting: { fontFamily: 'Caveat' },
+    // Extract other design tokens with defaults (merge partial over defaults)
+    const rawTypo = tokens.typography;
+    const typography = {
+        heading: { ...DEFAULT_TYPOGRAPHY.heading, ...rawTypo?.heading },
+        body: { ...DEFAULT_TYPOGRAPHY.body, ...rawTypo?.body },
+        handwriting: { ...DEFAULT_TYPOGRAPHY.handwriting, ...rawTypo?.handwriting },
     };
-    const spacing = tokens.spacing ?? DEFAULT_SPACING;
+    const spacing = { ...DEFAULT_SPACING, ...tokens.spacing };
     const radius = tokens.radius ?? '0.5rem';
     const shadows = { ...DEFAULT_SHADOWS, ...(tokens.shadow ?? {}) };
     const motion = { ...DEFAULT_MOTION, ...(tokens.motion ?? {}) };

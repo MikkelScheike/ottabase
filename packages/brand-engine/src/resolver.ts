@@ -19,6 +19,7 @@ import {
     DEFAULT_MOTION,
     DEFAULT_SHADOWS,
     DEFAULT_SPACING,
+    DEFAULT_TYPOGRAPHY,
 } from './defaults';
 import type { BrandTheme } from './theme';
 import type { ColorScheme, DesignTokens, TokenAliases, TokenColors } from './tokens';
@@ -122,18 +123,23 @@ export function resolveTheme(options: ResolveOptions): ResolvedBrandTheme {
     // 2. Select mode-specific colour palette with fallback chain:
     //    requested mode → light → defaults
     const defaultPalette = mode === 'dark' ? DEFAULT_COLORS_DARK : DEFAULT_COLORS_LIGHT;
-    const rawPalette = merged.tokens.color[mode] ?? merged.tokens.color.light ?? defaultPalette;
+    const rawPalette = merged.tokens?.color?.[mode] ?? merged.tokens?.color?.light ?? defaultPalette;
     const palette: TokenColors = { ...defaultPalette, ...rawPalette };
 
     // 3. Resolve token aliases
-    const colors = resolveAliases(palette, merged.tokens.aliases);
+    const colors = resolveAliases(palette, merged.tokens?.aliases);
 
-    // 4. Merge remaining tokens with defaults
-    const typography = merged.tokens.typography;
-    const spacing = merged.tokens.spacing ?? DEFAULT_SPACING;
-    const radius = merged.tokens.radius ?? '0.5rem';
-    const shadows = { ...DEFAULT_SHADOWS, ...merged.tokens.shadow };
-    const motion = { ...DEFAULT_MOTION, ...merged.tokens.motion };
+    // 4. Merge remaining tokens with defaults (tokens can be partial/missing after clean reset)
+    const rawTypo = merged.tokens?.typography;
+    const typography = {
+        heading: { ...DEFAULT_TYPOGRAPHY.heading, ...rawTypo?.heading },
+        body: { ...DEFAULT_TYPOGRAPHY.body, ...rawTypo?.body },
+        handwriting: { ...DEFAULT_TYPOGRAPHY.handwriting, ...rawTypo?.handwriting },
+    };
+    const spacing = { ...DEFAULT_SPACING, ...merged.tokens?.spacing };
+    const radius = merged.tokens?.radius ?? '0.5rem';
+    const shadows = { ...DEFAULT_SHADOWS, ...(merged.tokens?.shadow ?? {}) };
+    const motion = { ...DEFAULT_MOTION, ...(merged.tokens?.motion ?? {}) };
     const cursors = merged.cursors ?? DEFAULT_CURSORS;
     const layout = { ...DEFAULT_LAYOUT, ...merged.layout };
 

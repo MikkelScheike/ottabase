@@ -14,6 +14,7 @@
 
 import type { LayoutConfig } from '@ottabase/ottalayout';
 import { resolveCursor } from './cursors';
+import { DEFAULT_TYPOGRAPHY } from './defaults';
 import type { ResolvedBrandTheme } from './resolver';
 import type { TokenColors } from './tokens';
 
@@ -30,11 +31,11 @@ import type { TokenColors } from './tokens';
 export function buildCSSVarMap(theme: ResolvedBrandTheme): Record<string, string> {
     const vars: Record<string, string> = {};
 
-    // -- Typography ----------------------------------------------------------
-    // -- Typography ----------------------------------------------------------
-    vars['--font-heading'] = `"${theme.typography.heading.fontFamily}", sans-serif`;
-    vars['--font-body'] = `"${theme.typography.body.fontFamily}", sans-serif`;
-    vars['--font-handwriting'] = `"${theme.typography.handwriting.fontFamily}", cursive`;
+    // -- Typography (defensive: typography can be undefined after clean reset) ---
+    const typo = theme.typography ?? DEFAULT_TYPOGRAPHY;
+    vars['--font-heading'] = `"${typo.heading?.fontFamily ?? 'Inter'}", sans-serif`;
+    vars['--font-body'] = `"${typo.body?.fontFamily ?? 'Inter'}", sans-serif`;
+    vars['--font-handwriting'] = `"${typo.handwriting?.fontFamily ?? 'cursive'}", cursive`;
 
     // -- Colour tokens -------------------------------------------------------
     for (const [token, hslValue] of Object.entries(theme.colors as TokenColors)) {
@@ -144,12 +145,9 @@ export function injectFont(url: string): void {
 export function applyBrandTheme(theme: ResolvedBrandTheme): void {
     if (typeof document === 'undefined') return; // SSR guard
 
-    // Inject fonts
-    const fontUrls = new Set(
-        [theme.typography.heading.url, theme.typography.body.url, theme.typography.handwriting.url].filter(
-            Boolean,
-        ) as string[],
-    );
+    // Inject fonts (typography can be undefined after clean reset)
+    const typo = theme.typography ?? DEFAULT_TYPOGRAPHY;
+    const fontUrls = new Set([typo.heading?.url, typo.body?.url, typo.handwriting?.url].filter(Boolean) as string[]);
     fontUrls.forEach(injectFont);
 
     // Build & inject CSS vars

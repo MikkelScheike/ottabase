@@ -11,6 +11,7 @@ import {
     DEFAULT_MOTION,
     DEFAULT_SHADOWS,
     DEFAULT_SPACING,
+    DEFAULT_TYPOGRAPHY,
 } from '../defaults';
 import type { ResolvedBrandTheme } from '../resolver';
 import { deepMerge } from '../resolver';
@@ -86,12 +87,16 @@ export async function brandKitToTheme(kit: BrandKit, mode: string = 'light'): Pr
     const rawPalette = tokens.color?.[mode] ?? tokens.color?.light ?? defaultPalette;
     const colors = { ...defaultPalette, ...rawPalette } as TokenColors;
 
-    // Extract other design tokens with defaults
-    const typography = tokens.typography;
-    const spacing = tokens.spacing ?? DEFAULT_SPACING;
-    const radius = tokens.radius ?? '0.5rem';
-    const shadows = { ...DEFAULT_SHADOWS, ...(tokens.shadow ?? {}) };
-    const motion = { ...DEFAULT_MOTION, ...(tokens.motion ?? {}) };
+    // Extract other design tokens with defaults (tokens can be empty after clean reset)
+    const typography = {
+        heading: { ...DEFAULT_TYPOGRAPHY.heading, ...tokens?.typography?.heading },
+        body: { ...DEFAULT_TYPOGRAPHY.body, ...tokens?.typography?.body },
+        handwriting: { ...DEFAULT_TYPOGRAPHY.handwriting, ...tokens?.typography?.handwriting },
+    };
+    const spacing = { ...DEFAULT_SPACING, ...tokens?.spacing };
+    const radius = tokens?.radius ?? '0.5rem';
+    const shadows = { ...DEFAULT_SHADOWS, ...(tokens?.shadow ?? {}) };
+    const motion = { ...DEFAULT_MOTION, ...(tokens?.motion ?? {}) };
     const cursors = tenantTheme.cursors ?? DEFAULT_CURSORS;
     const layout = { ...DEFAULT_LAYOUT, ...(tenantTheme.layout ?? {}) };
 

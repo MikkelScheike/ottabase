@@ -147,7 +147,7 @@ describe('buildPreviewTheme', () => {
 
             expect(theme.typography.heading.fontFamily).toBe('Inter');
             expect(theme.typography.body.fontFamily).toBe('Inter');
-            expect(theme.typography.handwriting.fontFamily).toBe('Caveat');
+            expect(theme.typography.handwriting.fontFamily).toBe('cursive');
         });
     });
 
