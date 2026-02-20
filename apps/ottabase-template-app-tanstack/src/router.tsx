@@ -511,9 +511,9 @@ const analyticsRoute = new Route({
         tab:
             (search.tab as string) === 'referrals'
                 ? 'referrals'
-                : (search.tab as string) === 'core'
-                  ? 'core'
-                  : 'shortlinks',
+                : (search.tab as string) === 'shortlinks'
+                  ? 'shortlinks'
+                  : 'core',
     }),
     component: lazyRouteComponent(() =>
         import('@/pages/analytics/AnalyticsPage').then((m) => ({

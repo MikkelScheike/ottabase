@@ -23,7 +23,7 @@ import {
     TabsList,
     TabsTrigger,
 } from '@ottabase/ui-shadcn';
-import { IconActivity, IconChartBar, IconLink, IconLoader2, IconRefresh, IconUsers } from '@tabler/icons-react';
+import { IconChartBar, IconLink, IconLoader2, IconRefresh, IconUsers } from '@tabler/icons-react';
 import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -46,11 +46,81 @@ export interface AnalyticsResponse {
 
 const headingClass = 'text-xl font-semibold';
 
+/** Detect dev: Vite dev mode or viewing from localhost */
+function isDevEnvironment(): boolean {
+    if (typeof window === 'undefined') return false;
+    if (import.meta.env?.DEV) return true;
+    const host = window.location.hostname;
+    return host === 'localhost' || host === '127.0.0.1';
+}
+
+function AnalyticsEmptyState() {
+    const isDev = isDevEnvironment();
+    return (
+        <div className="flex h-32 flex-col items-center justify-center gap-2">
+            <IconChartBar className="h-12 w-12 text-muted-foreground/50" />
+            <p className="text-muted-foreground">No data yet. Data will appear once tracking is active.</p>
+            {isDev && (
+                <p className="max-w-sm text-center text-xs text-muted-foreground">
+                    WAE only works on the edge (worker.dev or custom domain). Localhost clicks are not tracked.
+                </p>
+            )}
+        </div>
+    );
+}
+
+function AnalyticsResultsCard({
+    loading,
+    data,
+    description,
+    groupBy,
+    formatDimension,
+    linkTo,
+    dimensionLabel,
+    valueLabel = 'Clicks',
+}: {
+    loading: boolean;
+    data: AnalyticsRow[];
+    description: string;
+    groupBy: string;
+    formatDimension: (dim: string) => string;
+    linkTo: string;
+    dimensionLabel?: string;
+    valueLabel?: string;
+}) {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Results</CardTitle>
+                <CardDescription>{description}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                {loading ? (
+                    <div className="flex h-32 items-center justify-center">
+                        <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                ) : data.length === 0 ? (
+                    <AnalyticsEmptyState />
+                ) : (
+                    <AnalyticsTable
+                        data={data}
+                        groupBy={groupBy}
+                        formatDimension={formatDimension}
+                        linkTo={linkTo}
+                        dimensionLabel={dimensionLabel}
+                        valueLabel={valueLabel}
+                    />
+                )}
+            </CardContent>
+        </Card>
+    );
+}
+
 export function AnalyticsPage() {
     const navigate = useNavigate();
     const search = useSearch({ strict: false }) as { tab?: string };
     const [tab, setTab] = useState<'shortlinks' | 'referrals' | 'core'>(
-        search?.tab === 'referrals' ? 'referrals' : search?.tab === 'core' ? 'core' : 'shortlinks',
+        search?.tab === 'referrals' ? 'referrals' : search?.tab === 'shortlinks' ? 'shortlinks' : 'core',
     );
 
     // Sync tab from URL on mount/navigation
@@ -231,35 +301,20 @@ function ShortlinkAnalyticsTab() {
                 </div>
             )}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Results</CardTitle>
-                    <CardDescription>
-                        {groupBy === 'country' && 'Clicks by country'}
-                        {groupBy === 'shortCode' && 'Clicks by short code'}
-                        {groupBy === 'day' && 'Clicks over time'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {loading ? (
-                        <div className="flex h-32 items-center justify-center">
-                            <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : data.length === 0 ? (
-                        <div className="flex h-32 flex-col items-center justify-center gap-2">
-                            <IconChartBar className="h-12 w-12 text-muted-foreground/50" />
-                            <p className="text-muted-foreground">No data yet. Clicks will appear after traffic.</p>
-                        </div>
-                    ) : (
-                        <AnalyticsTable
-                            data={data}
-                            groupBy={groupBy}
-                            formatDimension={formatDimension}
-                            linkTo="/shortlinks"
-                        />
-                    )}
-                </CardContent>
-            </Card>
+            <AnalyticsResultsCard
+                loading={loading}
+                data={data}
+                description={
+                    groupBy === 'country'
+                        ? 'Clicks by country'
+                        : groupBy === 'shortCode'
+                          ? 'Clicks by short code'
+                          : 'Clicks over time'
+                }
+                groupBy={groupBy}
+                formatDimension={formatDimension}
+                linkTo="/shortlinks"
+            />
         </>
     );
 }
@@ -381,36 +436,21 @@ function ReferralAnalyticsTab() {
                 </div>
             )}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Results</CardTitle>
-                    <CardDescription>
-                        {groupBy === 'country' && 'Clicks by country'}
-                        {groupBy === 'referralCode' && 'Clicks by referral code'}
-                        {groupBy === 'day' && 'Clicks over time'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {loading ? (
-                        <div className="flex h-32 items-center justify-center">
-                            <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : data.length === 0 ? (
-                        <div className="flex h-32 flex-col items-center justify-center gap-2">
-                            <IconChartBar className="h-12 w-12 text-muted-foreground/50" />
-                            <p className="text-muted-foreground">No data yet. Clicks will appear after traffic.</p>
-                        </div>
-                    ) : (
-                        <AnalyticsTable
-                            data={data}
-                            groupBy={groupBy}
-                            formatDimension={formatDimension}
-                            linkTo="/referrals"
-                            dimensionLabel={groupBy === 'referralCode' ? 'Referral Code' : undefined}
-                        />
-                    )}
-                </CardContent>
-            </Card>
+            <AnalyticsResultsCard
+                loading={loading}
+                data={data}
+                description={
+                    groupBy === 'country'
+                        ? 'Clicks by country'
+                        : groupBy === 'referralCode'
+                          ? 'Clicks by referral code'
+                          : 'Clicks over time'
+                }
+                groupBy={groupBy}
+                formatDimension={formatDimension}
+                linkTo="/referrals"
+                dimensionLabel={groupBy === 'referralCode' ? 'Referral Code' : undefined}
+            />
         </>
     );
 }
@@ -532,39 +572,22 @@ function CoreAnalyticsTab() {
                 </div>
             )}
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Results</CardTitle>
-                    <CardDescription>
-                        {groupBy === 'country' && 'Events by country'}
-                        {groupBy === 'event' && 'Events by type'}
-                        {groupBy === 'day' && 'Events over time'}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {loading ? (
-                        <div className="flex h-32 items-center justify-center">
-                            <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : data.length === 0 ? (
-                        <div className="flex h-32 flex-col items-center justify-center gap-2">
-                            <IconActivity className="h-12 w-12 text-muted-foreground/50" />
-                            <p className="text-muted-foreground">
-                                No data yet. Track events via POST /api/analytics/track to see them here.
-                            </p>
-                        </div>
-                    ) : (
-                        <AnalyticsTable
-                            data={data}
-                            groupBy={groupBy}
-                            formatDimension={formatDimension}
-                            linkTo="/analytics"
-                            dimensionLabel={groupBy === 'event' ? 'Event' : undefined}
-                            valueLabel="Events"
-                        />
-                    )}
-                </CardContent>
-            </Card>
+            <AnalyticsResultsCard
+                loading={loading}
+                data={data}
+                description={
+                    groupBy === 'country'
+                        ? 'Events by country'
+                        : groupBy === 'event'
+                          ? 'Events by type'
+                          : 'Events over time'
+                }
+                groupBy={groupBy}
+                formatDimension={formatDimension}
+                linkTo="/analytics"
+                dimensionLabel={groupBy === 'event' ? 'Event' : undefined}
+                valueLabel="Events"
+            />
         </>
     );
 }
