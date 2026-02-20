@@ -1,6 +1,7 @@
 import { NotFoundPage } from '@/components/NotFoundPage';
-import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
+import { usePageViewTracking } from '@/hooks/usePageViewTracking';
 import { api, isApiError } from '@/lib/api';
 import { ConfigurableLayout } from '@/ottabase/components/ConfigurableLayout';
 import { APP_META } from '@/ottabase/config/app.config';
@@ -23,6 +24,10 @@ const ADMIN_REQUIRED_PERMISSIONS = ['admin'];
 
 function RootLayout() {
     const pathname = tanstackRouterAdapter.usePathname();
+
+    // Track page views automatically
+    usePageViewTracking();
+
     return (
         <>
             <BrandPathSync pathname={pathname} />
