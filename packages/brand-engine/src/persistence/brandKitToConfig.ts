@@ -75,7 +75,10 @@ export async function resolveInheritanceChain(kit: BrandKit): Promise<BrandTheme
 }
 
 /** Build ResolvedBrandTheme from BrandKit + mode (simplified - no resolution needed) */
-export async function brandKitToTheme(kit: BrandKit, mode: string = 'light'): Promise<ResolvedBrandTheme> {
+export async function brandKitToTheme(
+    kit: BrandKit,
+    mode: string = 'light',
+): Promise<ResolvedBrandTheme | Partial<ResolvedBrandTheme>> {
     // Handle inheritance if parent exists
     const hasParent = !!(kit.get('parentBrandKitId') as string | null);
     const tenantTheme = hasParent ? await resolveInheritanceChain(kit) : kit.toBrandTheme();
@@ -100,7 +103,7 @@ export async function brandKitToTheme(kit: BrandKit, mode: string = 'light'): Pr
     const cursors = tenantTheme.cursors ?? DEFAULT_CURSORS;
     const layout = { ...DEFAULT_LAYOUT, ...(tenantTheme.layout ?? {}) };
 
-    return {
+    const basePayload = {
         name: tenantTheme.name,
         colors,
         typography,
@@ -111,6 +114,20 @@ export async function brandKitToTheme(kit: BrandKit, mode: string = 'light'): Pr
         cursors,
         layout,
     };
+
+    if (mode === 'dark') {
+        const darkPayload: Partial<ResolvedBrandTheme> = {
+            /**
+            // [IMP] For Future expansion: If tokens expand to include mode-specific typography/spacing
+            // (e.g. `tokens.typography.dark`), parse and merge them into `darkPayload` here.
+            */
+            name: tenantTheme.name,
+            colors,
+        };
+        return darkPayload;
+    }
+
+    return basePayload;
 }
 
 /** Extract logo URLs from BrandKit */
