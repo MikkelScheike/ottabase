@@ -157,7 +157,7 @@ function main() {
     log('Setup Complete!', GREEN);
     log(`Please review ${wranglerFile} to ensure all IDs are correct.`, NC);
     log('', NC);
-    log('Analytics Engine (shortlink_clicks):', YELLOW);
+    log('Analytics Engine (OBCF_ANALYTICS_SHORTLINKS → shortlink_clicks):', YELLOW);
     log('  - Dataset is auto-created on first write. No setup required.', NC);
     log('  - For /analytics page, set CLOUDFLARE_ACCOUNT_ID (vars) and', NC);
     log('    CLOUDFLARE_ANALYTICS_API_TOKEN (secret) with Account Analytics Read permission.', NC);

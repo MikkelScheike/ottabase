@@ -503,12 +503,17 @@ const shortlinksRoute = new Route({
     ),
 });
 
-// Unified analytics (Shortlinks + Referrals tabs)
+// Unified analytics (Core + Shortlinks + Referrals tabs)
 const analyticsRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/analytics',
     validateSearch: (search: Record<string, unknown>) => ({
-        tab: (search.tab as string) === 'referrals' ? 'referrals' : 'shortlinks',
+        tab:
+            (search.tab as string) === 'referrals'
+                ? 'referrals'
+                : (search.tab as string) === 'core'
+                  ? 'core'
+                  : 'shortlinks',
     }),
     component: lazyRouteComponent(() =>
         import('@/pages/analytics/AnalyticsPage').then((m) => ({

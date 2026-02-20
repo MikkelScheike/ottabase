@@ -23,34 +23,47 @@ import {
     TabsList,
     TabsTrigger,
 } from '@ottabase/ui-shadcn';
-import { IconChartBar, IconLink, IconLoader2, IconRefresh, IconUsers } from '@tabler/icons-react';
-import { Link, useSearch } from '@tanstack/react-router';
+import { IconActivity, IconChartBar, IconLink, IconLoader2, IconRefresh, IconUsers } from '@tabler/icons-react';
+import { Link, useNavigate, useSearch } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 
 export interface AnalyticsRow {
     dimension: string;
-    clicks: number;
+    clicks?: number;
+    value?: number;
 }
 
 export interface AnalyticsResponse {
     data: AnalyticsRow[];
-    meta: { groupBy: string; days: number; shortCode?: string | null; referralCode?: string | null };
+    meta: {
+        groupBy: string;
+        days: number;
+        shortCode?: string | null;
+        referralCode?: string | null;
+        event?: string | null;
+    };
 }
 
 const headingClass = 'text-xl font-semibold';
 
 export function AnalyticsPage() {
+    const navigate = useNavigate();
     const search = useSearch({ strict: false }) as { tab?: string };
-    const [tab, setTab] = useState<'shortlinks' | 'referrals'>(
-        search?.tab === 'referrals' ? 'referrals' : 'shortlinks',
+    const [tab, setTab] = useState<'shortlinks' | 'referrals' | 'core'>(
+        search?.tab === 'referrals' ? 'referrals' : search?.tab === 'core' ? 'core' : 'shortlinks',
     );
 
     // Sync tab from URL on mount/navigation
     useEffect(() => {
-        if (search?.tab === 'referrals' || search?.tab === 'shortlinks') {
+        if (search?.tab === 'referrals' || search?.tab === 'shortlinks' || search?.tab === 'core') {
             setTab(search.tab);
         }
     }, [search?.tab]);
+
+    const handleTabChange = (v: string) => {
+        setTab(v as 'shortlinks' | 'referrals' | 'core');
+        navigate({ to: '/analytics', search: { tab: v } });
+    };
 
     return (
         <div className="mx-auto max-w-7xl space-y-8 px-4 py-12">
@@ -80,12 +93,16 @@ export function AnalyticsPage() {
                 </div>
             </div>
 
-            <Tabs value={tab} onValueChange={(v) => setTab(v as 'shortlinks' | 'referrals')}>
+            <Tabs value={tab} onValueChange={handleTabChange}>
                 <TabsList>
+                    <TabsTrigger value="core">Core</TabsTrigger>
                     <TabsTrigger value="shortlinks">Shortlinks</TabsTrigger>
                     <TabsTrigger value="referrals">Referrals</TabsTrigger>
                 </TabsList>
 
+                <TabsContent value="core" className="mt-6">
+                    <CoreAnalyticsTab />
+                </TabsContent>
                 <TabsContent value="shortlinks" className="mt-6">
                     <ShortlinkAnalyticsTab />
                 </TabsContent>
@@ -398,18 +415,174 @@ function ReferralAnalyticsTab() {
     );
 }
 
+function CoreAnalyticsTab() {
+    const [data, setData] = useState<AnalyticsRow[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [eventFilter, setEventFilter] = useState<string>('');
+    const [days, setDays] = useState<string>('7');
+    const [groupBy, setGroupBy] = useState<string>('event');
+
+    const fetchAnalytics = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const params = new URLSearchParams();
+            if (eventFilter) params.set('event', eventFilter);
+            params.set('days', days);
+            params.set('groupBy', groupBy);
+            const response = await api<AnalyticsResponse>(`/api/analytics/core?${params.toString()}`, {
+                method: 'GET',
+                callerId: 'CoreAnalyticsTab:fetchAnalytics',
+            });
+            if (response?.data) {
+                setData(response.data);
+            } else {
+                setData([]);
+            }
+        } catch (err) {
+            setError(isApiError(err) ? err.message : 'Failed to load analytics');
+            setData([]);
+        } finally {
+            setLoading(false);
+        }
+    }, [eventFilter, days, groupBy]);
+
+    useEffect(() => {
+        fetchAnalytics();
+    }, [fetchAnalytics]);
+
+    const formatDimension = (dim: string) => {
+        if (groupBy === 'day' && /^\d{4}-\d{2}-\d{2}/.test(dim)) {
+            return new Date(dim).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+                year: 'numeric',
+            });
+        }
+        return dim || '—';
+    };
+
+    return (
+        <>
+            <Card>
+                <CardHeader>
+                    <CardTitle className={headingClass}>Filters</CardTitle>
+                    <CardDescription>
+                        Core event analytics (page_view, button_click, etc.) · Binding:{' '}
+                        <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono dark:bg-muted/50">
+                            OBCF_ANALYTICS_CORE
+                        </code>
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-wrap items-end gap-4">
+                        <div className="min-w-[140px]">
+                            <label className="mb-1.5 block text-sm font-medium">Event</label>
+                            <input
+                                type="text"
+                                placeholder="All (optional)"
+                                value={eventFilter}
+                                onChange={(e) => setEventFilter(e.target.value)}
+                                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+                            />
+                        </div>
+                        <div className="min-w-[120px]">
+                            <label className="mb-1.5 block text-sm font-medium">Period</label>
+                            <Select value={days} onValueChange={setDays}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="1">Last 1 day</SelectItem>
+                                    <SelectItem value="7">Last 7 days</SelectItem>
+                                    <SelectItem value="14">Last 14 days</SelectItem>
+                                    <SelectItem value="30">Last 30 days</SelectItem>
+                                    <SelectItem value="90">Last 90 days</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="min-w-[140px]">
+                            <label className="mb-1.5 block text-sm font-medium">Group by</label>
+                            <Select value={groupBy} onValueChange={setGroupBy}>
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="event">Event</SelectItem>
+                                    <SelectItem value="country">Country</SelectItem>
+                                    <SelectItem value="day">Day</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <Button variant="secondary" size="icon" onClick={fetchAnalytics} disabled={loading}>
+                            {loading ? (
+                                <IconLoader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <IconRefresh className="h-4 w-4" />
+                            )}
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {error && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
+                    <p className="text-sm text-destructive">{error}</p>
+                </div>
+            )}
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Results</CardTitle>
+                    <CardDescription>
+                        {groupBy === 'country' && 'Events by country'}
+                        {groupBy === 'event' && 'Events by type'}
+                        {groupBy === 'day' && 'Events over time'}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    {loading ? (
+                        <div className="flex h-32 items-center justify-center">
+                            <IconLoader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : data.length === 0 ? (
+                        <div className="flex h-32 flex-col items-center justify-center gap-2">
+                            <IconActivity className="h-12 w-12 text-muted-foreground/50" />
+                            <p className="text-muted-foreground">
+                                No data yet. Track events via POST /api/analytics/track to see them here.
+                            </p>
+                        </div>
+                    ) : (
+                        <AnalyticsTable
+                            data={data}
+                            groupBy={groupBy}
+                            formatDimension={formatDimension}
+                            linkTo="/analytics"
+                            dimensionLabel={groupBy === 'event' ? 'Event' : undefined}
+                            valueLabel="Events"
+                        />
+                    )}
+                </CardContent>
+            </Card>
+        </>
+    );
+}
+
 function AnalyticsTable({
     data,
     groupBy,
     formatDimension,
     linkTo,
     dimensionLabel,
+    valueLabel = 'Clicks',
 }: {
     data: AnalyticsRow[];
     groupBy: string;
     formatDimension: (dim: string) => string;
     linkTo: string;
     dimensionLabel?: string;
+    valueLabel?: string;
 }) {
     const colLabel =
         dimensionLabel ??
@@ -419,7 +592,9 @@ function AnalyticsTable({
               ? 'Short Code'
               : groupBy === 'referralCode'
                 ? 'Referral Code'
-                : 'Date');
+                : groupBy === 'event'
+                  ? 'Event'
+                  : 'Date');
 
     const showLink = groupBy === 'shortCode' || groupBy === 'referralCode';
 
@@ -429,7 +604,7 @@ function AnalyticsTable({
                 <TableHeader>
                     <TableRow>
                         <TableHead>{colLabel}</TableHead>
-                        <TableHead className="text-right">Clicks</TableHead>
+                        <TableHead className="text-right">{valueLabel}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -446,7 +621,7 @@ function AnalyticsTable({
                             </TableCell>
                             <TableCell className="text-right">
                                 <Badge variant="secondary" className="font-mono">
-                                    {Math.round(row.clicks)}
+                                    {Math.round(row.clicks ?? row.value ?? 0)}
                                 </Badge>
                             </TableCell>
                         </TableRow>

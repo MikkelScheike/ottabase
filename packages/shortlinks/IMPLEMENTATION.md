@@ -288,8 +288,9 @@ const CustomTypes = {
 
 ### Analytics
 
-Click analytics use **WAE** (Cloudflare Analytics Engine). The `/analytics` page (Shortlinks tab) queries WAE via
-`GET /api/shortlinks/analytics` with `groupBy`: country, shortCode, or day.
+Click analytics use **WAE** (Cloudflare Analytics Engine). Binding: `OBCF_ANALYTICS_SHORTLINKS` → dataset
+`shortlink_clicks`. The `/analytics` page (Shortlinks tab) queries WAE via `GET /api/shortlinks/analytics` with
+`groupBy`: country, shortCode, or day.
 
 ## Best Practices
 

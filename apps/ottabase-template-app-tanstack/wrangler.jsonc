@@ -50,8 +50,12 @@
         },
     ],
 
-    // Analytics Engine - shortlink click tracking (dataset auto-created on first write)
+    // Analytics Engine: event tracking (datasets auto-created on first write)
     "analytics_engine_datasets": [
+        {
+            "binding": "OBCF_ANALYTICS_CORE",
+            "dataset": "core_events",
+        },
         {
             "binding": "OBCF_ANALYTICS_SHORTLINKS",
             "dataset": "shortlink_clicks",

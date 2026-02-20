@@ -36,9 +36,9 @@ export interface ReferralAttributionResult {
  * This function:
  * 1. Looks up the referrer by referralUsername
  * 2. Sets the new user's referredById field
- * 3. Updates ReferralTracking records from pending to completed
+ * 3. Creates ReferralTracking record (status completed) with ipAddress, userAgent, referer, meta
  *
- * @param options - Attribution options
+ * @param options - Attribution options (ipAddress, userAgent, referer, meta optional for conversion context)
  * @returns Attribution result
  */
 export async function processReferralAttribution(

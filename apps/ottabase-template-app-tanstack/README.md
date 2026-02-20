@@ -94,7 +94,8 @@ BOOTSTRAP_OWNER_SECRET=supersecret-token
 
 # Analytics (for /analytics - shortlinks + referrals WAE queries)
 CLOUDFLARE_ACCOUNT_ID=            # 32-char account ID (wrangler vars)
-CLOUDFLARE_ANALYTICS_API_TOKEN=            # Secret: Account Analytics Read; set via: pnpm wrangler secret put CLOUDFLARE_ANALYTICS_API_TOKEN
+CLOUDFLARE_ANALYTICS_API_TOKEN=  # Secret: Account Analytics Read; set via: pnpm wrangler secret put CLOUDFLARE_ANALYTICS_API_TOKEN
+# Bindings: OBCF_ANALYTICS_SHORTLINKS (shortlink_clicks), OBCF_ANALYTICS_REFERRALS (referral_clicks)
 ```
 
 ### First-user + admin guard

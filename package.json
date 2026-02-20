@@ -29,6 +29,7 @@
         "test:apps": "turbo test --filter=./apps/*",
         "test:tanstack": "turbo test --filter=@ottabase/ottabase-template-app-tanstack",
         "test:next": "turbo test --filter=@ottabase/ottabase-template-app",
+        "test:analytics": "turbo test --filter=@ottabase/analytics -- --run",
         "test:coverage": "turbo test -- --coverage",
         "test:coverage:packages": "turbo test --filter=./packages/* -- --coverage",
         "test:coverage:apps": "turbo test --filter=./apps/* -- --coverage",

@@ -1,3 +1,5 @@
+import { AnalyticsQueryError, queryEvents, validateAnalyticsConfig } from '@ottabase/analytics/query';
+import { trackEvent } from '@ottabase/analytics/track';
 import { getSession } from '@ottabase/auth/backend';
 import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import { registerConnection } from '@ottabase/ottaorm';
@@ -47,8 +49,9 @@ export async function handleReferralTrack(context: ReferralRouteContext): Promis
     const meta = body.meta as Record<string, unknown> | undefined;
     const utm = meta?.utm as Record<string, string> | undefined;
     if (env.OBCF_ANALYTICS_REFERRALS) {
-        env.OBCF_ANALYTICS_REFERRALS.writeDataPoint({
-            indexes: [body.referralCode],
+        trackEvent({
+            dataset: env.OBCF_ANALYTICS_REFERRALS,
+            index: body.referralCode,
             blobs: [
                 request.headers.get('cf-connecting-country') ?? 'unknown',
                 (request.headers.get('user-agent') ?? '').slice(0, 200),
@@ -58,7 +61,6 @@ export async function handleReferralTrack(context: ReferralRouteContext): Promis
                 utm?.medium ?? '',
                 utm?.campaign ?? '',
             ],
-            doubles: [1],
         });
     }
 
@@ -239,71 +241,45 @@ export async function handleReferralsAnalytics(context: ReferralRouteContext): P
         return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
     }
 
-    if (!env.CLOUDFLARE_ACCOUNT_ID || !env.CLOUDFLARE_ANALYTICS_API_TOKEN) {
-        return errorResponse(
-            'Analytics not configured: CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_ANALYTICS_API_TOKEN required',
-            503,
-            {
-                code: 'ANALYTICS_NOT_CONFIGURED',
-            },
-        );
+    const configErr = validateAnalyticsConfig({
+        accountId: env.CLOUDFLARE_ACCOUNT_ID,
+        apiToken: env.CLOUDFLARE_ANALYTICS_API_TOKEN,
+    });
+    if (configErr) {
+        return errorResponse(configErr, 503, { code: 'ANALYTICS_NOT_CONFIGURED' });
     }
 
     const referralCode = url.searchParams.get('referralCode') ?? '';
     const days = Math.min(90, Math.max(1, parseInt(url.searchParams.get('days') ?? '7', 10)));
     const groupBy = url.searchParams.get('groupBy') ?? 'country';
 
-    // WAE schema: index1=referralCode, blob1=country, blob2=userAgent, blob3=referer, blob4=userId, blob5=utm_source, blob6=utm_medium, blob7=utm_campaign, double1=1
-    const safeReferralCode = /^[a-zA-Z0-9_-]+$/.test(referralCode) ? referralCode.replace(/'/g, "''") : '';
-    const indexFilter = safeReferralCode ? `AND index1 = '${safeReferralCode}'` : '';
-
-    let sql: string;
-    if (groupBy === 'country') {
-        sql = `SELECT blob1 AS dimension, SUM(_sample_interval) AS clicks
-FROM referral_clicks
-WHERE timestamp > now() - INTERVAL '${days}' DAY ${indexFilter}
-GROUP BY dimension
-ORDER BY clicks DESC
-LIMIT 100`;
-    } else if (groupBy === 'referralCode') {
-        sql = `SELECT index1 AS dimension, SUM(_sample_interval) AS clicks
-FROM referral_clicks
-WHERE timestamp > now() - INTERVAL '${days}' DAY
-GROUP BY dimension
-ORDER BY clicks DESC
-LIMIT 100`;
-    } else if (groupBy === 'day') {
-        sql = `SELECT toStartOfDay(timestamp) AS dimension, SUM(_sample_interval) AS clicks
-FROM referral_clicks
-WHERE timestamp > now() - INTERVAL '${days}' DAY ${indexFilter}
-GROUP BY dimension
-ORDER BY dimension ASC
-LIMIT 90`;
-    } else {
+    // Map referral-specific groupBy to generic groupBy shortcuts
+    const groupByMap: Record<string, string> = { country: 'country', referralCode: 'index', day: 'day' };
+    const resolvedGroupBy = groupByMap[groupBy];
+    if (!resolvedGroupBy) {
         return errorResponse('Invalid groupBy: use country, referralCode, or day', 400, { code: 'INVALID_GROUPBY' });
     }
 
-    const apiUrl = `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/analytics_engine/sql`;
-    const res = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            Authorization: `Bearer ${env.CLOUDFLARE_ANALYTICS_API_TOKEN}`,
-        },
-        body: sql,
-    });
+    try {
+        const result = await queryEvents(
+            { accountId: env.CLOUDFLARE_ACCOUNT_ID!, apiToken: env.CLOUDFLARE_ANALYTICS_API_TOKEN! },
+            {
+                dataset: 'referral_clicks',
+                indexFilter: referralCode || undefined,
+                days,
+                groupBy: resolvedGroupBy,
+                limit: groupBy === 'day' ? 90 : 100,
+            },
+        );
 
-    if (!res.ok) {
-        const text = await res.text();
-        console.error('WAE SQL API error:', res.status, text);
-        return errorResponse('Analytics query failed', 502, { code: 'ANALYTICS_ERROR', detail: text });
+        return jsonResponse({
+            data: result.data,
+            meta: { groupBy, days, referralCode: referralCode || null },
+        });
+    } catch (e) {
+        if (e instanceof AnalyticsQueryError) {
+            return errorResponse('Analytics query failed', 502, { code: 'ANALYTICS_ERROR', details: e.detail });
+        }
+        throw e;
     }
-
-    const json = (await res.json()) as { data?: unknown[]; result?: unknown[]; meta?: Record<string, unknown> };
-    const data = json.data ?? json.result ?? [];
-    const meta = json.meta ?? {};
-
-    return jsonResponse({
-        data,
-        meta: { groupBy, days, referralCode: referralCode || null },
-    });
 }

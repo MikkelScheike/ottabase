@@ -47,6 +47,10 @@ Stores conversions only (clicks go to WAE). Each row = one successful signup att
 - `referralCode`: Code used at click time
 - `referredUserId`: Converted user ID
 - `status`: completed (conversion records)
+- `ipAddress`: Client IP (captured at signup)
+- `userAgent`: Browser user agent
+- `referer`: HTTP Referer header
+- `meta`: JSON (UTM params, headers) — full context at conversion
 - `createdAt`: Record creation timestamp
 - `conversionAt`: Conversion timestamp
 
