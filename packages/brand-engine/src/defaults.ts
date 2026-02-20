@@ -102,6 +102,7 @@ export const DEFAULT_MOTION: Required<TokenMotion> = {
     easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
     easingEnter: 'cubic-bezier(0, 0, 0.2, 1)',
     easingExit: 'cubic-bezier(0.4, 0, 1, 1)',
+    disableAnimations: false,
 };
 
 /** Default cursor map */

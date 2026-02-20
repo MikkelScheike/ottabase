@@ -95,16 +95,18 @@ export function buildCSSVarMap(theme: ResolvedBrandTheme): Record<string, string
     vars['--typography-body-spacing'] = typo.body?.letterSpacing ?? 'normal';
 
     // -- Motion / transition presets -----------------------------------------
-    vars['--duration-fast'] = theme.motion.durationFast;
-    vars['--duration-normal'] = theme.motion.durationNormal;
-    vars['--duration-slow'] = theme.motion.durationSlow;
+    // When disableAnimations: true, set durations to 0s (simpler than data-attr + global CSS)
+    const noMotion = theme.motion.disableAnimations;
+    vars['--duration-fast'] = noMotion ? '0s' : theme.motion.durationFast;
+    vars['--duration-normal'] = noMotion ? '0s' : theme.motion.durationNormal;
+    vars['--duration-slow'] = noMotion ? '0s' : theme.motion.durationSlow;
     vars['--ease'] = theme.motion.easing;
     vars['--ease-enter'] = theme.motion.easingEnter;
     vars['--ease-exit'] = theme.motion.easingExit;
     // Semantic --motion-* aliases match the component-level convention
-    vars['--motion-duration-fast'] = theme.motion.durationFast;
-    vars['--motion-duration-normal'] = theme.motion.durationNormal;
-    vars['--motion-duration-slow'] = theme.motion.durationSlow;
+    vars['--motion-duration-fast'] = noMotion ? '0s' : theme.motion.durationFast;
+    vars['--motion-duration-normal'] = noMotion ? '0s' : theme.motion.durationNormal;
+    vars['--motion-duration-slow'] = noMotion ? '0s' : theme.motion.durationSlow;
     vars['--motion-ease-default'] = theme.motion.easing;
     vars['--motion-ease-enter'] = theme.motion.easingEnter;
     vars['--motion-ease-exit'] = theme.motion.easingExit;
@@ -185,6 +187,7 @@ export function injectFont(url: string): void {
  * to `document.documentElement`.
  *
  * This is the main runtime entry point for browser environments.
+ * When motion.disableAnimations is true, duration vars are set to 0s in buildCSSVarMap.
  */
 export function applyBrandTheme(theme: ResolvedBrandTheme): void {
     if (typeof document === 'undefined') return; // SSR guard
@@ -194,7 +197,7 @@ export function applyBrandTheme(theme: ResolvedBrandTheme): void {
     const fontUrls = new Set([typo.heading?.url, typo.body?.url, typo.handwriting?.url].filter(Boolean) as string[]);
     fontUrls.forEach(injectFont);
 
-    // Build & inject CSS vars
+    // Build & inject CSS vars (disableAnimations → duration vars become 0s)
     const varMap = buildCSSVarMap(theme);
     injectCSSVars(document.documentElement.style, varMap);
 }

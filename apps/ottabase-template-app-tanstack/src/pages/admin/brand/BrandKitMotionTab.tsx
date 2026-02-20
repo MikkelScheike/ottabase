@@ -1,5 +1,14 @@
 import type { TokenMotion } from '@ottabase/brand-engine';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, Label, Switch } from '@ottabase/ui-shadcn';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+    Checkbox,
+    Label,
+    Switch,
+} from '@ottabase/ui-shadcn';
 import { useCallback, useMemo } from 'react';
 
 interface BrandKitMotionTabProps {
@@ -87,10 +96,26 @@ export function BrandKitMotionTab({ tokensJson, onTokensChange }: BrandKitMotion
         const easing = config.easing || 'cubic-bezier(0.4, 0, 0.2, 1)';
         const easingEnter = config.easingEnter || 'cubic-bezier(0, 0, 0.2, 1)';
         const easingExit = config.easingExit || 'cubic-bezier(0.4, 0, 1, 1)';
+        const disableAnimations = Boolean(config.disableAnimations);
 
         return (
             <div className="space-y-4 p-4 rounded-lg border bg-card border-border text-card-foreground">
                 {mode !== 'shared' && <h3 className="font-semibold text-sm capitalize mb-2">{mode} Mode Overrides</h3>}
+
+                <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/20">
+                    <Checkbox
+                        id={`disable-animations-${mode}`}
+                        checked={disableAnimations}
+                        onCheckedChange={(c) => handleUpdate(mode, { disableAnimations: c === true })}
+                        className="mt-0.5"
+                    />
+                    <div className="grid gap-1">
+                        <Label htmlFor={`disable-animations-${mode}`} className="cursor-pointer text-sm">
+                            Disable animations
+                        </Label>
+                        <p className="text-xs text-muted-foreground">Sets duration vars to 0s for reduced motion.</p>
+                    </div>
+                </div>
 
                 <div className="space-y-2">
                     <Label className="text-muted-foreground">Fast Duration ({dFast}ms)</Label>
@@ -174,7 +199,7 @@ export function BrandKitMotionTab({ tokensJson, onTokensChange }: BrandKitMotion
                     <div
                         className="w-8 h-8 rounded-full bg-primary"
                         style={{
-                            animation: `motion-preview-pulse ${dSlow}ms ${easing} infinite alternate`,
+                            animation: `motion-preview-pulse ${disableAnimations ? '0ms' : `${dSlow}ms`} ${easing} infinite alternate`,
                         }}
                     />
                     <style>{`

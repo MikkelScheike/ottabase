@@ -83,6 +83,8 @@ export interface TokenMotion {
     easingEnter?: string;
     /** Easing curve for exit animations */
     easingExit?: string;
+    /** Disable all animations – sets animation: none, transition: 0s */
+    disableAnimations?: boolean;
 }
 
 /** Cursor appearance map */
