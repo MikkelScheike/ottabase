@@ -64,6 +64,7 @@ import { handleOttaormCrud } from './ottaorm-crud';
 import { handleModelsMetadata, handleOttaormInit } from './ottaorm-init';
 import { checkKillSwitches, getKillSwitchStatus } from '../lib/killswitch';
 import {
+    handleReferralsAnalytics,
     handleReferralStats,
     handleReferralTrack,
     handleReferralTrackingList,
@@ -73,6 +74,7 @@ import {
 import {
     handleShortlinkById,
     handleShortlinkExplicitGo,
+    handleShortlinksAnalytics,
     handleShortlinksCreate,
     handleShortlinksList,
 } from './shortlinks';
@@ -175,6 +177,10 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
         return handleShortlinksList(context);
     }
 
+    if (route === '/api/shortlinks/analytics') {
+        return handleShortlinksAnalytics(context);
+    }
+
     if (route === '/shortlinks/go') {
         return handleShortlinkExplicitGo(context);
     }
@@ -189,6 +195,10 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
 
     if (route === '/api/referrals/tracking') {
         return handleReferralTrackingList(context);
+    }
+
+    if (route === '/api/referrals/analytics') {
+        return handleReferralsAnalytics(context);
     }
 
     if (route === '/api/audit/logs') {

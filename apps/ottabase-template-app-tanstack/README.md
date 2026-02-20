@@ -91,6 +91,10 @@ AUTH_SESSION_MAX_AGE=2592000
 ALLOW_NULL_TENANT=true            # allow system-scope (single-founder) admin
 MULTI_TENANT_ENABLED=true         # create personal org on first user (default true)
 BOOTSTRAP_OWNER_SECRET=supersecret-token
+
+# Analytics (for /analytics - shortlinks + referrals WAE queries)
+CLOUDFLARE_ACCOUNT_ID=            # 32-char account ID (wrangler vars)
+CLOUDFLARE_ANALYTICS_API_TOKEN=            # Secret: Account Analytics Read; set via: pnpm wrangler secret put CLOUDFLARE_ANALYTICS_API_TOKEN
 ```
 
 ### First-user + admin guard
@@ -290,6 +294,8 @@ apps/ottabase-template-app-tanstack/
 - `/demo/cloudflare/queues` - Queues demo
 - `/demo/cloudflare/rate-limiting` - Rate limiting demo
 - `/demo/cloudflare/realtime` - Durable Objects realtime demo
+- `/shortlinks` - Shortlink management
+- `/analytics` - Unified analytics (Shortlinks + Referrals tabs, WAE)
 
 ### API Endpoints
 
@@ -300,6 +306,8 @@ apps/ottabase-template-app-tanstack/
 - `/api/auth/register` - Credentials registration
 - `/api/auth/config` - Auth UI configuration
 - `/api/ottaorm/*` - OttaORM CRUD endpoints
+- `/api/shortlinks/analytics` - Shortlink clicks (powers /analytics Shortlinks tab)
+- `/api/referrals/analytics` - Referral clicks (powers /analytics Referrals tab)
 
 ## Using Cloudflare Bindings
 
@@ -376,7 +384,22 @@ Update the IDs in `wrangler.jsonc` with your actual:
 - R2 bucket name
 - Queue name
 
-#### 3. Deploy
+#### 3. Analytics (optional)
+
+Shortlink and referral click tracking uses **Cloudflare Analytics Engine** (WAE). Clicks are written automatically; the
+unified analytics page at `/analytics` requires:
+
+1. **CLOUDFLARE_ACCOUNT_ID** – Set in `wrangler.jsonc` vars (32-char account ID from Cloudflare dashboard).
+
+2. **CLOUDFLARE_ANALYTICS_API_TOKEN** – Create a token with **Account | Account Analytics | Read**:
+
+    ```bash
+    pnpm wrangler secret put CLOUDFLARE_ANALYTICS_API_TOKEN
+    ```
+
+    When prompted, paste your token. Without this, `/analytics` returns 503.
+
+#### 4. Deploy
 
 ```bash
 # Deploy to Cloudflare Workers

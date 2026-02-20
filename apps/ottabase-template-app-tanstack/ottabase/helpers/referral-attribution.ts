@@ -11,6 +11,15 @@ import { ReferralTracking } from '@ottabase/referrals';
 export interface ReferralAttributionOptions {
     newUserId: string;
     referralCode: string;
+    /** Click/conversion context — captured at signup time */
+    ipAddress?: string | null;
+    userAgent?: string | null;
+    referer?: string | null;
+    meta?: {
+        utm?: { source?: string; medium?: string; campaign?: string; term?: string; content?: string };
+        headers?: Record<string, string>;
+        [key: string]: unknown;
+    } | null;
 }
 
 export interface ReferralAttributionResult {
@@ -77,14 +86,19 @@ export async function processReferralAttribution(
             await newUser.save();
         }
 
-        // 3. Update ReferralTracking records from pending to completed
-        const pendingRecords = await ReferralTracking.findPendingByCode(referralCode);
-
-        let updatedCount = 0;
-        for (const record of pendingRecords) {
-            await record.markCompleted(newUserId);
-            updatedCount++;
-        }
+        // 3. Create conversion record (clicks are in WAE; only conversions go to D1)
+        // Capture full context — ipAddress, userAgent, referer, meta (UTM params, headers)
+        await ReferralTracking.create({
+            userId: referrerId,
+            referralCode,
+            referredUserId: newUserId,
+            status: 'completed',
+            conversionAt: Date.now(),
+            ipAddress: options.ipAddress ?? null,
+            userAgent: options.userAgent ?? null,
+            referer: options.referer ?? null,
+            meta: options.meta ?? null,
+        });
 
         console.log(`Referral attribution successful: User ${newUserId} referred by ${referrerId} (${referralCode})`);
 
@@ -92,7 +106,7 @@ export async function processReferralAttribution(
             attributed: true,
             referrerId,
             referralCode,
-            trackingRecordsUpdated: updatedCount,
+            trackingRecordsUpdated: 1,
         };
     } catch (error) {
         console.error('Error processing referral attribution:', error);

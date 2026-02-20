@@ -50,6 +50,18 @@
         },
     ],
 
+    // Analytics Engine - shortlink click tracking (dataset auto-created on first write)
+    "analytics_engine_datasets": [
+        {
+            "binding": "OBCF_ANALYTICS_SHORTLINKS",
+            "dataset": "shortlink_clicks",
+        },
+        {
+            "binding": "OBCF_ANALYTICS_REFERRALS",
+            "dataset": "referral_clicks",
+        },
+    ],
+
     // Queue bindings for async message processing
     // Local dev: Uses local queue storage
     // Preview/Prod: Uses real Cloudflare Queue
@@ -114,6 +126,8 @@
         // R2 proxy path - works in dev and production (same origin)
         // For custom R2 domain, set to: https://cdn.yourdomain.com
         "R2_PUBLIC_URL": "/api/upload/file",
+        // For /analytics page (WAE queries) - set your 32-char account ID (Cloudflare dashboard)
+        //"CLOUDFLARE_ACCOUNT_ID": "YOUR_CLOUDFLARE_ACCOUNT_ID",
     },
 
     // Local development settings

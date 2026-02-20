@@ -503,6 +503,20 @@ const shortlinksRoute = new Route({
     ),
 });
 
+// Unified analytics (Shortlinks + Referrals tabs)
+const analyticsRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/analytics',
+    validateSearch: (search: Record<string, unknown>) => ({
+        tab: (search.tab as string) === 'referrals' ? 'referrals' : 'shortlinks',
+    }),
+    component: lazyRouteComponent(() =>
+        import('@/pages/analytics/AnalyticsPage').then((m) => ({
+            default: m.AnalyticsPage,
+        })),
+    ),
+});
+
 const migrationStatusRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/migration-status',
@@ -893,6 +907,7 @@ const routeTree = rootRoute.addChildren([
     resetPasswordRoute,
     dashboardRoute,
     shortlinksRoute,
+    analyticsRoute,
     migrationStatusRoute,
     referralsRoute,
     adminRoute,

@@ -24,7 +24,7 @@ function main() {
     log('Starting Cloudflare Setup for Ottabase Template App...', GREEN);
 
     // Check wrangler
-    const wranglerCmd = 'pnpm --filter ottabase-template-app exec wrangler';
+    const wranglerCmd = 'pnpm --filter @ottabase/ottabase-template-app-tanstack exec wrangler';
     try {
         runCommand(`${wranglerCmd} --version`);
     } catch (e) {
@@ -52,7 +52,7 @@ function main() {
     }
     log(`Authenticated as: ${whoamiResult.split('\n')[0]}`, GREEN);
 
-    const wranglerFile = path.join(process.cwd(), 'apps', 'ottabase-template-app', 'wrangler.jsonc');
+    const wranglerFile = path.join(process.cwd(), 'apps', 'ottabase-template-app-tanstack', 'wrangler.jsonc');
     if (!fs.existsSync(wranglerFile)) {
         log(`Error: ${wranglerFile} not found!`, RED);
         process.exit(1);
@@ -156,6 +156,11 @@ function main() {
     fs.writeFileSync(wranglerFile, content);
     log('Setup Complete!', GREEN);
     log(`Please review ${wranglerFile} to ensure all IDs are correct.`, NC);
+    log('', NC);
+    log('Analytics Engine (shortlink_clicks):', YELLOW);
+    log('  - Dataset is auto-created on first write. No setup required.', NC);
+    log('  - For /analytics page, set CLOUDFLARE_ACCOUNT_ID (vars) and', NC);
+    log('    CLOUDFLARE_ANALYTICS_API_TOKEN (secret) with Account Analytics Read permission.', NC);
 }
 
 main();
