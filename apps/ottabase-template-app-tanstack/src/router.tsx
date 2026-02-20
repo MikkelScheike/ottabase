@@ -1,11 +1,12 @@
+import { NotFoundPage } from '@/components/NotFoundPage';
+import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { api, isApiError } from '@/lib/api';
 import { ConfigurableLayout } from '@/ottabase/components/ConfigurableLayout';
 import { APP_META } from '@/ottabase/config/app.config';
 import { BrandPathSync, LayoutResolver } from '@ottabase/brand-engine-react';
 import { tanstackRouterAdapter } from '@ottabase/brand-engine-react/routers';
-import { Button, Spinner, Toaster } from '@ottabase/ui-shadcn';
-import { IconHome, IconMapPinOff } from '@tabler/icons-react';
+import { Button, Toaster } from '@ottabase/ui-shadcn';
 import {
     createBrowserHistory,
     lazyRouteComponent,
@@ -71,7 +72,9 @@ function HomeRouteComponent() {
                         <Link to="/demo">Go to Demo</Link>
                     </Button>
                     <Button asChild variant="outline">
-                        <Link to="/docs/">Docs</Link>
+                        <Link to="/docs/$" params={{ _splat: '' }}>
+                            Docs
+                        </Link>
                     </Button>
                     <Button variant="outline" onClick={checkHealth} disabled={loading}>
                         {loading ? 'Checking...' : '/api/health'}
@@ -107,33 +110,7 @@ function renderAdminRoute(children: ReactNode) {
 const rootRoute = new RootRoute({
     component: RootLayout,
     loader: () => undefined, // Triggers pending state so pendingComponent shows during lazy route load
-    notFoundComponent: () => (
-        <div className="flex min-h-[60vh] flex-col items-center justify-center gap-6 px-4">
-            <div className="flex flex-col items-center gap-3 text-center">
-                <div className="rounded-full bg-muted/50 p-4 dark:bg-muted/30">
-                    <IconMapPinOff className="h-12 w-12 text-muted-foreground" stroke={1.25} />
-                </div>
-                <span className="text-6xl font-bold tracking-tighter text-muted-foreground/30 dark:text-muted-foreground/20">
-                    404
-                </span>
-                <h1 className="text-xl font-semibold">Page not found</h1>
-                <p className="max-w-sm text-sm text-muted-foreground">
-                    The page you're looking for doesn't exist or has been moved.
-                </p>
-            </div>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-                <Button asChild>
-                    <Link to="/" className="inline-flex items-center gap-2">
-                        <IconHome className="h-4 w-4" />
-                        Back home
-                    </Link>
-                </Button>
-                <Button asChild variant="outline">
-                    <Link to="/docs/">Docs</Link>
-                </Button>
-            </div>
-        </div>
-    ),
+    notFoundComponent: NotFoundPage,
 });
 
 const indexRoute = new Route({
@@ -973,11 +950,7 @@ const browserHistory = createBrowserHistory();
 export const router = new Router({
     routeTree,
     history: browserHistory,
-    defaultPendingComponent: () => (
-        <div className="flex min-h-[50vh] items-center justify-center">
-            <Spinner className="h-8 w-8 text-muted-foreground" />
-        </div>
-    ),
+    defaultPendingComponent: RouteLoadingFallback,
     defaultPendingMs: 0,
     defaultPendingMinMs: 0,
 });
