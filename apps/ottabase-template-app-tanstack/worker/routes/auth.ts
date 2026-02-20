@@ -520,6 +520,7 @@ export async function handleAuthRegister(context: AuthRouteContext): Promise<Res
                 name,
                 organizationRole: 'owner',
                 roleFallbacks: ['member', 'viewer'],
+                appId: env.APP_ID ?? 'ottabase-template-app',
             });
 
             organizationId = provisioned.organizationId;
