@@ -4,7 +4,7 @@ import { ConfigurableLayout } from '@/ottabase/components/ConfigurableLayout';
 import { APP_META } from '@/ottabase/config/app.config';
 import { BrandPathSync, LayoutResolver } from '@ottabase/brand-engine-react';
 import { tanstackRouterAdapter } from '@ottabase/brand-engine-react/routers';
-import { Button, Toaster } from '@ottabase/ui-shadcn';
+import { Button, Spinner, Toaster } from '@ottabase/ui-shadcn';
 import {
     createBrowserHistory,
     lazyRouteComponent,
@@ -105,6 +105,7 @@ function renderAdminRoute(children: ReactNode) {
 
 const rootRoute = new RootRoute({
     component: RootLayout,
+    loader: () => undefined, // Triggers pending state so pendingComponent shows during lazy route load
     notFoundComponent: () => (
         <div className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">Not found</h2>
@@ -952,6 +953,13 @@ const browserHistory = createBrowserHistory();
 export const router = new Router({
     routeTree,
     history: browserHistory,
+    defaultPendingComponent: () => (
+        <div className="flex min-h-[50vh] items-center justify-center">
+            <Spinner className="h-8 w-8 text-muted-foreground" />
+        </div>
+    ),
+    defaultPendingMs: 0,
+    defaultPendingMinMs: 0,
 });
 
 declare module '@tanstack/react-router' {
