@@ -74,7 +74,7 @@ async function selectResources(force: boolean): Promise<ResourceId[]> {
         { name: 'D1 Database (ottabase-db)', value: 'd1' as ResourceId, checked: true },
         { name: 'KV Namespaces (OBCF_KV + OBCF_KV_PREVIEW)', value: 'kv' as ResourceId, checked: true },
         { name: 'R2 Buckets (ottabase-bucket + ottabase-bucket-preview)', value: 'r2' as ResourceId, checked: true },
-        { name: 'Queue (ottabase-queue)', value: 'queue' as ResourceId, checked: true },
+        { name: 'Queue (ottabase-queue + ottabase-queue-preview)', value: 'queue' as ResourceId, checked: true },
     ];
 
     const selected = await checkbox({
@@ -130,6 +130,7 @@ async function main() {
     log('', NC);
 
     let d1Id = '';
+    let d1PreviewId = '';
     let kvId = '';
     let kvPreviewId = '';
 
@@ -151,6 +152,27 @@ async function main() {
             }
         } catch (e) {
             log(`Error setting up D1 Database: ${e instanceof Error ? e.message : String(e)}`, RED);
+        }
+
+        // D1 Preview Database (for PR preview deployments - isolated from production)
+        log("Setting up D1 Preview Database 'ottabase-db-preview'...", YELLOW);
+        try {
+            const d1ListOutput = runCommand(`${wranglerCmd} d1 list --json`, true);
+            const existing = d1ListOutput
+                ? extractJson<{ uuid: string; name: string }[]>(d1ListOutput).find(
+                      (db) => db.name === 'ottabase-db-preview',
+                  )
+                : null;
+            if (existing) {
+                d1PreviewId = existing.uuid;
+                log(`Preview Database already exists. ID: ${d1PreviewId}`, GREEN);
+            } else {
+                const createOutput = runCommand(`${wranglerCmd} d1 create ottabase-db-preview`);
+                d1PreviewId = parseD1CreateOutput(createOutput);
+                log(`Created D1 Preview Database. ID: ${d1PreviewId}`, GREEN);
+            }
+        } catch (e) {
+            log(`Error setting up D1 Preview Database: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
     }
 
@@ -251,7 +273,6 @@ async function main() {
         log("Setting up Queue 'ottabase-queue'...", YELLOW);
         try {
             const queueList = runCommand(`${wranglerCmd} queues list`, true);
-            // Table uses │ (U+2502) or | ; match ottabase-queue as column value, exclude demo-ottabase-queue
             const existsInList = queueList && /[|\u2502]\s*ottabase-queue\s*[|\u2502]/.test(queueList);
             if (existsInList) {
                 log('Queue already exists.', GREEN);
@@ -271,6 +292,29 @@ async function main() {
         } catch (e) {
             log(`Error setting up Queue: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
+
+        log("Setting up Queue 'ottabase-queue-preview' (for PR previews)...", YELLOW);
+        try {
+            const queueList = runCommand(`${wranglerCmd} queues list`, true);
+            const existsPreview = queueList && /[|\u2502]\s*ottabase-queue-preview\s*[|\u2502]/.test(queueList);
+            if (existsPreview) {
+                log('Preview queue already exists.', GREEN);
+            } else {
+                let createErr: unknown;
+                try {
+                    runCommand(`${wranglerCmd} queues create ottabase-queue-preview`);
+                    log('Preview queue created.', GREEN);
+                } catch (e) {
+                    createErr = e;
+                    const msg = e instanceof Error ? e.message : String(e);
+                    if (msg.includes('already taken') || msg.includes('11009')) {
+                        log('Preview queue already exists.', GREEN);
+                    } else throw createErr;
+                }
+            }
+        } catch (e) {
+            log(`Error setting up preview queue: ${e instanceof Error ? e.message : String(e)}`, RED);
+        }
     }
 
     // 5. Analytics Engine: Workers Analytics Engine (OBCF_ANALYTICS_*)
@@ -280,14 +324,17 @@ async function main() {
     log('  - For /analytics page, set `CLOUDFLARE_ACCOUNT_ID` (vars) and', NC);
     log('    `CLOUDFLARE_ANALYTICS_API_TOKEN` (secret) with `Account Analytics` Read permission.', NC);
 
-    // Output resource IDs for env vars (IMPORTANT NOTE: `wrangler.jsonc` is a template in the template app – do not modify its contents!)
+    // Output resource IDs for GitHub Secrets (IMPORTANT: `wrangler.jsonc` is a template – do not modify; add to GitHub Settings → Secrets)
     log('', NC);
     log('Setup Complete!', GREEN);
     log('', NC);
-    log('🏁 Add these as env vars in Cloudflare Workers (Dashboard → Workers → Settings → Variables):', YELLOW);
-    if (d1Id) log(`  OBCF_D1_DATABASE_ID=${d1Id}`);
-    if (kvId) log(`  OBCF_KV_NAMESPACE_ID=${kvId}`);
-    if (kvPreviewId) log(`  OBCF_KV_PREVIEW_ID=${kvPreviewId}`);
+    log('Production (GitHub Secrets for main deploy):', YELLOW);
+    if (d1Id) log(`  D1_DATABASE_ID=${d1Id}`);
+    if (kvId) log(`  KV_NAMESPACE_ID=${kvId}`);
+    log('', NC);
+    log('Preview (GitHub Secrets for PR preview deploy):', YELLOW);
+    if (d1PreviewId) log(`  D1_PREVIEW_DATABASE_ID=${d1PreviewId}`);
+    if (kvPreviewId) log(`  KV_PREVIEW_NAMESPACE_ID=${kvPreviewId}`);
 }
 
 main().catch((err) => {

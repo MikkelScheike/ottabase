@@ -187,7 +187,10 @@ node .github/scripts/discover-deployable-apps.mjs
 
 ## Wrangler Configuration
 
-The workflow generates `wrangler.production.jsonc` by substituting placeholders in your `wrangler.jsonc`:
+The workflow generates `wrangler.production.jsonc` (or `wrangler.preview.jsonc` for PR preview) by running
+`.github/scripts/substitute-wrangler-secrets.py` **before** any wrangler deploy command. Order: Build → Generate config
+(substitute secrets) → Verify → Deploy. The `cloudflare/wrangler-action` deploy step uses
+`--config wrangler.production.jsonc` (or `wrangler.preview.jsonc`). Build steps do not use wrangler config.
 
 **Source (wrangler.jsonc):**
 
@@ -225,10 +228,13 @@ The workflow generates `wrangler.production.jsonc` by substituting placeholders 
 
 **Supported placeholders:**
 
-- `PRODUCTION_D1_DATABASE_ID` → `${{ secrets.D1_DATABASE_ID }}`
-- `PRODUCTION_KV_NAMESPACE_ID` → `${{ secrets.KV_NAMESPACE_ID }}`
+- `PRODUCTION_D1_DATABASE_ID` → `D1_DATABASE_ID`
+- `PRODUCTION_KV_NAMESPACE_ID` → `KV_NAMESPACE_ID`
+- `YOUR_CLOUDFLARE_ACCOUNT_ID` → `CLOUDFLARE_ACCOUNT_ID`
 
-Add more by editing the workflow's "Generate production wrangler config" step.
+**Preview mode:** `PREVIEW_D1_DATABASE_ID`, `PREVIEW_KV_NAMESPACE_ID`
+
+Add more placeholders by editing `.github/scripts/substitute-wrangler-secrets.py` (REPLACEMENTS dict).
 
 ## Error Messages Reference
 
@@ -318,14 +324,16 @@ Make sure your app has a wrangler.jsonc file in its root directory.
 
 ### Secret Substitution Failed
 
+From `.github/scripts/substitute-wrangler-secrets.py`:
+
 ```
 ❌ ERROR: Secret substitution incomplete
 
-The following placeholders were not replaced:
-  PRODUCTION_D1_DATABASE_ID
+  Placeholders still present: PRODUCTION_D1_DATABASE_ID, ...
 
-This usually means the corresponding GitHub secrets are not set.
-Check that all required secrets are configured in repository settings.
+  Set the corresponding GitHub Secrets in repository settings.
+  Production: D1_DATABASE_ID, KV_NAMESPACE_ID
+  Preview: D1_PREVIEW_DATABASE_ID, KV_PREVIEW_NAMESPACE_ID
 ```
 
 ## Deployment Targets
@@ -345,10 +353,11 @@ Worker deployment indicators:
 ```
 ottabase/
 ├── .github/
+│   ├── scripts/
+│   │   ├── discover-deployable-apps.mjs
+│   │   └── substitute-wrangler-secrets.py  # Substitutes secrets into wrangler config
 │   ├── workflows/
 │   │   └── deploy.yml                 # Main workflow
-│   ├── scripts/
-│   │   └── discover-deployable-apps.mjs
 │   ├── README.md                      # Quick start
 │   └── DEPLOYMENT.md                  # This file
 │
@@ -395,11 +404,17 @@ ottabase/
 }
 ```
 
-**4. Add substitution:**
+**4. Add substitution:** Edit `.github/scripts/substitute-wrangler-secrets.py`:
 
-```yaml
-sed -e "s/PRODUCTION_MY_CUSTOM_SECRET/${{ secrets.MY_CUSTOM_SECRET }}/g"
+```python
+# In REPLACEMENTS["production"] (or "preview"):
+"PRODUCTION_MY_CUSTOM_SECRET": "MY_CUSTOM_SECRET",
+
+# In REMAINING_PATTERNS["production"] if validation needed:
+r"PRODUCTION_MY_CUSTOM_SECRET",
 ```
+
+Then add `MY_CUSTOM_SECRET: ${{ secrets.MY_CUSTOM_SECRET }}` to the workflow step's `env`.
 
 ### Add New App Type
 

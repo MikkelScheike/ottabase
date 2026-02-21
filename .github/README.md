@@ -103,14 +103,23 @@ Generated file is `wrangler.production.jsonc` (or `wrangler.preview.jsonc` for P
 
 **Settings → Secrets and variables → Actions**
 
-### Required (production and PR preview)
+### Required for production deploy
 
-| Secret                  | Where to get it                                     |
-| ----------------------- | --------------------------------------------------- |
-| `CLOUDFLARE_API_TOKEN`  | Cloudflare → My Profile → API Tokens                |
-| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare → Workers & Pages                        |
-| `D1_DATABASE_ID`        | `wrangler d1 create <name>` (if using D1)           |
-| `KV_NAMESPACE_ID`       | `wrangler kv:namespace create <name>` (if using KV) |
+| Secret                  | Where to get it                      |
+| ----------------------- | ------------------------------------ |
+| `CLOUDFLARE_API_TOKEN`  | Cloudflare → My Profile → API Tokens |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare → Workers & Pages         |
+| `D1_DATABASE_ID`        | `pnpm cf:setup` output (ottabase-db) |
+| `KV_NAMESPACE_ID`       | `pnpm cf:setup` output (OBCF_KV)     |
+
+### Required for PR preview deploy
+
+| Secret                    | Where to get it                              |
+| ------------------------- | -------------------------------------------- |
+| `D1_PREVIEW_DATABASE_ID`  | `pnpm cf:setup` output (ottabase-db-preview) |
+| `KV_PREVIEW_NAMESPACE_ID` | `pnpm cf:setup` output (OBCF_KV_preview)     |
+
+PR preview uses isolated preview D1/KV/R2 so production data is never touched.
 
 ### Optional
 
@@ -143,9 +152,10 @@ Generated file is `wrangler.production.jsonc` (or `wrangler.preview.jsonc` for P
 ## PR preview (pr-preview.yml)
 
 - **Triggers:** PR opened, synchronized, reopened, or closed.
-- **Open/sync/reopen:** Builds packages, builds app(s), deploys preview worker(s) named e.g. `my-app-pr-123`. Preview
-  URL: `https://<preview-name>.<CF_WORKER_SUBDOMAIN>.workers.dev`.
-- **Closed:** Deletes the preview worker for that PR.
+- **Open/sync/reopen:** Builds packages, builds app(s), deploys preview worker(s) named e.g. `my-app-pr-123` using
+  **env.preview** bindings (ottabase-db-preview D1, OBCF_KV_preview, ottabase-bucket-preview). Preview URL:
+  `https://<preview-name>.<CF_WORKER_SUBDOMAIN>.workers.dev`.
+- **Closed:** Deletes the preview worker (preview D1/KV persist; shared across PRs).
 - **Skip:** If PR title or description contains `#skippr` or `#skipdeploy`, preview build and deploy are skipped. See
   [Skip deployment](#skip-deployment).
 
@@ -205,7 +215,8 @@ Errors in workflows include what failed, why, and how to fix (e.g. missing secre
 │   ├── build-packages.yml   # Reusable: build packages
 │   └── ci.yml               # Lint, type-check, test, build
 ├── scripts/
-│   └── discover-deployable-apps.mjs
+│   ├── discover-deployable-apps.mjs
+│   └── substitute-wrangler-secrets.py   # Substitutes secrets into wrangler config
 ├── README.md                # This file
 └── DEPLOYMENT.md            # Full reference (config, errors, extending)
 ```

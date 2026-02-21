@@ -36,6 +36,17 @@ pnpm cf:validate
 - Queue: `ottabase-queue`
 - **Does NOT modify wrangler.jsonc** (it's a template). Copy the output IDs for GitHub Secrets below.
 
+**Resource overview (prod vs preview):**
+
+| Resource | cf:setup creates (prod) | cf:setup creates (preview) | wrangler production              | wrangler preview                         | GitHub secrets                           |
+| -------- | ----------------------- | -------------------------- | -------------------------------- | ---------------------------------------- | ---------------------------------------- |
+| D1       | ottabase-db             | ottabase-db-preview        | `PRODUCTION_D1_DATABASE_ID`      | `PREVIEW_D1_DATABASE_ID`                 | D1_DATABASE_ID, D1_PREVIEW_DATABASE_ID   |
+| KV       | OBCF_KV                 | OBCF_KV_preview            | `PRODUCTION_KV_NAMESPACE_ID`     | `PREVIEW_KV_NAMESPACE_ID`                | KV_NAMESPACE_ID, KV_PREVIEW_NAMESPACE_ID |
+| R2       | ottabase-bucket         | ottabase-bucket-preview    | `bucket_name: "ottabase-bucket"` | `bucket_name: "ottabase-bucket-preview"` | none                                     |
+| Queue    | ottabase-queue          | ottabase-queue-preview     | `queue: "ottabase-queue"`        | `queue: "ottabase-queue-preview"`        | none                                     |
+
+D1 and KV require IDs as GitHub Secrets; R2 and Queue use names in wrangler (no secrets).
+
 ---
 
 ## Step 2: Get Cloudflare Credentials
@@ -72,8 +83,7 @@ Note: `wrangler.jsonc` contains placeholders (`YOUR_*`, `PRODUCTION_*`). CI subs
 
 Go to: GitHub repository → **Settings** → **Secrets and variables** → **Actions** → **New repository secret**
 
-Add these **4 required secrets** (CI substitutes `PRODUCTION_D1_DATABASE_ID` / `PRODUCTION_KV_NAMESPACE_ID` in
-wrangler):
+**Production (main deploy):**
 
 | Secret Name             | Description                | Where to Get                                    |
 | ----------------------- | -------------------------- | ----------------------------------------------- |
@@ -81,6 +91,13 @@ wrangler):
 | `CLOUDFLARE_ACCOUNT_ID` | Your account ID            | `wrangler whoami`                               |
 | `D1_DATABASE_ID`        | Production D1 database ID  | cf:setup output or `wrangler d1 list`           |
 | `KV_NAMESPACE_ID`       | Production KV namespace ID | cf:setup output or `wrangler kv namespace list` |
+
+**PR preview (uses isolated preview D1/KV/R2):**
+
+| Secret Name               | Description                      | Where to Get    |
+| ------------------------- | -------------------------------- | --------------- |
+| `D1_PREVIEW_DATABASE_ID`  | Preview D1 (ottabase-db-preview) | cf:setup output |
+| `KV_PREVIEW_NAMESPACE_ID` | Preview KV (OBCF_KV_preview)     | cf:setup output |
 
 **Optional:**
 
@@ -240,7 +257,8 @@ See [CLOUDFLARE_CONFIGURATION_GUIDE.md](CLOUDFLARE_CONFIGURATION_GUIDE.md) for u
 - [ ] Login: `wrangler login` or `pnpm cf:login`
 - [ ] Create resources: `pnpm cf:setup` (copy output IDs for GitHub Secrets)
 - [ ] Validate: `pnpm cf:validate`
-- [ ] Add 4 GitHub secrets (D1_DATABASE_ID, KV_NAMESPACE_ID from cf:setup output)
+- [ ] Add production secrets (D1_DATABASE_ID, KV_NAMESPACE_ID)
+- [ ] Add PR preview secrets (D1_PREVIEW_DATABASE_ID, KV_PREVIEW_NAMESPACE_ID)
 - [ ] Push to main branch
 - [ ] Verify deployment
 

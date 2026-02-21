@@ -686,65 +686,29 @@ jobs:
               if: github.ref == 'refs/heads/main'
               working-directory: apps/${{ matrix.folder }}
               run: |
-                  WRANGLER_CONFIG="${{ steps.config.outputs.wrangler-config }}"
-                  echo "🔧 Generating production wrangler configuration from ${WRANGLER_CONFIG}..."
+                  echo "🔧 Generating production wrangler configuration..."
+                  python ../../.github/scripts/substitute-wrangler-secrets.py
+              env:
+                  MODE: production
+                  WRANGLER_CONFIG: ${{ steps.config.outputs.wrangler-config }}
+                  OUTPUT_FILE: wrangler.production.jsonc
+                  D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+                  KV_NAMESPACE_ID: ${{ secrets.KV_NAMESPACE_ID }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
 
-                  # Verify wrangler config exists
-                  if [ ! -f "${WRANGLER_CONFIG}" ]; then
-                    echo ""
-                    echo "❌ ERROR: Wrangler configuration file not found"
-                    echo ""
-                    echo "Expected file: ${WRANGLER_CONFIG}"
-                    echo "Current directory: $(pwd)"
-                    echo ""
-                    echo "Wrangler config is required for Cloudflare Workers deployment."
-                    echo "Make sure your app has a wrangler.jsonc file in its root directory."
-                    echo ""
+            # Verify generated config exists (substitution runs before deploy)
+            - name: Verify production wrangler config
+              if: github.ref == 'refs/heads/main'
+              working-directory: apps/${{ matrix.folder }}
+              run: |
+                  if [ ! -f "wrangler.production.jsonc" ]; then
+                    echo "❌ ERROR: wrangler.production.jsonc not found - Generate step must run first"
                     exit 1
                   fi
-
-                  # Create a temporary production config by substituting placeholders
-                  # The output goes to a temporary file that won't be committed
-                  cat ${WRANGLER_CONFIG} | \
-                    sed -e "s/PRODUCTION_D1_DATABASE_ID/${{ secrets.D1_DATABASE_ID }}/g" \
-                        -e "s/PRODUCTION_KV_NAMESPACE_ID/${{ secrets.KV_NAMESPACE_ID }}/g" \
-                        -e "s/YOUR_CLOUDFLARE_ACCOUNT_ID/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/g" \
-                    > wrangler.production.jsonc
-
-                  # Verify no placeholders remain in the generated file
-                  if grep -q "PRODUCTION_" wrangler.production.jsonc; then
-                    echo ""
-                    echo "❌ ERROR: Secret substitution incomplete"
-                    echo ""
-                    echo "The following placeholders were not replaced:"
-                    grep "PRODUCTION_" wrangler.production.jsonc
-                    echo ""
-                    echo "This usually means the corresponding GitHub secrets are not set."
-                    echo "Check that all required secrets are configured in repository settings."
-                    echo ""
-                    rm -f wrangler.production.jsonc
-                    exit 1
-                  fi
-
-                  # Validate JSON structure
-                  if ! grep -q "{" wrangler.production.jsonc; then
-                    echo ""
-                    echo "❌ ERROR: Generated wrangler config appears invalid"
-                    echo ""
-                    echo "The generated config file doesn't contain valid JSON."
-                    echo "Check the source file: ${WRANGLER_CONFIG}"
-                    echo ""
-                    rm -f wrangler.production.jsonc
-                    exit 1
-                  fi
-
-                  echo "✅ Production configuration generated successfully"
-                  echo "📝 Using temporary config file: wrangler.production.jsonc"
+                  echo "✅ wrangler.production.jsonc ready for deploy"
 
             # Deploy to Cloudflare Workers (NOT Cloudflare Pages)
-            # This uses wrangler to deploy directly to Workers
-            # Uses the generated production config file (wrangler.production.jsonc)
-            # The source wrangler.jsonc remains unmodified
+            # Uses wrangler.production.jsonc - secrets substituted by Generate step above
             - name: Deploy to Cloudflare Workers
               if: github.ref == 'refs/heads/main'
               uses: cloudflare/wrangler-action@v3
