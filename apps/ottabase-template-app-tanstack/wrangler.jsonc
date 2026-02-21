@@ -150,9 +150,7 @@
         // R2 proxy path - works in dev and production (same origin)
         // For custom R2 domain, set to: https://cdn.yourdomain.com
         "R2_PUBLIC_URL": "/api/upload/file",
-        // For /analytics page (WAE queries): uncomment, add CLOUDFLARE_ACCOUNT_ID to
-        // your wrangler.jsonc env.production vars, and set the GitHub Secret.
-        //"CLOUDFLARE_ACCOUNT_ID": "CLOUDFLARE_ACCOUNT_ID",
+        // CLOUDFLARE_ACCOUNT_ID: // Set in env.production/env.preview vars (substituted from GitHub Secret)
     },
 
     // Local development settings
@@ -168,6 +166,8 @@
             "vars": {
                 "ENVIRONMENT": "production",
                 "NODE_ENV": "production",
+                // For Analytics (Workers Analytics Engine): Substituted from GitHub Secret at deploy; add CLOUDFLARE_ANALYTICS_API_TOKEN via wrangler secret put or CF Dash > Worker > Settings > Secrets
+                "CLOUDFLARE_ACCOUNT_ID": "CLOUDFLARE_ACCOUNT_ID",
             },
             "unsafe": {
                 "bindings": [
@@ -234,6 +234,8 @@
             "vars": {
                 "ENVIRONMENT": "preview",
                 "NODE_ENV": "production",
+                // For Analytics (WAE): substituted from GitHub Secret at deploy
+                "CLOUDFLARE_ACCOUNT_ID": "CLOUDFLARE_ACCOUNT_ID",
             },
             "unsafe": {
                 "bindings": [
