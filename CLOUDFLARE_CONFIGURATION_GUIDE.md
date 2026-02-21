@@ -29,14 +29,18 @@ This guide covers Cloudflare resource configuration, bindings, environment varia
 
 The following Cloudflare resources must be created and configured:
 
-| Resource Type      | Binding Name        | Purpose                        | Created By                |
-| ------------------ | ------------------- | ------------------------------ | ------------------------- |
-| **D1 Database**    | `OBCF_D1`           | Primary SQLite database        | `cloudflare:setup` script |
-| **KV Namespace**   | `OBCF_KV`           | Key-value storage              | `cloudflare:setup` script |
-| **R2 Bucket**      | `OBCF_R2`           | Object storage                 | `cloudflare:setup` script |
-| **Queue**          | `OBCF_QUEUE`        | Async message processing       | `cloudflare:setup` script |
-| **Durable Object** | `OBCF_REALTIME`     | WebSocket realtime connections | Auto-configured           |
-| **Rate Limiter**   | `OBCF_RATE_LIMITER` | Request throttling             | Auto-configured           |
+| Resource Type        | Binding Name        | Purpose                        | Created By                  |
+| -------------------- | ------------------- | ------------------------------ | --------------------------- |
+| **D1 Database**      | `OBCF_D1`           | Primary SQLite database        | `cf:setup` script           |
+| **KV Namespace**     | `OBCF_KV`           | Key-value storage              | `cf:setup` script           |
+| **R2 Bucket**        | `OBCF_R2`           | Object storage                 | `cf:setup` script           |
+| **Queue**            | `OBCF_QUEUE`        | Async message processing       | `cf:setup` script           |
+| **Durable Object**   | `OBCF_REALTIME`     | WebSocket realtime connections | Auto-configured             |
+| **Rate Limiter**     | `OBCF_RATE_LIMITER` | Request throttling             | Auto-configured             |
+| **Analytics Engine** | `OBCF_ANALYTICS_*`  | Event tracking                 | Auto-created on first write |
+
+**Note:** Run `pnpm cf:login` before `pnpm cf:setup` if not authenticated. cf:setup outputs resource IDs for GitHub
+Secrets; it does not modify wrangler.jsonc.
 
 ### Optional Resources
 
@@ -44,13 +48,16 @@ The following Cloudflare resources must be created and configured:
 | -------------- | ----------------- | ------------------------- | ------------------------------------------------------------- |
 | **Hyperdrive** | `OBCF_HYPERDRIVE` | External database pooling | `wrangler hyperdrive create <name> --connection-string="..."` |
 
+**For /analytics page:** Set `CLOUDFLARE_ACCOUNT_ID` (vars) and `CLOUDFLARE_ANALYTICS_API_TOKEN` (secret) with
+`Account Analytics` Read permission. Analytics datasets are auto-created on first write.
+
 ---
 
 ## 🔐 Environment Variables
 
 ### Local Development (`.env.local`)
 
-Create `apps/ottabase-template-app/.env.local` with the following:
+Create `apps/ottabase-template-app-tanstack/.env.local` with the following (if using .env for local auth/R2):
 
 ```bash
 
@@ -125,9 +132,12 @@ wrangler secret put CF_R2_SECRET_ACCESS_KEY
 
 ## 📁 Configuration Files
 
-### 1. `apps/ottabase-template-app/wrangler.jsonc`
+### 1. `apps/ottabase-template-app-tanstack/wrangler.jsonc`
 
-**Status:** ✅ Already configured
+**Status:** ✅ Template (do not modify programmatically)
+
+`wrangler.jsonc` is a shared template. cf:setup does **not** modify it. Placeholders (`YOUR_*`, `PRODUCTION_*`) stay; CI
+substitutes from GitHub Secrets at deploy time. For local dev, replace `YOUR_*` manually or use miniflare defaults.
 
 **Key Bindings:**
 
@@ -137,26 +147,26 @@ wrangler secret put CF_R2_SECRET_ACCESS_KEY
         {
             "binding": "OBCF_D1",
             "database_name": "ottabase-db",
-            "database_id": "YOUR_D1_DATABASE_ID", // Set by cloudflare:setup
+            "database_id": "YOUR_D1_DATABASE_ID", // Replace manually or via CI (PRODUCTION_D1_DATABASE_ID)
         },
     ],
     "kv_namespaces": [
         {
             "binding": "OBCF_KV",
-            "id": "YOUR_KV_NAMESPACE_ID", // Set by cloudflare:setup
+            "id": "YOUR_KV_NAMESPACE_ID", // Replace manually or via CI (PRODUCTION_KV_NAMESPACE_ID)
         },
     ],
     "r2_buckets": [
         {
             "binding": "OBCF_R2",
-            "bucket_name": "ottabase-bucket", // Set by cloudflare:setup
+            "bucket_name": "ottabase-bucket",
         },
     ],
     "queues": {
         "producers": [
             {
                 "binding": "OBCF_QUEUE",
-                "queue": "ottabase-queue", // Set by cloudflare:setup
+                "queue": "ottabase-queue",
             },
         ],
     },
@@ -179,7 +189,7 @@ wrangler secret put CF_R2_SECRET_ACCESS_KEY
 }
 ```
 
-### 3. `apps/ottabase-template-app/types/cloudflare.d.ts`
+### 3. `apps/ottabase-template-app-tanstack/types/cloudflare.d.ts`
 
 **Status:** ✅ Already configured
 
@@ -212,7 +222,7 @@ export interface CloudflareEnv {
 }
 ```
 
-### 4. `apps/ottabase-template-app/cloudflare-worker.ts`
+### 4. `apps/ottabase-template-app-tanstack/cloudflare-worker.ts`
 
 **Status:** ✅ Already configured
 
@@ -310,7 +320,8 @@ AUTH_GOOGLE_SECRET=your-google-client-secret
     - [ ] Queue exists: `wrangler queues list`
 
 - [ ] **Configuration Files Updated**
-    - [ ] `wrangler.jsonc` has resource IDs (not placeholders)
+    - [ ] GitHub Secrets `D1_DATABASE_ID` and `KV_NAMESPACE_ID` set (CI substitutes into wrangler; or manually replace
+          `YOUR_*` in wrangler.jsonc for local dev)
     - [ ] `types/cloudflare.d.ts` includes all OBCF\_\* bindings
 
 - [ ] **Environment Variables Set**
@@ -383,39 +394,47 @@ import { createRateLimitingClient } from '@ottabase/cf/rate-limiting';
 
 ## 🛠 Manual Configuration (Advanced)
 
-If you prefer manual setup instead of `cloudflare:setup`:
+If you prefer manual setup instead of `cf:setup`:
 
-### 1. Create D1 Database
+### 1. Login First
+
+```bash
+pnpm cf:login   # or wrangler login
+```
+
+### 2. Create D1 Database
 
 ```bash
 wrangler d1 create ottabase-db
-# Copy database_id and update wrangler.jsonc
+# Copy database_id → GitHub Secret D1_DATABASE_ID (for CI) or replace YOUR_D1_DATABASE_ID in wrangler.jsonc (local)
 ```
 
-### 2. Create KV Namespace
+### 3. Create KV Namespace
 
 ```bash
-wrangler kv:namespace create OBCF_KV
-wrangler kv:namespace create OBCF_KV --preview
-# Copy IDs and update wrangler.jsonc
+wrangler kv namespace create OBCF_KV
+wrangler kv namespace create OBCF_KV --preview
+# Copy IDs → GitHub Secret KV_NAMESPACE_ID (for CI) or replace in wrangler.jsonc (local)
 ```
 
-### 3. Create R2 Bucket
+### 4. Create R2 Bucket
 
 ```bash
 wrangler r2 bucket create ottabase-bucket
 wrangler r2 bucket create ottabase-bucket-preview
 ```
 
-### 4. Create Queue
+### 5. Create Queue
 
 ```bash
 wrangler queues create ottabase-queue
 ```
 
-### 5. Update `wrangler.jsonc`
+### 6. Configure IDs
 
-Replace all `YOUR_*_ID` placeholders with actual resource IDs and ensure binding names use `OBCF_*` convention.
+- **For CI/CD:** Add `D1_DATABASE_ID` and `KV_NAMESPACE_ID` to GitHub Secrets. CI substitutes `PRODUCTION_*`
+  placeholders in `wrangler.jsonc`.
+- **For local only:** Replace `YOUR_*` placeholders in wrangler.jsonc manually.
 
 ---
 
@@ -493,12 +512,11 @@ pnpm cf-typegen
 
 ### Required Configuration Files
 
-- ✅ `wrangler.jsonc` - Cloudflare bindings configuration (OBCF\_\* names)
-- ✅ `db.config.ts` - Database configuration (d1Database: "OBCF_D1")
+- ✅ `wrangler.jsonc` - Cloudflare bindings (OBCF\_\* names); template with placeholders; CI generates
+  wrangler.production.jsonc
 - ✅ `types/cloudflare.d.ts` - TypeScript definitions (OBCF\_\* interfaces)
 - ✅ `cloudflare-worker.ts` - Durable Object exports
-- ✅ `.env.local` - Local environment variables
-- ✅ `prisma/schema.prisma` - Generated database schema
+- ✅ `.env.local` - Local environment variables (optional)
 
 ### Key Binding Names (OBCF\_\*)
 

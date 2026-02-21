@@ -1,5 +1,10 @@
 {
+    // TEMPLATE: This file is a shared template. Do not programmatically modify it (e.g. from cf:setup).
+    // - Placeholders (YOUR_D1_DATABASE_ID, YOUR_KV_*, PRODUCTION_*, etc.) are intentional.
+    // - Resource IDs from `pnpm cf:setup` → add as Cloudflare Workers Variables (Dashboard) or CI/CD secrets.
+
     "$schema": "node_modules/wrangler/config-schema.json",
+
     // Wrangler configuration for TanStack Router app with Cloudflare bindings
     // Supports dev (local with HMR), preview (workerd), and prod (real CF resources)
 
