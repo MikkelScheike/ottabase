@@ -17,9 +17,12 @@ Complete reference for the deployment system. See [README.md](README.md) for qui
 | `wranglerConfig`     | string   | `"wrangler.jsonc"`                 | Wrangler config file path                                                |
 | `wranglerEnv`        | string   | `"production"`                     | Wrangler environment                                                     |
 | `healthCheckPath`    | string   | `"/"`                              | Path for health check                                                    |
-| `requiresSecrets`    | string[] | See below                          | Required GitHub secrets                                                  |
+| `requiresSecrets`    | string[] | `[]`                               | _(Optional)_ Extra secrets not in wrangler.jsonc (e.g. build-time)       |
 
-**Default Secrets:** `["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"]`
+> **SSOT:** `wrangler.jsonc` is the single source of truth for resource secrets. Placeholders in `env.production` /
+> `env.preview` are auto-detected by the substitution script. `requiresSecrets` is optional and additive — only needed
+> for secrets that don't appear in wrangler (e.g. build-time env vars). Base secrets (`CLOUDFLARE_API_TOKEN`,
+> `CLOUDFLARE_ACCOUNT_ID`) are always verified automatically.
 
 ## Framework Examples
 
@@ -45,8 +48,7 @@ Complete reference for the deployment system. See [README.md](README.md) for qui
     "buildCommand": "build",
     "workerBuildCommand": null,
     "outputDirectory": "dist",
-    "verifyPaths": ["dist", "cloudflare-worker.ts"],
-    "requiresSecrets": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "D1_DATABASE_ID", "KV_NAMESPACE_ID"]
+    "verifyPaths": ["dist", "cloudflare-worker.ts"]
 }
 ```
 
@@ -192,18 +194,18 @@ The workflow generates `wrangler.production.jsonc` (or `wrangler.preview.jsonc` 
 (substitute secrets) → Verify → Deploy. The `cloudflare/wrangler-action` deploy step uses
 `--config wrangler.production.jsonc` (or `wrangler.preview.jsonc`). Build steps do not use wrangler config.
 
-**Source (wrangler.jsonc):**
+**Convention:** Placeholder values in `wrangler.jsonc` are `ALL_CAPS_SNAKE_CASE` strings (e.g. `D1_DATABASE_ID`). The
+substitution script **auto-detects** these from the target `env.production` or `env.preview` section and substitutes
+each from the full GitHub Secrets bag (`${{ toJson(secrets) }}`). No key list, no per-secret env wiring, no mapping
+table.
+
+**Source (wrangler.jsonc env.production):**
 
 ```jsonc
 {
     "d1_databases": [
         {
-            "database_id": "PRODUCTION_D1_DATABASE_ID",
-        },
-    ],
-    "kv_namespaces": [
-        {
-            "id": "PRODUCTION_KV_NAMESPACE_ID",
+            "database_id": "D1_DATABASE_ID", // placeholder = GitHub Secret name
         },
     ],
 }
@@ -215,26 +217,28 @@ The workflow generates `wrangler.production.jsonc` (or `wrangler.preview.jsonc` 
 {
     "d1_databases": [
         {
-            "database_id": "abc123...", // ← From GitHub secret
-        },
-    ],
-    "kv_namespaces": [
-        {
-            "id": "xyz789...", // ← From GitHub secret
+            "database_id": "abc123...", // ← substituted from GitHub Secret
         },
     ],
 }
 ```
 
-**Supported placeholders:**
+**Default placeholders:**
 
-- `PRODUCTION_D1_DATABASE_ID` → `D1_DATABASE_ID`
-- `PRODUCTION_KV_NAMESPACE_ID` → `KV_NAMESPACE_ID`
-- `YOUR_CLOUDFLARE_ACCOUNT_ID` → `CLOUDFLARE_ACCOUNT_ID`
+- env.production: `D1_DATABASE_ID`, `KV_NAMESPACE_ID`
+- env.preview: `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID`
 
-**Preview mode:** `PREVIEW_D1_DATABASE_ID`, `PREVIEW_KV_NAMESPACE_ID`
+**Multi-app:** Same placeholder name across apps → same GitHub Secret → shared resource. Different names → isolated.
+Prefixing (e.g. `APP_1_D1_DATABASE_ID`) is a convention for clarity, not a requirement.
 
-Add more placeholders by editing `.github/scripts/substitute-wrangler-secrets.py` (REPLACEMENTS dict).
+To add a new resource placeholder: set the GitHub Secret name as the value in `wrangler.jsonc` env section, add the
+secret to GitHub. That's it — the script auto-detects and substitutes.
+
+`requiresSecrets` / `requiresPreviewSecrets` in `cloudflare-config.json` are **optional** and **additive** — used only
+for early fail-fast verification. The Verify step **derives** placeholders from `wrangler.jsonc` (single source of
+truth), then merges with base secrets (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID) and any extra from
+`requiresSecrets`. No drift: wrangler placeholders are always correct. Add `requiresSecrets` only for secrets not in
+wrangler (e.g. build-time).
 
 ## Error Messages Reference
 
@@ -329,11 +333,11 @@ From `.github/scripts/substitute-wrangler-secrets.py`:
 ```
 ❌ ERROR: Secret substitution incomplete
 
-  Placeholders still present: PRODUCTION_D1_DATABASE_ID, ...
+  Placeholders detected in env.production but no matching GitHub Secret:
+    • D1_DATABASE_ID
 
-  Set the corresponding GitHub Secrets in repository settings.
-  Production: D1_DATABASE_ID, KV_NAMESPACE_ID
-  Preview: D1_PREVIEW_DATABASE_ID, KV_PREVIEW_NAMESPACE_ID
+  Add the missing secrets in GitHub repository settings:
+  Settings → Secrets and variables → Actions → New repository secret
 ```
 
 ## Deployment Targets
@@ -374,47 +378,36 @@ ottabase/
 
 ## Extending the System
 
-### Add Custom Secrets
+### Add Custom Secrets or a Second App
 
-**1. Add to app config:**
+The substitution script auto-detects `ALL_CAPS_SNAKE_CASE` placeholder values from the target `env` section in
+`wrangler.jsonc` and substitutes them from GitHub Secrets. You never edit the Python script or the workflow files. There
+are only **2 places** to update:
 
-```json
-{
-    "requiresSecrets": ["CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "MY_CUSTOM_SECRET"]
-}
-```
+#### Example: Adding `APP_1` with its own isolated D1 database
 
-**2. Update workflow:** Add case in "Verify required secrets" step:
-
-```yaml
-"MY_CUSTOM_SECRET")
-  if [ -z "${{ secrets.MY_CUSTOM_SECRET }}" ]; then
-    MISSING_SECRETS+=("$SECRET_NAME")
-  fi
-  ;;
-```
-
-**3. Use in wrangler config:**
+**1. `wrangler.jsonc`** — use the secret name as the placeholder value:
 
 ```jsonc
-{
-    "vars": {
-        "MY_VAR": "PRODUCTION_MY_CUSTOM_SECRET",
-    },
-}
+// apps/app-1/wrangler.jsonc → env.production
+"d1_databases": [{
+    "binding": "OBCF_D1",
+    "database_name": "app1-db",
+    "database_id": "APP_1_D1_DATABASE_ID"  // ← auto-detected as placeholder
+}]
 ```
 
-**4. Add substitution:** Edit `.github/scripts/substitute-wrangler-secrets.py`:
+**2. GitHub repo → Settings → Secrets** — add `APP_1_D1_DATABASE_ID` with the actual D1 UUID.
 
-```python
-# In REPLACEMENTS["production"] (or "preview"):
-"PRODUCTION_MY_CUSTOM_SECRET": "MY_CUSTOM_SECRET",
+Done. No workflow edits, no `cloudflare-config.json` edits, no Python script edits.
 
-# In REMAINING_PATTERNS["production"] if validation needed:
-r"PRODUCTION_MY_CUSTOM_SECRET",
-```
+> **Sharing rule:** If two apps both use `D1_DATABASE_ID` as their placeholder, they resolve to the same GitHub Secret →
+> same database. If App 1 uses `APP_1_D1_DATABASE_ID`, it gets its own isolated resource. Just naming.
 
-Then add `MY_CUSTOM_SECRET: ${{ secrets.MY_CUSTOM_SECRET }}` to the workflow step's `env`.
+#### Optional: Early verification
+
+Add secret names to `requiresSecrets` in `cloudflare-config.json` for fail-fast checking **before** the build runs. This
+is optional — if omitted, missing secrets are caught later at substitution time.
 
 ### Add New App Type
 

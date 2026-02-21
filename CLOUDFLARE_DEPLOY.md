@@ -38,14 +38,15 @@ pnpm cf:validate
 
 **Resource overview (prod vs preview):**
 
-| Resource | cf:setup creates (prod) | cf:setup creates (preview) | wrangler production              | wrangler preview                         | GitHub secrets                           |
-| -------- | ----------------------- | -------------------------- | -------------------------------- | ---------------------------------------- | ---------------------------------------- |
-| D1       | ottabase-db             | ottabase-db-preview        | `PRODUCTION_D1_DATABASE_ID`      | `PREVIEW_D1_DATABASE_ID`                 | D1_DATABASE_ID, D1_PREVIEW_DATABASE_ID   |
-| KV       | OBCF_KV                 | OBCF_KV_preview            | `PRODUCTION_KV_NAMESPACE_ID`     | `PREVIEW_KV_NAMESPACE_ID`                | KV_NAMESPACE_ID, KV_PREVIEW_NAMESPACE_ID |
-| R2       | ottabase-bucket         | ottabase-bucket-preview    | `bucket_name: "ottabase-bucket"` | `bucket_name: "ottabase-bucket-preview"` | none                                     |
-| Queue    | ottabase-queue          | ottabase-queue-preview     | `queue: "ottabase-queue"`        | `queue: "ottabase-queue-preview"`        | none                                     |
+| Resource | cf:setup creates (prod) | cf:setup creates (preview) | wrangler placeholder (prod) | wrangler placeholder (preview)      | GitHub Secrets                           |
+| -------- | ----------------------- | -------------------------- | --------------------------- | ----------------------------------- | ---------------------------------------- |
+| D1       | ottabase-db             | ottabase-db-preview        | `D1_DATABASE_ID`            | `D1_PREVIEW_DATABASE_ID`            | D1_DATABASE_ID, D1_PREVIEW_DATABASE_ID   |
+| KV       | OBCF_KV                 | OBCF_KV_preview            | `KV_NAMESPACE_ID`           | `KV_PREVIEW_NAMESPACE_ID`           | KV_NAMESPACE_ID, KV_PREVIEW_NAMESPACE_ID |
+| R2       | ottabase-bucket         | ottabase-bucket-preview    | `ottabase-bucket` (literal) | `ottabase-bucket-preview` (literal) | none                                     |
+| Queue    | ottabase-queue          | ottabase-queue-preview     | `ottabase-queue` (literal)  | `ottabase-queue-preview` (literal)  | none                                     |
 
-D1 and KV require IDs as GitHub Secrets; R2 and Queue use names in wrangler (no secrets).
+D1 and KV placeholder values = GitHub Secret names (auto-detected and substituted by CI). R2 and Queue use literal names
+(no substitution needed).
 
 ---
 
@@ -75,7 +76,8 @@ wrangler d1 list              # Get D1_DATABASE_ID
 wrangler kv namespace list    # Get KV_NAMESPACE_ID
 ```
 
-Note: `wrangler.jsonc` contains placeholders (`YOUR_*`, `PRODUCTION_*`). CI substitutes these from GitHub Secrets.
+Note: `wrangler.jsonc` contains `ALL_CAPS_SNAKE_CASE` placeholder values that are auto-detected and substituted from
+GitHub Secrets at deploy time. No explicit key list needed.
 
 ---
 
@@ -99,9 +101,10 @@ Go to: GitHub repository → **Settings** → **Secrets and variables** → **Ac
 | `D1_PREVIEW_DATABASE_ID`  | Preview D1 (ottabase-db-preview) | cf:setup output |
 | `KV_PREVIEW_NAMESPACE_ID` | Preview KV (OBCF_KV_preview)     | cf:setup output |
 
-**Optional:**
-
-- `D1_DATABASE_NAME` (defaults to `ottabase-db`)
+> **Multi-app:** Same placeholder name across apps → same GitHub Secret → shared resource. Different names → isolated.
+> Prefixing (e.g. `APP_1_D1_DATABASE_ID`) is a convention for clarity, not a requirement. Only 2 steps: set the
+> placeholder in `wrangler.jsonc`, add the matching GitHub Secret. CI auto-detects the rest. See
+> [.github/DEPLOYMENT.md](.github/DEPLOYMENT.md#extending-the-system) for a walkthrough.
 
 ---
 
@@ -232,9 +235,10 @@ Defined in `.github/workflows/deploy.yml` - triggers on push to `main`:
 
 ### Important Files
 
-- `.github/workflows/deploy.yml` - CI/CD workflow (substitutes GitHub Secrets into wrangler)
-- `apps/ottabase-template-app-tanstack/wrangler.jsonc` - Cloudflare config (template; CI generates
-  wrangler.production.jsonc)
+- `.github/workflows/deploy.yml` - CI/CD workflow (auto-detects placeholders in wrangler.jsonc and substitutes from
+  GitHub Secrets via substitute-wrangler-secrets.py)
+- `apps/ottabase-template-app-tanstack/wrangler.jsonc` - Cloudflare config (template with `ALL_CAPS` placeholder values;
+  CI generates wrangler.production.jsonc)
 
 ### Cloudflare Bindings
 

@@ -273,7 +273,7 @@ apps/ottabase-template-app-tanstack/
 │   └── providers/         # App providers wrapper
 ├── index.html             # HTML template
 ├── vite.config.ts         # Vite configuration
-├── wrangler.jsonc         # Cloudflare Workers config
+├── wrangler.jsonc         # Cloudflare Workers config (template; CI substitutes placeholders)
 └── tailwind.config.cjs    # Tailwind CSS config
 ```
 

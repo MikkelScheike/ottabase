@@ -136,8 +136,11 @@ wrangler secret put CF_R2_SECRET_ACCESS_KEY
 
 **Status:** ✅ Template (do not modify programmatically)
 
-`wrangler.jsonc` is a shared template. cf:setup does **not** modify it. Placeholders (`YOUR_*`, `PRODUCTION_*`) stay; CI
-substitutes from GitHub Secrets at deploy time. For local dev, replace `YOUR_*` manually or use miniflare defaults.
+`wrangler.jsonc` is a shared template. cf:setup does **not** modify it. `ALL_CAPS_SNAKE_CASE` placeholder values in
+`env.production` and `env.preview` are **auto-detected** by `.github/scripts/substitute-wrangler-secrets.py` at deploy
+time and substituted from GitHub Secrets, generating `wrangler.production.jsonc` or `wrangler.preview.jsonc`. The source
+file is never modified. For local dev, `YOUR_*` top-level values are ignored (miniflare uses local simulators). For
+multi-app: same placeholder name = shared resource; different names = isolated (prefixing is a convention).
 
 **Key Bindings:**
 
@@ -147,13 +150,13 @@ substitutes from GitHub Secrets at deploy time. For local dev, replace `YOUR_*` 
         {
             "binding": "OBCF_D1",
             "database_name": "ottabase-db",
-            "database_id": "YOUR_D1_DATABASE_ID", // Replace manually or via CI (PRODUCTION_D1_DATABASE_ID)
+            "database_id": "YOUR_D1_DATABASE_ID", // Top-level: local dev only (simulators ignore this)
         },
     ],
     "kv_namespaces": [
         {
             "binding": "OBCF_KV",
-            "id": "YOUR_KV_NAMESPACE_ID", // Replace manually or via CI (PRODUCTION_KV_NAMESPACE_ID)
+            "id": "YOUR_KV_NAMESPACE_ID", // Top-level: local dev only (simulators ignore this)
         },
     ],
     "r2_buckets": [
@@ -320,8 +323,8 @@ AUTH_GOOGLE_SECRET=your-google-client-secret
     - [ ] Queue exists: `wrangler queues list`
 
 - [ ] **Configuration Files Updated**
-    - [ ] GitHub Secrets `D1_DATABASE_ID` and `KV_NAMESPACE_ID` set (CI substitutes into wrangler; or manually replace
-          `YOUR_*` in wrangler.jsonc for local dev)
+    - [ ] GitHub Secrets set for production: `D1_DATABASE_ID`, `KV_NAMESPACE_ID`
+    - [ ] GitHub Secrets set for PR preview: `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID`
     - [ ] `types/cloudflare.d.ts` includes all OBCF\_\* bindings
 
 - [ ] **Environment Variables Set**
@@ -371,8 +374,10 @@ export async function GET() {
     const queue = env.OBCF_QUEUE; // Queue
     const realtime = env.OBCF_REALTIME; // Durable Object
 
-    // Use with @ottabase/cf package
-    const prisma = createPrismaD1Client(db);
+    // Use with @ottabase packages
+    // D1 via OttaORM (preferred):
+    // import { createD1Driver } from '@ottabase/db/drizzle-d1';
+    // const driver = createD1Driver(db); setDriver(driver);
     const kvClient = createKVClient({ namespace: kv });
     const r2Client = createR2Client({ bucket: r2 });
 }
@@ -383,7 +388,7 @@ export async function GET() {
 All bindings are accessed via `@ottabase/cf` package:
 
 ```typescript
-import { createPrismaD1Client } from '@ottabase/cf/d1-prisma';
+import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import { createKVClient } from '@ottabase/cf/kv';
 import { createR2Client } from '@ottabase/cf/r2';
 import { createQueuesClient } from '@ottabase/cf/queues';
@@ -428,13 +433,28 @@ wrangler r2 bucket create ottabase-bucket-preview
 
 ```bash
 wrangler queues create ottabase-queue
+wrangler queues create ottabase-queue-preview
 ```
 
-### 6. Configure IDs
+### 6. Create Preview Resources (for PR deploys)
 
-- **For CI/CD:** Add `D1_DATABASE_ID` and `KV_NAMESPACE_ID` to GitHub Secrets. CI substitutes `PRODUCTION_*`
-  placeholders in `wrangler.jsonc`.
-- **For local only:** Replace `YOUR_*` placeholders in wrangler.jsonc manually.
+```bash
+wrangler d1 create ottabase-db-preview
+wrangler r2 bucket create ottabase-bucket-preview
+```
+
+### 7. Configure GitHub Secrets
+
+**Production** (main deploy — placeholder values in env.production are auto-detected):
+
+- `D1_DATABASE_ID`, `KV_NAMESPACE_ID`
+
+**Preview** (PR deploy — placeholder values in env.preview are auto-detected):
+
+- `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID`
+
+Local dev does not need these — `wrangler dev` uses local simulators regardless of placeholder values. To add a new
+secret: set the placeholder in `wrangler.jsonc`, add the secret to GitHub. CI auto-detects the rest.
 
 ---
 
@@ -512,8 +532,8 @@ pnpm cf-typegen
 
 ### Required Configuration Files
 
-- ✅ `wrangler.jsonc` - Cloudflare bindings (OBCF\_\* names); template with placeholders; CI generates
-  wrangler.production.jsonc
+- ✅ `wrangler.jsonc` - Cloudflare bindings (OBCF\_\* names); `ALL_CAPS` placeholder values are auto-detected and
+  substituted from GitHub Secrets via `substitute-wrangler-secrets.py`
 - ✅ `types/cloudflare.d.ts` - TypeScript definitions (OBCF\_\* interfaces)
 - ✅ `cloudflare-worker.ts` - Durable Object exports
 - ✅ `.env.local` - Local environment variables (optional)
@@ -532,12 +552,12 @@ pnpm cf-typegen
 
 ### Key Environment Variables
 
-| Variable        | Required      | Purpose                   |
-| --------------- | ------------- | ------------------------- |
-| `DATABASE_URL`  | Yes (local)   | Prisma CLI (local SQLite) |
-| `AUTH_SECRET`   | If using auth | Auth.js secret            |
-| `CF_ACCOUNT_ID` | Optional      | Cloudflare API access     |
-| `CF_API_TOKEN`  | Optional      | Cloudflare API access     |
+| Variable         | Required      | Purpose                                 |
+| ---------------- | ------------- | --------------------------------------- |
+| `D1_DATABASE_ID` | Yes (deploy)  | D1 database UUID (wrangler placeholder) |
+| `AUTH_SECRET`    | If using auth | Auth.js secret                          |
+| `CF_ACCOUNT_ID`  | Optional      | Cloudflare API access                   |
+| `CF_API_TOKEN`   | Optional      | Cloudflare API access                   |
 
 ---
 

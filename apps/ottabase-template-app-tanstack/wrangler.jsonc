@@ -1,8 +1,17 @@
 {
-    // TEMPLATE: This file is a shared template. Do not programmatically modify it (e.g. from cf:setup).
-    // - Placeholders (YOUR_*, PRODUCTION_*, PREVIEW_*) are intentional – DO NOT edit these values.
-    // - CI/CD (deploy.yml, pr-preview.yml) substitutes them from GitHub Secrets via substitute-wrangler-secrets.py.
-    // - For local dev only: copy IDs from `pnpm cf:setup` output into .env or wrangler dev vars.
+    // ─── SINGLE SOURCE OF TRUTH FOR SECRETS ───
+    // This file drives CI secret detection. The env.production / env.preview sections
+    // contain ALL_CAPS_SNAKE_CASE placeholder values (e.g. "D1_DATABASE_ID") that are:
+    //   1. Auto-detected by substitute-wrangler-secrets.py at deploy time
+    //   2. Verified against GitHub Secrets (missing → CI fails early with clear error)
+    //   3. Substituted into wrangler.production.jsonc / wrangler.preview.jsonc
+    //
+    // To add a new secret:  set the placeholder value here → add matching GitHub Secret → done.
+    // To share a resource:  use the same placeholder value across apps → maps to the same GitHub Secret → same real ID injected.
+    // To isolate:            use different values (e.g. APP_1_D1_DATABASE_ID); prefixing is a convention, not required.
+    //
+    // Top-level YOUR_* values are for reference only (local dev uses simulators).
+    // See CLOUDFLARE_DEPLOY.md for full walkthrough.
 
     "$schema": "node_modules/wrangler/config-schema.json",
 
@@ -34,7 +43,7 @@
         {
             "binding": "OBCF_D1",
             "database_name": "ottabase-db",
-            "database_id": "YOUR_D1_DATABASE_ID", // Local dev only; CI uses PRODUCTION_*/PREVIEW_* in env sections
+            "database_id": "YOUR_D1_DATABASE_ID", // Local dev only; env sections have real placeholders for CI
             "preview_database_id": "preview", // Uses preview DB for `wrangler dev --remote`
         },
     ],
@@ -45,7 +54,7 @@
     "kv_namespaces": [
         {
             "binding": "OBCF_KV",
-            "id": "YOUR_KV_NAMESPACE_ID", // Local dev only; CI uses PRODUCTION_*/PREVIEW_* in env sections
+            "id": "YOUR_KV_NAMESPACE_ID", // Local dev only; env sections have real placeholders for CI
             "preview_id": "YOUR_KV_PREVIEW_ID", // Local dev only; CI substitutes in env.preview
         },
     ],
@@ -112,7 +121,7 @@
         "bindings": [
             {
                 "name": "OBCF_REALTIME",
-                "class_name": "RealtimeActor",
+                "class_name": "RealtimeActor", // DOs are scoped per-worker. So inherently isolated
             },
         ],
     },
@@ -130,7 +139,7 @@
     // Vite build outputs to dist/ directory
     "assets": {
         "directory": "dist",
-        "binding": "OBCF_ASSETS",
+        "binding": "OBCF_ASSETS", // Per-deployment binding
     },
 
     // Environment variables
@@ -141,8 +150,9 @@
         // R2 proxy path - works in dev and production (same origin)
         // For custom R2 domain, set to: https://cdn.yourdomain.com
         "R2_PUBLIC_URL": "/api/upload/file",
-        // For /analytics page (WAE queries) - set your 32-char account ID (Cloudflare dashboard)
-        //"CLOUDFLARE_ACCOUNT_ID": "YOUR_CLOUDFLARE_ACCOUNT_ID",
+        // For /analytics page (WAE queries): uncomment, add CLOUDFLARE_ACCOUNT_ID to
+        // your wrangler.jsonc env.production vars, and set the GitHub Secret.
+        //"CLOUDFLARE_ACCOUNT_ID": "CLOUDFLARE_ACCOUNT_ID",
     },
 
     // Local development settings
@@ -164,7 +174,7 @@
                     {
                         "name": "OBCF_RATE_LIMITER",
                         "type": "ratelimit",
-                        "namespace_id": "1001", // INT ID for production rate limiter
+                        "namespace_id": "1001", // INT ID for production rate limiter. Ensure to change for diff app
                         "simple": {
                             "limit": 10,
                             "period": 60,
@@ -185,26 +195,28 @@
                 "binding": "OBCF_ASSETS",
                 "directory": "dist",
             },
-            // Production D1 – DO NOT edit; CI substitutes PRODUCTION_D1_DATABASE_ID from D1_DATABASE_ID secret
+            // Production D1 – placeholder value = GitHub Secret name; CI substitutes the real UUID at deploy time
+            // Any value works (e.g. "MY_DB_ID") — just add a matching GitHub Secret with the real UUID
+            // Two apps using the same value → same secret → same real ID → shared DB; different values → isolated
             "d1_databases": [
                 {
                     "binding": "OBCF_D1",
                     "database_name": "ottabase-db",
-                    "database_id": "PRODUCTION_D1_DATABASE_ID",
+                    "database_id": "D1_DATABASE_ID",
                 },
             ],
-            // Production KV – DO NOT edit; CI substitutes PRODUCTION_KV_NAMESPACE_ID from KV_NAMESPACE_ID secret
+            // Production KV – placeholder = GitHub Secret name; CI substitutes at deploy time
             "kv_namespaces": [
                 {
                     "binding": "OBCF_KV",
-                    "id": "PRODUCTION_KV_NAMESPACE_ID",
+                    "id": "KV_NAMESPACE_ID",
                 },
             ],
             // Production R2 Bucket
             "r2_buckets": [
                 {
                     "binding": "OBCF_R2",
-                    "bucket_name": "ottabase-bucket",
+                    "bucket_name": "ottabase-bucket", // Update if using a different bucket or app-prefixed bucket for isolation (e.g. app1-ottabase-bucket)
                 },
             ],
             // Production Queue
@@ -212,12 +224,12 @@
                 "producers": [
                     {
                         "binding": "OBCF_QUEUE",
-                        "queue": "ottabase-queue",
+                        "queue": "ottabase-queue", // Update if using a different queue or app-prefixed queue for isolation (e.g. app1-ottabase-queue)
                     },
                 ],
             },
         },
-        // PR preview – DO NOT edit placeholders; CI substitutes from GitHub Secrets (D1_PREVIEW_*, KV_PREVIEW_*)
+        // PR preview – placeholders = GitHub Secret names; CI substitutes at deploy time
         "preview": {
             "vars": {
                 "ENVIRONMENT": "preview",
@@ -228,7 +240,7 @@
                     {
                         "name": "OBCF_RATE_LIMITER",
                         "type": "ratelimit",
-                        "namespace_id": "1002",
+                        "namespace_id": "1002", // Ensure to use a different namespace_id for preview (and also for another app) to avoid conflicts with prod rate limiter
                         "simple": {
                             "limit": 10,
                             "period": 60,
@@ -248,19 +260,19 @@
                 "binding": "OBCF_ASSETS",
                 "directory": "dist",
             },
-            // DO NOT edit – CI substitutes PREVIEW_D1_DATABASE_ID from D1_PREVIEW_DATABASE_ID secret
+            // Preview D1 – placeholder = GitHub Secret name; CI substitutes at deploy time
             "d1_databases": [
                 {
                     "binding": "OBCF_D1",
                     "database_name": "ottabase-db-preview",
-                    "database_id": "PREVIEW_D1_DATABASE_ID",
+                    "database_id": "D1_PREVIEW_DATABASE_ID",
                 },
             ],
-            // DO NOT edit – CI substitutes PREVIEW_KV_NAMESPACE_ID from KV_PREVIEW_NAMESPACE_ID secret
+            // Preview KV – placeholder = GitHub Secret name; CI substitutes at deploy time
             "kv_namespaces": [
                 {
                     "binding": "OBCF_KV",
-                    "id": "PREVIEW_KV_NAMESPACE_ID",
+                    "id": "KV_PREVIEW_NAMESPACE_ID",
                 },
             ],
             "r2_buckets": [

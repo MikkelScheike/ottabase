@@ -81,16 +81,18 @@ async function main() {
         log(`✓ Authenticated as: ${whoamiResult.split('\n')[0]}`, GREEN);
     }
 
-    // Check for placeholders
+    // Check for top-level placeholders (these are expected in the template but indicate local dev isn't configured)
     log('', NC);
     log('Checking wrangler.jsonc configuration...', YELLOW);
     const hasPlaceholderD1 = wranglerContent.includes('YOUR_D1_DATABASE_ID');
     const hasPlaceholderKV = wranglerContent.includes('YOUR_KV_NAMESPACE_ID');
     const hasPlaceholderKVPreview = wranglerContent.includes('YOUR_KV_PREVIEW_ID');
-    const hasPlaceholderAccountId = wranglerContent.includes('YOUR_CLOUDFLARE_ACCOUNT_ID');
 
-    if (hasPlaceholderD1 || hasPlaceholderKV || hasPlaceholderKVPreview || hasPlaceholderAccountId) {
-        log('⚠ wrangler.jsonc contains placeholders. Run: pnpm cf:setup', YELLOW);
+    if (hasPlaceholderD1 || hasPlaceholderKV || hasPlaceholderKVPreview) {
+        log(
+            '⚠ wrangler.jsonc top-level contains YOUR_* placeholders (expected for template; local dev uses simulators)',
+            YELLOW,
+        );
         hasWarnings = true;
     } else {
         log('✓ wrangler.jsonc is configured', GREEN);
