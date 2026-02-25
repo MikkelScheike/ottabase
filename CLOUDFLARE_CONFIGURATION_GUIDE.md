@@ -68,7 +68,7 @@ Create `apps/ottabase-template-app-tanstack/.env.local` with the following (if u
 # Generate with: openssl rand -base64 32
 AUTH_SECRET=your-32-character-secret-here
 NEXTAUTH_SECRET=your-32-character-secret-here
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3003
 
 # Enable auth providers (true/false)
 AUTH_LOGIN_CREDENTIALS=true
@@ -192,7 +192,7 @@ multi-app: same placeholder name = shared resource; different names = isolated (
 }
 ```
 
-### 2. `apps/ottabase-template-app-tanstack/types/cloudflare.d.ts`
+### 2. `apps/ottabase-template-app-tanstack/cloudflare-env.d.ts`
 
 **Status:** ✅ Already configured
 
@@ -312,18 +312,18 @@ AUTH_GOOGLE_SECRET=your-google-client-secret
 - [ ] **Configuration Files Updated**
     - [ ] GitHub Secrets set for production: `D1_DATABASE_ID`, `KV_NAMESPACE_ID`
     - [ ] GitHub Secrets set for PR preview: `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID`
-    - [ ] `types/cloudflare.d.ts` includes all OBCF\_\* bindings
+    - [ ] `cloudflare-env.d.ts` includes all OBCF\_\* bindings
 
 - [ ] **Environment Variables Set**
     - [ ] `.env.local` created for local development
     - [ ] Production secrets set via `wrangler secret put`
 
 - [ ] **Database Schema Generated**
-    - [ ] Migrations applied to D1: `wrangler d1 migrations apply`
+    - [ ] Migrations applied via OttaORM: `curl -X POST http://localhost:3004/api/ottaorm/init`
 
 - [ ] **Build & Deploy**
     - [ ] Local build works: `pnpm build`
-    - [ ] Worker build works: `pnpm build:worker`
+    - [ ] Worker build works: `pnpm build` (TanStack) or `pnpm build:worker` (Next.js)
     - [ ] Preview works: `pnpm preview`
     - [ ] Deploy successful: `pnpm deploy`
 
@@ -479,14 +479,15 @@ secret: set the placeholder in `wrangler.jsonc`, add the secret to GitHub. CI au
 
 **Cause:** D1 database doesn't have schema.
 
-**Solution:**
+**Solution:** Ottabase uses OttaORM auto-init, not wrangler migrations:
 
 ```bash
-# Local
-wrangler d1 migrations apply ottabase-db --local
+# Local (with dev server running on port 3004)
+curl -X POST http://localhost:3004/api/ottaorm/init
 
-# Production
-wrangler d1 migrations apply ottabase-db --remote
+# Production (requires MIGRATION_SECRET)
+curl -X POST https://your-app.workers.dev/api/ottaorm/init \
+  -H "Authorization: Bearer ${MIGRATION_SECRET}"
 ```
 
 ### "Type errors with CloudflareEnv"
