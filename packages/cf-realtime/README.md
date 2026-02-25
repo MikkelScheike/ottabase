@@ -33,6 +33,11 @@ import { RealtimeBroadcaster } from '@ottabase/cf-realtime/server';
 // Re-export the Durable Object class (required by Cloudflare)
 export { RealtimeActor } from '@ottabase/cf-realtime/server';
 
+interface CloudflareEnv {
+    OBCF_REALTIME: DurableObjectNamespace;
+    API_KEYS: KVNamespace;
+}
+
 export default {
     async fetch(request: Request, env: CloudflareEnv): Promise<Response> {
         const url = new URL(request.url);
@@ -53,6 +58,15 @@ export default {
 
             const body = await request.json<any>();
             const channels = Array.isArray(body.channels) ? body.channels : [];
+            if (channels.length === 0) {
+                return new Response('channels array is required', { status: 400 });
+            }
+
+            const event = typeof body.event === 'string' ? body.event.trim() : '';
+            if (!event) {
+                return new Response('event is required', { status: 400 });
+            }
+
             const allowedChannels = new Set(publisher.allowedChannels);
 
             // Enforce per-channel publish permissions derived from the caller's session/API key
@@ -64,7 +78,7 @@ export default {
 
             const result = await broadcaster.broadcast({
                 channels,
-                event: body.event,
+                event,
                 data: body.data,
                 persistForOffline: body.persistForOffline ?? false,
             });
@@ -80,7 +94,14 @@ type Publisher = { allowedChannels: string[] };
 
 // Validate an API key/session and return which channels the caller may publish to
 async function validatePublisher(request: Request, env: CloudflareEnv): Promise<Publisher | null> {
-    const token = request.headers.get('Authorization')?.replace('Bearer ', '');
+    const authHeader = request.headers.get('Authorization');
+    if (!authHeader) return null;
+
+    const trimmed = authHeader.trim();
+    const [scheme, ...rest] = trimmed.split(/\s+/);
+    if (!scheme || scheme.toLowerCase() !== 'bearer') return null;
+
+    const token = rest.join(' ');
     if (!token) return null;
 
     // Example: look up an API key that encodes allowed channels (KV/DB/custom auth)
@@ -96,10 +117,10 @@ async function validatePublisher(request: Request, env: CloudflareEnv): Promise<
 // wrangler.jsonc
 {
     "durable_objects": {
-        "bindings": [{ "name": "OBCF_REALTIME", "class_name": "RealtimeActor" }]
+        "bindings": [{ "name": "OBCF_REALTIME", "class_name": "RealtimeActor" }],
     },
     "kv_namespaces": [{ "binding": "API_KEYS", "id": "your-api-keys-kv" }],
-    "migrations": [{ "tag": "v1", "new_classes": ["RealtimeActor"] }]
+    "migrations": [{ "tag": "v1", "new_classes": ["RealtimeActor"] }],
 }
 ```
 
