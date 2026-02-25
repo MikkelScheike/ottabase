@@ -4,6 +4,15 @@ import { useMemo } from 'react';
 export type MapProvider = 'gmaps' | 'openstreetmap';
 export type MapTheme = 'default' | 'dark' | 'satellite' | 'terrain';
 
+/**
+ * Map block data. Matches MapTool save output.
+ * @property url - Map URL (Google Maps or OpenStreetMap)
+ * @property provider - 'gmaps' | 'openstreetmap'
+ * @property theme - 'default' | 'dark' | 'satellite' | 'terrain'
+ * @property height - iframe height in px (clamped 100–800)
+ * @property caption - Optional figure caption
+ * @property zoom - Zoom level (default 13)
+ */
 export interface MapData {
     url?: string;
     provider?: MapProvider;
@@ -12,6 +21,9 @@ export interface MapData {
     caption?: string;
     zoom?: number;
 }
+
+const MAP_HEIGHT_MIN = 100;
+const MAP_HEIGHT_MAX = 800;
 
 /**
  * Convert a plain map URL to an embed-friendly src for the given provider.
@@ -110,7 +122,8 @@ const Map: RenderFn<MapData> = ({ data, className = '' }) => {
     const url = data?.url || '';
     const provider = data?.provider || 'openstreetmap';
     const theme = data?.theme || 'default';
-    const height = data?.height || 400;
+    const rawHeight = data?.height || 400;
+    const height = Math.max(MAP_HEIGHT_MIN, Math.min(MAP_HEIGHT_MAX, rawHeight));
     const caption = data?.caption;
     const zoom = data?.zoom ?? 13;
 

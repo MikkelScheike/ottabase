@@ -1,9 +1,11 @@
 import Blocks from 'editorjs-blocks-react-renderer';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
-import { customRenderers, defaultEJSRConfigs } from '../EditorJsRenderer';
+import { baseRenderers } from '../baseRenderers';
+import { defaultEJSRConfigs } from '../rendererConfig';
 
 export type LayoutPreset = '1-1' | '1-3' | '3-1' | '1-2' | '2-1' | '1-1-1';
 
+/** Column content structure from LayoutTool (EditorJS OutputData format) */
 interface LayoutColumnData {
     content?: {
         blocks?: any[];
@@ -11,6 +13,11 @@ interface LayoutColumnData {
     };
 }
 
+/**
+ * Layout block data. Matches LayoutTool save output.
+ * @property preset - Column width preset (e.g. '1-1' = 50/50)
+ * @property columns - Array of column data, each with nested EditorJS content
+ */
 export interface LayoutData {
     preset?: LayoutPreset;
     columns?: LayoutColumnData[];
@@ -61,10 +68,10 @@ const Layout: RenderFn<LayoutData> = ({ data, className = '' }) => {
                                 <Blocks
                                     data={colData?.content as any}
                                     config={defaultEJSRConfigs}
-                                    renderers={customRenderers}
+                                    renderers={{ ...baseRenderers, layout: Layout }}
                                 />
                             ) : (
-                                <div className="h-full min-h-12 rounded border border-dashed border-border" />
+                                <div className="h-full min-h-12 rounded border border-dashed border-border dark:border-border" />
                             )}
                         </div>
                     );
