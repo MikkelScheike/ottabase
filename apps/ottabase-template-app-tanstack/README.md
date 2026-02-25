@@ -28,7 +28,7 @@ pnpm dev:worker
 # Initialize database (creates all tables automatically)
 curl -X POST http://localhost:3004/api/ottaorm/init
 
-# Done! Visit http://localhost:3004
+# Done! Visit http://localhost:3003 (frontend) or http://localhost:3004 (when using dev:worker only)
 ```
 
 ## Authentication
@@ -384,8 +384,8 @@ pnpm wrangler queues create ottabase-queue
 
 #### 2. Set GitHub Secrets
 
-`wrangler.jsonc` uses `ALL_CAPS` placeholder values that CI auto-substitutes from GitHub Secrets at deploy time.
-Set these in your repository → Settings → Secrets → Actions:
+`wrangler.jsonc` uses `ALL_CAPS` placeholder values that CI auto-substitutes from GitHub Secrets at deploy time. Set
+these in your repository → Settings → Secrets → Actions:
 
 - `D1_DATABASE_ID`, `KV_NAMESPACE_ID` (production)
 - `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID` (PR previews)

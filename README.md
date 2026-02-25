@@ -174,7 +174,7 @@ export const {
     useCreate: useCreateTodo,
     useUpdate: useUpdateTodo,
     useDelete: useDeleteTodo,
-} = createModelHooks<TodoType>({ entity: 'todos' });
+} = createModelHooks<TodoType>({ entityName: 'todos' });
 ```
 
 ```tsx
@@ -188,20 +188,20 @@ createTodo.mutate({ title: 'New Todo' });
 
 ### Database, Auth & Infrastructure
 
-| Package               | Purpose                                                                  |
-| --------------------- | ------------------------------------------------------------------------ |
-| `@ottabase/ottaorm`   | Fat models, CRUD, relationships, RLS, auto-migrations                    |
-| `@ottabase/db`        | Drizzle D1 driver (`createD1Driver`)                                     |
-| `@ottabase/cf`        | D1, KV, R2, Queues, Rate Limiting, Cache Keys, read-through KV cache     |
-| `@ottabase/queue`     | Job queue (dispatch, handlers, deduplication, chaining, priority)        |
-| `@ottabase/auth`      | Auth.js v5 with D1 adapter, OAuth, Credentials, Magic Link               |
-| `@ottabase/rbac`      | Role-based access control with per-org KV caching                        |
-| `@ottabase/audit`     | Audit logging with change tracking and RBAC context                      |
-| `@ottabase/logger`    | Structured logging (Console, HTTP, Sentry, Memory, Buffer transports)    |
-| `@ottabase/analytics` | Cloudflare Analytics Engine (WAE) — write events, query, funnel, top-K  |
-| `@ottabase/config`    | App config, env vars, storage key utilities                              |
-| `@ottabase/cron`      | Cron handlers — static code-defined and DB scheduler (Laravel-style)     |
-| `@ottabase/scripts`   | CLI tools: `cf:login`, `cf:setup`, `cf:validate`, `clean:*`, `db:*`     |
+| Package               | Purpose                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `@ottabase/ottaorm`   | Fat models, CRUD, relationships, RLS, auto-migrations                  |
+| `@ottabase/db`        | Drizzle D1 driver (`createD1Driver`)                                   |
+| `@ottabase/cf`        | D1, KV, R2, Queues, Rate Limiting, Cache Keys, read-through KV cache   |
+| `@ottabase/queue`     | Job queue (dispatch, handlers, deduplication, chaining, priority)      |
+| `@ottabase/auth`      | Auth.js v5 with D1 adapter, OAuth, Credentials, Magic Link             |
+| `@ottabase/rbac`      | Role-based access control with per-org KV caching                      |
+| `@ottabase/audit`     | Audit logging with change tracking and RBAC context                    |
+| `@ottabase/logger`    | Structured logging (Console, HTTP, Sentry, Memory, Buffer transports)  |
+| `@ottabase/analytics` | Cloudflare Analytics Engine (WAE) — write events, query, funnel, top-K |
+| `@ottabase/config`    | App config, env vars, storage key utilities                            |
+| `@ottabase/cron`      | Cron handlers — static code-defined and DB scheduler (Laravel-style)   |
+| `@ottabase/scripts`   | CLI tools: `cf:login`, `cf:setup`, `cf:validate`, `clean:*`, `db:*`    |
 
 ### UI Components
 
@@ -224,21 +224,21 @@ createTodo.mutate({ title: 'New Todo' });
 
 ### Brand, Layout & Content
 
-| Package                         | Purpose                                                                |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| `@ottabase/brand-engine`        | Design tokens, preset expansion, CSS injection, email branding         |
-| `@ottabase/brand-engine-react`  | `BrandProvider`, `LayoutResolver`, `useBrand()` React bindings         |
-| `@ottabase/ottalayout`          | Layout types, 10 presets, path resolver, React slots, LayoutMeta       |
-| `@ottabase/ottablog`            | Blog/CMS models (Post, Category, Tag, Series, Version) + Blog Studio   |
+| Package                        | Purpose                                                              |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `@ottabase/brand-engine`       | Design tokens, preset expansion, CSS injection, email branding       |
+| `@ottabase/brand-engine-react` | `BrandProvider`, `LayoutResolver`, `useBrand()` React bindings       |
+| `@ottabase/ottalayout`         | Layout types, 10 presets, path resolver, React slots, LayoutMeta     |
+| `@ottabase/ottablog`           | Blog/CMS models (Post, Category, Tag, Series, Version) + Blog Studio |
 
 ### Features & Realtime
 
-| Package                 | Purpose                                                  |
-| ----------------------- | -------------------------------------------------------- |
-| `@ottabase/cf-realtime` | WebSocket pub/sub via Durable Objects (Pusher alternative) |
-| `@ottabase/shortlinks`  | URL shortener: short codes, interstitial, expiry, WAE clicks |
-| `@ottabase/referrals`   | Referral tracking — first-touch attribution, WAE clicks  |
-| `@ottabase/notifications` | Multi-channel notifications (email, WebSocket, system)  |
+| Package                   | Purpose                                                      |
+| ------------------------- | ------------------------------------------------------------ |
+| `@ottabase/cf-realtime`   | WebSocket pub/sub via Durable Objects (Pusher alternative)   |
+| `@ottabase/shortlinks`    | URL shortener: short codes, interstitial, expiry, WAE clicks |
+| `@ottabase/referrals`     | Referral tracking — first-touch attribution, WAE clicks      |
+| `@ottabase/notifications` | Multi-channel notifications (email, WebSocket, system)       |
 
 ### Utilities & Integrations
 
@@ -294,7 +294,8 @@ All models include a nullable `appId` column:
 **Full-stack SPA** (TanStack Router, OttaORM, Auth, RBAC, all CF bindings):
 
 ```bash
-cp -r apps/ottabase-template-app-tanstack apps/my-app
+# Unix/macOS: cp -r apps/ottabase-template-app-tanstack apps/my-app
+# Windows:    xcopy /E /I apps\ottabase-template-app-tanstack apps\my-app
 cd apps/my-app
 # Update package.json name
 # Delete src/pages/demo/  (optional — remove demo pages)
@@ -303,7 +304,8 @@ cd apps/my-app
 **Marketing homepage** (Next.js, OpenNext, Brand Engine):
 
 ```bash
-cp -r apps/ottabase-template-app-nextjs-homepage apps/my-homepage
+# Unix/macOS: cp -r apps/ottabase-template-app-nextjs-homepage apps/my-homepage
+# Windows:    xcopy /E /I apps\ottabase-template-app-nextjs-homepage apps\my-homepage
 cd apps/my-homepage
 # Update package.json name
 # Edit config/brand.config.ts to customize theme
@@ -344,7 +346,7 @@ export { shortlinksTable } from '@ottabase/shortlinks';
 ```typescript
 // ottabase/hooks/useShortlink.ts
 import { createModelHooks } from "@ottabase/ottaorm/client";
-export const { useList, useCreate, ... } = createModelHooks({ entity: "shortlinks" });
+export const { useList, useCreate, ... } = createModelHooks({ entityName: "shortlinks" });
 ```
 
 ## Commands
