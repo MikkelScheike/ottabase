@@ -25,8 +25,8 @@ pnpm add @ottabase/cf
 ## Usage
 
 > **Note:** For database access in Ottabase apps, use `@ottabase/db/drizzle-d1` with `@ottabase/ottaorm` (the standard
-> path). The raw D1 client and other helpers in this package are for direct Cloudflare binding access when OttaORM is not
-> being used.
+> path). The raw D1 client and other helpers in this package are for direct Cloudflare binding access when OttaORM is
+> not being used.
 
 ### D1 Raw SQL
 

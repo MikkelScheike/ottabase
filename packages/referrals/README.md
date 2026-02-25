@@ -69,8 +69,8 @@ if (isReferralExpired(storedTimestamp)) {
 import {
     REFERRAL_USERNAME_MIN_LENGTH, // 3
     REFERRAL_USERNAME_MAX_LENGTH, // 20
-    REFERRAL_USERNAME_PATTERN,   // /^[a-zA-Z0-9_]+$/
-    REFERRAL_EXPIRY_MS,          // 90 days in ms
+    REFERRAL_USERNAME_PATTERN, // /^[a-zA-Z0-9_]+$/
+    REFERRAL_EXPIRY_MS, // 90 days in ms
 } from '@ottabase/referrals';
 ```
 
@@ -78,19 +78,19 @@ import {
 
 `referral_tracking` table — stores conversions only (clicks go to WAE):
 
-| Column            | Type      | Description                              |
-| ----------------- | --------- | ---------------------------------------- |
-| `id`              | string    | Unique tracking ID                       |
-| `userId`          | string    | Referrer's user ID                       |
-| `referralCode`    | string    | Code used at click time                  |
-| `referredUserId`  | string    | Converted (new) user ID                  |
-| `status`          | string    | `completed` for conversion records       |
-| `ipAddress`       | string    | Client IP at signup                      |
-| `userAgent`       | string    | Browser user agent                       |
-| `referer`         | string    | HTTP Referer header                      |
-| `meta`            | JSON      | UTM params and full request context      |
-| `createdAt`       | timestamp | Record creation time                     |
-| `conversionAt`    | timestamp | Conversion time                          |
+| Column           | Type      | Description                         |
+| ---------------- | --------- | ----------------------------------- |
+| `id`             | string    | Unique tracking ID                  |
+| `userId`         | string    | Referrer's user ID                  |
+| `referralCode`   | string    | Code used at click time             |
+| `referredUserId` | string    | Converted (new) user ID             |
+| `status`         | string    | `completed` for conversion records  |
+| `ipAddress`      | string    | Client IP at signup                 |
+| `userAgent`      | string    | Browser user agent                  |
+| `referer`        | string    | HTTP Referer header                 |
+| `meta`           | JSON      | UTM params and full request context |
+| `createdAt`      | timestamp | Record creation time                |
+| `conversionAt`   | timestamp | Conversion time                     |
 
 ## Integration Points
 

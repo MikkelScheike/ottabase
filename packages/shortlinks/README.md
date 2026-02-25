@@ -38,9 +38,9 @@ import { Shortlink } from '@ottabase/shortlinks';
 const link = await Shortlink.create({
     fullUrl: 'https://github.com/ottabase',
     shortCode: 'gh',
-    type: 'redirect',        // redirect | tracking | internal | external
+    type: 'redirect', // redirect | tracking | internal | external
     interstitialEnabled: false,
-    interstitialSeconds: 5,  // countdown duration when interstitial enabled
+    interstitialSeconds: 5, // countdown duration when interstitial enabled
 });
 
 // Find by short code
@@ -56,7 +56,12 @@ const links = await Shortlink.forApp('myapp');
 Use `buildRedirectResponse` in your worker route handler for short code redirects:
 
 ```typescript
-import { Shortlink, buildRedirectResponse, renderExpiredShortlinkPage, renderShortlinkInterstitialPage } from '@ottabase/shortlinks';
+import {
+    Shortlink,
+    buildRedirectResponse,
+    renderExpiredShortlinkPage,
+    renderShortlinkInterstitialPage,
+} from '@ottabase/shortlinks';
 
 // In your worker router:
 const shortlink = await Shortlink.findByCode(code);
@@ -93,18 +98,18 @@ light/dark mode. The value should be `'light'`, `'dark'`, or `'system'`.
 
 `shortlinks` table fields:
 
-| Column                | Description                                        |
-| --------------------- | -------------------------------------------------- |
-| `id`                  | UUID primary key                                   |
-| `fullUrl`             | Destination URL                                    |
-| `shortCode`           | Unique short identifier                            |
-| `type`                | `redirect`, `tracking`, `internal`, `external`     |
-| `appId`               | Nullable app identifier (multi-app support)        |
-| `interstitialEnabled` | Show countdown page before redirect                |
-| `interstitialSeconds` | Countdown duration (1–60)                          |
-| `expiryDate`          | Optional expiry Unix timestamp (ms)                |
-| `createdAt`           | Creation timestamp                                 |
-| `updatedAt`           | Last update timestamp                              |
+| Column                | Description                                    |
+| --------------------- | ---------------------------------------------- |
+| `id`                  | UUID primary key                               |
+| `fullUrl`             | Destination URL                                |
+| `shortCode`           | Unique short identifier                        |
+| `type`                | `redirect`, `tracking`, `internal`, `external` |
+| `appId`               | Nullable app identifier (multi-app support)    |
+| `interstitialEnabled` | Show countdown page before redirect            |
+| `interstitialSeconds` | Countdown duration (1–60)                      |
+| `expiryDate`          | Optional expiry Unix timestamp (ms)            |
+| `createdAt`           | Creation timestamp                             |
+| `updatedAt`           | Last update timestamp                          |
 
 ## Click Analytics
 

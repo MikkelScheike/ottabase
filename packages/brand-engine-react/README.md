@@ -33,12 +33,12 @@ function MyContent() {
 
 **`useBrand()` returns:**
 
-| Field       | Type                 | Description                     |
-| ----------- | -------------------- | ------------------------------- |
-| `config`    | `BrandConfig\|null`  | Resolved brand config for route |
-| `isLoading` | `boolean`            | True during initial fetch       |
-| `error`     | `Error\|null`        | Fetch/parse error if any        |
-| `refresh`   | `() => void`         | Manually re-fetch brand config  |
+| Field       | Type                | Description                     |
+| ----------- | ------------------- | ------------------------------- |
+| `config`    | `BrandConfig\|null` | Resolved brand config for route |
+| `isLoading` | `boolean`           | True during initial fetch       |
+| `error`     | `Error\|null`       | Fetch/parse error if any        |
+| `refresh`   | `() => void`        | Manually re-fetch brand config  |
 
 **`BrandProvider` props:**
 
@@ -91,14 +91,14 @@ const myAdapter = { usePathname: () => useMyRouter().pathname };
 
 ## BrandPathSync
 
-For SSR/server-driven pathname sync (e.g. Next.js App Router where router hooks aren't available in Server
-Components), render `BrandPathSync` to push the current path into the brand context:
+For SSR/server-driven pathname sync (e.g. Next.js App Router where router hooks aren't available in Server Components),
+render `BrandPathSync` to push the current path into the brand context:
 
 ```tsx
 import { BrandPathSync } from '@ottabase/brand-engine-react';
 
 // Render in your layout (client boundary):
-<BrandPathSync pathname={serverSidePathname} />
+<BrandPathSync pathname={serverSidePathname} />;
 ```
 
 ## Architecture
@@ -109,6 +109,6 @@ import { BrandPathSync } from '@ottabase/brand-engine-react';
 @ottabase/ottalayout          ← LayoutConfig types, presets, route resolver, React slots
 ```
 
-`BrandProvider` fetches one `GET /api/brand` and resolves the per-route config client-side using the route mappings
-in the response. See [`@ottabase/brand-engine`](../brand-engine/README.md) for server-side API handlers and token
+`BrandProvider` fetches one `GET /api/brand` and resolves the per-route config client-side using the route mappings in
+the response. See [`@ottabase/brand-engine`](../brand-engine/README.md) for server-side API handlers and token
 architecture.

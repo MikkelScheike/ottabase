@@ -131,8 +131,8 @@ export const metadata: Metadata = {
 
 ## Related Templates
 
-- [Ottabase Template App (TanStack)](../ottabase-template-app-tanstack) — Full-featured SPA with OttaORM, Auth, RBAC, and
-  all Cloudflare bindings
+- [Ottabase Template App (TanStack)](../ottabase-template-app-tanstack) — Full-featured SPA with OttaORM, Auth, RBAC,
+  and all Cloudflare bindings
 
 ## Documentation
 

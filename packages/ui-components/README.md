@@ -94,8 +94,8 @@ This component requires:
 
 - `@mantine/core` - For UI components and layout
 - `@ottabase/config` - For configuration management
-- `next/link` - For optional link functionality (**Next.js only**; if using TanStack Router or another framework,
-  wrap the Logo in your router's `<Link>` component instead and omit `linkUrl`)
+- `next/link` - For optional link functionality (**Next.js only**; if using TanStack Router or another framework, wrap
+  the Logo in your router's `<Link>` component instead and omit `linkUrl`)
 - Internal DarkModeToggle component (if darkModeSwitcher is true)
 
 ## Tree Shaking
