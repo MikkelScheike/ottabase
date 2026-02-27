@@ -28,6 +28,7 @@ import { Shortlink } from '@ottabase/shortlinks';
 import { errorResponse } from '@ottabase/utils/http-errors';
 import { Todo } from '../../ottabase/models/Todo';
 import type { CloudflareEnv } from '../cloudflare-env';
+import { getOttabaseConfig } from '../../ottabase/config.loader';
 import { readJson } from './utils';
 
 export function initAdminCron(env: CloudflareEnv): Response | null {
@@ -74,39 +75,31 @@ export function initDbConnection(env: CloudflareEnv): void {
     }
 
     registerConnection('default', createD1Driver(env.OBCF_D1));
-    registerModels([
-        // Core models
+
+    const packages = getOttabaseConfig(env).packages;
+    const coreModels = [
         Account,
         Authenticator,
         Session,
         VerificationToken,
         ScheduledTask,
-        // Multi-tenant models
         Organization,
         OrganizationMember,
-        // RBAC models
         Role,
         UserRole,
         Permission,
-        // Blog models
-        Post,
-        PostTag,
-        PostTagLink,
-        PostCategory,
-        PostSeries,
-        PostVersion,
-        OttablogPlugin,
-        OttablogTheme,
-        // Package models
-        Shortlink,
-        ReferralTracking,
-        // Brand engine models
-        BrandKit,
-        LayoutTemplate,
-        LayoutRouteMapping,
-        // App models
-        Todo,
-    ]);
+    ];
+    const ottablogModels = packages.ottablog
+        ? [Post, PostTag, PostTagLink, PostCategory, PostSeries, PostVersion, OttablogPlugin, OttablogTheme]
+        : [];
+    const packageModels = [
+        ...(packages.shortlinks ? [Shortlink] : []),
+        ...(packages.referrals ? [ReferralTracking] : []),
+    ];
+    const brandModels = [BrandKit, LayoutTemplate, LayoutRouteMapping];
+    const appModels = [Todo];
+
+    registerModels([...coreModels, ...ottablogModels, ...packageModels, ...brandModels, ...appModels]);
 
     initRLS();
 }

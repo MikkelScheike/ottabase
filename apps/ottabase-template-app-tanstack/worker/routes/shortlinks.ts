@@ -8,6 +8,7 @@ import { errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import { paginatedJsonResponse, parsePaginationParams } from '@ottabase/utils/pagination';
 import type { CloudflareEnv } from '../../cloudflare-env';
+import { getOttabaseConfig } from '../../ottabase/config.loader';
 import { getAuthOptions } from '../lib/auth-utils';
 import { readJson } from '../lib/utils';
 
@@ -220,6 +221,11 @@ export async function handleShortlinkExplicitGo(context: ShortlinkContext): Prom
 
 export async function handleShortlinkFallback(context: ShortlinkContext): Promise<Response | null> {
     const { env, request, url } = context;
+
+    if (!getOttabaseConfig(env).packages.shortlinks) {
+        return null;
+    }
+
     if (
         !env.OBCF_D1 ||
         url.pathname.startsWith('/api/') ||

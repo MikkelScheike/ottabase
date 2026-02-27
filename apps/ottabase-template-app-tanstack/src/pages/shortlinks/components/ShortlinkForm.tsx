@@ -1,5 +1,5 @@
 import { api, isApiError } from '@/lib/api';
-import { APP_ID } from '@/ottabase/config/app.config';
+import { APP_ID } from '@/ottabase/config';
 import type { ShortlinkRecord } from '@ottabase/shortlinks';
 import { ShortlinkTypes } from '@ottabase/shortlinks';
 import {

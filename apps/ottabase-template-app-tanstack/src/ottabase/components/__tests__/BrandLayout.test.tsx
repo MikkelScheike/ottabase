@@ -66,9 +66,11 @@ vi.mock('@/components/ReferralTracker', () => ({
 vi.mock('@/hooks/useLocalStorage', () => ({
     useLocalStorage: () => [null, vi.fn()],
 }));
-vi.mock('@/ottabase/config/app.config', () => ({
+vi.mock('@/ottabase/config', () => ({
     APP_META: { appName: 'Test App' },
     APP_ID: 'test-app',
+    APP_NAME: 'Test App',
+    PACKAGES_ENABLED: { ottablog: true, shortlinks: true, referrals: true },
 }));
 vi.mock('@/ottabase/config/i18n.config', () => ({
     i18nConfig: { enabledLanguages: ['en'] },

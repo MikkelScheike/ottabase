@@ -11,7 +11,7 @@ import { appIdAtom, isAuthenticatedAtom, organizationIdAtom, userAtom } from '@/
 import { useSession as useAuthSession, type UseSessionOptions } from '@ottabase/auth/react';
 import { useSetAtom } from 'jotai';
 import { useEffect } from 'react';
-import { APP_ID } from '@/ottabase/config/app.config';
+import { APP_ID } from '@/ottabase/config';
 
 const CURRENT_ORG_KEY = 'ottabase.current-org-id';
 

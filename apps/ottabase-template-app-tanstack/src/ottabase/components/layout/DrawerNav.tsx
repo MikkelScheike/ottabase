@@ -1,11 +1,11 @@
 import { useSession } from '@/lib/auth';
-import { APP_META } from '@/ottabase/config/app.config';
+import { APP_META } from '@/ottabase/config';
 import { Button } from '@ottabase/ui-shadcn';
 import { Link, useLocation } from '@tanstack/react-router';
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { NAV_LINKS } from './layout.constants';
+import { getNavLinks } from './layout.constants';
 
 export function DrawerNav() {
     const { isAuthenticated } = useSession();
@@ -47,25 +47,27 @@ export function DrawerNav() {
                                 </Button>
                             </div>
                             <nav className="flex flex-col gap-0.5 p-3 overflow-y-auto flex-1">
-                                {NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated).map((link) => {
-                                    const isActive =
-                                        location.pathname === link.to ||
-                                        (link.to !== '/' && location.pathname.startsWith(link.to));
-                                    return (
-                                        <Link
-                                            key={link.to}
-                                            to={link.to}
-                                            className={`px-3 py-2 text-sm rounded-md transition-colors ${
-                                                isActive
-                                                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                                                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
-                                            }`}
-                                            onClick={() => setOpen(false)}
-                                        >
-                                            {link.label}
-                                        </Link>
-                                    );
-                                })}
+                                {getNavLinks()
+                                    .filter((l) => !l.authRequired || isAuthenticated)
+                                    .map((link) => {
+                                        const isActive =
+                                            location.pathname === link.to ||
+                                            (link.to !== '/' && location.pathname.startsWith(link.to));
+                                        return (
+                                            <Link
+                                                key={link.to}
+                                                to={link.to}
+                                                className={`px-3 py-2 text-sm rounded-md transition-colors ${
+                                                    isActive
+                                                        ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
+                                                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                                                }`}
+                                                onClick={() => setOpen(false)}
+                                            >
+                                                {link.label}
+                                            </Link>
+                                        );
+                                    })}
                             </nav>
                         </div>
                     </>,

@@ -1,7 +1,7 @@
 import { useSession } from '@/lib/auth';
 import { Link, useLocation } from '@tanstack/react-router';
 import { memo } from 'react';
-import { NAV_LINKS } from './layout.constants';
+import { getNavLinks } from './layout.constants';
 
 /** Map width class to px value for responsive inline style */
 const WIDTH_MAP: Record<string, string> = {
@@ -17,7 +17,7 @@ const SIDEBAR_WIDTH_CSS = `@media (min-width: 768px) { aside[style*="--sidebar-w
 export const SidebarNav = memo(function SidebarNav({ widthClass = 'w-56' }: { widthClass?: string }) {
     const { isAuthenticated } = useSession();
     const location = useLocation();
-    const links = NAV_LINKS.filter((l) => !l.authRequired || isAuthenticated);
+    const links = getNavLinks().filter((l) => !l.authRequired || isAuthenticated);
     const desktopWidth = WIDTH_MAP[widthClass] ?? '14rem';
 
     return (

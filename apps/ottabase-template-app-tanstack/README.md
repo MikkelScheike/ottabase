@@ -31,6 +31,32 @@ curl -X POST http://localhost:3004/api/ottaorm/init
 # Done! Visit http://localhost:3003 (frontend) or http://localhost:3004 (when using dev:worker only)
 ```
 
+## Configuration
+
+### Config Files
+
+| File                                     | Why                                                                                                                                     | When to Edit                                                |
+| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **`ottabase/ottabase.config.ts`**        | Main config (SSOT): app identity, packages (ottablog, shortlinks, referrals), features, meta, UI. brandEngine is core — always enabled. | Always — primary config surface                             |
+| **`.env.local`** (from `.env.example`)   | Secrets and env-specific values: auth, OAuth, email, migration secret. Not committed.                                                   | Local dev and per-environment deployment                    |
+| **`wrangler.jsonc`**                     | Cloudflare bindings: D1, KV, R2, Queues, Rate Limiter, Durable Objects, Analytics Engine.                                               | Deploying to Cloudflare; adding bindings                    |
+| **`ottabase/config.routes.ts`**          | Custom or premium API route handlers. Extends built-in routing.                                                                         | Adding custom API routes                                    |
+| **`ottabase/config.migrations.ts`**      | Package registry (tables, migrations). Built-in packages preconfigured.                                                                 | Adding **custom** packages (not ottablog, shortlinks, etc.) |
+| **`src/ottabase/config/i18n.config.ts`** | i18n: default language, enabled languages, fallback.                                                                                    | Changing languages                                          |
+| **`ottabase/models/*.ts`**               | App-specific OttaORM models.                                                                                                            | Adding or changing app models                               |
+
+**Do not edit:** `ottabase/config.loader.ts` — derived from ottabase.config.ts.
+
+### Quick Setup Flow
+
+```
+1. cp .env.example → .env.local  (fill secrets)
+2. Edit ottabase.config.ts (packages, features, meta)
+3. Edit wrangler.jsonc if changing Cloudflare bindings
+4. (Optional) Edit config.routes.ts for custom API routes
+5. (Optional) Edit config.migrations.ts for custom packages
+```
+
 ## Authentication
 
 This template ships with Auth.js + D1 integration and tighter session handling:

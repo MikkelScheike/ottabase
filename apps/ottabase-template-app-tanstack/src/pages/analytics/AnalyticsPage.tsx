@@ -1,4 +1,5 @@
 import { api, isApiError } from '@/lib/api';
+import { PACKAGES_ENABLED } from '@/ottabase/config';
 import {
     Badge,
     Button,
@@ -119,21 +120,34 @@ function AnalyticsResultsCard({
 export function AnalyticsPage() {
     const navigate = useNavigate();
     const search = useSearch({ strict: false }) as { tab?: string };
-    const [tab, setTab] = useState<'shortlinks' | 'referrals' | 'core'>(
-        search?.tab === 'referrals' ? 'referrals' : search?.tab === 'shortlinks' ? 'shortlinks' : 'core',
-    );
+    const shortlinksEnabled = PACKAGES_ENABLED.shortlinks;
+    const referralsEnabled = PACKAGES_ENABLED.referrals;
+
+    // Resolve valid tab from URL; fallback to core if package disabled
+    const resolveTab = (): 'shortlinks' | 'referrals' | 'core' => {
+        if (search?.tab === 'referrals' && referralsEnabled) return 'referrals';
+        if (search?.tab === 'shortlinks' && shortlinksEnabled) return 'shortlinks';
+        return 'core';
+    };
+    const [tab, setTab] = useState<'shortlinks' | 'referrals' | 'core'>(resolveTab);
 
     // Sync tab from URL on mount/navigation
     useEffect(() => {
-        if (search?.tab === 'referrals' || search?.tab === 'shortlinks' || search?.tab === 'core') {
-            setTab(search.tab);
-        }
-    }, [search?.tab]);
+        if (search?.tab === 'referrals' && referralsEnabled) setTab('referrals');
+        else if (search?.tab === 'shortlinks' && shortlinksEnabled) setTab('shortlinks');
+        else if (search?.tab === 'core') setTab('core');
+    }, [search?.tab, shortlinksEnabled, referralsEnabled]);
 
     const handleTabChange = (v: string) => {
         setTab(v as 'shortlinks' | 'referrals' | 'core');
         navigate({ to: '/analytics', search: { tab: v } });
     };
+
+    const tabsList = [
+        { value: 'core' as const, label: 'Core' },
+        ...(shortlinksEnabled ? [{ value: 'shortlinks' as const, label: 'Shortlinks' }] : []),
+        ...(referralsEnabled ? [{ value: 'referrals' as const, label: 'Referrals' }] : []),
+    ];
 
     return (
         <div className="mx-auto max-w-7xl space-y-8 px-4 py-12">
@@ -148,37 +162,47 @@ export function AnalyticsPage() {
                     </p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" asChild>
-                        <Link to="/shortlinks">
-                            <IconLink className="mr-2 h-4 w-4" />
-                            Shortlinks
-                        </Link>
-                    </Button>
-                    <Button variant="outline" asChild>
-                        <Link to="/referrals">
-                            <IconUsers className="mr-2 h-4 w-4" />
-                            Referrals
-                        </Link>
-                    </Button>
+                    {shortlinksEnabled && (
+                        <Button variant="outline" asChild>
+                            <Link to="/shortlinks">
+                                <IconLink className="mr-2 h-4 w-4" />
+                                Shortlinks
+                            </Link>
+                        </Button>
+                    )}
+                    {referralsEnabled && (
+                        <Button variant="outline" asChild>
+                            <Link to="/referrals">
+                                <IconUsers className="mr-2 h-4 w-4" />
+                                Referrals
+                            </Link>
+                        </Button>
+                    )}
                 </div>
             </div>
 
             <Tabs value={tab} onValueChange={handleTabChange}>
                 <TabsList>
-                    <TabsTrigger value="core">Core</TabsTrigger>
-                    <TabsTrigger value="shortlinks">Shortlinks</TabsTrigger>
-                    <TabsTrigger value="referrals">Referrals</TabsTrigger>
+                    {tabsList.map((t) => (
+                        <TabsTrigger key={t.value} value={t.value}>
+                            {t.label}
+                        </TabsTrigger>
+                    ))}
                 </TabsList>
 
                 <TabsContent value="core" className="mt-6">
                     <CoreAnalyticsTab />
                 </TabsContent>
-                <TabsContent value="shortlinks" className="mt-6">
-                    <ShortlinkAnalyticsTab />
-                </TabsContent>
-                <TabsContent value="referrals" className="mt-6">
-                    <ReferralAnalyticsTab />
-                </TabsContent>
+                {shortlinksEnabled && (
+                    <TabsContent value="shortlinks" className="mt-6">
+                        <ShortlinkAnalyticsTab />
+                    </TabsContent>
+                )}
+                {referralsEnabled && (
+                    <TabsContent value="referrals" className="mt-6">
+                        <ReferralAnalyticsTab />
+                    </TabsContent>
+                )}
             </Tabs>
         </div>
     );

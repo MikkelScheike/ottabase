@@ -1,5 +1,5 @@
 import { useSession } from '@/lib/auth';
-import { APP_META } from '@/ottabase/config/app.config';
+import { APP_META } from '@/ottabase/config';
 import { Button } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import { memo } from 'react';

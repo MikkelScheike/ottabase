@@ -10,6 +10,7 @@ import { jsonResponse } from '@ottabase/utils/http-response';
 import { isEmail } from '@ottabase/utils/string';
 import { isValidUrl } from '@ottabase/utils/url';
 import type { CloudflareEnv } from '../../cloudflare-env';
+import { getOttabaseConfig } from '../../ottabase/config.loader';
 import { processReferralAttribution } from '../../ottabase/helpers/referral-attribution';
 import { registerAppEmailTemplates } from '../../src/email/templates';
 import { createVerificationToken, getAuthOptions, getUserLinkedAccounts, resolveMailer } from '../lib/auth-utils';
@@ -536,7 +537,7 @@ export async function handleAuthRegister(context: AuthRouteContext): Promise<Res
         }
 
         let attributionResult;
-        if (body.referralCode) {
+        if (body.referralCode && getOttabaseConfig(env).packages.referrals) {
             const safeHeaders: Record<string, string> = {};
             for (const h of ['accept', 'accept-language', 'cf-connecting-country']) {
                 const v = request.headers.get(h);

@@ -4,7 +4,7 @@ import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
 import { usePageViewTracking } from '@/hooks/usePageViewTracking';
 import { api, isApiError } from '@/lib/api';
 import { ConfigurableLayout } from '@/ottabase/components/ConfigurableLayout';
-import { APP_META } from '@/ottabase/config/app.config';
+import { APP_META, PACKAGES_ENABLED } from '@/ottabase/config';
 import { BrandPathSync, LayoutResolver } from '@ottabase/brand-engine-react';
 import { tanstackRouterAdapter } from '@ottabase/brand-engine-react/routers';
 import { Button, Toaster } from '@ottabase/ui-shadcn';
@@ -28,13 +28,19 @@ function RootLayout() {
     // Track page views automatically
     usePageViewTracking();
 
-    return (
+    const content = (
         <>
             <BrandPathSync pathname={pathname} />
-            <Toaster />
             <LayoutResolver router={tanstackRouterAdapter} layoutComponent={ConfigurableLayout}>
                 <Outlet />
             </LayoutResolver>
+        </>
+    );
+
+    return (
+        <>
+            <Toaster />
+            {content}
         </>
     );
 }
@@ -905,7 +911,24 @@ demoLayoutRoute.addChildren([
     demoNotificationsRoute,
 ]);
 
-const routeTree = rootRoute.addChildren([
+// Package-gated routes (SSOT from ottabase.config.ts). brandEngine is core — always included.
+const packageRoutes = [
+    { route: shortlinksRoute, pkg: 'shortlinks' as const },
+    { route: referralsRoute, pkg: 'referrals' as const },
+    { route: blogListRoute, pkg: 'ottablog' as const },
+    { route: blogDetailRoute, pkg: 'ottablog' as const },
+    { route: adminBrandEngineRoute, pkg: 'brandEngine' as const },
+    { route: adminBrandKitCreateRoute, pkg: 'brandEngine' as const },
+    { route: adminBrandKitDetailRoute, pkg: 'brandEngine' as const },
+    { route: adminBrandLayoutsRoute, pkg: 'brandEngine' as const },
+    { route: adminThemeGeneratorRoute, pkg: 'brandEngine' as const },
+    { route: adminReferralsRoute, pkg: 'referrals' as const },
+    { route: adminBlogRoute, pkg: 'ottablog' as const },
+    { route: adminBlogNewRoute, pkg: 'ottablog' as const },
+    { route: adminBlogEditRoute, pkg: 'ottablog' as const },
+    { route: adminBlogStudioRoute, pkg: 'ottablog' as const },
+];
+const coreRoutes = [
     indexRoute,
     docsRoute,
     demoLayoutRoute,
@@ -914,25 +937,13 @@ const routeTree = rootRoute.addChildren([
     verifyEmailRoute,
     resetPasswordRoute,
     dashboardRoute,
-    shortlinksRoute,
     analyticsRoute,
     migrationStatusRoute,
-    referralsRoute,
     adminRoute,
-    adminBrandEngineRoute,
-    adminBrandKitCreateRoute,
-    adminBrandKitDetailRoute,
-    adminBrandLayoutsRoute,
-    adminReferralsRoute,
     adminQueueRoute,
     adminCronRoute,
     adminNotificationsRoute,
-    adminBlogRoute,
-    adminBlogNewRoute,
-    adminBlogEditRoute,
-    adminBlogStudioRoute,
     adminDbRoute,
-    adminThemeGeneratorRoute,
     adminRBACRoute,
     adminRBACRolesRoute,
     adminRBACPermissionsRoute,
@@ -941,13 +952,15 @@ const routeTree = rootRoute.addChildren([
     adminKillSwitchesRoute,
     adminUsersRoute,
     adminUserRBACRoute,
-    blogListRoute,
-    blogDetailRoute,
     organizationsRoute,
     organizationMembersRoute,
     organizationRegistrationRoute,
     organizationSettingsRoute,
     userProfileRoute,
+];
+const routeTree = rootRoute.addChildren([
+    ...coreRoutes,
+    ...packageRoutes.filter((r) => r.pkg === 'brandEngine' || PACKAGES_ENABLED[r.pkg]).map((r) => r.route),
 ]);
 
 const browserHistory = createBrowserHistory();

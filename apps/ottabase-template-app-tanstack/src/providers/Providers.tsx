@@ -1,7 +1,7 @@
 import { api } from '@/lib/api';
 import enApp from '@/locales/en/app.json';
 import { BlogStudioProvider } from '@/ottabase/blog/BlogStudioContext';
-import { APP_ID, appConfig } from '@/ottabase/config/app.config';
+import { APP_ID, appConfig, PACKAGES_ENABLED } from '@/ottabase/config';
 import { i18nConfig } from '@/ottabase/config/i18n.config';
 import {
     headingFontFamily,
@@ -90,39 +90,77 @@ function ProvidersContent({
             resources={appResources}
         >
             <LanguageManager />
-            <BlogStudioProvider>
-                <BrandProvider apiEndpoint="/api/brand" appId={APP_ID}>
-                    <OttaQueryProvider apiClient={api} config={queryConfig}>
-                        <ProviderUIBase
-                            preventFOUC={appConfig.ui.preventFOUC}
-                            preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
-                            fontFamilies={fontFamilies}
-                            fontVarsFromRoot
-                        >
-                            <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
-                                <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
-                                    <ThemeProvider>
-                                        <BrandThemeApplicator />
-                                        <ThemeManager />
-                                        <ZoomManager />
-                                        <ScaleManager />
-                                        <SidebarStateManager />
-                                        <ShadcnProviders enableThemeProvider={false} enableToaster>
-                                            <SpotlightProvider
-                                                enabled={appConfig.features.spotlight.enabled}
-                                                shortcuts={appConfig.features.spotlight.shortcuts}
-                                            >
-                                                {children}
-                                            </SpotlightProvider>
-                                        </ShadcnProviders>
-                                    </ThemeProvider>
-                                </ProviderNextThemes>
-                            </ProviderFont>
-                        </ProviderUIBase>
-                        <ReactQueryDevtools initialIsOpen={false} />
-                    </OttaQueryProvider>
-                </BrandProvider>
-            </BlogStudioProvider>
+            {PACKAGES_ENABLED.ottablog ? (
+                <BlogStudioProvider>
+                    <ProvidersInner fontFamilies={fontFamilies} queryConfig={queryConfig}>
+                        {children}
+                    </ProvidersInner>
+                </BlogStudioProvider>
+            ) : (
+                <ProvidersInner fontFamilies={fontFamilies} queryConfig={queryConfig}>
+                    {children}
+                </ProvidersInner>
+            )}
         </I18nProvider>
+    );
+}
+
+function ProvidersInner({
+    children,
+    fontFamilies,
+    queryConfig,
+}: {
+    children: React.ReactNode;
+    fontFamilies: { primary: string; heading: string; monospace: string };
+    queryConfig: { defaultOptions: { queries: { retry: (n: number, err: unknown) => boolean } } };
+}) {
+    return (
+        <BrandProvider apiEndpoint="/api/brand" appId={APP_ID}>
+            <ProvidersCore fontFamilies={fontFamilies} queryConfig={queryConfig}>
+                {children}
+            </ProvidersCore>
+        </BrandProvider>
+    );
+}
+
+function ProvidersCore({
+    children,
+    fontFamilies,
+    queryConfig,
+}: {
+    children: React.ReactNode;
+    fontFamilies: { primary: string; heading: string; monospace: string };
+    queryConfig: { defaultOptions: { queries: { retry: (n: number, err: unknown) => boolean } } };
+}) {
+    return (
+        <OttaQueryProvider apiClient={api} config={queryConfig}>
+            <ProviderUIBase
+                preventFOUC={appConfig.ui.preventFOUC}
+                preventFOUCInsideIframe={appConfig.ui.preventFOUCInsideIframe}
+                fontFamilies={fontFamilies}
+                fontVarsFromRoot
+            >
+                <ProviderFont enforceGoogleFonts={appConfig.ui.enforceGoogleFonts}>
+                    <ProviderNextThemes storagePrefix={appConfig.storage.prefix}>
+                        <ThemeProvider>
+                            <BrandThemeApplicator />
+                            <ThemeManager />
+                            <ZoomManager />
+                            <ScaleManager />
+                            <SidebarStateManager />
+                            <ShadcnProviders enableThemeProvider={false} enableToaster>
+                                <SpotlightProvider
+                                    enabled={appConfig.features.spotlight.enabled}
+                                    shortcuts={appConfig.features.spotlight.shortcuts}
+                                >
+                                    {children}
+                                </SpotlightProvider>
+                            </ShadcnProviders>
+                        </ThemeProvider>
+                    </ProviderNextThemes>
+                </ProviderFont>
+            </ProviderUIBase>
+            <ReactQueryDevtools initialIsOpen={false} />
+        </OttaQueryProvider>
     );
 }
