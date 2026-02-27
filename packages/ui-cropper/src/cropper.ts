@@ -86,7 +86,9 @@ export class Cropper {
         this.container.appendChild(input);
 
         this.wrap = document.createElement('div');
-        this.wrap.style.cssText = 'position:relative;overflow:hidden;background:#111;border-radius:4px;display:none;';
+        // Transparent bg for compatibility and aesthetics (circle crop shows through; rect works fine too)
+        this.wrap.style.cssText =
+            'position:relative;overflow:hidden;background:transparent;border-radius:4px;display:none;';
         this.wrap.id = 'cropper-wrap';
 
         this.canvas = document.createElement('canvas');
@@ -135,6 +137,11 @@ export class Cropper {
         this.wrap.onmouseup = () => this.onMouseUp();
         this.wrap.onmouseleave = () => this.onMouseUp();
         this.wrap.onwheel = (e) => this.onWheel(e);
+    }
+
+    /** Public API: load image from File (e.g. after user selects from file input) */
+    loadFromFile(file: File | undefined) {
+        this.loadFile(file);
     }
 
     private loadFile(file: File | undefined) {
@@ -695,9 +702,12 @@ export class Cropper {
         }
     }
 
-    /** Export cropped image as Blob */
+    /** Export cropped image as Blob. Use PNG for circle shape (transparent corners); JPEG for rect. */
     async getBlob(mime: 'image/png' | 'image/jpeg' = 'image/jpeg', quality = 0.92): Promise<Blob> {
         if (!this.img) throw new Error('No image loaded');
+
+        // Circle shape needs PNG for transparent corners; JPEG would render them black
+        const effectiveMime = this.options.shape === 'circle' ? 'image/png' : mime;
 
         const out = document.createElement('canvas');
         out.width = Math.round(this.crop.w);
@@ -765,8 +775,8 @@ export class Cropper {
         return new Promise((resolve, reject) => {
             out.toBlob(
                 (b) => (b ? resolve(b) : reject(new Error('Failed to create blob'))),
-                mime,
-                mime === 'image/jpeg' ? quality : undefined,
+                effectiveMime,
+                effectiveMime === 'image/jpeg' ? quality : undefined,
             );
         });
     }

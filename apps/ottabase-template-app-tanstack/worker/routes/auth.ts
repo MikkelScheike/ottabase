@@ -363,7 +363,7 @@ export async function handleUserProfile(context: AuthRouteContext): Promise<Resp
     }
 
     if (request.method === 'PATCH') {
-        const body = await readJson<{ name?: string; image?: string | null }>(request);
+        const body = await readJson<{ name?: string; image?: string | null; timezone?: string | null }>(request);
 
         const updates: Record<string, any> = {};
         const fieldErrors: Record<string, string[]> = {};
@@ -388,6 +388,11 @@ export async function handleUserProfile(context: AuthRouteContext): Promise<Resp
             } else {
                 updates.image = image;
             }
+        }
+
+        if (body.timezone !== undefined) {
+            const timezone = typeof body.timezone === 'string' ? body.timezone.trim() : null;
+            updates.timezone = timezone || null;
         }
 
         if (Object.keys(fieldErrors).length > 0) {
