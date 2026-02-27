@@ -20,10 +20,10 @@ import {
     SelectValue,
     Switch,
 } from '@ottabase/ui-shadcn';
-import { IconEye, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconEye, IconPlus, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from '@tanstack/react-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { menuApi, type MenuItemDto, type MenuRenderType, type MenuWithItemsDto } from './menus/menuApi';
 
@@ -198,6 +198,7 @@ function MenuPreviewPanel({ menu, type }: { menu: MenuWithItemsDto | null; type:
                         {renderMenu(menu, type, {
                             isAuthenticated: true,
                             pathname,
+                            expanded: isWide,
                         })}
                     </div>
                 ) : (
@@ -243,11 +244,6 @@ function MenuEditForm({ menu, onTypeChange }: { menu: MenuWithItemsDto; onTypeCh
                 <CardDescription>
                     Name, slug, and default render type. Supports sidebar, flyout, mega menu, navbar, dropdown, and
                     footer layouts.
-                </CardDescription>
-                ", "oldString": "{' '}
-                <CardDescription>
-                    Name, slug, and default render type. Menu is a list of items—it can be rendered any way (sidebar,
-                    flyout, etc.).
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -472,6 +468,7 @@ function ItemRow({
 
     return (
         <div className="flex items-center justify-between rounded-lg border p-3">
+            {item.image && <img src={item.image} alt="" className="mr-3 h-8 w-8 shrink-0 rounded object-cover" />}
             <div className="min-w-0 flex-1">
                 <p className="font-medium">{item.name}</p>
                 <p className="text-sm text-muted-foreground">
@@ -519,10 +516,35 @@ function ItemForm({
     const [authRequired, setAuthRequired] = useState(item?.authRequired ?? false);
     const [description, setDescription] = useState(item?.description ?? '');
     const [tooltip, setTooltip] = useState(item?.tooltip ?? '');
+    const [image, setImage] = useState(item?.image ?? '');
+    const [uploading, setUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         if (parentId !== undefined) setSelectedParentId(parentId ?? null);
     }, [parentId]);
+
+    /** Upload image to R2 via /api/upload, then store the URL */
+    const handleImageUpload = useCallback(async (file: File) => {
+        if (!file.type.startsWith('image/')) {
+            toast.error('Please select an image file');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            toast.error('Image must be under 5 MB');
+            return;
+        }
+        setUploading(true);
+        try {
+            const res = await menuApi.uploadImage(file);
+            setImage(res.url);
+            toast.success('Image uploaded');
+        } catch {
+            toast.error('Upload failed');
+        } finally {
+            setUploading(false);
+        }
+    }, []);
 
     // Parents: items that are not the current item and not descendants (avoid cycles)
     const tree = buildItemTree(allItems);
@@ -541,6 +563,7 @@ function ItemForm({
             authRequired,
             description: description || null,
             tooltip: tooltip || null,
+            image: image || null,
         });
     };
 
@@ -584,6 +607,50 @@ function ItemForm({
                 onChange={(e) => setDescription(e.target.value)}
             />
             <Input placeholder="Tooltip (optional)" value={tooltip} onChange={(e) => setTooltip(e.target.value)} />
+
+            {/* Image upload */}
+            <div>
+                <Label>Image (optional)</Label>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    aria-label="Upload menu item image"
+                    className="hidden"
+                    onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) handleImageUpload(f);
+                        e.target.value = '';
+                    }}
+                />
+                {image ? (
+                    <div className="mt-1 flex items-center gap-2">
+                        <img src={image} alt="" className="h-10 w-10 rounded border object-cover" />
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => setImage('')}
+                            title="Remove image"
+                        >
+                            <IconX className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-1"
+                        disabled={uploading}
+                        onClick={() => fileInputRef.current?.click()}
+                    >
+                        <IconUpload className="mr-2 h-4 w-4" />
+                        {uploading ? 'Uploading...' : 'Upload image'}
+                    </Button>
+                )}
+            </div>
+
             <div className="flex gap-2">
                 <Button onClick={handleSubmit} disabled={submitting}>
                     {item ? 'Save' : 'Add'}

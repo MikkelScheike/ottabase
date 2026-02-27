@@ -13,6 +13,8 @@ import { MenuItemLink } from './MenuItemLink';
 export interface MegaMenuRendererProps {
     items: MenuItemDto[];
     pathname: string;
+    /** When true, renders all panels expanded inline (no hover, no absolute). Useful for previews. */
+    expanded?: boolean;
 }
 
 // ── Column item (child link with optional image + description) ───────────
@@ -180,12 +182,30 @@ function MegaMenuTrigger({
  *
  * Items with images show them as thumbnails. Items with `newTab` get an external-link icon.
  */
-export function MegaMenuRenderer({ items, pathname }: MegaMenuRendererProps) {
+export function MegaMenuRenderer({ items, pathname, expanded = false }: MegaMenuRendererProps) {
     const tree = useMemo(() => buildItemTree(items), [items]);
     const [openId, setOpenId] = useState<string | null>(null);
 
     const handleOpen = useCallback((id: string) => setOpenId(id), []);
     const handleClose = useCallback(() => setOpenId(null), []);
+
+    // Expanded / static mode: render all panels inline (for preview panels)
+    if (expanded) {
+        return (
+            <nav className="flex flex-col gap-4">
+                {tree.map((node) =>
+                    node.children.length > 0 ? (
+                        <div key={node.item.id}>
+                            <div className="mb-1 px-1 text-sm font-medium text-foreground">{node.item.name}</div>
+                            <MegaMenuPanel columns={node.children} pathname={pathname} />
+                        </div>
+                    ) : (
+                        <MenuItemLink key={node.item.id} item={node.item} pathname={pathname} />
+                    ),
+                )}
+            </nav>
+        );
+    }
 
     return (
         <nav className="flex items-center gap-1">

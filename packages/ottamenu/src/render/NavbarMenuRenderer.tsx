@@ -12,6 +12,8 @@ import { MenuItemLink } from './MenuItemLink';
 export interface NavbarMenuRendererProps {
     items: MenuItemDto[];
     pathname: string;
+    /** When true, renders all dropdowns expanded inline (no hover, no absolute). Useful for previews. */
+    expanded?: boolean;
 }
 
 // ── Dropdown item with optional image ────────────────────────────────────
@@ -105,12 +107,32 @@ function NavbarItem({
  * items with children show a single-column dropdown on hover/click.
  * Supports images on both top-level and child items.
  */
-export function NavbarMenuRenderer({ items, pathname }: NavbarMenuRendererProps) {
+export function NavbarMenuRenderer({ items, pathname, expanded = false }: NavbarMenuRendererProps) {
     const tree = useMemo(() => buildItemTree(items), [items]);
     const [openId, setOpenId] = useState<string | null>(null);
 
     const handleOpen = useCallback((id: string) => setOpenId(id), []);
     const handleClose = useCallback(() => setOpenId(null), []);
+
+    // Expanded / static mode: render all dropdowns inline (for preview panels)
+    if (expanded) {
+        return (
+            <nav className="flex flex-col gap-2">
+                {tree.map((node) => (
+                    <div key={node.item.id}>
+                        <MenuItemLink item={node.item} pathname={pathname} className="font-medium" />
+                        {node.children.length > 0 && (
+                            <div className="ml-3 mt-1 flex flex-col gap-0.5 border-l border-muted pl-2">
+                                {node.children.map((child) => (
+                                    <NavbarDropdownItem key={child.item.id} item={child.item} pathname={pathname} />
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </nav>
+        );
+    }
 
     return (
         <nav className="flex items-center gap-1">

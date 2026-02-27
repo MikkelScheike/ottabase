@@ -31,7 +31,7 @@ export interface MenuRendererProps {
  * unnecessary re-renders when menu/auth state is unchanged.
  */
 export function MenuRenderer({ menu, type, options = {} }: MenuRendererProps) {
-    const { isAuthenticated = false, pathname = '' } = options;
+    const { isAuthenticated = false, pathname = '', expanded = false } = options;
     const items = useMemo(
         () => (menu ? menu.items.filter((item) => !item.authRequired || isAuthenticated) : []),
         [menu, isAuthenticated],
@@ -46,9 +46,9 @@ export function MenuRenderer({ menu, type, options = {} }: MenuRendererProps) {
         case 'flyout':
             return <FlyoutMenuRenderer items={items} pathname={pathname} />;
         case 'mega':
-            return <MegaMenuRenderer items={items} pathname={pathname} />;
+            return <MegaMenuRenderer items={items} pathname={pathname} expanded={expanded} />;
         case 'navbar':
-            return <NavbarMenuRenderer items={items} pathname={pathname} />;
+            return <NavbarMenuRenderer items={items} pathname={pathname} expanded={expanded} />;
         case 'dropdown':
             return <DropdownMenuRenderer items={items} pathname={pathname} />;
         case 'footer':

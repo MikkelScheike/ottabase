@@ -209,17 +209,15 @@ describe('DropdownMenuRenderer', () => {
 });
 
 describe('FooterMenuRenderer', () => {
-    it('renders column headers as text (not links)', () => {
+    it('renders top-level items only (no children)', () => {
         render(<FooterMenuRenderer items={footerItems} pathname="/" />);
+        // Top-level items should render
         expect(screen.getByText('Company')).toBeTruthy();
         expect(screen.getByText('Product')).toBeTruthy();
-    });
-
-    it('renders child links under their column', () => {
-        render(<FooterMenuRenderer items={footerItems} pathname="/" />);
-        expect(screen.getByText('About')).toBeTruthy();
-        expect(screen.getByText('Careers')).toBeTruthy();
-        expect(screen.getByText('Docs')).toBeTruthy();
+        // Children should NOT render (footer is flat, single-level)
+        expect(screen.queryByText('About')).toBeNull();
+        expect(screen.queryByText('Careers')).toBeNull();
+        expect(screen.queryByText('Docs')).toBeNull();
     });
 
     it('renders as a <nav> element', () => {
