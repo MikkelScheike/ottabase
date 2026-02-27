@@ -20,6 +20,9 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
+    Dialog,
+    DialogContent,
+    DialogTitle,
     Input,
     Label,
     Separator,
@@ -51,6 +54,7 @@ export function UserProfilePage() {
     const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccountRecord[]>([]);
     const [isAccountsLoading, setIsAccountsLoading] = useState(true);
     const [avatarModalOpen, setAvatarModalOpen] = useState(false);
+    const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
@@ -308,13 +312,30 @@ export function UserProfilePage() {
                     {/* Avatar with edit pencil */}
                     <div className="flex items-center gap-4">
                         <div className="relative group">
-                            <Avatar className="h-20 w-20">
-                                <AvatarImage src={user.image || undefined} />
-                                <AvatarFallback className="text-lg">{userInitials}</AvatarFallback>
-                            </Avatar>
+                            {user.image ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setAvatarPreviewOpen(true)}
+                                    className="rounded-full focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                                    aria-label="View profile picture"
+                                >
+                                    <Avatar className="h-20 w-20 cursor-pointer ring-offset-background transition-opacity hover:opacity-90">
+                                        <AvatarImage src={user.image} />
+                                        <AvatarFallback className="text-lg">{userInitials}</AvatarFallback>
+                                    </Avatar>
+                                </button>
+                            ) : (
+                                <Avatar className="h-20 w-20">
+                                    <AvatarImage src={undefined} />
+                                    <AvatarFallback className="text-lg">{userInitials}</AvatarFallback>
+                                </Avatar>
+                            )}
                             <button
                                 type="button"
-                                onClick={() => setAvatarModalOpen(true)}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setAvatarModalOpen(true);
+                                }}
                                 className="absolute bottom-0 right-0 flex h-7 w-7 items-center justify-center rounded-full border-2 border-background bg-muted text-muted-foreground shadow-sm transition-colors hover:bg-muted-foreground/20 hover:text-foreground dark:border-background dark:bg-muted"
                                 aria-label="Edit profile picture"
                             >
@@ -340,6 +361,20 @@ export function UserProfilePage() {
                         }}
                         onError={(msg) => toast.error('Avatar update failed', msg)}
                     />
+
+                    {/* Avatar preview modal - shows image large when clicking existing avatar */}
+                    <Dialog open={avatarPreviewOpen} onOpenChange={setAvatarPreviewOpen}>
+                        <DialogContent className="max-w-2xl p-4 sm:p-6">
+                            <DialogTitle className="sr-only">Profile picture</DialogTitle>
+                            <div className="flex items-center justify-center">
+                                <img
+                                    src={user.image || ''}
+                                    alt="Profile picture"
+                                    className="max-h-[70vh] w-auto max-w-full rounded-full object-contain"
+                                />
+                            </div>
+                        </DialogContent>
+                    </Dialog>
 
                     <Separator />
 
