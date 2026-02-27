@@ -3,8 +3,8 @@
 // ---------------------------------------------------------------------------
 
 import { describe, expect, it } from 'vitest';
-import { buildItemTree } from '../persistence/treeUtils';
-import type { MenuItemDto } from '../persistence/types';
+import { buildItemTree } from '../treeUtils';
+import type { MenuItemDto } from '../types';
 
 /** Helper: create a minimal MenuItemDto */
 function item(overrides: Partial<MenuItemDto> & { id: string; name: string }): MenuItemDto {

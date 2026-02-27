@@ -7,16 +7,28 @@ import type { AdminContext, ApiRouteContext } from '@ottabase/api/types';
 import {
     handleCloneBrandKit,
     handleCreateBrandKit,
+    handleCreateMenu,
+    handleCreateMenuItem,
     handleDeleteBrandKit,
+    handleDeleteMenu,
+    handleDeleteMenuItem,
     handleGetBrand,
     handleGetBrandKit,
     handleGetBrandKits,
     handleGetLayouts,
     handleGetMappings,
+    handleGetMenu,
+    handleGetMenuBySlug,
+    handleGetMenus,
+    handleGetMenuSlots,
+    handleGetMenuSlotsRaw,
     handleGetPresets,
     handlePutLayout,
     handlePutMappings,
+    handlePutMenuSlots,
     handleUpdateBrandKit,
+    handleUpdateMenu,
+    handleUpdateMenuItem,
     handleUploadBrandKitLogo,
 } from '@ottabase/brand-engine/handlers';
 import { requireBrandEditAccess } from '../lib/admin-guard';
@@ -111,6 +123,71 @@ export async function handleBrandApi(context: ApiRouteContext): Promise<Response
         const guard = await requireBrandEditAccess(context, null, appId);
         if (guard instanceof Response) return guard;
         return handlePutMappings(request, envBrand, appId);
+    }
+
+    // Menu Slots – assign menus to named layout slots
+    if (route === '/api/brand/menu-slots' && method === 'GET') {
+        return handleGetMenuSlots(request, envBrand, appId);
+    }
+    if (route === '/api/brand/menu-slots/raw' && method === 'GET') {
+        return handleGetMenuSlotsRaw(request, envBrand, appId);
+    }
+    if (route === '/api/brand/menu-slots' && method === 'PUT') {
+        const guard = await requireBrandEditAccess(context, null, appId);
+        if (guard instanceof Response) return guard;
+        return handlePutMenuSlots(request, envBrand, appId);
+    }
+
+    // Menu CRUD – menus + items (cache invalidation on mutations)
+    if (route === '/api/brand/menus' && method === 'GET') {
+        return handleGetMenus(request, envBrand, appId);
+    }
+    if (route === '/api/brand/menus' && method === 'POST') {
+        const guard = await requireBrandEditAccess(context, null, appId);
+        if (guard instanceof Response) return guard;
+        return handleCreateMenu(request, envBrand, appId);
+    }
+
+    const menuSlugMatch = route.match(/^\/api\/brand\/menus\/slug\/([^/]+)$/);
+    if (menuSlugMatch && method === 'GET') {
+        return handleGetMenuBySlug(request, envBrand, decodeURIComponent(menuSlugMatch[1]), appId);
+    }
+
+    const menuByIdMatch = route.match(/^\/api\/brand\/menus\/([^/]+)$/);
+    if (menuByIdMatch) {
+        const id = menuByIdMatch[1];
+        if (method === 'GET') {
+            return handleGetMenu(request, envBrand, id, appId);
+        }
+        if (method === 'PUT') {
+            const guard = await requireBrandEditAccess(context, null, appId);
+            if (guard instanceof Response) return guard;
+            return handleUpdateMenu(request, envBrand, id, appId);
+        }
+        if (method === 'DELETE') {
+            const guard = await requireBrandEditAccess(context, null, appId);
+            if (guard instanceof Response) return guard;
+            return handleDeleteMenu(request, envBrand, id, appId);
+        }
+    }
+
+    const menuItemsMatch = route.match(/^\/api\/brand\/menus\/([^/]+)\/items\/([^/]+)$/);
+    if (menuItemsMatch && method === 'PUT') {
+        const guard = await requireBrandEditAccess(context, null, appId);
+        if (guard instanceof Response) return guard;
+        return handleUpdateMenuItem(request, envBrand, menuItemsMatch[1], menuItemsMatch[2], appId);
+    }
+    if (menuItemsMatch && method === 'DELETE') {
+        const guard = await requireBrandEditAccess(context, null, appId);
+        if (guard instanceof Response) return guard;
+        return handleDeleteMenuItem(request, envBrand, menuItemsMatch[1], menuItemsMatch[2], appId);
+    }
+
+    const menuItemsCreateMatch = route.match(/^\/api\/brand\/menus\/([^/]+)\/items$/);
+    if (menuItemsCreateMatch && method === 'POST') {
+        const guard = await requireBrandEditAccess(context, null, appId);
+        if (guard instanceof Response) return guard;
+        return handleCreateMenuItem(request, envBrand, menuItemsCreateMatch[1], appId);
     }
 
     return null;

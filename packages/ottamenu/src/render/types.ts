@@ -2,9 +2,9 @@
 // Ottamenu – Render types
 // ---------------------------------------------------------------------------
 
-import type { MenuItemDto } from '../persistence/types';
+import type { MenuItemDto } from '../types';
 
-export type MenuRenderType = 'sidebar' | 'flyout' | 'mega' | 'navbar' | 'dropdown' | 'footer';
+export type { MenuRenderType } from '../types';
 
 export interface RenderMenuOptions {
     /** Filter out authRequired items when false */

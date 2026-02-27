@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Menus list – Create, navigate to detail (Ottamenu)
+// Menus list – Create, navigate to detail, assign to slots (Ottamenu)
 // ---------------------------------------------------------------------------
 
 import {
@@ -14,15 +14,19 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@ottabase/ui-shadcn';
-import { IconDotsVertical, IconMenu2, IconPlus } from '@tabler/icons-react';
+import { IconDotsVertical, IconMenu2, IconPlus, IconPuzzle } from '@tabler/icons-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
+import { useState } from 'react';
 import { toast } from 'sonner';
+import { AssignToSlotsModal } from './menus/AssignToSlotsModal';
 import { menuApi, type MenuWithItemsDto } from './menus/menuApi';
 
 export function AdminMenusListPage() {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
+    const [slotsModalOpen, setSlotsModalOpen] = useState(false);
+    const [slotsModalMenuId, setSlotsModalMenuId] = useState<string | null>(null);
 
     const { data: menus = [], isLoading } = useQuery({
         queryKey: ['menus', 'list'],
@@ -39,6 +43,11 @@ export function AdminMenusListPage() {
         onError: () => toast.error('Failed to delete'),
     });
 
+    const openSlotsModal = (menuId?: string) => {
+        setSlotsModalMenuId(menuId ?? null);
+        setSlotsModalOpen(true);
+    };
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -53,21 +62,33 @@ export function AdminMenusListPage() {
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Menus</h1>
                     <p className="text-muted-foreground mt-1">
-                        Define navigation menus (sidebar, header, etc.). Default fallback is static nav links.
+                        Define navigation menus (sidebar, header, etc.). Assign to slots or use static nav links.
                     </p>
                 </div>
-                <Button onClick={() => navigate({ to: '/admin/menus/new' })}>
-                    <IconPlus className="h-4 w-4 mr-2" />
-                    Create Menu
-                </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => openSlotsModal()}>
+                        <IconPuzzle className="h-4 w-4 mr-2" />
+                        Assign to slots
+                    </Button>
+                    <Button onClick={() => navigate({ to: '/admin/menus/new' })}>
+                        <IconPlus className="h-4 w-4 mr-2" />
+                        Create Menu
+                    </Button>
+                </div>
             </div>
+
+            <AssignToSlotsModal
+                open={slotsModalOpen}
+                onOpenChange={setSlotsModalOpen}
+                preselectedMenuId={slotsModalMenuId}
+            />
 
             <Card>
                 <CardHeader>
                     <CardTitle>Your Menus</CardTitle>
                     <CardDescription>
                         {menus.length === 0
-                            ? 'No menus yet. Create one (e.g. slug: sidebar) to override default nav.'
+                            ? 'No menus yet. Create one and assign to slots to override default nav.'
                             : 'Click a menu to edit items. Use slug "sidebar" for main sidebar nav.'}
                     </CardDescription>
                 </CardHeader>
@@ -87,6 +108,7 @@ export function AdminMenusListPage() {
                                 <MenuCard
                                     key={menu.id}
                                     menu={menu}
+                                    onAssignToSlots={() => openSlotsModal(menu.id)}
                                     onDelete={() => {
                                         if (window.confirm('Delete this menu? All items will be removed.')) {
                                             deleteMutation.mutate(menu.id);
@@ -103,7 +125,17 @@ export function AdminMenusListPage() {
     );
 }
 
-function MenuCard({ menu, onDelete, deleting }: { menu: MenuWithItemsDto; onDelete: () => void; deleting: boolean }) {
+function MenuCard({
+    menu,
+    onAssignToSlots,
+    onDelete,
+    deleting,
+}: {
+    menu: MenuWithItemsDto;
+    onAssignToSlots: () => void;
+    onDelete: () => void;
+    deleting: boolean;
+}) {
     return (
         <Link
             to="/admin/menus/$menuId"
@@ -131,6 +163,16 @@ function MenuCard({ menu, onDelete, deleting }: { menu: MenuWithItemsDto; onDele
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                            onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onAssignToSlots();
+                            }}
+                        >
+                            <IconPuzzle className="h-4 w-4 mr-2" />
+                            Assign to slots
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                             onClick={(e) => {
                                 e.preventDefault();

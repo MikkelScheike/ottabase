@@ -5,8 +5,8 @@
 
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { MenuItemDto } from '../persistence/types';
 import type { MenuForRender, MenuRenderType } from '../render/types';
+import type { MenuItemDto } from '../types';
 
 // Mock @tanstack/react-router Link as a simple <a>
 vi.mock('@tanstack/react-router', () => ({
@@ -24,6 +24,8 @@ import { FooterMenuRenderer } from '../render/FooterMenuRenderer';
 import { MenuRenderer } from '../render/index';
 import { MegaMenuRenderer } from '../render/MegaMenuRenderer';
 import { MenuItemLink } from '../render/MenuItemLink';
+import type { ResolvedMenuSlotData } from '../render/MenuSlotRenderer';
+import { MenuSlotRenderer } from '../render/MenuSlotRenderer';
 import { NavbarMenuRenderer } from '../render/NavbarMenuRenderer';
 import { SidebarMenuRenderer } from '../render/SidebarMenuRenderer';
 
@@ -228,21 +230,23 @@ describe('FooterMenuRenderer', () => {
 
 // ── MenuItemLink tests ───────────────────────────────────────────────────
 describe('MenuItemLink', () => {
-    it('does not apply active class to hash-only links', () => {
+    it('does not apply active class to hash-only links (renders as span)', () => {
         const item = makeItem({ id: '1', name: 'Placeholder', link: '#' });
         const { container } = render(<MenuItemLink item={item} pathname="#" />);
-        const link = container.querySelector('a');
-        // Should have inactive styles, not active 'bg-accent text-accent-foreground font-medium'
-        expect(link?.className).toContain('text-muted-foreground');
-        expect(link?.className).not.toContain('font-medium');
+        // Placeholder links render as span to avoid Link to="#" errors
+        const el = container.querySelector('span');
+        expect(el).toBeTruthy();
+        expect(el?.className).toContain('text-muted-foreground');
+        expect(el?.className).not.toContain('font-medium');
     });
 
-    it('does not apply active class to empty links', () => {
+    it('does not apply active class to empty links (renders as span)', () => {
         const item = makeItem({ id: '1', name: 'Empty', link: '' });
         const { container } = render(<MenuItemLink item={item} pathname="" />);
-        const link = container.querySelector('a');
-        expect(link?.className).toContain('text-muted-foreground');
-        expect(link?.className).not.toContain('font-medium');
+        const el = container.querySelector('span');
+        expect(el).toBeTruthy();
+        expect(el?.className).toContain('text-muted-foreground');
+        expect(el?.className).not.toContain('font-medium');
     });
 
     it('applies active class on exact pathname match', () => {
@@ -267,5 +271,130 @@ describe('MenuItemLink', () => {
         const link = container.querySelector('a');
         expect(link?.getAttribute('target')).toBe('_blank');
         expect(link?.getAttribute('rel')).toContain('noopener');
+    });
+});
+
+// ── MenuSlotRenderer tests ───────────────────────────────────────────────
+
+/** Helper: build resolved menu slot data for tests */
+function makeSlotData(
+    overrides: Partial<ResolvedMenuSlotData> & { slotName: string; menuId: string },
+): ResolvedMenuSlotData {
+    return {
+        renderType: 'sidebar',
+        sortOrder: 0,
+        menu: {
+            id: overrides.menuId,
+            name: 'Test Menu',
+            slug: 'test-menu',
+            type: 'sidebar',
+            items: flatItems,
+        },
+        ...overrides,
+    };
+}
+
+describe('MenuSlotRenderer', () => {
+    it('returns null when no menuSlots data provided', () => {
+        const { container } = render(<MenuSlotRenderer slot="header-nav" menuSlots={null} />);
+        expect(container.innerHTML).toBe('');
+    });
+
+    it('returns null when slot has no assignments', () => {
+        const { container } = render(
+            <MenuSlotRenderer
+                slot="header-nav"
+                menuSlots={{ 'sidebar-nav': [makeSlotData({ slotName: 'sidebar-nav', menuId: 'menu-1' })] }}
+            />,
+        );
+        expect(container.innerHTML).toBe('');
+    });
+
+    it('renders fallback when slot has no assignments', () => {
+        render(
+            <MenuSlotRenderer
+                slot="header-nav"
+                menuSlots={{}}
+                fallback={<span data-testid="fallback">No menu</span>}
+            />,
+        );
+        expect(screen.getByTestId('fallback')).toBeTruthy();
+    });
+
+    it('renders menu items for assigned slot', () => {
+        const menuSlots: Record<string, ResolvedMenuSlotData[]> = {
+            'header-nav': [makeSlotData({ slotName: 'header-nav', menuId: 'menu-1', renderType: 'sidebar' })],
+        };
+        render(<MenuSlotRenderer slot="header-nav" menuSlots={menuSlots} options={{ pathname: '/' }} />);
+        expect(screen.getByText('Home')).toBeTruthy();
+        expect(screen.getByText('About')).toBeTruthy();
+    });
+
+    it('uses renderType from slot assignment by default', () => {
+        const menuSlots: Record<string, ResolvedMenuSlotData[]> = {
+            'footer-nav': [makeSlotData({ slotName: 'footer-nav', menuId: 'menu-1', renderType: 'footer' })],
+        };
+        const { container } = render(
+            <MenuSlotRenderer slot="footer-nav" menuSlots={menuSlots} options={{ pathname: '/' }} />,
+        );
+        // Footer renderer uses a flat horizontal <nav>
+        expect(container.querySelector('nav')).toBeTruthy();
+    });
+
+    it('allows overriding renderType via prop', () => {
+        const menuSlots: Record<string, ResolvedMenuSlotData[]> = {
+            'header-nav': [makeSlotData({ slotName: 'header-nav', menuId: 'menu-1', renderType: 'sidebar' })],
+        };
+        const { container } = render(
+            <MenuSlotRenderer
+                slot="header-nav"
+                menuSlots={menuSlots}
+                renderType="navbar"
+                options={{ pathname: '/' }}
+            />,
+        );
+        // Navbar renderer renders a horizontal nav
+        expect(container.querySelector('nav')).toBeTruthy();
+    });
+
+    it('wraps content in div when className is provided', () => {
+        const menuSlots: Record<string, ResolvedMenuSlotData[]> = {
+            'sidebar-nav': [makeSlotData({ slotName: 'sidebar-nav', menuId: 'menu-1' })],
+        };
+        const { container } = render(
+            <MenuSlotRenderer
+                slot="sidebar-nav"
+                menuSlots={menuSlots}
+                className="my-custom-class"
+                options={{ pathname: '/' }}
+            />,
+        );
+        const wrapper = container.querySelector('.my-custom-class');
+        expect(wrapper).toBeTruthy();
+    });
+
+    it('renders multiple menus in the same slot', () => {
+        const menuSlots: Record<string, ResolvedMenuSlotData[]> = {
+            'sidebar-nav': [
+                makeSlotData({ slotName: 'sidebar-nav', menuId: 'menu-1', sortOrder: 0 }),
+                {
+                    slotName: 'sidebar-nav',
+                    menuId: 'menu-2',
+                    renderType: 'sidebar',
+                    sortOrder: 1,
+                    menu: {
+                        id: 'menu-2',
+                        name: 'Secondary Menu',
+                        slug: 'secondary',
+                        type: 'sidebar',
+                        items: [makeItem({ id: '10', name: 'Settings', link: '/settings' })],
+                    },
+                },
+            ],
+        };
+        render(<MenuSlotRenderer slot="sidebar-nav" menuSlots={menuSlots} options={{ pathname: '/' }} />);
+        // Items from both menus should render
+        expect(screen.getByText('Home')).toBeTruthy();
+        expect(screen.getByText('Settings')).toBeTruthy();
     });
 });

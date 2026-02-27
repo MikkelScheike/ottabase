@@ -1,5 +1,8 @@
 // ---------------------------------------------------------------------------
-// Menu Manager – API types
+// @ottabase/ottamenu – Shared types
+//
+// Pure type definitions for menu items and menus. No ORM, no persistence.
+// Used by renderers (in this package) and by brand-engine (for persistence).
 // ---------------------------------------------------------------------------
 
 /** Menu item shape (API + renderer). Flat list; build tree via parentId. */
@@ -21,7 +24,7 @@ export interface MenuItemDto {
 /** Default render type for menu (used by renderMenu when no override) */
 export type MenuRenderType = 'sidebar' | 'flyout' | 'mega' | 'navbar' | 'dropdown' | 'footer';
 
-/** Menu with items (API list/detail) */
+/** Menu with items (API response shape) */
 export interface MenuWithItemsDto {
     id: string;
     appId: string | null;
@@ -32,45 +35,4 @@ export interface MenuWithItemsDto {
     items: MenuItemDto[];
     createdAt?: number;
     updatedAt?: number;
-}
-
-/** Create/update menu payload */
-export interface CreateMenuPayload {
-    name: string;
-    slug: string;
-    type?: MenuRenderType;
-    isDefault?: boolean;
-}
-
-export interface UpdateMenuPayload {
-    name?: string;
-    slug?: string;
-    type?: MenuRenderType;
-    isDefault?: boolean;
-}
-
-/** Create/update menu item payload */
-export interface CreateMenuItemPayload {
-    menuId: string;
-    parentId?: string | null;
-    name: string;
-    link: string;
-    newTab?: boolean;
-    authRequired?: boolean;
-    description?: string | null;
-    image?: string | null;
-    tooltip?: string | null;
-    sortOrder?: number;
-}
-
-export interface UpdateMenuItemPayload {
-    parentId?: string | null;
-    name?: string;
-    link?: string;
-    newTab?: boolean;
-    authRequired?: boolean;
-    description?: string | null;
-    image?: string | null;
-    tooltip?: string | null;
-    sortOrder?: number;
 }

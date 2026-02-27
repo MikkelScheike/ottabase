@@ -77,6 +77,7 @@ export function createBrandCache(kv: KVNamespace): BrandCacheClient {
 
             return {
                 ...meta,
+                menuSlots: meta.menuSlots ?? {},
                 brandKitsMap,
             };
         },
@@ -94,10 +95,11 @@ export function createBrandCache(kv: KVNamespace): BrandCacheClient {
         },
 
         async setResolutionData(appId, mode, data) {
-            // Store per-kit + meta (new format)
+            // Store per-kit + meta (new format) — include menuSlots for consistent response shape
             await this.setMeta(appId, {
                 routeMappings: data.routeMappings,
                 layoutTemplatesMap: data.layoutTemplatesMap,
+                menuSlots: data.menuSlots ?? {},
             });
 
             const kitIds = Object.keys(data.brandKitsMap);

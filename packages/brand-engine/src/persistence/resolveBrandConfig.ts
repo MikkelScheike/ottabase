@@ -11,6 +11,7 @@ import { BrandKit } from './BrandKit.model';
 import { brandKitLogos, brandKitToTheme } from './brandKitToConfig';
 import { createBrandCache } from './cache';
 import { getLayoutData } from './layoutData';
+import { getMenuSlotData } from './menuSlotData';
 import type { BrandResolutionCache, ResolvedBrandConfig } from './types';
 
 export interface ResolveBrandConfigEnv {
@@ -123,16 +124,22 @@ export async function resolveFullBrandConfig(
     // Dual-mode: cache is mode-neutral (both themes stored per kit)
     if (!skipCache) {
         const cached = await cache.getResolutionData(appId, 'all');
-        if (cached) return { ...cached, r2PublicUrl: r2Url };
+        if (cached)
+            return {
+                ...cached,
+                menuSlots: cached.menuSlots ?? {},
+                r2PublicUrl: r2Url,
+            };
     }
 
     const layoutData = await getLayoutData(appId);
     const brandKitIds = [...new Set(layoutData.routeMappings.map((m) => m.brandKitId))];
-    const brandKitsMap = await loadBrandKitsMap(brandKitIds, r2Url);
+    const [brandKitsMap, menuSlots] = await Promise.all([loadBrandKitsMap(brandKitIds, r2Url), getMenuSlotData(appId)]);
 
     const cacheData: BrandResolutionCache = {
         routeMappings: layoutData.routeMappings,
         layoutTemplatesMap: layoutData.layoutTemplatesMap,
+        menuSlots,
         brandKitsMap,
     };
     const fullConfig: FullBrandConfig = {
@@ -183,7 +190,7 @@ export async function resolveBrandConfig(
     if (!match) return null;
 
     const brandKitIds = [...new Set(layoutData.routeMappings.map((m) => m.brandKitId))];
-    const brandKitsMap = await loadBrandKitsMap(brandKitIds, r2Url);
+    const [brandKitsMap, menuSlots] = await Promise.all([loadBrandKitsMap(brandKitIds, r2Url), getMenuSlotData(appId)]);
 
     const kitData = brandKitsMap[match.brandKitId];
     if (!kitData) return null;
@@ -220,12 +227,14 @@ export async function resolveBrandConfig(
         layoutTemplateId: match.layoutTemplateId,
         layoutTemplatesMap: layoutData.layoutTemplatesMap,
         routeMappings: layoutData.routeMappings,
+        menuSlots,
     };
 
     if (!skipCache) {
         const cacheData: BrandResolutionCache = {
             routeMappings: layoutData.routeMappings,
             layoutTemplatesMap: layoutData.layoutTemplatesMap,
+            menuSlots,
             brandKitsMap,
         };
         await cache.setResolutionData(appId, 'all', cacheData);
@@ -272,5 +281,6 @@ function buildConfigFromCache(
         layoutTemplateId: match.layoutTemplateId,
         layoutTemplatesMap: cached.layoutTemplatesMap,
         routeMappings: cached.routeMappings,
+        menuSlots: cached.menuSlots,
     };
 }

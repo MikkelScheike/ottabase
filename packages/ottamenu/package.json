@@ -1,7 +1,7 @@
 {
     "name": "@ottabase/ottamenu",
     "version": "1.0.0",
-    "description": "Menu management for Ottabase – define and render menus (sidebar, flyout, etc.)",
+    "description": "Pure menu types, renderers, and tree utilities for Ottabase – sidebar, flyout, mega, navbar, dropdown, footer",
     "main": "dist/index.js",
     "module": "dist/index.mjs",
     "types": "dist/index.d.ts",
@@ -11,16 +11,6 @@
             "types": "./dist/index.d.ts",
             "import": "./dist/index.mjs",
             "require": "./dist/index.js"
-        },
-        "./persistence": {
-            "types": "./dist/persistence/index.d.ts",
-            "import": "./dist/persistence/index.mjs",
-            "require": "./dist/persistence/index.js"
-        },
-        "./handlers": {
-            "types": "./dist/handlers/index.d.ts",
-            "import": "./dist/handlers/index.mjs",
-            "require": "./dist/handlers/index.js"
         },
         "./render": {
             "types": "./dist/render/index.d.ts",
@@ -33,8 +23,8 @@
         "README.md"
     ],
     "scripts": {
-        "build": "tsup src/index.ts src/persistence/index.ts src/handlers/index.ts src/render/index.tsx --format cjs,esm --dts --clean",
-        "dev": "tsup src/index.ts src/persistence/index.ts src/handlers/index.ts src/render/index.tsx --format cjs,esm --dts --watch",
+        "build": "tsup src/index.ts src/render/index.tsx --format cjs,esm --dts --clean",
+        "dev": "tsup src/index.ts src/render/index.tsx --format cjs,esm --dts --watch",
         "clean": "rimraf dist",
         "test": "vitest run",
         "lint": "eslint src --ext .ts,.tsx",
@@ -44,22 +34,17 @@
         "menu",
         "navigation",
         "sidebar",
-        "layout"
+        "layout",
+        "renderer"
     ],
     "author": "",
     "license": "MIT",
-    "dependencies": {
-        "@ottabase/ottaorm": "workspace:*",
-        "@ottabase/utils": "workspace:*"
-    },
     "peerDependencies": {
         "@tanstack/react-router": "catalog:",
-        "drizzle-orm": "catalog:",
         "react": "catalog:"
     },
     "devDependencies": {
         "@types/react": "catalog:",
-        "drizzle-orm": "catalog:",
         "react": "catalog:",
         "rimraf": "catalog:",
         "tsup": "catalog:",

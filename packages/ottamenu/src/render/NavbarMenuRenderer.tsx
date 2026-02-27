@@ -5,8 +5,8 @@
 // ---------------------------------------------------------------------------
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { buildItemTree, type MenuItemTreeNode } from '../persistence/treeUtils';
-import type { MenuItemDto } from '../persistence/types';
+import { buildItemTree, type MenuItemTreeNode } from '../treeUtils';
+import type { MenuItemDto } from '../types';
 import { MenuItemLink } from './MenuItemLink';
 
 export interface NavbarMenuRendererProps {

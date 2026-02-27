@@ -42,7 +42,9 @@ export function BrandLayout() {
                 <TopbarHeader showNav={navInHeader} containerClass={cwClass} leading={drawerTrigger} />
             )}
             {header === 'sidebar' && <TopbarHeader showNav={false} containerClass={cwClass} leading={drawerTrigger} />}
-            {header === 'minimal' && <MinimalHeader containerClass={cwClass} leading={drawerTrigger} />}
+            {header === 'minimal' && (
+                <MinimalHeader containerClass={cwClass} leading={drawerTrigger} showNav={navInHeader} />
+            )}
             {/* header === 'none' renders nothing above the content */}
             {header === 'none' && hasDrawer && (
                 <div className="fixed top-4 left-4 z-40">

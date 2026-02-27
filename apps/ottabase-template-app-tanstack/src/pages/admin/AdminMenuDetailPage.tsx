@@ -21,6 +21,7 @@ import {
     Switch,
 } from '@ottabase/ui-shadcn';
 import { IconEye, IconPlus, IconTrash, IconUpload, IconX } from '@tabler/icons-react';
+import { useBrand } from '@ottabase/brand-engine-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useParams } from '@tanstack/react-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -213,6 +214,7 @@ function MenuPreviewPanel({ menu, type }: { menu: MenuWithItemsDto | null; type:
 
 function MenuEditForm({ menu, onTypeChange }: { menu: MenuWithItemsDto; onTypeChange?: (t: MenuRenderType) => void }) {
     const queryClient = useQueryClient();
+    const { refresh: refreshBrand } = useBrand();
     const [name, setName] = useState(menu.name);
     const [slug, setSlug] = useState(menu.slug);
     const [type, setType] = useState<MenuRenderType>(menu.type);
@@ -233,6 +235,7 @@ function MenuEditForm({ menu, onTypeChange }: { menu: MenuWithItemsDto; onTypeCh
         onSuccess: () => {
             toast.success('Menu updated');
             queryClient.invalidateQueries({ queryKey: ['menus'] });
+            refreshBrand(); // Layout uses menuSlots with menu data
         },
         onError: () => toast.error('Failed to update'),
     });
@@ -291,14 +294,20 @@ function MenuEditForm({ menu, onTypeChange }: { menu: MenuWithItemsDto; onTypeCh
 
 function MenuItemsEditor({ menu }: { menu: MenuWithItemsDto }) {
     const queryClient = useQueryClient();
+    const { refresh: refreshBrand } = useBrand();
     const [editingId, setEditingId] = useState<string | null>(null);
     const [newItemParentId, setNewItemParentId] = useState<string | null | undefined>(undefined);
+
+    const refreshMenuAndBrand = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['menus', menu.id] });
+        refreshBrand(); // Layout (header/sidebar/footer) uses menuSlots from brand config
+    }, [queryClient, menu.id, refreshBrand]);
 
     const createItemMutation = useMutation({
         mutationFn: (body: Partial<MenuItemDto>) => menuApi.createItem(menu.id, body),
         onSuccess: () => {
             toast.success('Item added');
-            queryClient.invalidateQueries({ queryKey: ['menus', menu.id] });
+            refreshMenuAndBrand();
             setNewItemParentId(undefined);
         },
         onError: () => toast.error('Failed to add'),
@@ -315,7 +324,7 @@ function MenuItemsEditor({ menu }: { menu: MenuWithItemsDto }) {
         },
         onSuccess: () => {
             toast.success('Item removed');
-            queryClient.invalidateQueries({ queryKey: ['menus', menu.id] });
+            refreshMenuAndBrand();
         },
         onError: () => toast.error('Failed to remove'),
     });
@@ -346,7 +355,7 @@ function MenuItemsEditor({ menu }: { menu: MenuWithItemsDto }) {
                         }
                         onSaved={() => {
                             setEditingId(null);
-                            queryClient.invalidateQueries({ queryKey: ['menus', menu.id] });
+                            refreshMenuAndBrand();
                         }}
                     />
                 ))}
@@ -360,7 +369,13 @@ function MenuItemsEditor({ menu }: { menu: MenuWithItemsDto }) {
                         submitting={createItemMutation.isPending}
                     />
                 ) : (
-                    <Button variant="outline" size="sm" onClick={() => setNewItemParentId(null)}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setNewItemParentId(null)}
+                        disabled={menu.items.length >= 100}
+                        title={menu.items.length >= 100 ? 'Maximum 100 items per menu' : undefined}
+                    >
                         <IconPlus className="h-4 w-4 mr-2" />
                         Add item (top level)
                     </Button>
@@ -481,7 +496,13 @@ function ItemRow({
                 <Button variant="ghost" size="sm" onClick={onEdit}>
                     Edit
                 </Button>
-                <Button variant="ghost" size="sm" onClick={onAddChild}>
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onAddChild}
+                    disabled={allItems.length >= 100}
+                    title={allItems.length >= 100 ? 'Maximum 100 items per menu' : undefined}
+                >
                     Add child
                 </Button>
                 <Button variant="ghost" size="icon" onClick={onDelete}>

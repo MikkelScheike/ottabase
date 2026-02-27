@@ -57,7 +57,9 @@ export const ConfigurableLayout = memo(function ConfigurableLayout({ config, chi
             {header === 'sidebar' && (
                 <TopbarHeader showNav={false} containerClass={cwClass} leading={drawerTrigger} sticky={sticky} />
             )}
-            {header === 'minimal' && <MinimalHeader containerClass={cwClass} leading={drawerTrigger} />}
+            {header === 'minimal' && (
+                <MinimalHeader containerClass={cwClass} leading={drawerTrigger} showNav={navInHeader} />
+            )}
             {header === 'none' && hasDrawer && (
                 <div className="fixed top-4 left-4 z-40">
                     <DrawerNav />

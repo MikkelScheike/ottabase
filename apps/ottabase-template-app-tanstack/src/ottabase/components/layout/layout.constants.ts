@@ -6,7 +6,7 @@ export interface NavLink {
     authRequired?: boolean;
 }
 
-/** All nav links (filter by package in getNavLinks). */
+/** All nav links [filtered by package in getNavLinks() below]. */
 const NAV_LINKS_ALL: NavLink[] = [
     { to: '/', label: 'Home' },
     { to: '/blog', label: 'Blog' },
@@ -31,6 +31,3 @@ export function getNavLinks(): NavLink[] {
         return !pkg || PACKAGES_ENABLED[pkg];
     });
 }
-
-/** @deprecated Use getNavLinks() for package-aware nav. Kept for tests. */
-export const NAV_LINKS = NAV_LINKS_ALL;

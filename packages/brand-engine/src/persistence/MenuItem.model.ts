@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------
-// Menu Manager – MenuItem OttaORM Model
+// Brand Engine – MenuItem OttaORM Model
+// Individual links/entries within a Menu. Supports nesting via parentId.
 // ---------------------------------------------------------------------------
 
 import { BaseModel, type ModelFields } from '@ottabase/ottaorm';
@@ -9,6 +10,10 @@ export class MenuItem extends BaseModel {
     static entity = 'menu_items';
     static table = menuItemsTable;
     static primaryKey = 'id';
+    static packageName = '@ottabase/brand-engine';
+    static packageType = 'package' as const;
+    static displayName = 'Menu Item';
+    static displayNamePlural = 'Menu Items';
 
     static casts = {
         newTab: 'boolean' as const,

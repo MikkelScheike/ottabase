@@ -17,10 +17,16 @@
 // 3. Add to ottabase.config.ts `customPackages`
 // ============================================================
 
+import {
+    brandKitsTable,
+    layoutRouteMappingsTable,
+    layoutTemplatesTable,
+    menuItemsTable,
+    menuSlotAssignmentsTable,
+    menusTable,
+} from '@ottabase/brand-engine/persistence';
+import { brandEngineMigrations } from '@ottabase/brand-engine/persistence';
 import type { BuiltInPackageName } from '@ottabase/config';
-import { getOttabaseConfig } from './config.loader';
-import { brandKitsTable, layoutRouteMappingsTable, layoutTemplatesTable } from '@ottabase/brand-engine/persistence';
-import { menuItemsTable, menusTable } from '@ottabase/ottamenu/persistence';
 import {
     categoriesTable,
     ottablogPluginsTable,
@@ -34,6 +40,7 @@ import {
 import type { Migration } from '@ottabase/ottaorm';
 import { referralTrackingTable } from '@ottabase/referrals';
 import { shortlinksTable } from '@ottabase/shortlinks';
+import { getOttabaseConfig } from './config.loader';
 
 /**
  * 1. REGISTRY
@@ -66,22 +73,18 @@ const PACKAGE_REGISTRY = {
             brandKitsTable,
             layoutTemplatesTable,
             layoutRouteMappingsTable,
-        },
-        migrations: [] as Migration[],
-    },
-    ottamenu: {
-        tables: {
+            menuSlotAssignmentsTable,
             menusTable,
             menuItemsTable,
         },
-        migrations: [] as Migration[],
+        migrations: brandEngineMigrations,
     },
 } as const;
 
 /**
  * 2. CONFIGURATION
  * Package toggles are driven by ottabase.config.ts `packages` key.
- * This export is for backwards compatibility; prefer getOttabaseConfig().packages
+ * Prefer getOttabaseConfig().packages for package config
  */
 export type MigrationPackageName = keyof typeof PACKAGE_REGISTRY;
 
@@ -89,8 +92,7 @@ export function getMigrationConfig(env?: Record<string, unknown>): Record<Migrat
     const config = getOttabaseConfig(env);
     const result: Record<string, boolean> = {};
     for (const pkg of Object.keys(PACKAGE_REGISTRY) as MigrationPackageName[]) {
-        result[pkg] =
-            pkg === 'brandEngine' || pkg === 'ottamenu' ? true : (config.packages[pkg as BuiltInPackageName] ?? false);
+        result[pkg] = pkg === 'brandEngine' ? true : (config.packages[pkg as BuiltInPackageName] ?? false);
     }
     return result as Record<MigrationPackageName, boolean>;
 }
@@ -109,7 +111,7 @@ export function getEnabledPackageTables(env?: Record<string, unknown>) {
 
     // Built-in packages (brandEngine is core — always included)
     for (const [pkgName, pkgConfig] of Object.entries(PACKAGE_REGISTRY)) {
-        if (pkgName === 'brandEngine' || pkgName === 'ottamenu' || config.packages[pkgName as BuiltInPackageName]) {
+        if (pkgName === 'brandEngine' || config.packages[pkgName as BuiltInPackageName]) {
             Object.assign(tables, pkgConfig.tables);
         }
     }
@@ -134,10 +136,7 @@ export function getEnabledPackageMigrations(env?: Record<string, unknown>): Migr
 
     // Built-in packages (brandEngine is core — always included)
     for (const [pkgName, pkgConfig] of Object.entries(PACKAGE_REGISTRY)) {
-        if (
-            (pkgName === 'brandEngine' || pkgName === 'ottamenu' || config.packages[pkgName as BuiltInPackageName]) &&
-            pkgConfig.migrations
-        ) {
+        if ((pkgName === 'brandEngine' || config.packages[pkgName as BuiltInPackageName]) && pkgConfig.migrations) {
             migrations.push(...pkgConfig.migrations);
         }
     }

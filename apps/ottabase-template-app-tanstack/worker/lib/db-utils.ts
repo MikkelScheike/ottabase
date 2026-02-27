@@ -1,5 +1,4 @@
-import { BrandKit, LayoutRouteMapping, LayoutTemplate } from '@ottabase/brand-engine/persistence';
-import { Menu, MenuItem } from '@ottabase/ottamenu/persistence';
+import { BrandKit, LayoutRouteMapping, LayoutTemplate, MenuSlotAssignment } from '@ottabase/brand-engine/persistence';
 import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import {
     OttablogPlugin,
@@ -27,9 +26,9 @@ import {
 import { ReferralTracking } from '@ottabase/referrals';
 import { Shortlink } from '@ottabase/shortlinks';
 import { errorResponse } from '@ottabase/utils/http-errors';
+import { getOttabaseConfig } from '../../ottabase/config.loader';
 import { Todo } from '../../ottabase/models/Todo';
 import type { CloudflareEnv } from '../cloudflare-env';
-import { getOttabaseConfig } from '../../ottabase/config.loader';
 import { readJson } from './utils';
 
 export function initAdminCron(env: CloudflareEnv): Response | null {
@@ -97,18 +96,11 @@ export function initDbConnection(env: CloudflareEnv): void {
         ...(packages.shortlinks ? [Shortlink] : []),
         ...(packages.referrals ? [ReferralTracking] : []),
     ];
-    const brandModels = [BrandKit, LayoutTemplate, LayoutRouteMapping];
-    const ottamenuModels = [Menu, MenuItem];
+    // Menu, MenuItem: use /api/brand/menus (cache-invalidating CRUD), not OttaORM
+    const brandModels = [BrandKit, LayoutTemplate, LayoutRouteMapping, MenuSlotAssignment];
     const appModels = [Todo];
 
-    registerModels([
-        ...coreModels,
-        ...ottablogModels,
-        ...packageModels,
-        ...brandModels,
-        ...ottamenuModels,
-        ...appModels,
-    ]);
+    registerModels([...coreModels, ...ottablogModels, ...packageModels, ...brandModels, ...appModels]);
 
     initRLS();
 }

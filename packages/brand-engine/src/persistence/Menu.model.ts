@@ -1,5 +1,6 @@
 // ---------------------------------------------------------------------------
-// Menu Manager – Menu OttaORM Model
+// Brand Engine – Menu OttaORM Model
+// Menus container (e.g. sidebar, header, footer). Slug identifies usage.
 // ---------------------------------------------------------------------------
 
 import { BaseModel, type ModelFields } from '@ottabase/ottaorm';
@@ -9,6 +10,10 @@ export class Menu extends BaseModel {
     static entity = 'menus';
     static table = menusTable;
     static primaryKey = 'id';
+    static packageName = '@ottabase/brand-engine';
+    static packageType = 'package' as const;
+    static displayName = 'Menu';
+    static displayNamePlural = 'Menus';
 
     static casts = {
         isDefault: 'boolean' as const,

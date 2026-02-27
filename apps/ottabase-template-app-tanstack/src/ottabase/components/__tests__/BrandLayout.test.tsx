@@ -97,6 +97,11 @@ vi.mock('@ottabase/ottaorm/client', () => ({
     useApiQuery: () => ({ data: null, isLoading: false }),
 }));
 
+// TopbarHeader, SidebarNav, BrandFooter use useBrand; mock so they use legacy/fallback content
+vi.mock('@ottabase/brand-engine-react', () => ({
+    useBrand: () => ({ config: null, isLoading: false, error: null, refresh: vi.fn() }),
+}));
+
 import { BrandLayout } from '../BrandLayout';
 
 // ---------------------------------------------------------------------------

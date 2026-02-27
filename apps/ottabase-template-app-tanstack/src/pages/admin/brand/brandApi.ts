@@ -144,3 +144,24 @@ export const layoutApi = {
         }>;
     }) => api(`${BASE}/mappings`, { method: 'PUT', body }),
 };
+
+// ---------------------------------------------------------------------------
+// Menu Slots API – Assign menus to layout slots (sidebar-nav, header-nav, etc.)
+// ---------------------------------------------------------------------------
+
+export type MenuSlotRenderType = 'sidebar' | 'flyout' | 'mega' | 'navbar' | 'dropdown' | 'footer';
+
+export interface MenuSlotAssignmentItem {
+    id?: string;
+    slotName: string;
+    menuId: string;
+    renderType: MenuSlotRenderType;
+    sortOrder?: number;
+}
+
+export const menuSlotsApi = {
+    getRaw: () => api<MenuSlotAssignmentItem[]>(`${BASE}/menu-slots/raw`),
+
+    put: (slots: MenuSlotAssignmentItem[]) =>
+        api<{ success: boolean }>(`${BASE}/menu-slots`, { method: 'PUT', body: { slots } }),
+};

@@ -207,11 +207,21 @@ function applyRouteTokenOverrides(
  * API returns both light and dark themes per kit. Client picks at runtime.
  * API may return compact form (kit + routes) when single brand kit.
  */
+/** Resolved menu slot (from brand API menuSlots); compatible with @ottabase/ottamenu ResolvedMenuSlotData */
+export type ResolvedMenuSlotData = {
+    slotName: string;
+    menuId: string;
+    renderType: string;
+    sortOrder: number;
+    menu: { id: string; name: string; slug: string; type: string; items: unknown[] };
+};
+
 export interface FullBrandConfig {
     routeMappings?: RouteMapping[];
     kit?: string;
     routes?: [string, string, number][];
     r2PublicUrl?: string;
+    menuSlots?: Record<string, ResolvedMenuSlotData[]>;
     layoutTemplatesMap: Record<string, { componentKey: string; config: LayoutConfig }>;
     brandKitsMap: Record<
         string,
@@ -268,6 +278,8 @@ export interface BrandConfig {
         tokenOverridesJson?: string | null;
     }>;
     r2PublicUrl?: string;
+    /** Menu slot assignments (sidebar-nav, header-nav, etc.) with resolved menu data */
+    menuSlots?: Record<string, ResolvedMenuSlotData[]>;
 }
 
 interface BrandContextValue {
@@ -333,6 +345,7 @@ function resolveConfigForPath(
         layoutTemplatesMap: full.layoutTemplatesMap,
         routeMappings,
         r2PublicUrl: full.r2PublicUrl,
+        menuSlots: full.menuSlots,
     };
 }
 
@@ -466,6 +479,7 @@ export function BrandProvider({
             layoutTemplatesMap: fullConfig.layoutTemplatesMap,
             routeMappings: expandedRouteMappings,
             r2PublicUrl: fullConfig.r2PublicUrl,
+            menuSlots: fullConfig.menuSlots,
         } as BrandConfig;
     }, [fullConfig, path, mode, routeMatcher, expandedRouteMappings, fallbackTheme, error]);
 

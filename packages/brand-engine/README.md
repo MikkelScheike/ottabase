@@ -123,20 +123,64 @@ Wire in your Cloudflare Worker via handlers from `@ottabase/brand-engine/handler
 | PUT    | `/api/brand/layouts`        | Create/update layout template                 |
 | GET    | `/api/brand/mappings`       | List route mappings                           |
 | PUT    | `/api/brand/mappings`       | Replace route mappings                        |
+| GET    | `/api/brand/menu-slots`     | Resolved menu slot assignments (with menus)   |
+| GET    | `/api/brand/menu-slots/raw` | Raw slot assignments (admin editing)          |
+| PUT    | `/api/brand/menu-slots`     | Replace all slot assignments                  |
+
+### Menu Slot Endpoints
+
+Menu slots map named layout positions (e.g. `header-nav`, `sidebar-nav`) to specific menus with a render type. The
+resolved data is also included in the `GET /api/brand` response so clients get everything in one fetch.
+
+**GET /api/brand/menu-slots** — Returns resolved slot assignments grouped by slot name, including full menu + items:
+
+```json
+{
+    "header-nav": [
+        {
+            "slotName": "header-nav",
+            "menuId": "menu-abc",
+            "renderType": "mega",
+            "sortOrder": 0,
+            "menu": { "id": "menu-abc", "name": "Main Nav", "slug": "main-nav", "type": "mega", "items": [...] }
+        }
+    ],
+    "footer-nav": [...]
+}
+```
+
+**PUT /api/brand/menu-slots** — Replace all assignments for the app:
+
+```json
+{
+    "slots": [
+        { "slotName": "header-nav", "menuId": "menu-abc", "renderType": "mega", "sortOrder": 0 },
+        { "slotName": "sidebar-nav", "menuId": "menu-def", "renderType": "sidebar", "sortOrder": 0 },
+        { "slotName": "footer-nav", "menuId": "menu-ghi", "renderType": "footer", "sortOrder": 0 }
+    ]
+}
+```
+
+Valid `renderType` values: `sidebar`, `flyout`, `mega`, `navbar`, `dropdown`, `footer`.
 
 ## Architecture
 
 ### Package Structure
 
 ```
-@ottabase/brand-engine        ← tokens, themes, CSS, persistence, handlers (no React)
+@ottabase/brand-engine        ← tokens, themes, CSS, persistence (menus + brand kits), handlers (no React)
 @ottabase/brand-engine-react  ← BrandProvider, LayoutResolver, useBrand()
-@ottabase/ottalayout          ← LayoutConfig types, presets, resolver, validators, React slots
+@ottabase/ottalayout          ← LayoutConfig types, presets, resolver, validators, React slots (pure)
+@ottabase/ottamenu            ← Menu types (MenuItemDto), renderers, MenuSlotRenderer (pure)
 ```
 
-- **brand-engine** owns theme tokens, brand persistence (D1), and API handlers
-- **ottalayout** owns layout types and route resolution (pure logic)
+- **brand-engine** owns theme tokens, brand persistence (D1), Menu/MenuItem models, menu slot assignments, and all API
+  handlers
+- **ottalayout** owns layout types and route resolution (pure — no persistence)
+- **ottamenu** owns menu type definitions and React renderers (pure — no persistence)
 - **brand-engine-react** wires them together at runtime with `<BrandProvider>` and `<LayoutResolver>`
+
+**Dependency flow**: brand-engine → ottalayout (types), ottamenu (types). No circular dependencies.
 
 ### Preset-as-Template Architecture (v3)
 

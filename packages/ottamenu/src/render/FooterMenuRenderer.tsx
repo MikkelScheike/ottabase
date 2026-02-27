@@ -5,8 +5,8 @@
 // ---------------------------------------------------------------------------
 
 import { useMemo } from 'react';
-import { buildItemTree } from '../persistence/treeUtils';
-import type { MenuItemDto } from '../persistence/types';
+import { buildItemTree } from '../treeUtils';
+import type { MenuItemDto } from '../types';
 import { MenuItemLink } from './MenuItemLink';
 
 export interface FooterMenuRendererProps {

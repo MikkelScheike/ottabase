@@ -1,15 +1,15 @@
 // ---------------------------------------------------------------------------
-// Ottamenu – Resolve menu by slug for app
+// Brand Engine – Resolve menu by slug for app
 // Returns menu with items sorted by sortOrder, or null if none found.
 // ---------------------------------------------------------------------------
 
-import type { MenuItemDto, MenuRenderType } from './types';
+import type { MenuItemDto, MenuRenderType } from '@ottabase/ottamenu';
 import { Menu } from './Menu.model';
 import { MenuItem } from './MenuItem.model';
 
 /**
  * Get menu with items by slug for app.
- * Returns null when no menu exists (caller falls back to NAV_LINKS_ALL).
+ * Returns null when no menu exists (caller falls back to static nav links).
  */
 export async function getMenuBySlug(
     slug: string,

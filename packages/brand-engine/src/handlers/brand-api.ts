@@ -37,6 +37,7 @@ function toCompactResponse(config: FullBrandConfig): CompactBrandConfig | FullBr
         layoutTemplatesMap: config.layoutTemplatesMap,
         brandKitsMap: config.brandKitsMap,
         r2PublicUrl: config.r2PublicUrl,
+        menuSlots: config.menuSlots ?? {},
     };
 }
 
@@ -54,7 +55,10 @@ export async function handleGetBrand(request: Request, env: BrandApiEnv, appId?:
     });
 
     if (!config) return errorResponse('Brand config not found', 404);
-    return jsonResponse(toCompactResponse(config), 200);
+    const response = toCompactResponse(config);
+    // Always include menuSlots (empty {} when no assignments) for consistent response shape
+    const payload = { ...response, menuSlots: (response as FullBrandConfig).menuSlots ?? {} };
+    return jsonResponse(payload, 200);
 }
 
 /**

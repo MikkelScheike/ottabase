@@ -50,7 +50,6 @@ import {
     handleBlogStudioState,
 } from './blog';
 import { handleBrandApi } from './brand';
-import { handleMenusApi } from './menus';
 import { handleD1Init, handleD1TodoById, handleD1Todos } from './cloudflare-d1';
 import { handleCloudflareQueue } from './cloudflare-queue';
 import { handleRateLimiting } from './cloudflare-rate';
@@ -139,12 +138,6 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
     // Brand API (core — always enabled)
     if (route.startsWith('/api/brand')) {
         const res = await handleBrandApi(context);
-        if (res) return res;
-    }
-
-    // Menus API (core — always enabled)
-    if (route.startsWith('/api/menus')) {
-        const res = await handleMenusApi(context);
         if (res) return res;
     }
 
@@ -308,11 +301,6 @@ async function handlePostRoutes(context: ApiRouteContext): Promise<Response | nu
         if (res) return res;
     }
 
-    if (route.startsWith('/api/menus')) {
-        const res = await handleMenusApi(context);
-        if (res) return res;
-    }
-
     if (route === '/api/auth/verify-email/resend') {
         return handleVerifyEmailResend(context);
     }
@@ -453,11 +441,6 @@ async function handleDeleteRoutes(context: ApiRouteContext): Promise<Response | 
         if (res) return res;
     }
 
-    if (route.startsWith('/api/menus')) {
-        const res = await handleMenusApi(context);
-        if (res) return res;
-    }
-
     if (packages.shortlinks) {
         const shortlinkMatch = route.match(/^\/api\/shortlinks\/(.+)$/);
         if (shortlinkMatch) {
@@ -502,11 +485,6 @@ async function handlePutRoutes(context: ApiRouteContext): Promise<Response | nul
 
     if (route.startsWith('/api/brand')) {
         const res = await handleBrandApi(context);
-        if (res) return res;
-    }
-
-    if (route.startsWith('/api/menus')) {
-        const res = await handleMenusApi(context);
         if (res) return res;
     }
 

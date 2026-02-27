@@ -16,7 +16,20 @@ export type {
     TokenTypography,
 } from './tokens';
 
-export type { BrandKitItem, LayoutMappingItem, LayoutTemplateItem, UpdateBrandKitPayload } from './persistence';
+export type {
+    BrandKitItem,
+    CreateMenuItemPayload,
+    CreateMenuPayload,
+    LayoutMappingItem,
+    LayoutTemplateItem,
+    MenuSlotAssignmentItem,
+    MenuSlotRenderType,
+    MenuWithItemsDto,
+    ResolvedMenuSlot,
+    UpdateBrandKitPayload,
+    UpdateMenuItemPayload,
+    UpdateMenuPayload,
+} from './persistence';
 
 export type { LegacyThemeConfig } from './adapter';
 export type { ResolveOptions, ResolvedBrandTheme } from './resolver';

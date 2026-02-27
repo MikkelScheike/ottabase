@@ -1,6 +1,10 @@
 # @ottabase/ottamenu
 
-Menu management for Ottabase – define and render navigation menus with 6 built-in render types.
+Pure menu types, renderers, and tree utilities for Ottabase — 6 built-in render types, zero persistence.
+
+> **Architecture**: ottamenu is a pure package (no ORM, no database). Menu models, schema, and CRUD handlers live in
+> `@ottabase/brand-engine`. Ottamenu provides the shared types (`MenuItemDto`, `MenuRenderType`) and React renderers
+> that consume them.
 
 ## Render Types
 
@@ -15,24 +19,28 @@ Menu management for Ottabase – define and render navigation menus with 6 built
 
 ## Features
 
-- **DB-backed menus**: `menus` + `menu_items` tables (OttaORM models)
-- **Nested items**: Multi-level nesting via `parentId`, auto-built into tree
+- **6 renderers**: Sidebar, flyout, mega, navbar, dropdown, footer
+- **Nested items**: Multi-level nesting via `parentId`, auto-built into tree with `buildItemTree()`
 - **Images & descriptions**: Items support `image`, `description`, `tooltip`, `newTab`
 - **Auth filtering**: `authRequired` items hidden when user is not authenticated
 - **Active state**: Automatic active-link highlighting via pathname matching
+- **Menu slots**: `MenuSlotRenderer` renders menus assigned to named layout slots via brand API data
 
 ## Quick Start
 
 ```tsx
-import { renderMenu, getMenuBySlug } from '@ottabase/ottamenu';
+import { renderMenu } from '@ottabase/ottamenu';
+import type { MenuItemDto } from '@ottabase/ottamenu';
 
-// Server: resolve menu by slug
-const menu = await getMenuBySlug('header', appId);
+const items: MenuItemDto[] = [
+    { id: '1', menuId: 'm1', name: 'Home', link: '/' },
+    { id: '2', menuId: 'm1', name: 'About', link: '/about' },
+];
 
-// Client: render as mega menu
-const nav = renderMenu(menu, 'mega', {
+// Render as mega menu
+const nav = renderMenu({ items }, 'mega', {
     isAuthenticated: true,
-    pathname: '/products',
+    pathname: '/about',
 });
 ```
 
@@ -41,7 +49,7 @@ Or use the component form:
 ```tsx
 import { MenuRenderer } from '@ottabase/ottamenu';
 
-<MenuRenderer menu={menu} type="mega" options={{ isAuthenticated: true, pathname: '/products' }} />;
+<MenuRenderer menu={{ items }} type="mega" options={{ isAuthenticated: true, pathname: '/about' }} />;
 ```
 
 ## Individual Renderers
@@ -58,66 +66,58 @@ import {
     FooterMenuRenderer,
 } from '@ottabase/ottamenu/render';
 
-// Pass pre-filtered items directly
 <MegaMenuRenderer items={items} pathname="/products" />
 <FooterMenuRenderer items={footerItems} pathname="/" />
 ```
 
-## Mega Menu Data Shape
+## Tree Utilities
 
-The mega menu uses a 3-level hierarchy:
-
-```
-Level 0 → Top bar triggers (e.g. "Platform", "Solutions")
-Level 1 → Column headers in dropdown (e.g. "Products", "Features")
-Level 2 → Links within columns (e.g. "Claude", "Claude Code")
-```
-
-Items with `image` show a thumbnail. Items with `newTab: true` get an external-link icon. Items with `description` show
-it as secondary text below the name.
+Build a nested tree from a flat `MenuItemDto[]` list:
 
 ```ts
-const items: MenuItemDto[] = [
-    { id: 'platform', name: 'Platform', link: '#', menuId: 'm1' },
-    { id: 'products', name: 'Products', link: '#', menuId: 'm1', parentId: 'platform' },
-    {
-        id: 'claude',
-        name: 'Claude',
-        link: '/claude',
-        menuId: 'm1',
-        parentId: 'products',
-        image: '/icons/claude.svg',
-        description: 'AI assistant',
-    },
-    { id: 'code', name: 'Claude Code', link: '/code', menuId: 'm1', parentId: 'products' },
-];
+import { buildItemTree } from '@ottabase/ottamenu';
+import type { MenuItemTreeNode } from '@ottabase/ottamenu';
+
+const tree: MenuItemTreeNode[] = buildItemTree(items);
+// Each node has { ...item, children: MenuItemTreeNode[] }
 ```
 
-## Footer Menu Data Shape
+## Menu Slot Renderer
 
-The footer renderer uses a 2-level hierarchy:
+Render menus assigned to named layout slots. Works with resolved data from the `GET /api/brand` response — no extra
+fetch needed.
 
+```tsx
+import { MenuSlotRenderer } from '@ottabase/ottamenu';
+
+<MenuSlotRenderer
+    slot="header-nav"
+    menuSlots={brandConfig.menuSlots}
+    options={{ isAuthenticated: true, pathname: location.pathname }}
+/>
+
+// Override render type:
+<MenuSlotRenderer slot="sidebar-nav" menuSlots={brandConfig.menuSlots} renderType="sidebar" />
+
+// Fallback when no menu is assigned:
+<MenuSlotRenderer slot="user-menu" menuSlots={brandConfig.menuSlots} fallback={<DefaultUserMenu />} />
 ```
-Level 0 → Column headers (e.g. "Company", "Product", "Resources")
-Level 1 → Links under each column
-```
 
-Top-level items without children render as standalone links.
+| Prop         | Type                                     | Description                                      |
+| ------------ | ---------------------------------------- | ------------------------------------------------ |
+| `slot`       | `string`                                 | Slot name (e.g. `'header-nav'`, `'sidebar-nav'`) |
+| `menuSlots`  | `Record<string, ResolvedMenuSlotData[]>` | From `brandConfig.menuSlots`                     |
+| `options`    | `RenderMenuOptions`                      | Auth state, pathname for active highlighting     |
+| `renderType` | `MenuRenderType`                         | Override the assignment's render type            |
+| `className`  | `string`                                 | Wrapper div class (only added when set)          |
+| `fallback`   | `ReactNode`                              | Shown when no menu assigned to this slot         |
 
-## API
+## Exports
 
-| Method | Endpoint                      | Description                   |
-| ------ | ----------------------------- | ----------------------------- |
-| GET    | `/api/menus/sidebar`          | Public: resolved sidebar menu |
-| GET    | `/api/ottaorm/menus`          | List menus (admin)            |
-| POST   | `/api/ottaorm/menus`          | Create menu                   |
-| PATCH  | `/api/ottaorm/menus/:id`      | Update menu                   |
-| DELETE | `/api/ottaorm/menus/:id`      | Delete menu                   |
-| POST   | `/api/ottaorm/menu_items`     | Create item                   |
-| PATCH  | `/api/ottaorm/menu_items/:id` | Update item                   |
-| DELETE | `/api/ottaorm/menu_items/:id` | Delete item                   |
+| Path                        | Contents                                                            |
+| --------------------------- | ------------------------------------------------------------------- |
+| `@ottabase/ottamenu`        | Types (`MenuItemDto`, `MenuRenderType`), `buildItemTree`, renderers |
+| `@ottabase/ottamenu/render` | Individual renderer components                                      |
 
-## Schema
-
-- **menus**: id, appId, name, slug, type (`sidebar|flyout|mega|navbar|dropdown|footer`), isDefault
-- **menu_items**: id, menuId, parentId, appId, name, link, newTab, authRequired, description, image, tooltip, sortOrder
+Menu persistence (models, schema, CRUD handlers) is in `@ottabase/brand-engine`. See
+[brand-engine README](../brand-engine/README.md).

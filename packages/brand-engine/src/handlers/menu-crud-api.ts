@@ -1,20 +1,23 @@
 // ---------------------------------------------------------------------------
-// Ottamenu – Menu API handlers
-// GET /api/menus (list), GET /api/menus/slug/:slug (by slug with items)
-// POST /api/menus, PUT /api/menus/:id, DELETE /api/menus/:id
-// POST /api/menus/:id/items, PUT /api/menus/:id/items/:itemId, DELETE /api/menus/:id/items/:itemId
-// GET /api/menus/sidebar – public: resolved sidebar menu for app (for SidebarNav)
+// Brand Engine – Menu CRUD API handlers (wired under /api/brand/menus)
+// GET /api/brand/menus (list), GET /api/brand/menus/slug/:slug (by slug with items)
+// POST /api/brand/menus, PUT /api/brand/menus/:id, DELETE /api/brand/menus/:id
+// POST /api/brand/menus/:id/items, PUT /api/brand/menus/:id/items/:itemId, DELETE /api/brand/menus/:id/items/:itemId
+// All mutations call warmBrandCache (menus are part of brand API response).
+// Max 100 items per menu enforced to keep KV cache and DOM rendering performant.
 // ---------------------------------------------------------------------------
 
+const MAX_ITEMS_PER_MENU = 100;
+
+import type { MenuItemDto } from '@ottabase/ottamenu';
 import { errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import { Menu } from '../persistence/Menu.model';
 import { MenuItem } from '../persistence/MenuItem.model';
 import { getMenuBySlug } from '../persistence/menuData';
-import type { CreateMenuItemPayload, MenuItemDto, MenuWithItemsDto, UpdateMenuItemPayload } from '../persistence/types';
-
-/** Env shape for worker (OBCF_D1 is D1Database from @cloudflare/workers-types) */
-export type MenuApiEnv = { OBCF_D1: unknown };
+import type { CreateMenuItemPayload, MenuWithItemsDto, UpdateMenuItemPayload } from '../persistence/types';
+import type { BrandApiEnv } from './brand-api';
+import { warmBrandCache } from './warm-cache';
 
 function serializeItem(item: InstanceType<typeof MenuItem>): MenuItemDto {
     return {
@@ -58,8 +61,8 @@ async function menuWithItems(menu: InstanceType<typeof Menu>): Promise<MenuWithI
     };
 }
 
-/** GET /api/menus – List menus for app (batch-loads all items to avoid N+1) */
-export async function handleGetMenus(_request: Request, _env: MenuApiEnv, appId: string | null): Promise<Response> {
+/** GET /api/brand/menus – List menus for app (batch-loads all items to avoid N+1) */
+export async function handleGetMenus(_request: Request, _env: BrandApiEnv, appId: string | null): Promise<Response> {
     const menus = (await Menu.where({ appId: appId ?? null }, { orderBy: 'name' })) as InstanceType<typeof Menu>[];
     if (menus.length === 0) return jsonResponse([], 200);
 
@@ -95,20 +98,10 @@ export async function handleGetMenus(_request: Request, _env: MenuApiEnv, appId:
     return jsonResponse(data, 200);
 }
 
-/** GET /api/menus/sidebar – Public: resolved sidebar menu (for SidebarNav). Falls back to null = use NAV_LINKS_ALL. */
-export async function handleGetMenuSidebar(
-    _request: Request,
-    _env: MenuApiEnv,
-    appId: string | null,
-): Promise<Response> {
-    const menu = await getMenuBySlug('sidebar', appId);
-    return jsonResponse(menu, 200);
-}
-
-/** GET /api/menus/slug/:slug – Get menu by slug with items */
+/** GET /api/brand/menus/slug/:slug – Get menu by slug with items */
 export async function handleGetMenuBySlug(
     _request: Request,
-    _env: MenuApiEnv,
+    _env: BrandApiEnv,
     slug: string,
     appId: string | null,
 ): Promise<Response> {
@@ -117,10 +110,10 @@ export async function handleGetMenuBySlug(
     return jsonResponse(menu, 200);
 }
 
-/** GET /api/menus/:id – Get one menu with items */
+/** GET /api/brand/menus/:id – Get one menu with items */
 export async function handleGetMenu(
     _request: Request,
-    _env: MenuApiEnv,
+    _env: BrandApiEnv,
     id: string,
     appId: string | null,
 ): Promise<Response> {
@@ -131,8 +124,8 @@ export async function handleGetMenu(
     return jsonResponse(await menuWithItems(menu), 200);
 }
 
-/** POST /api/menus – Create menu */
-export async function handleCreateMenu(request: Request, _env: MenuApiEnv, appId: string | null): Promise<Response> {
+/** POST /api/brand/menus – Create menu */
+export async function handleCreateMenu(request: Request, env: BrandApiEnv, appId: string | null): Promise<Response> {
     const body = (await request.json()) as { name?: string; slug?: string; type?: string };
     const name = body.name as string;
     const slug = (body.slug as string) || 'sidebar';
@@ -146,13 +139,14 @@ export async function handleCreateMenu(request: Request, _env: MenuApiEnv, appId
         type,
         isDefault: true,
     })) as InstanceType<typeof Menu>;
+    await warmBrandCache(env, { appId: appId ?? null });
     return jsonResponse(await menuWithItems(menu), 201);
 }
 
-/** PUT /api/menus/:id – Update menu */
+/** PUT /api/brand/menus/:id – Update menu */
 export async function handleUpdateMenu(
     request: Request,
-    _env: MenuApiEnv,
+    env: BrandApiEnv,
     id: string,
     appId: string | null,
 ): Promise<Response> {
@@ -167,13 +161,14 @@ export async function handleUpdateMenu(
     if (body.type !== undefined) menu.set('type', body.type);
     if (body.isDefault !== undefined) menu.set('isDefault', body.isDefault);
     await menu.save();
+    await warmBrandCache(env, { appId: appId ?? null });
     return jsonResponse(await menuWithItems(menu), 200);
 }
 
-/** DELETE /api/menus/:id */
+/** DELETE /api/brand/menus/:id */
 export async function handleDeleteMenu(
     _request: Request,
-    _env: MenuApiEnv,
+    env: BrandApiEnv,
     id: string,
     appId: string | null,
 ): Promise<Response> {
@@ -182,13 +177,14 @@ export async function handleDeleteMenu(
     const mApp = menu.get('appId') as string | null;
     if (mApp !== null && appId !== mApp) return errorResponse('Menu not found', 404);
     await menu.destroy();
+    await warmBrandCache(env, { appId: appId ?? null });
     return jsonResponse({ success: true }, 200);
 }
 
-/** POST /api/menus/:id/items – Create menu item */
+/** POST /api/brand/menus/:id/items – Create menu item */
 export async function handleCreateMenuItem(
     request: Request,
-    _env: MenuApiEnv,
+    env: BrandApiEnv,
     menuId: string,
     appId: string | null,
 ): Promise<Response> {
@@ -202,6 +198,11 @@ export async function handleCreateMenuItem(
     const name = body.name as string;
     const link = (body.link as string) || '/';
     if (!name || typeof name !== 'string') return errorResponse('name is required', 400);
+
+    const existingCount = (await MenuItem.where({ menuId })) as InstanceType<typeof MenuItem>[];
+    if (existingCount.length >= MAX_ITEMS_PER_MENU) {
+        return errorResponse(`Menu cannot have more than ${MAX_ITEMS_PER_MENU} items`, 400);
+    }
     let sortOrder = 0;
     if (body.sortOrder !== undefined) {
         const n = Number(body.sortOrder);
@@ -224,13 +225,14 @@ export async function handleCreateMenuItem(
         tooltip: body.tooltip ?? null,
         sortOrder,
     })) as InstanceType<typeof MenuItem>;
+    await warmBrandCache(env, { appId: itemAppId ?? null });
     return jsonResponse(serializeItem(item), 201);
 }
 
-/** PUT /api/menus/:id/items/:itemId – Update menu item */
+/** PUT /api/brand/menus/:id/items/:itemId – Update menu item */
 export async function handleUpdateMenuItem(
     request: Request,
-    _env: MenuApiEnv,
+    env: BrandApiEnv,
     _menuId: string,
     itemId: string,
     appId: string | null,
@@ -267,13 +269,14 @@ export async function handleUpdateMenuItem(
         item.set(f, v);
     }
     await item.save();
+    await warmBrandCache(env, { appId: appId ?? null });
     return jsonResponse(serializeItem(item), 200);
 }
 
-/** DELETE /api/menus/:id/items/:itemId */
+/** DELETE /api/brand/menus/:id/items/:itemId */
 export async function handleDeleteMenuItem(
     _request: Request,
-    _env: MenuApiEnv,
+    env: BrandApiEnv,
     _menuId: string,
     itemId: string,
     appId: string | null,
@@ -285,5 +288,6 @@ export async function handleDeleteMenuItem(
     const mApp = menu.get('appId') as string | null;
     if (mApp !== null && appId !== mApp) return errorResponse('Menu not found', 404);
     await item.destroy();
+    await warmBrandCache(env, { appId: appId ?? null });
     return jsonResponse({ success: true }, 200);
 }

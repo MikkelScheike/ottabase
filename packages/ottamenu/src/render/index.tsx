@@ -16,6 +16,8 @@ export { FlyoutMenuRenderer } from './FlyoutMenuRenderer';
 export { FooterMenuRenderer } from './FooterMenuRenderer';
 export { MegaMenuRenderer } from './MegaMenuRenderer';
 export { MenuItemLink } from './MenuItemLink';
+export { MenuSlotRenderer } from './MenuSlotRenderer';
+export type { MenuSlotRendererProps, ResolvedMenuSlotData } from './MenuSlotRenderer';
 export { NavbarMenuRenderer } from './NavbarMenuRenderer';
 export { SidebarMenuRenderer } from './SidebarMenuRenderer';
 export type { MenuForRender, MenuRenderType, RenderMenuOptions } from './types';
@@ -33,7 +35,7 @@ export interface MenuRendererProps {
 export function MenuRenderer({ menu, type, options = {} }: MenuRendererProps) {
     const { isAuthenticated = false, pathname = '', expanded = false } = options;
     const items = useMemo(
-        () => (menu ? menu.items.filter((item) => !item.authRequired || isAuthenticated) : []),
+        () => (menu?.items ?? []).filter((item) => !item.authRequired || isAuthenticated),
         [menu, isAuthenticated],
     );
 
@@ -60,7 +62,7 @@ export function MenuRenderer({ menu, type, options = {} }: MenuRendererProps) {
 
 /**
  * Render menu by type. Returns React nodes for the given menu and render type.
- * When menu is null, returns null (caller should use fallback e.g. NAV_LINKS_ALL).
+ * When menu is null, returns null (caller should use fallback e.g. static nav links).
  * Delegates to MenuRenderer for proper memoization.
  */
 export function renderMenu(

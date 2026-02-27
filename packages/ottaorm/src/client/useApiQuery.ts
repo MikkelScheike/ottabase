@@ -73,7 +73,7 @@ export function useApiQuery<TData, TTransformed = TData>(options: {
                 return (transform ? transform(data) : data) as TTransformed;
             }
 
-            // Fallback to raw fetch for backward compatibility
+            // Fallback to raw fetch when apiClient is not provided
             const response = await fetch(endpoint, {
                 method,
                 headers: body ? { 'Content-Type': 'application/json' } : undefined,
@@ -111,7 +111,7 @@ export function useApiQuery<TData, TTransformed = TData>(options: {
  *   invalidateEntities: ['posts', 'series'],
  * });
  *
- * // Invalidate by raw key (legacy)
+ * // Invalidate by raw key
  * const mutation = useApiMutation({
  *   endpoint: '/api/ottaorm/init',
  *   method: 'POST',
@@ -124,7 +124,7 @@ export function useApiMutation<TData, TVariables = unknown>(options: {
     method?: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     /** Entity names whose full cache namespace to invalidate on settled */
     invalidateEntities?: string[];
-    /** Raw query keys to invalidate on settled (legacy — prefer invalidateEntities) */
+    /** Raw query keys to invalidate on settled (prefer invalidateEntities) */
     invalidateKeys?: QueryKey[];
     mutationOptions?: Partial<UseMutationOptions<TData, Error, TVariables>>;
 }) {
@@ -144,7 +144,7 @@ export function useApiMutation<TData, TVariables = unknown>(options: {
                 });
             }
 
-            // Fallback to raw fetch for backward compatibility
+            // Fallback to raw fetch when apiClient is not provided
             const response = await fetch(url, {
                 method,
                 headers: { 'Content-Type': 'application/json' },
@@ -166,7 +166,7 @@ export function useApiMutation<TData, TVariables = unknown>(options: {
             for (const entity of invalidateEntities) {
                 queryClient.invalidateQueries({ queryKey: [entity] });
             }
-            // Invalidate by raw key (legacy)
+            // Invalidate by raw key
             for (const key of invalidateKeys) {
                 queryClient.invalidateQueries({ queryKey: key });
             }
