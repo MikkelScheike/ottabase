@@ -6,6 +6,14 @@
 import { api } from '@/lib/api';
 import { Cropper } from '@ottabase/ui-cropper';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
     Button,
     Dialog,
     DialogContent,
@@ -14,23 +22,28 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@ottabase/ui-shadcn';
-import { IconLoader2 } from '@tabler/icons-react';
+import { IconLoader2, IconTrash } from '@tabler/icons-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface AvatarEditModalProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSuccess: (imageUrl: string) => void;
+    onRemove?: () => void;
     onError?: (message: string) => void;
+    /** When true, shows "Remove current photo" option */
+    hasImage?: boolean;
 }
 
-export function AvatarEditModal({ open, onOpenChange, onSuccess, onError }: AvatarEditModalProps) {
+export function AvatarEditModal({ open, onOpenChange, onSuccess, onRemove, onError, hasImage }: AvatarEditModalProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const cropperRef = useRef<Cropper | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isRemoving, setIsRemoving] = useState(false);
+    const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
 
     // Reset when modal closes
     useEffect(() => {
@@ -71,6 +84,32 @@ export function AvatarEditModal({ open, onOpenChange, onSuccess, onError }: Avat
     }, []);
 
     const handleChooseImage = () => fileInputRef.current?.click();
+
+    const handleRemove = async () => {
+        if (!hasImage || !onRemove) return;
+        setIsRemoving(true);
+        try {
+            const patchRes = await api<Record<string, any>>('/api/users/me', {
+                method: 'PATCH',
+                body: { image: null },
+            });
+            const updatedUser =
+                patchRes && typeof patchRes === 'object' && 'data' in patchRes
+                    ? (patchRes as { data?: Record<string, any> }).data
+                    : patchRes;
+            if (updatedUser?.image === null || updatedUser?.image === undefined) {
+                onRemove();
+                onOpenChange(false);
+            } else {
+                throw new Error('Failed to remove profile picture');
+            }
+        } catch (err) {
+            console.error('Avatar remove failed:', err);
+            onError?.(err instanceof Error ? err.message : 'Failed to remove profile picture');
+        } finally {
+            setIsRemoving(false);
+        }
+    };
 
     const handleSave = async () => {
         const cropper = cropperRef.current;
@@ -127,79 +166,133 @@ export function AvatarEditModal({ open, onOpenChange, onSuccess, onError }: Avat
     };
 
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>Edit profile picture</DialogTitle>
-                    <DialogDescription>
-                        Crop your image. Square or circular crop will be used for your avatar.
-                    </DialogDescription>
-                </DialogHeader>
+        <>
+            <Dialog open={open} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Edit profile picture</DialogTitle>
+                        <DialogDescription>
+                            Crop your image. Square or circular crop will be used for your avatar.
+                        </DialogDescription>
+                    </DialogHeader>
 
-                <div className="space-y-4">
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/png,image/jpeg,image/jpg"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        aria-hidden
-                    />
+                    <div className="space-y-4">
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/png,image/jpeg,image/jpg"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                            aria-hidden
+                        />
 
-                    {!selectedFile ? (
-                        <div
-                            className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-6 transition-colors hover:border-muted-foreground/50 hover:bg-muted/50 dark:bg-muted/10"
-                            onClick={handleChooseImage}
-                            onKeyDown={(e) => e.key === 'Enter' && handleChooseImage()}
-                            role="button"
-                            tabIndex={0}
-                            aria-label="Choose image"
-                        >
-                            <p className="text-sm text-muted-foreground">Click to choose an image</p>
-                            <p className="text-xs text-muted-foreground">PNG or JPEG</p>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleChooseImage();
-                                }}
-                            >
-                                Choose image
-                            </Button>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Cropper container - hide built-in file input */}
-                            <div
-                                ref={containerRef}
-                                className="[&>input[type=file]]:hidden rounded-lg border bg-muted/30 p-4 dark:bg-muted/10"
-                                style={{ minHeight: 120 }}
-                            />
-                            <Button type="button" variant="outline" size="sm" onClick={handleChooseImage}>
-                                Change image
-                            </Button>
-                        </>
-                    )}
-                </div>
-
-                <DialogFooter>
-                    <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleSave} disabled={!selectedFile || isUploading}>
-                        {isUploading ? (
-                            <>
-                                <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Saving...
-                            </>
+                        {!selectedFile ? (
+                            <div className="space-y-4">
+                                <div
+                                    className="flex min-h-[200px] cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/30 p-6 transition-colors hover:border-muted-foreground/50 hover:bg-muted/50 dark:bg-muted/10"
+                                    onClick={handleChooseImage}
+                                    onKeyDown={(e) => e.key === 'Enter' && handleChooseImage()}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label="Choose image"
+                                >
+                                    <p className="text-sm text-muted-foreground">Click to choose an image</p>
+                                    <p className="text-xs text-muted-foreground">PNG or JPEG</p>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleChooseImage();
+                                        }}
+                                    >
+                                        Choose image
+                                    </Button>
+                                </div>
+                                {hasImage && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => setRemoveConfirmOpen(true)}
+                                        disabled={isRemoving}
+                                    >
+                                        {isRemoving ? (
+                                            <>
+                                                <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                Removing...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <IconTrash className="mr-2 h-4 w-4" />
+                                                Remove current photo
+                                            </>
+                                        )}
+                                    </Button>
+                                )}
+                            </div>
                         ) : (
-                            'Save'
+                            <>
+                                {/* Cropper container - hide built-in file input */}
+                                <div
+                                    ref={containerRef}
+                                    className="[&>input[type=file]]:hidden rounded-lg border bg-muted/30 p-4 dark:bg-muted/10"
+                                    style={{ minHeight: 120 }}
+                                />
+                                <Button type="button" variant="outline" size="sm" onClick={handleChooseImage}>
+                                    Change image
+                                </Button>
+                            </>
                         )}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                    </div>
+
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
+                            Cancel
+                        </Button>
+                        <Button onClick={handleSave} disabled={!selectedFile || isUploading}>
+                            {isUploading ? (
+                                <>
+                                    <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </>
+                            ) : (
+                                'Save'
+                            )}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <AlertDialog open={removeConfirmOpen} onOpenChange={setRemoveConfirmOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Remove profile picture?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to remove your profile picture? You can add a new one anytime.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleRemove}
+                            disabled={isRemoving}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isRemoving ? (
+                                <>
+                                    <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Removing...
+                                </>
+                            ) : (
+                                'Remove'
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 }

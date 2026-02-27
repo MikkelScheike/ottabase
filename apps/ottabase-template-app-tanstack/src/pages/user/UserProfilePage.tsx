@@ -10,6 +10,14 @@ import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { requestEmailVerification } from '@/lib/auth-api';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
     Avatar,
     AvatarFallback,
     AvatarImage,
@@ -30,7 +38,7 @@ import {
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import { getTimezonesForSelect, setTimezoneConfig } from '@ottabase/utils/timezone';
 import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
-import { IconPencil } from '@tabler/icons-react';
+import { IconExternalLink, IconPencil, IconTrash } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AvatarEditModal } from './AvatarEditModal';
 
@@ -55,6 +63,8 @@ export function UserProfilePage() {
     const [isAccountsLoading, setIsAccountsLoading] = useState(true);
     const [avatarModalOpen, setAvatarModalOpen] = useState(false);
     const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+    const [removeConfirmOpen, setRemoveConfirmOpen] = useState(false);
+    const [isRemovingAvatar, setIsRemovingAvatar] = useState(false);
 
     const [isSaving, setIsSaving] = useState(false);
     const [hasChanges, setHasChanges] = useState(false);
@@ -354,10 +364,16 @@ export function UserProfilePage() {
                     <AvatarEditModal
                         open={avatarModalOpen}
                         onOpenChange={setAvatarModalOpen}
+                        hasImage={!!user.image}
                         onSuccess={(imageUrl) => {
                             updateUser({ image: imageUrl });
                             if (refreshSession) refreshSession();
                             toast.success('Profile picture updated', 'Your avatar has been updated.');
+                        }}
+                        onRemove={() => {
+                            updateUser({ image: null });
+                            if (refreshSession) refreshSession();
+                            toast.success('Profile picture removed', 'Your avatar has been removed.');
                         }}
                         onError={(msg) => toast.error('Avatar update failed', msg)}
                     />
@@ -366,15 +382,83 @@ export function UserProfilePage() {
                     <Dialog open={avatarPreviewOpen} onOpenChange={setAvatarPreviewOpen}>
                         <DialogContent className="max-w-2xl p-4 sm:p-6">
                             <DialogTitle className="sr-only">Profile picture</DialogTitle>
-                            <div className="flex items-center justify-center">
+                            <div className="flex flex-col items-center gap-4">
                                 <img
                                     src={user.image || ''}
                                     alt="Profile picture"
                                     className="max-h-[70vh] w-auto max-w-full rounded-full object-contain"
                                 />
+                                <div className="flex flex-wrap items-center justify-center gap-2">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-blue-600 hover:bg-blue-600/10 hover:text-blue-600 dark:text-blue-400 dark:hover:bg-blue-400/10"
+                                        onClick={() => window.open(user.image || '', '_blank', 'noopener,noreferrer')}
+                                    >
+                                        <IconExternalLink className="mr-2 h-4 w-4" />
+                                        Open in new tab
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={() => setRemoveConfirmOpen(true)}
+                                    >
+                                        <IconTrash className="mr-2 h-4 w-4" />
+                                        Remove profile picture
+                                    </Button>
+                                </div>
                             </div>
                         </DialogContent>
                     </Dialog>
+
+                    {/* Remove profile picture confirmation */}
+                    <AlertDialog open={removeConfirmOpen} onOpenChange={setRemoveConfirmOpen}>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Remove profile picture?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    Are you sure you want to remove your profile picture? You can add a new one anytime.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel disabled={isRemovingAvatar}>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={async () => {
+                                        setIsRemovingAvatar(true);
+                                        try {
+                                            await api('/api/users/me', {
+                                                method: 'PATCH',
+                                                body: { image: null },
+                                            });
+                                            updateUser({ image: null });
+                                            if (refreshSession) refreshSession();
+                                            setAvatarPreviewOpen(false);
+                                            setRemoveConfirmOpen(false);
+                                            toast.success('Profile picture removed', 'Your avatar has been removed.');
+                                        } catch (err) {
+                                            toast.error('Remove failed', 'Failed to remove profile picture');
+                                        } finally {
+                                            setIsRemovingAvatar(false);
+                                        }
+                                    }}
+                                    disabled={isRemovingAvatar}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    {isRemovingAvatar ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Removing...
+                                        </>
+                                    ) : (
+                                        'Remove'
+                                    )}
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
 
                     <Separator />
 
