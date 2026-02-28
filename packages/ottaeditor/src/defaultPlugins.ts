@@ -9,7 +9,6 @@ import Marker from '@editorjs/marker';
 import NestedList from '@editorjs/nested-list';
 import Paragraph from '@editorjs/paragraph';
 import Quote from '@editorjs/quote';
-import Raw from '@editorjs/raw';
 import Table from '@editorjs/table';
 import Underline from '@editorjs/underline';
 import Warning from '@editorjs/warning';
@@ -19,9 +18,12 @@ import CTATool from './tools/CTATool/CTATool';
 import DisclosureTool from './tools/DisclosureTool/DisclosureTool';
 import LayoutTool from './tools/LayoutTool/LayoutTool';
 import MapTool from './tools/MapTool/MapTool';
+import RawHtmlTool from './tools/RawHtmlTool/RawHtmlTool';
 import ReviewTool from './tools/ReviewTool/ReviewTool';
 import SpoilerTool from './tools/SpoilerTool/SpoilerTool';
 import type { OttaEditorPlugin } from './types';
+
+const Raw = RawHtmlTool;
 
 /**
  * Default plugin names as typed constants
@@ -155,7 +157,7 @@ export const defaultPlugins: OttaEditorPlugin[] = [
     },
     {
         name: DEFAULT_PLUGIN_NAMES.RAW,
-        tool: Raw as any,
+        tool: RawHtmlTool as any,
         config: {
             placeholder: 'Enter raw HTML...',
         } as any,

@@ -48,7 +48,6 @@
         "@editorjs/nested-list": "^1.4.3",
         "@editorjs/paragraph": "^2.11.6",
         "@editorjs/quote": "^2.7.4",
-        "@editorjs/raw": "^2.5.0",
         "@editorjs/table": "^2.4.1",
         "@editorjs/underline": "^1.1.0",
         "@editorjs/warning": "^1.4.0",

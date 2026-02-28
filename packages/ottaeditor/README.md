@@ -21,6 +21,9 @@ pnpm add @ottabase/ottaeditor
 15 Editor.js plugins included: Header, Paragraph, List, Checklist, Code, Quote, Table, Warning, Delimiter, Link, Embed,
 Raw HTML, Marker, Underline, Inline Code.
 
+Raw HTML blocks are sanitized on save to remove wrapper/executable tags (for example `html`, `head`, `body`, `script`,
+`iframe`) and unsafe inline attributes/protocols.
+
 ### Custom Block Plugins
 
 - **Spoiler** – Collapsible spoiler content
@@ -182,6 +185,8 @@ All custom plugins use common classes from `ottaeditor-common.css` (imported by 
 - **Inputs**: `.ob-input`, `.ob-select`, `.ob-textarea` — padding 8px 12px, border-radius 4px, font-size 13px
 
 Individual plugin CSS files contain only custom/override styles (e.g. background colors, layout, tool-specific UI).
+
+The Raw HTML block also uses the same `ob-plugin` + `ob-*` theme classes so it visually matches other custom blocks.
 
 ## Types
 
