@@ -5,6 +5,7 @@
 import {
     Bell,
     Bot,
+    Calendar,
     Clock,
     Cloud,
     Code,
@@ -236,5 +237,14 @@ export const DEMO_ITEMS: DemoItem[] = [
         description:
             'Multi-channel notification system with email, WebSocket, and system alerts via @ottabase/notifications',
         buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/ottadate',
+        icon: Calendar,
+        label: 'OttaDate',
+        title: 'OttaDate',
+        description:
+            'Framework-agnostic date picker with range, datetime, and fuzzy date support. UTC unix timestamps by default.',
+        buttonVariant: 'default',
     },
 ];

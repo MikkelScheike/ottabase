@@ -47,6 +47,7 @@
         "@ottabase/ottaeditor": "workspace:*",
         "@ottabase/ottalayout": "workspace:*",
         "@ottabase/ottamenu": "workspace:*",
+        "@ottabase/ottadate": "workspace:*",
         "@ottabase/ottaorm": "workspace:*",
         "@ottabase/ottarenderer": "workspace:*",
         "@ottabase/ottaselect": "workspace:*",
