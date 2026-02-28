@@ -4,6 +4,7 @@
  */
 import {
     Bell,
+    Bot,
     Clock,
     Cloud,
     Code,
@@ -175,6 +176,14 @@ export const DEMO_ITEMS: DemoItem[] = [
         title: 'Cloudflare Services',
         description:
             'Type-safe wrappers for Cloudflare infrastructure: KV, D1, R2, Queues, Images, PubSub, and Rate Limiting',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/cloudflare/ai',
+        icon: Bot,
+        label: 'Cloudflare AI',
+        title: 'Cloudflare AI',
+        description: 'Multi-provider AI via Workers AI, AI Gateway, and Universal chat with fallback support',
         buttonVariant: 'outline',
     },
     {

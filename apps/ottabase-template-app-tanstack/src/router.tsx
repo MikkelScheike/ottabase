@@ -360,6 +360,16 @@ const demoCloudflareRealtimeRoute = new Route({
     ),
 });
 
+const demoCloudflareAIRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'cloudflare/ai',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/cloudflare/CloudflareAIDemoPage').then((m) => ({
+            default: m.CloudflareAIDemoPage,
+        })),
+    ),
+});
+
 const demoApiRoute = new Route({
     getParentRoute: () => demoLayoutRoute,
     path: 'api',
@@ -934,6 +944,7 @@ demoLayoutRoute.addChildren([
     demoCloudflareQueuesRoute,
     demoCloudflareRateLimitingRoute,
     demoCloudflareRealtimeRoute,
+    demoCloudflareAIRoute,
     demoApiRoute,
     demoThemingRoute,
     demoStateRoute,

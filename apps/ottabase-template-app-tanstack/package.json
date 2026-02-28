@@ -33,6 +33,7 @@
         "@ottabase/brand-engine": "workspace:*",
         "@ottabase/brand-engine-react": "workspace:*",
         "@ottabase/cf": "workspace:*",
+        "@ottabase/cf-ai": "workspace:*",
         "@ottabase/cf-realtime": "workspace:*",
         "@ottabase/config": "workspace:*",
         "@ottabase/ui-cropper": "workspace:*",

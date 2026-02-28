@@ -116,6 +116,12 @@
         ],
     },
 
+    // Workers AI binding — direct access to Cloudflare AI models
+    // @see https://developers.cloudflare.com/workers-ai/
+    "ai": {
+        "binding": "OBCF_AI",
+    },
+
     // Durable Objects bindings for real-time features
     "durable_objects": {
         "bindings": [

@@ -61,6 +61,13 @@ import {
     handleUpload,
     handleUploadFile,
 } from './cloudflare-storage';
+import {
+    handleAIChat,
+    handleAIGatewayChat,
+    handleAIProviders,
+    handleAIStatus,
+    handleAIUniversalChat,
+} from './cloudflare-ai';
 import { handleCoreAnalytics } from './core-analytics';
 import { handleAuditLogs, handleDemo, handleDemoError } from './demo';
 import { handleEmailProviders, handleEmailTest } from './email';
@@ -267,6 +274,14 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
         return handleCloudflareR2(context);
     }
 
+    if (route === '/api/cloudflare/ai/providers') {
+        return handleAIProviders(context);
+    }
+
+    if (route === '/api/cloudflare/ai/status') {
+        return handleAIStatus(context);
+    }
+
     if (route === '/api/admin/users') {
         return handleAdminUsers(context);
     }
@@ -382,6 +397,18 @@ async function handlePostRoutes(context: ApiRouteContext): Promise<Response | nu
 
     if (route === '/api/cloudflare/images') {
         return handleCloudflareImages(context);
+    }
+
+    if (route === '/api/cloudflare/ai/chat') {
+        return handleAIChat(context);
+    }
+
+    if (route === '/api/cloudflare/ai/gateway/chat') {
+        return handleAIGatewayChat(context);
+    }
+
+    if (route === '/api/cloudflare/ai/universal/chat') {
+        return handleAIUniversalChat(context);
     }
 
     if (route === '/api/upload') {
