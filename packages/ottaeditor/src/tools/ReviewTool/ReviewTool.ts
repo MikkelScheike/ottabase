@@ -544,6 +544,6 @@ export default class ReviewTool implements BlockTool {
     }
 
     validate(savedData: ReviewData): boolean {
-        return savedData.title.trim() !== '';
+        return typeof savedData.title === 'string' && savedData.title.trim() !== '';
     }
 }

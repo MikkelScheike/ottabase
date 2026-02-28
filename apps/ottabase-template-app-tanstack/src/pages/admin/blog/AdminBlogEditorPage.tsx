@@ -56,6 +56,7 @@ import {
 } from '@ottabase/ui-shadcn';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import * as Diff from 'diff';
 import {
     ArrowLeft,
     Calendar,
@@ -69,6 +70,7 @@ import {
     Search,
     Send,
     Settings,
+    SplitSquareHorizontal,
     StickyNote,
     Trash2,
     User,
@@ -258,6 +260,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     // Active tab
     const [activeTab, setActiveTab] = useState('content');
     const [previewVersion, setPreviewVersion] = useState<BlogPostVersion | null>(null);
+    const [compareVersion, setCompareVersion] = useState<BlogPostVersion | null>(null);
     const [slugStatus, setSlugStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
     const [loadVersionDialog, setLoadVersionDialog] = useState<{ open: boolean; versionNumber?: number } | null>(null);
     const [deleteVersionDialog, setDeleteVersionDialog] = useState<{
@@ -427,6 +430,91 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const hasPreviewContent = previewPost?.content?.blocks && previewPost.content.blocks.length > 0;
     const hasPreviewFootnotes = previewPost?.footnotes?.blocks && previewPost.footnotes.blocks.length > 0;
 
+    // Helper to extract raw text for diff comparison
+    function extractTextFromBlocks(data: OutputData | null | undefined): string {
+        if (!data?.blocks) return '';
+        let textResult = '';
+
+        for (const block of data.blocks) {
+            const blockText = getTextFromData(block.data);
+            if (blockText) {
+                if (block.type === 'header') {
+                    textResult += '# ' + blockText + '\n\n';
+                } else if (block.type === 'list') {
+                    const items = block.data?.items;
+                    if (Array.isArray(items)) {
+                        for (const item of items) {
+                            textResult += '- ' + (typeof item === 'string' ? item : getTextFromData(item)) + '\n';
+                        }
+                        textResult += '\n';
+                    }
+                } else {
+                    textResult += blockText + '\n\n';
+                }
+            }
+        }
+        return textResult.trim();
+    }
+
+    // Helper to extract text from a single block's data
+    function getTextFromData(data: any): string {
+        if (!data) return '';
+        if (typeof data === 'string') return data;
+        if (typeof data === 'number') return data.toString();
+
+        let text = '';
+        // Common EditorJS fields
+        if (data.text && typeof data.text === 'string') text += ' ' + data.text;
+        if (data.title && typeof data.title === 'string') text += ' ' + data.title;
+        if (data.message && typeof data.message === 'string') text += ' ' + data.message;
+        if (data.caption && typeof data.caption === 'string') text += ' ' + data.caption;
+
+        if (data.items && Array.isArray(data.items)) {
+            for (const item of data.items) {
+                if (typeof item === 'string') text += ' ' + item;
+                else if (item && typeof item === 'object') text += ' ' + getTextFromData(item);
+            }
+        }
+
+        if (data.content && Array.isArray(data.content)) {
+            // Table data
+            for (const row of data.content) {
+                if (Array.isArray(row)) {
+                    for (const cell of row) {
+                        text += ' ' + (typeof cell === 'string' ? cell : getTextFromData(cell));
+                    }
+                }
+            }
+        }
+
+        // Support for layout blocks (nested columns)
+        if (data.columns && Array.isArray(data.columns)) {
+            for (const col of data.columns) {
+                if (col.content) {
+                    // Recursive call to extract text from nested blocks
+                    text += ' ' + extractTextFromBlocks(col.content);
+                }
+            }
+        }
+
+        return text.trim();
+    }
+
+    // Calculate diffs when a version is selected for comparison
+    const compareDiffs = useMemo(() => {
+        if (!compareVersion) return null;
+
+        const oldTitle = compareVersion.title || '';
+        const newTitle = title || '';
+        const titleDiff = Diff.diffWordsWithSpace(oldTitle, newTitle);
+
+        const oldContentText = extractTextFromBlocks(compareVersion.content);
+        const newContentText = extractTextFromBlocks(initialData?.content); // Compare historical against LAST SAVED so it matches Editor contents on load
+        const contentDiff = Diff.diffWordsWithSpace(oldContentText, newContentText);
+
+        return { titleDiff, contentDiff };
+    }, [compareVersion, title, initialData]);
+
     // Slug availability check: run only on Title or Slug blur (not on every keystroke)
     const doSlugCheck = useCallback(
         (slugToCheck?: string) => {
@@ -544,12 +632,8 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         if (!data?.blocks) return 0;
         let text = '';
         for (const block of data.blocks) {
-            if (block.data?.text) text += ' ' + block.data.text;
-            if (block.data?.items) {
-                for (const item of block.data.items as string[]) {
-                    text += ' ' + item;
-                }
-            }
+            const blockText = getTextFromData(block.data);
+            if (blockText) text += ' ' + blockText;
         }
         return text.trim().split(/\s+/).filter(Boolean).length;
     };
@@ -1351,6 +1435,15 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                                         Preview
                                                     </Button>
                                                     <Button
+                                                        variant="secondary"
+                                                        size="sm"
+                                                        className="h-6 px-2 flex items-center gap-1"
+                                                        onClick={() => setCompareVersion(version)}
+                                                    >
+                                                        <SplitSquareHorizontal className="h-3 w-3" />
+                                                        <span className="sr-only">Compare</span>
+                                                    </Button>
+                                                    <Button
                                                         variant="outline"
                                                         size="sm"
                                                         className="h-6 px-2"
@@ -1508,6 +1601,70 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                 </aside>
                             )}
                         </article>
+                    )}
+                </DialogContent>
+            </Dialog>
+
+            <Dialog
+                open={!!compareVersion}
+                onOpenChange={(open) => {
+                    if (!open) setCompareVersion(null);
+                }}
+            >
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Compare current with Version {compareVersion?.versionNumber}</DialogTitle>
+                        <DialogDescription>
+                            Comparing the selected historical version with the current saved content.
+                            <span className="text-green-600 dark:text-green-400 font-medium ml-2">Green</span> is newly
+                            added,
+                            <span className="text-red-600 dark:text-red-400 font-medium ml-2">Red</span> is removed.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {compareVersion && compareDiffs && (
+                        <div className="space-y-8 mt-4">
+                            <div>
+                                <h3 className="text-lg font-semibold mb-2">Title Changes</h3>
+                                <div className="p-4 bg-muted rounded-md text-lg">
+                                    {compareDiffs.titleDiff.map((part, index) => {
+                                        const color = part.added
+                                            ? 'text-green-600 bg-green-100 dark:bg-green-900/30'
+                                            : part.removed
+                                              ? 'text-red-600 bg-red-100 line-through dark:bg-red-900/30'
+                                              : 'text-foreground';
+                                        return (
+                                            <span key={index} className={`px-0.5 rounded ${color}`}>
+                                                {part.value}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div>
+                                <h3 className="text-lg font-semibold mb-2">Content Changes (Text Extraction)</h3>
+                                <div className="p-4 bg-muted rounded-md whitespace-pre-wrap font-mono text-sm">
+                                    {compareDiffs.contentDiff.map((part, index) => {
+                                        const color = part.added
+                                            ? 'text-green-600 bg-green-100 dark:bg-green-900/30'
+                                            : part.removed
+                                              ? 'text-red-600 bg-red-100 line-through dark:bg-red-900/30'
+                                              : 'text-foreground';
+                                        return (
+                                            <span key={index} className={`px-0.5 rounded ${color}`}>
+                                                {part.value}
+                                            </span>
+                                        );
+                                    })}
+                                    {compareDiffs.contentDiff.length === 0 && (
+                                        <p className="text-muted-foreground italic">
+                                            No text content changes detected.
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </DialogContent>
             </Dialog>

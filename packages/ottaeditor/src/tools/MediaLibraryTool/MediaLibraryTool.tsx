@@ -22,7 +22,7 @@ export default class MediaLibraryTool {
         };
     }
 
-    constructor({ api, config, block }) {
+    constructor({ api, config, block }: { api: any; config: any; block: any }) {
         this.api = api;
         this.editor = config.editor;
         this.block = block;
