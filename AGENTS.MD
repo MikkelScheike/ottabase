@@ -295,6 +295,16 @@ Blog engine core logic and models.
 import { Post, Tag } from '@ottabase/ottablog';
 ```
 
+### @ottabase/ui-datatable
+
+Advanced data table built on TanStack Table v8. Server-side sort/filter/pagination, column visibility, row selection,
+bulk actions. Powers the list view in `@ottabase/forms` ModelCrud.
+
+```typescript
+import { DataTable, useDataTable, createColumns, actionsColumn, selectColumn } from '@ottabase/ui-datatable';
+import { useServerTable } from '@ottabase/ui-datatable'; // OttaORM server-side integration
+```
+
 ### @ottabase/queue
 
 Laravel-style job queue for Cloudflare Queues.
