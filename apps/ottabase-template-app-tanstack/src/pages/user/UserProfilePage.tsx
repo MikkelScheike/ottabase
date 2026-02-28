@@ -9,6 +9,7 @@ import { useRBACToast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { requestEmailVerification } from '@/lib/auth-api';
+import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -35,10 +36,9 @@ import {
     Label,
     Separator,
 } from '@ottabase/ui-shadcn';
-import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import { getTimezonesForSelect, setTimezoneConfig } from '@ottabase/utils/timezone';
-import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
 import { IconExternalLink, IconPencil, IconTrash } from '@tabler/icons-react';
+import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AvatarEditModal } from './AvatarEditModal';
 
@@ -365,6 +365,7 @@ export function UserProfilePage() {
                         open={avatarModalOpen}
                         onOpenChange={setAvatarModalOpen}
                         hasImage={!!user.image}
+                        currentImageUrl={user.image ?? undefined}
                         onSuccess={(imageUrl) => {
                             updateUser({ image: imageUrl });
                             if (refreshSession) refreshSession();
