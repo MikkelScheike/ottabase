@@ -78,7 +78,7 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
                 })
                 .catch((err) => {
                     console.error('Failed to load markdown', err);
-                    setResolvedContent('# Error loading content\\n\\nPlease try again later.');
+                    setResolvedContent('# Error loading content. Please try again later.');
                     setIsLoadingContent(false);
                 });
         }

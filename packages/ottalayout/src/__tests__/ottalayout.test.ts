@@ -215,7 +215,7 @@ describe('mergeLayoutConfig', () => {
     });
 
     it('defaults invalid header to default', () => {
-        const result = mergeLayoutConfig({ header: 'invalid' } as unknown);
+        const result = mergeLayoutConfig({ header: 'invalid' } as any);
         expect(result.header).toBe(DEFAULT_LAYOUT.header);
     });
 
