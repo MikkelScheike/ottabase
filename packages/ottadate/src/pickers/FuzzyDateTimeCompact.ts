@@ -33,7 +33,7 @@ import type {
     FuzzyDateTimePickerInstance,
     FuzzyDateTimePickerOptions,
 } from '../core/types';
-import { getMonthNames, getYearRange, pad2, resolveConfig } from '../core/utils';
+import { getIntlLocale, getMonthNames, getYearRange, pad2, resolveConfig } from '../core/utils';
 import { btn, clearChildren, div, el, iconCalendar, iconX, onClickOutside, onEscape, span } from '../dom/helpers';
 
 export function createFuzzyDateTimeCompact(
@@ -100,7 +100,7 @@ export function createFuzzyDateTimeCompact(
         className: 'ottadate-trigger-clear',
         type: 'button',
         'aria-label': 'Clear',
-    });
+    }) as HTMLButtonElement;
     triggerClear.innerHTML = iconX();
     triggerClear.style.display = 'none';
 
@@ -137,6 +137,8 @@ export function createFuzzyDateTimeCompact(
         const select = el('select', {
             className: `ottadate-compact-select ${className}`,
         }) as HTMLSelectElement;
+
+        if (config.disabled) select.disabled = true;
 
         for (const opt of optionItems) {
             const option = el('option', { value: opt.value }) as HTMLOptionElement;
@@ -217,7 +219,8 @@ export function createFuzzyDateTimeCompact(
 
         // Month select — if resolution >= month
         if (isResolutionFinerOrEqual(resolution, 'month')) {
-            const months = getMonthNames();
+            const localeStr = getIntlLocale(config.locale);
+            const months = getMonthNames(localeStr);
             const monthSelect = createSelect(
                 'ottadate-compact-month',
                 months.map((name, idx) => ({ value: String(idx), label: name })),
@@ -263,6 +266,7 @@ export function createFuzzyDateTimeCompact(
         hourInput.min = '0';
         hourInput.max = '23';
         hourInput.value = pad2(selectedHour);
+        if (config.disabled) hourInput.disabled = true;
         hourInput.addEventListener('change', () => {
             selectedHour = Math.max(0, Math.min(23, parseInt(hourInput.value, 10) || 0));
             hourInput.value = pad2(selectedHour);
@@ -281,6 +285,7 @@ export function createFuzzyDateTimeCompact(
             minInput.min = '0';
             minInput.max = '59';
             minInput.value = pad2(selectedMinute);
+            if (config.disabled) minInput.disabled = true;
             minInput.addEventListener('change', () => {
                 selectedMinute = Math.max(0, Math.min(59, parseInt(minInput.value, 10) || 0));
                 minInput.value = pad2(selectedMinute);
@@ -300,6 +305,7 @@ export function createFuzzyDateTimeCompact(
             secInput.min = '0';
             secInput.max = '59';
             secInput.value = pad2(selectedSecond);
+            if (config.disabled) secInput.disabled = true;
             secInput.addEventListener('change', () => {
                 selectedSecond = Math.max(0, Math.min(59, parseInt(secInput.value, 10) || 0));
                 secInput.value = pad2(selectedSecond);
@@ -328,6 +334,7 @@ export function createFuzzyDateTimeCompact(
         const footer = div('ottadate-footer');
 
         const nowBtn = btn('ottadate-footer-btn ottadate-footer-btn--primary', 'Now', () => {
+            if (config.disabled) return;
             const now = new Date();
             selectedYear = now.getFullYear();
             selectedMonth = now.getMonth();
@@ -339,6 +346,7 @@ export function createFuzzyDateTimeCompact(
         });
 
         const clearBtn = btn('ottadate-footer-btn', 'Clear', () => {
+            if (config.disabled) return;
             currentFuzzy = null;
             updateTriggerText();
             emitChange();

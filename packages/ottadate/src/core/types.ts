@@ -46,8 +46,8 @@ export interface OttaDateConfig {
     timezone?: string | 'auto';
     /** Format for input/output values. Default: 'unix' (seconds) */
     timestampFormat?: TimestampFormat;
-    /** Locale for date formatting. Default: 'en-US' */
-    locale?: string;
+    /** Locale object from date-fns, or locale string for native Intl. Default: 'en-US' */
+    locale?: string | any;
     /** First day of week: 0 = Sunday, 1 = Monday. Default: 1 */
     firstDayOfWeek?: 0 | 1;
     /** Min selectable date (UTC unix seconds, or Date) */

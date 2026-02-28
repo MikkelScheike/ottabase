@@ -13,12 +13,14 @@
  *   });
  */
 
+import { toZonedTime } from 'date-fns-tz';
 import type { DateTimePickerInstance, DateTimePickerOptions } from '../core/types';
 import {
     buildCalendarGrid,
     formatDisplay,
     formatTime,
     fromDate,
+    getIntlLocale,
     getMonthNames,
     getMonthNamesShort,
     getWeekdayLabels,
@@ -28,6 +30,7 @@ import {
     isSameMonth,
     pad2,
     resolveConfig,
+    resolveTimezone,
     toDate,
 } from '../core/utils';
 import {
@@ -59,20 +62,22 @@ export function createDateTimePicker(
         ...options,
     });
 
-    let selectedDate = toDate(config.value);
-    let viewDate = selectedDate ? new Date(selectedDate) : new Date();
+    const tz = resolveTimezone(config.timezone!);
+    let selectedDate = toDate(config.value, tz);
+    let viewDate = selectedDate ? new Date(selectedDate) : tz ? toZonedTime(new Date(), tz) : new Date();
     let viewMode: ViewMode = 'days';
     let isOpen = false;
     let removeClickOutside: (() => void) | null = null;
     let removeEscapeHandler: (() => void) | null = null;
 
-    const minDate = config.minDate ? toDate(config.minDate as any) : null;
-    const maxDate = config.maxDate ? toDate(config.maxDate as any) : null;
+    const minDate = config.minDate ? toDate(config.minDate as any, tz) : null;
+    const maxDate = config.maxDate ? toDate(config.maxDate as any, tz) : null;
 
     // Initialize time from selected date or now
-    let hours = selectedDate ? selectedDate.getHours() : new Date().getHours();
-    let minutes = selectedDate ? selectedDate.getMinutes() : 0;
-    let seconds = selectedDate ? selectedDate.getSeconds() : 0;
+    const initialTimeSource = selectedDate || (tz ? toZonedTime(new Date(), tz) : new Date());
+    let hours = initialTimeSource.getHours();
+    let minutes = initialTimeSource.getMinutes();
+    let seconds = initialTimeSource.getSeconds();
 
     const root = div('ottadate');
     if (config.inline) root.classList.add('ottadate--inline');
@@ -97,7 +102,7 @@ export function createDateTimePicker(
         className: 'ottadate-trigger-clear',
         type: 'button',
         'aria-label': 'Clear',
-    });
+    }) as HTMLButtonElement;
     triggerClear.innerHTML = iconX();
     triggerClear.style.display = 'none';
 
@@ -113,10 +118,12 @@ export function createDateTimePicker(
     // --- Rendering ---
 
     function getDisplayText(): string {
+        const localeStr = getIntlLocale(config.locale);
         if (!selectedDate) return '';
-        const dateStr = formatDisplay(selectedDate, config.displayFormat!);
+        const dateStr = formatDisplay(selectedDate, config.displayFormat!, config.locale);
         const timeFmt = config.showSeconds ? 'HH:mm:ss' : 'HH:mm';
-        const timeStr = formatTime(selectedDate, config.use12Hour ? 'hh:mm a' : timeFmt);
+        const formatStr12h = config.showSeconds ? 'hh:mm:ss a' : 'hh:mm a';
+        const timeStr = formatTime(selectedDate, config.use12Hour ? formatStr12h : timeFmt, config.locale);
         return `${dateStr} ${timeStr}`;
     }
 
@@ -149,8 +156,9 @@ export function createDateTimePicker(
         prevBtn.innerHTML = iconChevronLeft();
 
         let titleText: string;
+        const localeStr = getIntlLocale(config.locale);
         if (viewMode === 'days') {
-            titleText = `${getMonthNames()[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+            titleText = `${getMonthNames(localeStr)[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
         } else if (viewMode === 'months') {
             titleText = `${viewDate.getFullYear()}`;
         } else {
@@ -186,14 +194,15 @@ export function createDateTimePicker(
         const fragment = document.createDocumentFragment();
 
         const weekdaysRow = div('ottadate-weekdays');
-        for (const label of getWeekdayLabels(config.firstDayOfWeek)) {
+        const localeStr = getIntlLocale(config.locale);
+        for (const label of getWeekdayLabels(config.firstDayOfWeek, localeStr)) {
             weekdaysRow.appendChild(span('ottadate-weekday', label));
         }
         fragment.appendChild(weekdaysRow);
 
         const daysGrid = div('ottadate-days');
         const days = buildCalendarGrid(viewDate.getFullYear(), viewDate.getMonth(), config.firstDayOfWeek);
-        const today = new Date();
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
 
         for (const day of days) {
             const dayBtn = btn('ottadate-day', day.getDate().toString(), () => {
@@ -221,9 +230,11 @@ export function createDateTimePicker(
 
     function renderMonthGrid() {
         const grid = div('ottadate-months');
-        const months = getMonthNamesShort();
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth();
+        const localeStr = getIntlLocale(config.locale);
+        const months = getMonthNamesShort(localeStr);
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
 
         months.forEach((name, idx) => {
             const monthBtn = btn('ottadate-month-cell', name, () => {
@@ -249,7 +260,8 @@ export function createDateTimePicker(
     function renderYearGrid() {
         const grid = div('ottadate-years');
         const years = getYearRange(viewDate.getFullYear(), 10);
-        const currentYear = new Date().getFullYear();
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
+        const currentYear = today.getFullYear();
 
         for (const year of years) {
             const yearBtn = btn('ottadate-year-cell', year.toString(), () => {
@@ -287,6 +299,10 @@ export function createDateTimePicker(
         hourInput.max = String(hourMax);
         hourInput.value = pad2(displayHour);
         hourInput.addEventListener('change', () => {
+            if (config.disabled) {
+                hourInput.value = pad2(config.use12Hour ? hours % 12 || 12 : hours);
+                return;
+            }
             let val = parseInt(hourInput.value, 10) || 0;
             if (config.use12Hour) {
                 val = Math.max(1, Math.min(12, val));
@@ -310,6 +326,10 @@ export function createDateTimePicker(
         minInput.max = '59';
         minInput.value = pad2(minutes);
         minInput.addEventListener('change', () => {
+            if (config.disabled) {
+                minInput.value = pad2(minutes);
+                return;
+            }
             minutes = Math.max(0, Math.min(59, parseInt(minInput.value, 10) || 0));
             minInput.value = pad2(minutes);
             applyTimeToSelected();
@@ -328,6 +348,10 @@ export function createDateTimePicker(
             secInput.max = '59';
             secInput.value = pad2(seconds);
             secInput.addEventListener('change', () => {
+                if (config.disabled) {
+                    secInput.value = pad2(seconds);
+                    return;
+                }
                 seconds = Math.max(0, Math.min(59, parseInt(secInput.value, 10) || 0));
                 secInput.value = pad2(seconds);
                 applyTimeToSelected();
@@ -339,6 +363,7 @@ export function createDateTimePicker(
         if (config.use12Hour) {
             const period = hours < 12 ? 'AM' : 'PM';
             const periodBtn = btn('ottadate-time-period', period, () => {
+                if (config.disabled) return;
                 if (hours < 12) hours += 12;
                 else hours -= 12;
                 applyTimeToSelected();
@@ -350,11 +375,13 @@ export function createDateTimePicker(
         // 12h / 24h clock toggle — always visible
         const clockToggle = div('ottadate-clock-toggle');
         const btn12 = btn('ottadate-clock-toggle-btn', '12h', () => {
+            if (config.disabled) return;
             if (config.use12Hour) return;
             config = resolveConfig({ ...config, use12Hour: true });
             render();
         });
         const btn24 = btn('ottadate-clock-toggle-btn', '24h', () => {
+            if (config.disabled) return;
             if (!config.use12Hour) return;
             config = resolveConfig({ ...config, use12Hour: false });
             render();
@@ -364,14 +391,58 @@ export function createDateTimePicker(
         clockToggle.append(btn12, btn24);
 
         timeRow.append(label, scrollContainer, clockToggle);
-        return timeRow;
+
+        const container = div('ottadate-time-container');
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.appendChild(timeRow);
+
+        // Time Presets Row
+        const presetsRow = div('ottadate-time-presets');
+        presetsRow.style.display = 'flex';
+        presetsRow.style.gap = '0.5rem';
+        presetsRow.style.marginTop = '0.5rem';
+
+        const btnStartOfDay = btn('ottadate-footer-btn', '00:00', () => {
+            if (config.disabled) return;
+            hours = 0;
+            minutes = 0;
+            seconds = 0;
+            applyTimeToSelected();
+            render();
+        });
+        const btnNoon = btn('ottadate-footer-btn', '12:00', () => {
+            if (config.disabled) return;
+            hours = 12;
+            minutes = 0;
+            seconds = 0;
+            applyTimeToSelected();
+            render();
+        });
+        const btnEndOfDay = btn('ottadate-footer-btn', '23:59', () => {
+            if (config.disabled) return;
+            hours = 23;
+            minutes = 59;
+            seconds = 59;
+            applyTimeToSelected();
+            render();
+        });
+        btnStartOfDay.style.flex = '1';
+        btnNoon.style.flex = '1';
+        btnEndOfDay.style.flex = '1';
+
+        presetsRow.append(btnStartOfDay, btnNoon, btnEndOfDay);
+        container.appendChild(presetsRow);
+
+        return container;
     }
 
     function renderFooter() {
         const footer = div('ottadate-footer');
 
         const nowBtn = btn('ottadate-footer-btn ottadate-footer-btn--primary', 'Now', () => {
-            const now = new Date();
+            if (config.disabled) return;
+            const now = tz ? toZonedTime(new Date(), tz) : new Date();
             selectedDate = now;
             hours = now.getHours();
             minutes = now.getMinutes();
@@ -384,6 +455,7 @@ export function createDateTimePicker(
         });
 
         const clearBtn = btn('ottadate-footer-btn', 'Clear', () => {
+            if (config.disabled) return;
             selectedDate = null;
             updateTriggerText();
             emitChange();
@@ -413,6 +485,7 @@ export function createDateTimePicker(
     // --- Actions ---
 
     function selectDay(date: Date) {
+        if (config.disabled) return;
         // Preserve current time when selecting a new day
         selectedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, seconds);
         updateTriggerText();
@@ -441,7 +514,7 @@ export function createDateTimePicker(
 
     function emitChange() {
         if (config.onChange) {
-            config.onChange(fromDate(selectedDate, config.timestampFormat!));
+            config.onChange(fromDate(selectedDate, config.timestampFormat!, tz));
         }
     }
 
@@ -505,7 +578,7 @@ export function createDateTimePicker(
             else openPicker();
         },
         setValue(value) {
-            selectedDate = toDate(value);
+            selectedDate = toDate(value, tz);
             if (selectedDate) {
                 viewDate = new Date(selectedDate);
                 hours = selectedDate.getHours();
@@ -516,12 +589,12 @@ export function createDateTimePicker(
             if (isOpen) render();
         },
         getValue() {
-            return fromDate(selectedDate, config.timestampFormat!);
+            return fromDate(selectedDate, config.timestampFormat!, tz);
         },
         setOptions(newOptions) {
             config = resolveConfig({ ...config, ...newOptions });
             if (newOptions.value !== undefined) {
-                selectedDate = toDate(newOptions.value);
+                selectedDate = toDate(newOptions.value, tz);
                 if (selectedDate) {
                     viewDate = new Date(selectedDate);
                     hours = selectedDate.getHours();

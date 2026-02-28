@@ -11,11 +11,13 @@
  *   });
  */
 
+import { toZonedTime } from 'date-fns-tz';
 import type { DatePickerInstance, DatePickerOptions } from '../core/types';
 import {
     buildCalendarGrid,
     formatDisplay,
     fromDate,
+    getIntlLocale,
     getMonthNames,
     getMonthNamesShort,
     getWeekdayLabels,
@@ -46,16 +48,19 @@ type ViewMode = 'days' | 'months' | 'years';
 
 export function createDatePicker(container: HTMLElement, options: DatePickerOptions = {}): DatePickerInstance {
     let config = resolveConfig(options);
-    let selectedDate = toDate(config.value);
+    const tz = resolveTimezone(config.timezone!);
+    let selectedDate = toDate(config.value, tz);
     let viewDate = selectedDate ? new Date(selectedDate) : new Date();
+    if (!selectedDate && tz) {
+        viewDate = toZonedTime(new Date(), tz);
+    }
     let viewMode: ViewMode = 'days';
     let isOpen = false;
     let removeClickOutside: (() => void) | null = null;
     let removeEscapeHandler: (() => void) | null = null;
 
-    const tz = resolveTimezone(config.timezone!);
-    const minDate = config.minDate ? toDate(config.minDate as any) : null;
-    const maxDate = config.maxDate ? toDate(config.maxDate as any) : null;
+    const minDate = config.minDate ? toDate(config.minDate as any, tz) : null;
+    const maxDate = config.maxDate ? toDate(config.maxDate as any, tz) : null;
 
     // Root wrapper
     const root = div('ottadate');
@@ -81,7 +86,7 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
         className: 'ottadate-trigger-clear',
         type: 'button',
         'aria-label': 'Clear date',
-    });
+    }) as HTMLButtonElement;
     triggerClear.innerHTML = iconX();
     triggerClear.style.display = 'none';
 
@@ -103,7 +108,7 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
 
     function updateTriggerText() {
         if (selectedDate) {
-            triggerText.textContent = formatDisplay(selectedDate, config.displayFormat!);
+            triggerText.textContent = formatDisplay(selectedDate, config.displayFormat!, config.locale);
             triggerText.classList.remove('ottadate-trigger-placeholder');
             triggerClear.style.display = '';
         } else {
@@ -129,8 +134,9 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
         prevBtn.innerHTML = iconChevronLeft();
 
         let titleText: string;
+        const localeStr = getIntlLocale(config.locale);
         if (viewMode === 'days') {
-            titleText = `${getMonthNames()[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
+            titleText = `${getMonthNames(localeStr)[viewDate.getMonth()]} ${viewDate.getFullYear()}`;
         } else if (viewMode === 'months') {
             titleText = `${viewDate.getFullYear()}`;
         } else {
@@ -168,7 +174,8 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
 
         // Weekday headers
         const weekdaysRow = div('ottadate-weekdays');
-        for (const label of getWeekdayLabels(config.firstDayOfWeek)) {
+        const localeStr = getIntlLocale(config.locale);
+        for (const label of getWeekdayLabels(config.firstDayOfWeek, localeStr)) {
             weekdaysRow.appendChild(span('ottadate-weekday', label));
         }
         fragment.appendChild(weekdaysRow);
@@ -176,7 +183,7 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
         // Day cells
         const daysGrid = div('ottadate-days');
         const days = buildCalendarGrid(viewDate.getFullYear(), viewDate.getMonth(), config.firstDayOfWeek);
-        const today = new Date();
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
 
         for (const day of days) {
             const dayBtn = btn('ottadate-day', day.getDate().toString(), () => {
@@ -212,9 +219,11 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
 
     function renderMonthGrid() {
         const grid = div('ottadate-months');
-        const months = getMonthNamesShort();
-        const currentYear = new Date().getFullYear();
-        const currentMonth = new Date().getMonth();
+        const localeStr = getIntlLocale(config.locale);
+        const months = getMonthNamesShort(localeStr);
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth();
 
         months.forEach((name, idx) => {
             const monthBtn = btn('ottadate-month-cell', name, () => {
@@ -243,7 +252,8 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
     function renderYearGrid() {
         const grid = div('ottadate-years');
         const years = getYearRange(viewDate.getFullYear(), 10);
-        const currentYear = new Date().getFullYear();
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
+        const currentYear = today.getFullYear();
 
         for (const year of years) {
             const yearBtn = btn('ottadate-year-cell', year.toString(), () => {
@@ -269,7 +279,7 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
         const footer = div('ottadate-footer');
 
         const todayBtn = btn('ottadate-footer-btn ottadate-footer-btn--primary', 'Today', () => {
-            const today = new Date();
+            const today = tz ? toZonedTime(new Date(), tz) : new Date();
             viewDate = new Date(today);
             viewMode = 'days';
             selectDate(today);
@@ -317,7 +327,7 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
 
     function emitChange() {
         if (config.onChange) {
-            config.onChange(fromDate(selectedDate, config.timestampFormat!));
+            config.onChange(fromDate(selectedDate, config.timestampFormat!, tz));
         }
     }
 
@@ -380,18 +390,18 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
             else openPicker();
         },
         setValue(value) {
-            selectedDate = toDate(value);
+            selectedDate = toDate(value, tz);
             if (selectedDate) viewDate = new Date(selectedDate);
             updateTriggerText();
             if (isOpen) render();
         },
         getValue() {
-            return fromDate(selectedDate, config.timestampFormat!);
+            return fromDate(selectedDate, config.timestampFormat!, tz);
         },
         setOptions(newOptions) {
             config = resolveConfig({ ...config, ...newOptions });
             if (newOptions.value !== undefined) {
-                selectedDate = toDate(newOptions.value);
+                selectedDate = toDate(newOptions.value, tz);
                 if (selectedDate) viewDate = new Date(selectedDate);
             }
             updateTriggerText();

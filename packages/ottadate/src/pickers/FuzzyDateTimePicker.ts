@@ -31,7 +31,7 @@ import type {
     FuzzyDateTimePickerInstance,
     FuzzyDateTimePickerOptions,
 } from '../core/types';
-import { getMonthNamesShort, getYearRange, pad2, resolveConfig } from '../core/utils';
+import { getIntlLocale, getMonthNamesShort, getYearRange, pad2, resolveConfig } from '../core/utils';
 import { btn, clearChildren, div, el, iconCalendar, iconX, onClickOutside, onEscape, span } from '../dom/helpers';
 
 export function createFuzzyDateTimePicker(
@@ -97,7 +97,7 @@ export function createFuzzyDateTimePicker(
         className: 'ottadate-trigger-clear',
         type: 'button',
         'aria-label': 'Clear',
-    });
+    }) as HTMLButtonElement;
     triggerClear.innerHTML = iconX();
     triggerClear.style.display = 'none';
 
@@ -151,6 +151,7 @@ export function createFuzzyDateTimePicker(
         const chips = div('ottadate-fuzzy-chips');
         for (const approx of config.approximations ?? (['exact', 'around', 'sometime'] as DateApproximation[])) {
             const chip = btn('ottadate-chip', APPROXIMATION_LABELS[approx], () => {
+                if (config.disabled) return;
                 approximation = approx;
                 updateAndRender();
             });
@@ -172,6 +173,7 @@ export function createFuzzyDateTimePicker(
             if (!isResEnabled(res)) continue;
 
             const chip = btn('ottadate-chip', RESOLUTION_LABELS[res], () => {
+                if (config.disabled) return;
                 resolution = res;
                 updateAndRender();
             });
@@ -201,6 +203,7 @@ export function createFuzzyDateTimePicker(
 
         for (const year of years) {
             const yearBtn = btn('ottadate-year-cell', year.toString(), () => {
+                if (config.disabled) return;
                 selectedYear = year;
                 updateAndRender();
             });
@@ -221,10 +224,12 @@ export function createFuzzyDateTimePicker(
         section.appendChild(span('ottadate-fuzzy-label', 'Month'));
 
         const grid = div('ottadate-months');
-        const months = getMonthNamesShort();
+        const localeStr = getIntlLocale(config.locale);
+        const months = getMonthNamesShort(localeStr);
 
         months.forEach((name, idx) => {
             const monthBtn = btn('ottadate-month-cell', name, () => {
+                if (config.disabled) return;
                 selectedMonth = idx;
                 updateAndRender();
             });
@@ -248,6 +253,7 @@ export function createFuzzyDateTimePicker(
 
         for (let d = 1; d <= daysInMonth; d++) {
             const dayBtn = btn('ottadate-day', d.toString(), () => {
+                if (config.disabled) return;
                 selectedDay = d;
                 updateAndRender();
             });
@@ -281,6 +287,7 @@ export function createFuzzyDateTimePicker(
             hourInput.min = '0';
             hourInput.max = '23';
             hourInput.value = pad2(selectedHour);
+            if (config.disabled) hourInput.disabled = true;
             hourInput.addEventListener('change', () => {
                 selectedHour = Math.max(0, Math.min(23, parseInt(hourInput.value, 10) || 0));
                 hourInput.value = pad2(selectedHour);
@@ -299,6 +306,7 @@ export function createFuzzyDateTimePicker(
             minInput.min = '0';
             minInput.max = '59';
             minInput.value = pad2(selectedMinute);
+            if (config.disabled) minInput.disabled = true;
             minInput.addEventListener('change', () => {
                 selectedMinute = Math.max(0, Math.min(59, parseInt(minInput.value, 10) || 0));
                 minInput.value = pad2(selectedMinute);
@@ -317,6 +325,7 @@ export function createFuzzyDateTimePicker(
             secInput.min = '0';
             secInput.max = '59';
             secInput.value = pad2(selectedSecond);
+            if (config.disabled) secInput.disabled = true;
             secInput.addEventListener('change', () => {
                 selectedSecond = Math.max(0, Math.min(59, parseInt(secInput.value, 10) || 0));
                 secInput.value = pad2(selectedSecond);
@@ -340,6 +349,7 @@ export function createFuzzyDateTimePicker(
         const footer = div('ottadate-footer');
 
         const applyBtn = btn('ottadate-footer-btn ottadate-footer-btn--primary', 'Apply', () => {
+            if (config.disabled) return;
             currentFuzzy = buildFuzzy();
             updateTriggerText();
             emitChange();
@@ -347,6 +357,7 @@ export function createFuzzyDateTimePicker(
         });
 
         const clearBtn = btn('ottadate-footer-btn', 'Clear', () => {
+            if (config.disabled) return;
             currentFuzzy = null;
             updateTriggerText();
             emitChange();

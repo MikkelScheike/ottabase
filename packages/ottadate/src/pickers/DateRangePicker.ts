@@ -21,11 +21,13 @@
  *   });
  */
 
+import { toZonedTime } from 'date-fns-tz';
 import type { DateRange, DateRangePickerInstance, DateRangePickerOptions } from '../core/types';
 import {
     buildCalendarGrid,
     formatDisplay,
     fromDate,
+    getIntlLocale,
     getMonthNames,
     getWeekdayLabels,
     isAfter,
@@ -34,6 +36,7 @@ import {
     isSameDay,
     isSameMonth,
     resolveConfig,
+    resolveTimezone,
     toDate,
 } from '../core/utils';
 // Note: getMonthNames used in both preset-mode sidebar and classic arrow-nav title
@@ -63,12 +66,13 @@ export function createDateRangePicker(
         ...options,
     });
 
+    const tz = resolveTimezone(config.timezone!);
     const hasPresets = Boolean(config.presets && config.presets.length > 0);
 
     // --- State ---
 
-    let startDate: Date | null = config.value?.start ? toDate(config.value.start) : null;
-    let endDate: Date | null = config.value?.end ? toDate(config.value.end) : null;
+    let startDate: Date | null = config.value?.start ? toDate(config.value.start, tz) : null;
+    let endDate: Date | null = config.value?.end ? toDate(config.value.end, tz) : null;
 
     // Committed state — what was emitted last (used for Cancel in preset mode)
     let committedStart: Date | null = startDate ? new Date(startDate) : null;
@@ -81,15 +85,15 @@ export function createDateRangePicker(
     // Preset sidebar state: -1 = Custom, 0+ = preset index
     let activePresetIdx = -1;
 
-    let leftViewDate = startDate ? new Date(startDate) : new Date();
+    let leftViewDate = startDate ? new Date(startDate) : tz ? toZonedTime(new Date(), tz) : new Date();
     let rightViewDate = new Date(leftViewDate.getFullYear(), leftViewDate.getMonth() + 1, 1);
 
     let isOpen = false;
     let removeClickOutside: (() => void) | null = null;
     let removeEscapeHandler: (() => void) | null = null;
 
-    const minDate = config.minDate ? toDate(config.minDate as any) : null;
-    const maxDate = config.maxDate ? toDate(config.maxDate as any) : null;
+    const minDate = config.minDate ? toDate(config.minDate as any, tz) : null;
+    const maxDate = config.maxDate ? toDate(config.maxDate as any, tz) : null;
 
     // Root wrapper
     const root = div('ottadate');
@@ -115,7 +119,7 @@ export function createDateRangePicker(
         className: 'ottadate-trigger-clear',
         type: 'button',
         'aria-label': 'Clear range',
-    });
+    }) as HTMLButtonElement;
     triggerClear.innerHTML = iconX();
     triggerClear.style.display = 'none';
 
@@ -134,14 +138,15 @@ export function createDateRangePicker(
     // -----------------------------------------------------------------------
 
     function updateTriggerText() {
+        const localeStr = getIntlLocale(config.locale);
         if (startDate && endDate) {
-            const startStr = formatDisplay(startDate, config.displayFormat!);
-            const endStr = formatDisplay(endDate, config.displayFormat!);
+            const startStr = formatDisplay(startDate, config.displayFormat!, config.locale);
+            const endStr = formatDisplay(endDate, config.displayFormat!, config.locale);
             triggerText.textContent = `${startStr}  →  ${endStr}`;
             triggerText.classList.remove('ottadate-trigger-placeholder');
             triggerClear.style.display = '';
         } else if (startDate) {
-            triggerText.textContent = `${formatDisplay(startDate, config.displayFormat!)}  →  …`;
+            triggerText.textContent = `${formatDisplay(startDate, config.displayFormat!, config.locale)}  →  …`;
             triggerText.classList.remove('ottadate-trigger-placeholder');
             triggerClear.style.display = '';
         } else {
@@ -173,9 +178,10 @@ export function createDateRangePicker(
         });
         prevBtn.innerHTML = iconChevronLeft();
 
+        const localeStr = getIntlLocale(config.locale);
         const titleBtn = btn(
             'ottadate-header-title',
-            `${getMonthNames()[viewDate.getMonth()]} ${viewDate.getFullYear()}`,
+            `${getMonthNames(localeStr)[viewDate.getMonth()]} ${viewDate.getFullYear()}`,
             () => {},
         );
         titleBtn.style.cursor = 'default';
@@ -198,7 +204,7 @@ export function createDateRangePicker(
 
         // Weekday labels
         const weekdaysRow = div('ottadate-weekdays');
-        for (const label of getWeekdayLabels(config.firstDayOfWeek)) {
+        for (const label of getWeekdayLabels(config.firstDayOfWeek, localeStr)) {
             weekdaysRow.appendChild(span('ottadate-weekday', label));
         }
         cal.appendChild(weekdaysRow);
@@ -206,17 +212,35 @@ export function createDateRangePicker(
         // Day grid
         const daysGrid = div('ottadate-days');
         const days = buildCalendarGrid(viewDate.getFullYear(), viewDate.getMonth(), config.firstDayOfWeek);
-        const today = new Date();
+        const today = tz ? toZonedTime(new Date(), tz) : new Date();
 
         for (const day of days) {
             const dayBtn = btn('ottadate-day', day.getDate().toString(), () => {
                 handleDayClick(day);
             });
+            dayBtn.dataset.time = day.getTime().toString();
+
+            dayBtn.addEventListener('dblclick', () => {
+                if (config.disabled) return;
+                // Double click selects the single day as range and auto-applies
+                if (hasPresets && activePresetIdx !== -1) {
+                    activePresetIdx = -1;
+                }
+                startDate = day;
+                endDate = day;
+                selectingEnd = false;
+                committedStart = new Date(day);
+                committedEnd = new Date(day);
+                updateTriggerText();
+                updateRangeHighlights();
+                emitChange();
+                if (!config.inline) closePicker();
+            });
 
             dayBtn.addEventListener('mouseenter', () => {
                 if (selectingEnd && startDate) {
                     hoverDate = day;
-                    render();
+                    updateRangeHighlights();
                 }
             });
 
@@ -232,27 +256,7 @@ export function createDateRangePicker(
                 dayBtn.classList.add('ottadate-day--disabled');
             }
 
-            // Range highlighting
-            const effectiveEnd = selectingEnd && hoverDate ? hoverDate : endDate;
-            if (startDate && isSameDay(day, startDate)) {
-                dayBtn.classList.add('ottadate-day--range-start');
-            }
-            if (effectiveEnd && isSameDay(day, effectiveEnd)) {
-                dayBtn.classList.add('ottadate-day--range-end');
-            }
-            if (startDate && effectiveEnd) {
-                const rangeStart = isBefore(startDate, effectiveEnd) ? startDate : effectiveEnd;
-                const rangeEnd = isAfter(effectiveEnd, startDate) ? effectiveEnd : startDate;
-                if (
-                    isAfter(day, rangeStart) &&
-                    isBefore(day, rangeEnd) &&
-                    !isSameDay(day, rangeStart) &&
-                    !isSameDay(day, rangeEnd)
-                ) {
-                    dayBtn.classList.add('ottadate-day--range-middle');
-                }
-            }
-
+            // Hover/range classes are strictly handled by updateRangeHighlights
             daysGrid.appendChild(dayBtn);
         }
         cal.appendChild(daysGrid);
@@ -296,6 +300,7 @@ export function createDateRangePicker(
                 `ottadate-range-preset${isActive ? ' ottadate-range-preset--active' : ''}`,
                 preset.label,
                 () => {
+                    if (config.disabled) return;
                     activePresetIdx = i;
                     const { start, end } = preset.range();
                     startDate = start;
@@ -372,7 +377,8 @@ export function createDateRangePicker(
         const footer = div('ottadate-footer');
 
         const todayBtn = btn('ottadate-footer-btn ottadate-footer-btn--primary', 'Today', () => {
-            const today = new Date();
+            if (config.disabled) return;
+            const today = tz ? toZonedTime(new Date(), tz) : new Date();
             leftViewDate = new Date(today);
             rightViewDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
             startDate = today;
@@ -384,6 +390,7 @@ export function createDateRangePicker(
         });
 
         const clearBtn = btn('ottadate-footer-btn', 'Clear', () => {
+            if (config.disabled) return;
             startDate = null;
             endDate = null;
             selectingEnd = false;
@@ -433,6 +440,40 @@ export function createDateRangePicker(
             popover.appendChild(grid);
             popover.appendChild(renderClassicFooter());
         }
+
+        // Apply initial range highlights
+        updateRangeHighlights();
+    }
+
+    function updateRangeHighlights() {
+        const effectiveEnd = selectingEnd && hoverDate ? hoverDate : endDate;
+        const rangeStart =
+            startDate && effectiveEnd ? (isBefore(startDate, effectiveEnd) ? startDate : effectiveEnd) : startDate;
+        const rangeEnd =
+            startDate && effectiveEnd ? (isAfter(effectiveEnd, startDate) ? effectiveEnd : startDate) : effectiveEnd;
+
+        const days = popover.querySelectorAll('.ottadate-day');
+        days.forEach((btn) => {
+            const time = Number((btn as HTMLElement).dataset.time);
+            if (!time) return;
+            const d = new Date(time);
+
+            btn.classList.remove('ottadate-day--range-start', 'ottadate-day--range-end', 'ottadate-day--range-middle');
+
+            if (rangeStart && isSameDay(d, rangeStart)) btn.classList.add('ottadate-day--range-start');
+            if (rangeEnd && isSameDay(d, rangeEnd)) btn.classList.add('ottadate-day--range-end');
+
+            if (
+                rangeStart &&
+                rangeEnd &&
+                isAfter(d, rangeStart) &&
+                isBefore(d, rangeEnd) &&
+                !isSameDay(d, rangeStart) &&
+                !isSameDay(d, rangeEnd)
+            ) {
+                btn.classList.add('ottadate-day--range-middle');
+            }
+        });
     }
 
     // -----------------------------------------------------------------------
@@ -440,6 +481,7 @@ export function createDateRangePicker(
     // -----------------------------------------------------------------------
 
     function handleDayClick(date: Date) {
+        if (config.disabled) return;
         // In preset mode, clicking a day switches to "Custom"
         if (hasPresets && activePresetIdx !== -1) {
             activePresetIdx = -1;
@@ -482,8 +524,8 @@ export function createDateRangePicker(
     function emitChange() {
         if (config.onChange) {
             config.onChange({
-                start: fromDate(startDate, config.timestampFormat!),
-                end: fromDate(endDate, config.timestampFormat!),
+                start: fromDate(startDate, config.timestampFormat!, tz),
+                end: fromDate(endDate, config.timestampFormat!, tz),
             });
         }
     }
@@ -565,8 +607,8 @@ export function createDateRangePicker(
             else openPicker();
         },
         setValue(value: DateRange) {
-            startDate = value.start ? toDate(value.start) : null;
-            endDate = value.end ? toDate(value.end) : null;
+            startDate = value.start ? toDate(value.start, tz) : null;
+            endDate = value.end ? toDate(value.end, tz) : null;
             committedStart = startDate ? new Date(startDate) : null;
             committedEnd = endDate ? new Date(endDate) : null;
             if (startDate) {
@@ -578,15 +620,15 @@ export function createDateRangePicker(
         },
         getValue() {
             return {
-                start: fromDate(startDate, config.timestampFormat!),
-                end: fromDate(endDate, config.timestampFormat!),
+                start: fromDate(startDate, config.timestampFormat!, tz),
+                end: fromDate(endDate, config.timestampFormat!, tz),
             };
         },
         setOptions(newOptions) {
             config = resolveConfig({ ...config, ...newOptions });
             if (newOptions.value) {
-                startDate = newOptions.value.start ? toDate(newOptions.value.start) : null;
-                endDate = newOptions.value.end ? toDate(newOptions.value.end) : null;
+                startDate = newOptions.value.start ? toDate(newOptions.value.start, tz) : null;
+                endDate = newOptions.value.end ? toDate(newOptions.value.end, tz) : null;
                 committedStart = startDate ? new Date(startDate) : null;
                 committedEnd = endDate ? new Date(endDate) : null;
             }

@@ -36,6 +36,7 @@ import {
     subMonths,
     subYears,
 } from 'date-fns';
+import { fromZonedTime, toZonedTime } from 'date-fns-tz';
 import type { OttaDateConfig, TimestampFormat } from './types';
 
 // ---------------------------------------------------------------------------
@@ -47,7 +48,6 @@ const DEFAULT_CONFIG: Required<
         OttaDateConfig,
         | 'timezone'
         | 'timestampFormat'
-        | 'locale'
         | 'firstDayOfWeek'
         | 'displayFormat'
         | 'timeDisplayFormat'
@@ -56,7 +56,7 @@ const DEFAULT_CONFIG: Required<
         | 'placeholder'
         | 'disabled'
     >
-> = {
+> & { locale: any } = {
     timezone: 'auto',
     timestampFormat: 'unix',
     locale: 'en-US',
@@ -72,6 +72,13 @@ const DEFAULT_CONFIG: Required<
 /** Merge user config with defaults */
 export function resolveConfig<T extends OttaDateConfig>(options: T): T & typeof DEFAULT_CONFIG {
     return { ...DEFAULT_CONFIG, ...options };
+}
+
+/** Extract string locale from config.locale */
+export function getIntlLocale(locale: any): string {
+    if (typeof locale === 'string') return locale;
+    if (locale && typeof locale.code === 'string') return locale.code;
+    return 'en-US';
 }
 
 // ---------------------------------------------------------------------------
@@ -100,33 +107,39 @@ export function resolveTimezone(tz: string | 'auto'): string {
  * Convert an external value to a JS Date.
  * Handles unix seconds, ISO strings, and Date objects.
  */
-export function toDate(value: number | string | Date | null | undefined): Date | null {
+export function toDate(value: number | string | Date | null | undefined, timeZone?: string): Date | null {
     if (value == null) return null;
-    if (value instanceof Date) return isValid(value) ? value : null;
-    if (typeof value === 'string') {
-        const d = new Date(value);
-        return isValid(d) ? d : null;
-    }
-    if (typeof value === 'number') {
+    let d: Date | null = null;
+    if (value instanceof Date) {
+        d = isValid(value) ? value : null;
+    } else if (typeof value === 'string') {
+        const parsed = new Date(value);
+        d = isValid(parsed) ? parsed : null;
+    } else if (typeof value === 'number') {
         // Unix seconds → ms
-        const d = new Date(value * 1000);
-        return isValid(d) ? d : null;
+        const parsed = new Date(value * 1000);
+        d = isValid(parsed) ? parsed : null;
     }
-    return null;
+
+    if (d && timeZone) {
+        return toZonedTime(d, timeZone);
+    }
+    return d;
 }
 
 /** Convert a JS Date back to the configured output format */
-export function fromDate(date: Date | null, format: TimestampFormat): number | string | Date | null {
+export function fromDate(date: Date | null, format: TimestampFormat, timeZone?: string): number | string | Date | null {
     if (!date || !isValid(date)) return null;
+    const realDate = timeZone ? fromZonedTime(date, timeZone) : date;
     switch (format) {
         case 'unix':
-            return Math.floor(date.getTime() / 1000);
+            return Math.floor(realDate.getTime() / 1000);
         case 'iso':
-            return date.toISOString();
+            return realDate.toISOString();
         case 'date':
-            return date;
+            return realDate;
         default:
-            return Math.floor(date.getTime() / 1000);
+            return Math.floor(realDate.getTime() / 1000);
     }
 }
 
@@ -155,8 +168,15 @@ export function buildCalendarGrid(year: number, month: number, weekStartsOn: 0 |
 }
 
 /** Get short weekday labels, respecting weekStartsOn */
-export function getWeekdayLabels(weekStartsOn: 0 | 1 = 1): string[] {
-    const labels = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+export function getWeekdayLabels(weekStartsOn: 0 | 1 = 1, localeStr: string = 'en-US'): string[] {
+    const formatter = new Intl.DateTimeFormat(localeStr, { weekday: 'short' });
+    // Jan 3 2021 is Sunday
+    const dates = Array.from({ length: 7 }, (_, i) => new Date(2021, 0, 3 + i));
+    const labels = dates.map((d) => {
+        const label = formatter.format(d);
+        // Truncate to 2 characters for common calendar headers (e.g., "Mon" -> "Mo")
+        return label.slice(0, 2);
+    });
     if (weekStartsOn === 1) {
         return [...labels.slice(1), labels[0]];
     }
@@ -164,26 +184,15 @@ export function getWeekdayLabels(weekStartsOn: 0 | 1 = 1): string[] {
 }
 
 /** Generate array of month names */
-export function getMonthNames(): string[] {
-    return [
-        'January',
-        'February',
-        'March',
-        'April',
-        'May',
-        'June',
-        'July',
-        'August',
-        'September',
-        'October',
-        'November',
-        'December',
-    ];
+export function getMonthNames(localeStr: string = 'en-US'): string[] {
+    const formatter = new Intl.DateTimeFormat(localeStr, { month: 'long' });
+    return Array.from({ length: 12 }, (_, i) => formatter.format(new Date(2021, i, 1)));
 }
 
 /** Generate array of abbreviated month names */
-export function getMonthNamesShort(): string[] {
-    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function getMonthNamesShort(localeStr: string = 'en-US'): string[] {
+    const formatter = new Intl.DateTimeFormat(localeStr, { month: 'short' });
+    return Array.from({ length: 12 }, (_, i) => formatter.format(new Date(2021, i, 1)));
 }
 
 // ---------------------------------------------------------------------------
@@ -191,19 +200,21 @@ export function getMonthNamesShort(): string[] {
 // ---------------------------------------------------------------------------
 
 /** Format a date using date-fns format string */
-export function formatDate(date: Date | null, formatStr: string): string {
+export function formatDate(date: Date | null, formatStr: string, localeObj?: any): string {
     if (!date || !isValid(date)) return '';
-    return fnsFormat(date, formatStr);
+    const options =
+        localeObj && typeof localeObj === 'object' && localeObj.localize ? { locale: localeObj } : undefined;
+    return fnsFormat(date, formatStr, options);
 }
 
 /** Format a date for display with user's timezone context */
-export function formatDisplay(date: Date | null, displayFormat: string): string {
-    return formatDate(date, displayFormat);
+export function formatDisplay(date: Date | null, displayFormat: string, localeObj?: any): string {
+    return formatDate(date, displayFormat, localeObj);
 }
 
 /** Format time portion */
-export function formatTime(date: Date | null, timeFormat: string): string {
-    return formatDate(date, timeFormat);
+export function formatTime(date: Date | null, timeFormat: string, localeObj?: any): string {
+    return formatDate(date, timeFormat, localeObj);
 }
 
 // ---------------------------------------------------------------------------
