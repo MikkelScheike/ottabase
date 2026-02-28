@@ -79,10 +79,10 @@ export default class MapTool implements BlockTool {
 
     render(): HTMLElement {
         const wrapper = document.createElement('div');
-        wrapper.classList.add(MapTool.CSS.baseClass, MapTool.CSS.wrapper);
+        wrapper.classList.add(MapTool.CSS.baseClass, MapTool.CSS.wrapper, 'ob-plugin');
 
         const form = document.createElement('div');
-        form.classList.add(MapTool.CSS.form);
+        form.classList.add(MapTool.CSS.form, 'ob-form');
 
         // URL input (full width)
         form.appendChild(this.createUrlInput());
@@ -109,15 +109,15 @@ export default class MapTool implements BlockTool {
 
     private createUrlInput(): HTMLElement {
         const group = document.createElement('div');
-        group.classList.add(MapTool.CSS.inputGroup);
+        group.classList.add(MapTool.CSS.inputGroup, 'ob-input-group');
 
         const label = document.createElement('label');
-        label.classList.add(MapTool.CSS.label);
+        label.classList.add(MapTool.CSS.label, 'ob-label');
         label.textContent = 'Map URL';
 
         const input = document.createElement('input');
         input.type = 'url';
-        input.classList.add(MapTool.CSS.input);
+        input.classList.add(MapTool.CSS.input, 'ob-input');
         input.placeholder = 'Paste a Google Maps or OpenStreetMap URL…';
         input.value = this.data.url;
 
@@ -145,7 +145,7 @@ export default class MapTool implements BlockTool {
         });
 
         const hint = document.createElement('div');
-        hint.classList.add(MapTool.CSS.hint);
+        hint.classList.add(MapTool.CSS.hint, 'ob-hint');
         hint.textContent = 'Supports Google Maps share links, embed URLs, or OpenStreetMap URLs.';
 
         group.appendChild(label);
@@ -157,14 +157,14 @@ export default class MapTool implements BlockTool {
 
     private createProviderSelect(): HTMLElement {
         const group = document.createElement('div');
-        group.classList.add(MapTool.CSS.inputGroup);
+        group.classList.add(MapTool.CSS.inputGroup, 'ob-input-group');
 
         const label = document.createElement('label');
-        label.classList.add(MapTool.CSS.label);
+        label.classList.add(MapTool.CSS.label, 'ob-label');
         label.textContent = 'Provider';
 
         const select = document.createElement('select');
-        select.classList.add(MapTool.CSS.select);
+        select.classList.add(MapTool.CSS.select, 'ob-select');
         select.setAttribute('data-key', 'provider');
 
         const providers: Array<{ value: MapProvider; label: string }> = [
@@ -192,14 +192,14 @@ export default class MapTool implements BlockTool {
 
     private createThemeSelect(): HTMLElement {
         const group = document.createElement('div');
-        group.classList.add(MapTool.CSS.inputGroup);
+        group.classList.add(MapTool.CSS.inputGroup, 'ob-input-group');
 
         const label = document.createElement('label');
-        label.classList.add(MapTool.CSS.label);
+        label.classList.add(MapTool.CSS.label, 'ob-label');
         label.textContent = 'Theme';
 
         const select = document.createElement('select');
-        select.classList.add(MapTool.CSS.select);
+        select.classList.add(MapTool.CSS.select, 'ob-select');
         select.setAttribute('data-key', 'theme');
 
         const themes: Array<{ value: MapTheme; label: string }> = [
@@ -229,15 +229,15 @@ export default class MapTool implements BlockTool {
 
     private createHeightInput(): HTMLElement {
         const group = document.createElement('div');
-        group.classList.add(MapTool.CSS.inputGroup);
+        group.classList.add(MapTool.CSS.inputGroup, 'ob-input-group');
 
         const label = document.createElement('label');
-        label.classList.add(MapTool.CSS.label);
+        label.classList.add(MapTool.CSS.label, 'ob-label');
         label.textContent = 'Height (px)';
 
         const input = document.createElement('input');
         input.type = 'number';
-        input.classList.add(MapTool.CSS.input);
+        input.classList.add(MapTool.CSS.input, 'ob-input');
         input.min = '150';
         input.max = '800';
         input.step = '50';
@@ -258,15 +258,15 @@ export default class MapTool implements BlockTool {
 
     private createCaptionInput(): HTMLElement {
         const group = document.createElement('div');
-        group.classList.add(MapTool.CSS.inputGroup);
+        group.classList.add(MapTool.CSS.inputGroup, 'ob-input-group');
 
         const label = document.createElement('label');
-        label.classList.add(MapTool.CSS.label);
+        label.classList.add(MapTool.CSS.label, 'ob-label');
         label.textContent = 'Caption (optional)';
 
         const input = document.createElement('input');
         input.type = 'text';
-        input.classList.add(MapTool.CSS.input);
+        input.classList.add(MapTool.CSS.input, 'ob-input');
         input.placeholder = 'Map caption…';
         input.value = this.data.caption;
 
@@ -286,7 +286,7 @@ export default class MapTool implements BlockTool {
         preview.setAttribute('data-key', 'preview');
 
         const previewLabel = document.createElement('div');
-        previewLabel.classList.add(MapTool.CSS.previewLabel);
+        previewLabel.classList.add(MapTool.CSS.previewLabel, 'ob-section-label');
         previewLabel.textContent = 'Preview';
         preview.appendChild(previewLabel);
 

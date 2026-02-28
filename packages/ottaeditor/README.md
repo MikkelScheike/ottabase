@@ -171,6 +171,18 @@ interface LayoutData {
 }
 ```
 
+## Styling
+
+All custom plugins use common classes from `ottaeditor-common.css` (imported by `editorjs-brandkit-theme.css`):
+
+- **Root**: `.ob-plugin` — padding 12px, border-radius 8px, margin-bottom 16px
+- **Form**: `.ob-form` — flex column, gap 8px
+- **Input group**: `.ob-input-group` — flex column, gap 4px
+- **Labels**: `.ob-label`, `.ob-section-label`, `.ob-hint`
+- **Inputs**: `.ob-input`, `.ob-select`, `.ob-textarea` — padding 8px 12px, border-radius 4px, font-size 13px
+
+Individual plugin CSS files contain only custom/override styles (e.g. background colors, layout, tool-specific UI).
+
 ## Types
 
 ```typescript

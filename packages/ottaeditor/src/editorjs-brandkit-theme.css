@@ -2,6 +2,8 @@
  * EditorJS Minimal Theme Override for Ottabase' Brand Kit integration.
  */
 
+@import './ottaeditor-common.css';
+
 /* Plus (+) Button */
 .ce-toolbar__plus {
     background: hsl(var(--background)) !important;

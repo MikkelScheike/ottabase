@@ -92,10 +92,10 @@ export default class CTATool implements BlockTool {
 
     render(): HTMLElement {
         const wrapper = document.createElement('div');
-        wrapper.classList.add(CTATool.CSS.baseClass, CTATool.CSS.wrapper);
+        wrapper.classList.add(CTATool.CSS.baseClass, CTATool.CSS.wrapper, 'ob-plugin');
 
         const form = document.createElement('div');
-        form.classList.add(CTATool.CSS.form);
+        form.classList.add(CTATool.CSS.form, 'ob-form');
 
         // Row 1: Text input + Style select
         const row1 = document.createElement('div');
@@ -103,11 +103,11 @@ export default class CTATool implements BlockTool {
 
         // Text input
         const textGroup = document.createElement('div');
-        textGroup.classList.add(CTATool.CSS.inputGroup);
+        textGroup.classList.add(CTATool.CSS.inputGroup, 'ob-input-group');
         textGroup.style.flex = '1';
 
         const textLabel = document.createElement('label');
-        textLabel.classList.add(CTATool.CSS.label);
+        textLabel.classList.add(CTATool.CSS.label, 'ob-label');
         textLabel.textContent = 'Button Text';
         const textInputId = this.domId('cta-text');
         textLabel.setAttribute('for', textInputId);
@@ -115,7 +115,7 @@ export default class CTATool implements BlockTool {
         const textInput = document.createElement('input');
         textInput.id = textInputId;
         textInput.type = 'text';
-        textInput.classList.add(CTATool.CSS.input);
+        textInput.classList.add(CTATool.CSS.input, 'ob-input');
         textInput.placeholder = this.config.placeholder || 'Enter button text...';
         textInput.value = this.data.text;
         textInput.addEventListener('input', (event) => {
@@ -128,18 +128,18 @@ export default class CTATool implements BlockTool {
 
         // Style select
         const styleGroup = document.createElement('div');
-        styleGroup.classList.add(CTATool.CSS.inputGroup);
+        styleGroup.classList.add(CTATool.CSS.inputGroup, 'ob-input-group');
         styleGroup.style.width = '110px';
 
         const styleLabel = document.createElement('label');
-        styleLabel.classList.add(CTATool.CSS.label);
+        styleLabel.classList.add(CTATool.CSS.label, 'ob-label');
         styleLabel.textContent = 'Style';
         const styleSelectId = this.domId('cta-style');
         styleLabel.setAttribute('for', styleSelectId);
 
         const styleSelect = document.createElement('select');
         styleSelect.id = styleSelectId;
-        styleSelect.classList.add(CTATool.CSS.select);
+        styleSelect.classList.add(CTATool.CSS.select, 'ob-select');
 
         const styles: Array<{ value: CTAData['style']; label: string }> = [
             { value: 'primary', label: 'Primary' },
@@ -169,10 +169,10 @@ export default class CTATool implements BlockTool {
 
         // Row 2: URL input
         const urlGroup = document.createElement('div');
-        urlGroup.classList.add(CTATool.CSS.inputGroup);
+        urlGroup.classList.add(CTATool.CSS.inputGroup, 'ob-input-group');
 
         const urlLabel = document.createElement('label');
-        urlLabel.classList.add(CTATool.CSS.label);
+        urlLabel.classList.add(CTATool.CSS.label, 'ob-label');
         urlLabel.textContent = 'URL';
         const urlInputId = this.domId('cta-url');
         urlLabel.setAttribute('for', urlInputId);
@@ -180,7 +180,7 @@ export default class CTATool implements BlockTool {
         const urlInput = document.createElement('input');
         urlInput.id = urlInputId;
         urlInput.type = 'url';
-        urlInput.classList.add(CTATool.CSS.input);
+        urlInput.classList.add(CTATool.CSS.input, 'ob-input');
         urlInput.placeholder = 'https://example.com';
         urlInput.value = this.data.url;
         urlInput.addEventListener('input', (event) => {
@@ -197,11 +197,11 @@ export default class CTATool implements BlockTool {
 
         // Alignment buttons
         const alignGroup = document.createElement('div');
-        alignGroup.classList.add(CTATool.CSS.inputGroup);
+        alignGroup.classList.add(CTATool.CSS.inputGroup, 'ob-input-group');
         alignGroup.style.flex = '1';
 
         const alignLabel = document.createElement('label');
-        alignLabel.classList.add(CTATool.CSS.label);
+        alignLabel.classList.add(CTATool.CSS.label, 'ob-label');
         alignLabel.textContent = 'Alignment';
 
         const alignBtnGroup = document.createElement('div');
@@ -262,7 +262,7 @@ export default class CTATool implements BlockTool {
         checkbox.type = 'checkbox';
         const newTabId = this.domId('cta-new-tab');
         checkbox.id = newTabId;
-        checkbox.classList.add(CTATool.CSS.checkbox);
+        checkbox.classList.add(CTATool.CSS.checkbox, 'ob-checkbox');
         checkbox.checked = this.data.openInNewTab;
         checkbox.addEventListener('change', (event) => {
             this.data.openInNewTab = (event.target as HTMLInputElement).checked;
@@ -270,9 +270,9 @@ export default class CTATool implements BlockTool {
         });
 
         const checkboxLabel = document.createElement('label');
-        checkboxLabel.classList.add(CTATool.CSS.checkboxLabel);
+        checkboxLabel.classList.add(CTATool.CSS.checkboxLabel, 'ob-checkbox-label');
         checkboxLabel.setAttribute('for', newTabId);
-        checkboxLabel.textContent = 'New tab';
+        checkboxLabel.textContent = ' New tab';
         checkboxLabel.style.cursor = 'pointer';
         checkboxLabel.style.margin = '0';
 

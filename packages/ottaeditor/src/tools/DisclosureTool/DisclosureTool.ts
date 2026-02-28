@@ -133,7 +133,7 @@ export default class DisclosureTool implements BlockTool {
 
     render(): HTMLElement {
         const wrapper = document.createElement('div');
-        wrapper.classList.add(DisclosureTool.CSS.baseClass, DisclosureTool.CSS.wrapper);
+        wrapper.classList.add(DisclosureTool.CSS.baseClass, DisclosureTool.CSS.wrapper, 'ob-plugin');
 
         wrapper.appendChild(this.buildAISection());
         wrapper.appendChild(this.buildSponsoredSection());
@@ -186,14 +186,14 @@ export default class DisclosureTool implements BlockTool {
         levelGroup.classList.add(DisclosureTool.CSS.row);
 
         const levelLabel = document.createElement('label');
-        levelLabel.classList.add(DisclosureTool.CSS.sublabel);
+        levelLabel.classList.add(DisclosureTool.CSS.sublabel, 'ob-hint');
         levelLabel.textContent = 'AI usage level';
         const aiLevelId = this.domId('disclosure-ai-level');
         levelLabel.setAttribute('for', aiLevelId);
 
         const levelSelect = document.createElement('select');
         levelSelect.id = aiLevelId;
-        levelSelect.classList.add(DisclosureTool.CSS.select);
+        levelSelect.classList.add(DisclosureTool.CSS.select, 'ob-select');
 
         const levels: AIDisclosureLevel[] = ['slight', 'mid', 'high', 'custom'];
         levels.forEach((level) => {
@@ -220,7 +220,7 @@ export default class DisclosureTool implements BlockTool {
         percentInput.type = 'number';
         percentInput.min = '1';
         percentInput.max = '100';
-        percentInput.classList.add(DisclosureTool.CSS.input);
+        percentInput.classList.add(DisclosureTool.CSS.input, 'ob-input');
         percentInput.value = String(this.data.aiPercent ?? 50);
         percentInput.placeholder = '1–100';
         percentInput.addEventListener('input', () => {
@@ -326,14 +326,14 @@ export default class DisclosureTool implements BlockTool {
         customTextGroup.style.display = this.data.sponsoredType === 'custom' ? 'flex' : 'none';
 
         const customLabel = document.createElement('label');
-        customLabel.classList.add(DisclosureTool.CSS.sublabel);
+        customLabel.classList.add(DisclosureTool.CSS.sublabel, 'ob-hint');
         customLabel.textContent = 'Custom disclaimer';
         const sponsoredTextId = this.domId('disclosure-sponsored-text');
         customLabel.setAttribute('for', sponsoredTextId);
 
         const customTextarea = document.createElement('textarea');
         customTextarea.id = sponsoredTextId;
-        customTextarea.classList.add(DisclosureTool.CSS.textarea);
+        customTextarea.classList.add(DisclosureTool.CSS.textarea, 'ob-textarea');
         customTextarea.placeholder = 'Enter your custom sponsored disclaimer...';
         customTextarea.value = this.data.sponsoredText || '';
         customTextarea.rows = 2;

@@ -67,7 +67,7 @@ export default class AdvancedImageTool {
         };
 
         this.wrapper = document.createElement('div');
-        this.wrapper.classList.add('advanced-image-tool');
+        this.wrapper.classList.add('advanced-image-tool', 'ob-plugin');
     }
 
     render() {
@@ -116,7 +116,7 @@ export default class AdvancedImageTool {
                         <span>OR</span>
                     </div>
                     <div class="advanced-image-url-input-group">
-                        <input type="url" placeholder="Enter a public image URL here..." class="advanced-image-url-input">
+                        <input type="url" placeholder="Enter a public image URL here..." class="advanced-image-url-input ob-input">
                         <button type="button" class="advanced-image-url-btn">Fetch</button>
                     </div>
                 </div>
@@ -219,7 +219,7 @@ export default class AdvancedImageTool {
         input.id = `advanced-image-${key}-input`;
         input.type = type;
         input.value = this.data[key] || '';
-        input.classList.add('cdx-input');
+        input.classList.add('cdx-input', 'ob-input');
 
         input.addEventListener('input', () => {
             this.data[key] = input.value;

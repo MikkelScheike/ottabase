@@ -118,7 +118,7 @@ export default class LayoutTool implements BlockTool {
 
     render(): HTMLElement {
         const wrapper = document.createElement('div');
-        wrapper.classList.add(LayoutTool.CSS.baseClass, LayoutTool.CSS.wrapper);
+        wrapper.classList.add(LayoutTool.CSS.baseClass, LayoutTool.CSS.wrapper, 'ob-plugin');
 
         wrapper.appendChild(this.buildToolbar());
         wrapper.appendChild(this.buildColumns());

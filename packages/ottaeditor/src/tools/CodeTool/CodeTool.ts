@@ -74,6 +74,7 @@ export default class CodeTool implements BlockTool {
             optionsRow: 'cdx-code__options-row',
             opt: 'cdx-code__opt',
             optGroup: 'cdx-code__opt-group',
+            optNumber: 'cdx-code__opt-number',
             optLabel: 'cdx-code__opt-label',
             optDesc: 'cdx-code__opt-desc',
             optInput: 'cdx-code__opt-input',
@@ -164,7 +165,7 @@ export default class CodeTool implements BlockTool {
 
     render(): HTMLElement {
         const wrapper = document.createElement('div');
-        wrapper.classList.add(CodeTool.CSS.baseClass, CodeTool.CSS.wrapper);
+        wrapper.classList.add(CodeTool.CSS.baseClass, CodeTool.CSS.wrapper, 'ob-plugin');
 
         // Row 1: Language (label + dropdown + file type)
         const header = document.createElement('div');
@@ -177,7 +178,7 @@ export default class CodeTool implements BlockTool {
         header.appendChild(langLabel);
 
         const langSelect = document.createElement('select');
-        langSelect.classList.add(CodeTool.CSS.langSelect);
+        langSelect.classList.add(CodeTool.CSS.langSelect, 'ob-select');
         for (const opt of LANGUAGE_OPTIONS) {
             const o = document.createElement('option');
             o.value = opt.value;
@@ -190,7 +191,7 @@ export default class CodeTool implements BlockTool {
 
         const langInput = document.createElement('input');
         langInput.type = 'text';
-        langInput.classList.add(CodeTool.CSS.langInput);
+        langInput.classList.add(CodeTool.CSS.langInput, 'ob-input');
         const customMode = this.isCustomLang();
         langInput.disabled = !customMode;
         langInput.placeholder = customMode ? 'e.g. rust, go, kotlin' : '';
@@ -221,11 +222,11 @@ export default class CodeTool implements BlockTool {
         header.appendChild(langInput);
         wrapper.appendChild(header);
 
-        // Row 2: Compact options
-        const optionsRow = document.createElement('div');
-        optionsRow.classList.add(CodeTool.CSS.optionsRow);
+        // Row 2: Lines, Start, Wrap, Indent
+        const row1 = document.createElement('div');
+        row1.classList.add(CodeTool.CSS.optionsRow);
 
-        optionsRow.appendChild(
+        row1.appendChild(
             this.createToggle(
                 'Lines',
                 this.data.showLineNumbers ?? false,
@@ -237,7 +238,7 @@ export default class CodeTool implements BlockTool {
         );
 
         const startWrap = document.createElement('span');
-        startWrap.classList.add(CodeTool.CSS.opt, CodeTool.CSS.optGroup);
+        startWrap.classList.add(CodeTool.CSS.opt, CodeTool.CSS.optGroup, CodeTool.CSS.optNumber);
         startWrap.title = 'First line number (e.g. 1 for full file, 42 for snippet from line 42)';
         const startLbl = document.createElement('span');
         startLbl.classList.add(CodeTool.CSS.optLabel);
@@ -247,7 +248,6 @@ export default class CodeTool implements BlockTool {
         startInput.min = '1';
         startInput.value = String(Math.max(1, Math.floor(Number(this.data.lineNumberStart)) || 1));
         startInput.classList.add(CodeTool.CSS.optInput);
-        startInput.style.width = '36px';
         startInput.setAttribute('aria-label', 'Line number start');
         startInput.dataset.codeOpt = 'lineStart';
         startInput.addEventListener('input', () => {
@@ -256,9 +256,9 @@ export default class CodeTool implements BlockTool {
         });
         startWrap.appendChild(startLbl);
         startWrap.appendChild(startInput);
-        optionsRow.appendChild(startWrap);
+        row1.appendChild(startWrap);
 
-        optionsRow.appendChild(
+        row1.appendChild(
             this.createToggle(
                 'Wrap',
                 this.data.wrapLongLines ?? false,
@@ -290,9 +290,15 @@ export default class CodeTool implements BlockTool {
         });
         tabWrap.appendChild(tabLbl);
         tabWrap.appendChild(tabSelect);
-        optionsRow.appendChild(tabWrap);
+        row1.appendChild(tabWrap);
 
-        optionsRow.appendChild(
+        wrapper.appendChild(row1);
+
+        // Row 3: Hide header, Hide copy btn, Collapsible, Collapse after
+        const row2 = document.createElement('div');
+        row2.classList.add(CodeTool.CSS.optionsRow);
+
+        row2.appendChild(
             this.createToggle(
                 'Hide header',
                 this.data.hideHeader ?? false,
@@ -302,7 +308,7 @@ export default class CodeTool implements BlockTool {
                 'Hide the header bar (language/filename + copy button)',
             ),
         );
-        optionsRow.appendChild(
+        row2.appendChild(
             this.createToggle(
                 'Hide copy btn',
                 this.data.hideCopyButton ?? false,
@@ -312,7 +318,7 @@ export default class CodeTool implements BlockTool {
                 'Hide the copy-to-clipboard button',
             ),
         );
-        optionsRow.appendChild(
+        row2.appendChild(
             this.createToggle(
                 'Collapsible',
                 this.data.collapsible ?? false,
@@ -329,7 +335,6 @@ export default class CodeTool implements BlockTool {
         threshInput.placeholder = '20';
         threshInput.value = this.data.collapsibleThreshold ? String(this.data.collapsibleThreshold) : '';
         threshInput.classList.add(CodeTool.CSS.optInput);
-        threshInput.style.width = '42px';
         threshInput.dataset.codeOpt = 'collapseThresh';
         threshInput.addEventListener('input', () => {
             const v = parseInt(threshInput.value, 10);
@@ -341,12 +346,18 @@ export default class CodeTool implements BlockTool {
             'Collapse when line count exceeds this (min 5)',
             threshInput,
         );
-        threshWrap.classList.add(CodeTool.CSS.opt);
+        threshWrap.classList.add(CodeTool.CSS.opt, CodeTool.CSS.optNumber);
         const threshSuffix = document.createElement('span');
         threshSuffix.classList.add(CodeTool.CSS.optLabel);
         threshSuffix.textContent = 'lines';
         threshWrap.appendChild(threshSuffix);
-        optionsRow.appendChild(threshWrap);
+        row2.appendChild(threshWrap);
+
+        wrapper.appendChild(row2);
+
+        // Row 4: Max height, Highlight
+        const row3 = document.createElement('div');
+        row3.classList.add(CodeTool.CSS.optionsRow);
 
         const maxHInput = document.createElement('input');
         maxHInput.type = 'text';
@@ -361,7 +372,7 @@ export default class CodeTool implements BlockTool {
         });
         const maxHWrap = this.createLabeledInput('Max height', 'Max height with scroll (e.g. 200px, 15rem)', maxHInput);
         maxHWrap.classList.add(CodeTool.CSS.opt);
-        optionsRow.appendChild(maxHWrap);
+        row3.appendChild(maxHWrap);
 
         const hlInput = document.createElement('input');
         hlInput.type = 'text';
@@ -376,12 +387,12 @@ export default class CodeTool implements BlockTool {
         });
         const hlWrap = this.createLabeledInput('Highlight', 'Lines to highlight (e.g. 3,5-7,9)', hlInput);
         hlWrap.classList.add(CodeTool.CSS.opt);
-        optionsRow.appendChild(hlWrap);
+        row3.appendChild(hlWrap);
 
-        wrapper.appendChild(optionsRow);
+        wrapper.appendChild(row3);
 
         const textarea = document.createElement('textarea');
-        textarea.classList.add(CodeTool.CSS.textarea);
+        textarea.classList.add(CodeTool.CSS.textarea, 'ob-textarea');
         textarea.placeholder = this.config.placeholder || 'Enter your code here...';
         textarea.value = this.data.code;
         textarea.rows = 8;

@@ -104,7 +104,7 @@ export default class MediaLibraryTool {
     }
 
     render() {
-        this.wrapper.classList.add('cdx-media-library');
+        this.wrapper.classList.add('cdx-media-library', 'ob-plugin');
 
         // Attach listener only once
         if (!this.isListenerAttached) {
