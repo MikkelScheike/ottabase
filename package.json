@@ -10,6 +10,7 @@
         "dev": "node dev.js",
         "dev:fe": "pnpm --filter @ottabase/ottabase-template-app-tanstack dev",
         "dev:be": "pnpm --filter @ottabase/ottabase-template-app-tanstack dev:worker",
+        "dev:kill:ports": "node packages/scripts/bin/kill-ports.cjs",
         "dev:ui": "turbo dev --filter=@ottabase/ottabase-template-app-tanstack --filter=@ottabase/ui-*",
         "dev:pkg": "turbo dev --filter=@ottabase/*",
         "dev:full": "pnpm i & pnpm build:pkg & pnpm test & pnpm dev",
