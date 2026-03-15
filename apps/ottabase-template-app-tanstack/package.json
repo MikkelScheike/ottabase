@@ -35,6 +35,7 @@
         "@ottabase/cf": "workspace:*",
         "@ottabase/cf-ai": "workspace:*",
         "@ottabase/cf-realtime": "workspace:*",
+        "@ottabase/comments": "workspace:*",
         "@ottabase/config": "workspace:*",
         "@ottabase/db": "workspace:*",
         "@ottabase/docs": "workspace:*",

@@ -18,6 +18,7 @@
 // ============================================================
 
 import {
+    brandEngineMigrations,
     brandKitsTable,
     layoutRouteMappingsTable,
     layoutTemplatesTable,
@@ -25,7 +26,7 @@ import {
     menuSlotAssignmentsTable,
     menusTable,
 } from '@ottabase/brand-engine/persistence';
-import { brandEngineMigrations } from '@ottabase/brand-engine/persistence';
+import { commentsTable } from '@ottabase/comments';
 import type { BuiltInPackageName } from '@ottabase/config';
 import {
     categoriesTable,
@@ -60,9 +61,13 @@ const PACKAGE_REGISTRY = {
         },
         migrations: [] as Migration[],
     },
+    comments: {
+        tables: { commentsTable },
+        migrations: [] as Migration[],
+    },
     shortlinks: {
         tables: { shortlinksTable },
-        migrations: [] as Migration[], // Add package-specific migrations here if any
+        migrations: [] as Migration[],
     },
     referrals: {
         tables: { referralTrackingTable },
