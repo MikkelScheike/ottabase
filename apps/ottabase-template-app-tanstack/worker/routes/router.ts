@@ -10,6 +10,12 @@ import {
     handleAdminDbTableDelete,
     handleAdminDbTables,
 } from './admin-db';
+import {
+    handleAdminDevMailClear,
+    handleAdminDevMailDelete,
+    handleAdminDevMailGet,
+    handleAdminDevMailList,
+} from './admin-dev-mail';
 import { handleAdminPromoteOwner } from './admin-owner';
 import {
     handleAdminQueuesDLQJob,
@@ -299,6 +305,21 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
         return handleAdminDbTables(context);
     }
 
+    if (route === '/api/admin/dev-mail') {
+        return handleAdminDevMailList(context);
+    }
+
+    const devMailGetMatch = route.match(/^\/api\/admin\/dev-mail\/([^/]+)$/);
+    if (devMailGetMatch) {
+        let devMailId: string;
+        try {
+            devMailId = decodeURIComponent(devMailGetMatch[1]);
+        } catch {
+            return errorResponse('Invalid message id', 400, { code: 'BAD_REQUEST' });
+        }
+        return handleAdminDevMailGet(context, devMailId);
+    }
+
     const tableMatch = route.match(/^\/api\/admin\/db\/tables\/([a-zA-Z0-9_]+)$/);
     if (tableMatch) {
         return handleAdminDbTableData({ ...context, tableName: tableMatch[1] });
@@ -479,9 +500,24 @@ async function handleDeleteRoutes(context: ApiRouteContext): Promise<Response | 
         return handleAdminQueuesDLQPurge(context);
     }
 
+    if (route === '/api/admin/dev-mail') {
+        return handleAdminDevMailClear(context);
+    }
+
     const tableMatch = route.match(/^\/api\/admin\/db\/tables\/([a-zA-Z0-9_]+)$/);
     if (tableMatch) {
         return handleAdminDbTableDelete({ ...context, tableName: tableMatch[1] });
+    }
+
+    const devMailDeleteMatch = route.match(/^\/api\/admin\/dev-mail\/([^/]+)$/);
+    if (devMailDeleteMatch) {
+        let devMailId: string;
+        try {
+            devMailId = decodeURIComponent(devMailDeleteMatch[1]);
+        } catch {
+            return errorResponse('Invalid message id', 400, { code: 'BAD_REQUEST' });
+        }
+        return handleAdminDevMailDelete(context, devMailId);
     }
 
     const rowMatch = url.pathname.match(/^\/api\/admin\/db\/tables\/([a-zA-Z0-9_]+)\/(.+)$/);
