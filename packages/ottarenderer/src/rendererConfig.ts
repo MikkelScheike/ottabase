@@ -79,6 +79,9 @@ export const defaultEJSRConfigs = {
     layout: {
         className: `${blockClass} cdc-content-layout`,
     },
+    steps: {
+        className: `${blockClass} cdc-content-steps`,
+    },
 };
 
 export const shouldRenderContentBlocks = (contentBlocks: {} | null) => {

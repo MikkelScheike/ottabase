@@ -5,6 +5,7 @@
  * Supports hooks and themes for extensibility.
  * This is a reusable component that can be used in any app.
  */
+import '@ottabase/ottarenderer/styles';
 import React, { useEffect, useMemo, useState } from 'react';
 import { applyFilters, doAction, HOOKS } from '../hooks';
 import { defaultTheme, getActiveTheme, getTheme } from '../themes';
