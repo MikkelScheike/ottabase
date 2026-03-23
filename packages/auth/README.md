@@ -4,16 +4,16 @@ Framework-agnostic Auth.js integration for Ottabase with Cloudflare D1 and Drizz
 
 ## Features
 
-- ✅ **Auth.js v5** - Full Auth.js support with Cloudflare D1
-- ✅ **Drizzle ORM** - Edge-optimized database adapter
-- ✅ **Framework Agnostic** - Works with Next.js, Remix, SvelteKit, Workers
-- ✅ **Multiple Auth Methods** - OAuth, Credentials, Magic Link (Email)
-- ✅ **Provider Presets** - Google, GitHub, Discord, Azure AD, Auth0, Resend, SMTP
-- ✅ **UI Components** - Ready-to-use login forms with shadcn/ui
-- ✅ **Custom Fields** - Extend user model per-app
-- ✅ **Error Handling** - Production-ready with custom handlers
-- ✅ **Smart Session Refresh** - Profile updates bump a KV version so `/api/auth/session` refreshes a JWT only when
-  needed, keeping local storage/current tab in sync without constant D1 reads
+- **Auth.js v5** - Full Auth.js support with Cloudflare D1
+- **Drizzle ORM** - Edge-optimized database adapter
+- **Framework Agnostic** - Works with Next.js, Remix, SvelteKit, Workers
+- **Multiple Auth Methods** - OAuth, Credentials, Magic Link (Email)
+- **Provider Presets** - Google, GitHub, Discord, Azure AD, Auth0, Resend, SMTP
+- **UI Components** - Ready-to-use login forms with shadcn/ui
+- **Custom Fields** - Extend user model per-app
+- **Error Handling** - Production-ready with custom handlers
+- **Smart Session Refresh** - Profile updates bump a KV version so `/api/auth/session` refreshes a JWT only when needed,
+  keeping local storage/current tab in sync without constant D1 reads
 
 ## Installation
 

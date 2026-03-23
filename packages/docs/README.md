@@ -5,16 +5,16 @@ table of contents. Colors from Brand Kit; layout themes control spacing and dens
 
 ## Features
 
-- 📄 Markdown rendering (headings, code blocks, tables, lists, links, images)
-- 🗂️ Left sidebar with search and grouped navigation
-- 📑 Right table of contents with scroll tracking
-- 📱 Responsive with mobile drawer navigation
-- 🌙 Dark mode via Brand Kit
-- ⬅️➡️ Previous/Next page navigation
-- 🎨 Three layout themes: `compact`, `standard`, `spacious` (colors from Brand Kit) with subtle sidebar switcher
-- 📋 Enhanced code blocks with copy-to-clipboard
-- 🔌 Extensible — CSS custom properties and composable config for easy customization
-- 📦 Zero required runtime dependencies (only React peer dep)
+- Markdown rendering (headings, code blocks, tables, lists, links, images)
+- Left sidebar with search and grouped navigation
+- Right table of contents with scroll tracking
+- Responsive with mobile drawer navigation
+- Dark mode via Brand Kit
+- Previous/Next page navigation
+- Three layout themes: `compact`, `standard`, `spacious` (colors from Brand Kit) with subtle sidebar switcher
+- Enhanced code blocks with copy-to-clipboard
+- Extensible — CSS custom properties and composable config for easy customization
+- Zero required runtime dependencies (only React peer dep)
 
 ## Installation
 

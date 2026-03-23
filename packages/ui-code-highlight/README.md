@@ -4,13 +4,13 @@ A lightweight, standalone code highlighting component for React applications wit
 
 ## Features
 
-- 🎨 **GitHub-style syntax highlighting** for light and dark modes
-- 📋 **Copy to clipboard** with visual feedback
-- 📝 **Filename display** in header
-- 🔢 **Optional line numbers**
-- 🌗 **Automatic theme detection** (light/dark mode)
-- 🪶 **Lightweight** - no heavy UI framework dependencies
-- 📦 **TypeScript** support out of the box
+- **GitHub-style syntax highlighting** for light and dark modes
+- **Copy to clipboard** with visual feedback
+- **Filename display** in header
+- **Optional line numbers**
+- **Automatic theme detection** (light/dark mode)
+- **Lightweight** - no heavy UI framework dependencies
+- **TypeScript** support out of the box
 
 ## Installation
 

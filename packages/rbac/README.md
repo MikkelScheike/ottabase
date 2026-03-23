@@ -4,13 +4,13 @@ Production-ready Role-Based Access Control with multi-tenant support and optimiz
 
 ## Features
 
-- ✅ **Multi-tenant isolation** - Per-organization role scoping
-- ✅ **Wildcard permissions** - `users:*`, `*:read`, `*:*`
-- ✅ **Two-level caching** - Request + Cloudflare KV
-- ✅ **Per-org cache versioning** - O(1) cache invalidation
-- ✅ **App context support** - Tenant > App > User hierarchy
-- ✅ **Type-safe** - Full TypeScript support
-- ⚡ **Zero DB queries on cache hits**
+- **Multi-tenant isolation** - Per-organization role scoping
+- **Wildcard permissions** - `users:*`, `*:read`, `*:*`
+- **Two-level caching** - Request + Cloudflare KV
+- **Per-org cache versioning** - O(1) cache invalidation
+- **App context support** - Tenant > App > User hierarchy
+- **Type-safe** - Full TypeScript support
+- **Zero DB queries on cache hits**
 
 ## Installation
 

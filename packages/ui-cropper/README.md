@@ -5,15 +5,15 @@ PNG/JPEG. Zero React. ~3–4 KB gzipped.
 
 ## Features
 
-- 🎯 **Smooth interactions** - Slick transitions inspired by react-advanced-cropper
-- 🔍 **Zoom support** - Mouse wheel zoom, programmatic zoom, smooth scaling
-- ✨ **Resize handles** - Drag corner and edge handles to resize crop area
-- 🎨 **Visual feedback** - Rule of thirds grid, resize handles, smooth animations
-- 🔄 **Smart rotation** - Rotate 90° with smooth animated transitions, crop adjusts automatically
-- 💯 **Perfect rotation handling** - Drag and resize work correctly in all rotation states (0°, 90°, 180°, 270°)
-- 📐 **Flexible aspect ratios** - Freeform, square, landscape, portrait, or custom ratios
-- 🎭 **Shape support** - Rectangular or circular crop viewfinder
-- 🖱️ **Intuitive drag** - Drag to reposition, cursor changes for different actions
+- **Smooth interactions** - Slick transitions inspired by react-advanced-cropper
+- **Zoom support** - Mouse wheel zoom, programmatic zoom, smooth scaling
+- **Resize handles** - Drag corner and edge handles to resize crop area
+- **Visual feedback** - Rule of thirds grid, resize handles, smooth animations
+- **Smart rotation** - Rotate 90° with smooth animated transitions, crop adjusts automatically
+- **Perfect rotation handling** - Drag and resize work correctly in all rotation states (0°, 90°, 180°, 270°)
+- **Flexible aspect ratios** - Freeform, square, landscape, portrait, or custom ratios
+- **Shape support** - Rectangular or circular crop viewfinder
+- **Intuitive drag** - Drag to reposition, cursor changes for different actions
 
 ## Usage
 

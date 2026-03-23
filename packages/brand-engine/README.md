@@ -228,9 +228,9 @@ applyBrandTheme({ colors, typography, ... });
 
 **Key Benefits**:
 
-- ✅ **Single Source of Truth**: Database contains complete theme
-- ✅ **No Runtime Resolution**: No registry lookups, no theme merging
-- ✅ **Cursors Preserved**: User-configured cursors persist when switching presets (not in preset templates)
-- ✅ **Atomic Updates**: What you save = what renders
-- ✅ **Works in Cloudflare Workers**: No module-level state dependencies
-- ✅ **Self-Contained Kits**: Each kit independent, no preset dependencies
+- **Single Source of Truth**: Database contains complete theme
+- **No Runtime Resolution**: No registry lookups, no theme merging
+- **Cursors Preserved**: User-configured cursors persist when switching presets (not in preset templates)
+- **Atomic Updates**: What you save = what renders
+- **Works in Cloudflare Workers**: No module-level state dependencies
+- **Self-Contained Kits**: Each kit independent, no preset dependencies
