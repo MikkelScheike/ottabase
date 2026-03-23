@@ -631,13 +631,13 @@
 }
 
 /* ======================================= */
-/* Review Block Styles */
+/* Review Block */
 /* ======================================= */
 
 .cdc-content-review {
     display: block;
     clear: both;
-    margin: 1.5rem auto;
+    margin: 1.5rem 0;
     width: 100%;
 }
 
@@ -654,26 +654,6 @@
     list-style: none;
     margin: 0;
     padding: 0;
-}
-
-/* Fallback for when Tailwind isn't loaded */
-.cdc-content-review:not([class*='rounded-lg']) {
-    border: 1px solid #e5e7eb;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-@media (prefers-color-scheme: dark) {
-    .cdc-content-review:not([class*='rounded-lg']) {
-        border-color: #374151;
-        background: #111827;
-    }
-}
-
-.dark .cdc-content-review:not([class*='rounded-lg']) {
-    border-color: #374151;
-    background: #111827;
 }
 
 /* ======================================= */
