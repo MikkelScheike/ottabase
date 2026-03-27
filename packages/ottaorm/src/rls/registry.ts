@@ -140,6 +140,14 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
         auditEnabled: true,
     },
 
+    // Tags - app-scoped (core tags model)
+    {
+        model: 'tags',
+        policy: RLSPolicies.AppScoped(), // Filter by appId
+        contextFields: ['appId'],
+        auditEnabled: true,
+    },
+
     // Blog tags - app-scoped
     {
         model: 'post_tags',
@@ -226,6 +234,55 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
     {
         model: 'todos',
         policy: RLSPolicies.UserScoped(), // Filter by userId
+        auditEnabled: true,
+    },
+
+    // Authenticators - user-scoped (WebAuthn credentials belong to users)
+    {
+        model: 'authenticators',
+        policy: RLSPolicies.UserScoped(), // Filter by userId
+        auditEnabled: true,
+    },
+
+    // Scheduled tasks - admin-only (system-level task management)
+    {
+        model: 'scheduled_tasks',
+        policy: RLSPolicies.AdminOnly(),
+        auditEnabled: true,
+    },
+
+    // Brand kits - app-scoped (brand config per app)
+    {
+        model: 'brand_kits',
+        policy: RLSPolicies.AppScoped(),
+        contextFields: ['appId'],
+        auditEnabled: true,
+    },
+
+    // Layout templates - app-scoped
+    {
+        model: 'layout_templates',
+        policy: RLSPolicies.AppScoped(),
+        contextFields: ['appId'],
+        auditEnabled: true,
+    },
+
+    // Layout route mappings - app-scoped
+    {
+        model: 'layout_route_mappings',
+        policy: RLSPolicies.AppScoped(),
+        contextFields: ['appId'],
+        auditEnabled: true,
+    },
+
+    // Menu slot assignments - app-scoped, requires brand:edit
+    {
+        model: 'menu_slot_assignments',
+        policy: {
+            ...RLSPolicies.AppScoped(),
+            requiredPermissions: ['brand:edit'],
+        },
+        contextFields: ['appId'],
         auditEnabled: true,
     },
 
