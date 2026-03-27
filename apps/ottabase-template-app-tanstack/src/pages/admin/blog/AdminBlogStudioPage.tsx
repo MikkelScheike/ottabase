@@ -234,10 +234,20 @@ export function AdminBlogStudioPage() {
                                         key={theme.id}
                                         className="flex items-center justify-between rounded-lg border p-3 dark:border-border"
                                     >
-                                        <div>
+                                        <div className="min-w-0 flex-1">
                                             <p className="font-medium">{theme.name}</p>
                                             {theme.description && (
                                                 <p className="text-muted-foreground text-sm">{theme.description}</p>
+                                            )}
+                                            {(theme.version || theme.author) && (
+                                                <p className="text-muted-foreground text-xs mt-0.5">
+                                                    {[
+                                                        theme.version && `v${theme.version}`,
+                                                        theme.author && `by ${theme.author}`,
+                                                    ]
+                                                        .filter(Boolean)
+                                                        .join(' · ')}
+                                                </p>
                                             )}
                                         </div>
                                         <Button

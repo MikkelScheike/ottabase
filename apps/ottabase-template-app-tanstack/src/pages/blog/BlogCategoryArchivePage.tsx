@@ -5,29 +5,15 @@
  */
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_LIST_QUERY_CONFIG } from '@/config/queryConfig';
-import { formatDate } from '@ottabase/ottablog';
+import { defaultTheme, formatDate, getActiveTheme, type BlogPostData } from '@ottabase/ottablog';
 import { useApiQuery } from '@ottabase/ottaorm/client';
-import { Button, Card, CardContent } from '@ottabase/ui-shadcn';
+import { Button } from '@ottabase/ui-shadcn';
 import { Link, useParams } from '@tanstack/react-router';
-import { Calendar, ChevronLeft, Clock, FolderTree, Lock, User } from 'lucide-react';
-
-interface BlogPost {
-    id: string;
-    title: string;
-    slug: string;
-    excerpt: string | null;
-    heroImage: { url: string; alt?: string } | null;
-    authorName: string | null;
-    readingTimeMinutes: number | null;
-    isFeatured: boolean;
-    isProtected?: boolean;
-    publishedAt: string | null;
-    tags?: { id: string; name: string; slug: string }[];
-    categories?: { id: string; name: string; slug: string }[];
-}
+import { ChevronLeft, FolderTree } from 'lucide-react';
+import { useMemo } from 'react';
 
 interface BlogPostsResponse {
-    data: BlogPost[];
+    data: BlogPostData[];
     pagination: { page: number; perPage: number; total: number; totalPages: number };
 }
 
@@ -41,6 +27,8 @@ interface CategoryInfo {
 export function BlogCategoryArchivePage() {
     const params = useParams({ strict: false });
     const slug = (params as { slug?: string }).slug;
+    const theme = useMemo(() => getActiveTheme() ?? defaultTheme, []);
+    const renderCard = theme.renderers.renderCard ?? defaultTheme.renderers.renderCard;
 
     // Fetch category info
     const { data: category, isLoading: isLoadingCategory } = useApiQuery<CategoryInfo>({
@@ -85,7 +73,7 @@ export function BlogCategoryArchivePage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <div className={theme.config?.classes?.archiveContainer || 'max-w-4xl mx-auto px-4 py-8 space-y-8'}>
             <SEOHead
                 title={`${category.name} — Blog`}
                 description={category.description || `All blog posts in the ${category.name} category`}
@@ -103,7 +91,7 @@ export function BlogCategoryArchivePage() {
             <div className="space-y-2">
                 <div className="flex items-center gap-3">
                     <FolderTree className="h-6 w-6 text-muted-foreground" />
-                    <h1 className="text-3xl font-bold">{category.name}</h1>
+                    <h1 className={theme.config?.classes?.archiveTitle || 'text-3xl font-bold'}>{category.name}</h1>
                 </div>
                 {category.description && <p className="text-muted-foreground">{category.description}</p>}
                 <p className="text-sm text-muted-foreground">
@@ -118,50 +106,22 @@ export function BlogCategoryArchivePage() {
                 <div className="space-y-4">
                     {posts.map((post) => (
                         <Link key={post.id} to="/blog/$slug" params={{ slug: post.slug }}>
-                            <Card className="hover:shadow-md transition-shadow cursor-pointer group">
-                                <CardContent className="p-5 flex gap-4">
-                                    {post.heroImage?.url && (
-                                        <img
-                                            src={post.heroImage.url}
-                                            alt={post.heroImage.alt || post.title}
-                                            className="w-24 h-24 object-cover rounded shrink-0 hidden sm:block"
-                                        />
+                            {renderCard ? (
+                                renderCard(post, {
+                                    post,
+                                    showHeroImage: true,
+                                    showExcerpt: true,
+                                    showMetadata: true,
+                                    formatDate,
+                                })
+                            ) : (
+                                <article className="p-4 border rounded hover:shadow-sm transition-shadow">
+                                    <h2 className="font-semibold">{post.title}</h2>
+                                    {post.excerpt && (
+                                        <p className="text-sm text-muted-foreground mt-1">{post.excerpt}</p>
                                     )}
-                                    <div className="min-w-0 flex-1">
-                                        <h2 className="font-semibold text-lg group-hover:text-primary transition-colors line-clamp-1 flex items-center gap-2">
-                                            {post.title}
-                                            {post.isProtected && (
-                                                <Lock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                                            )}
-                                        </h2>
-                                        {post.excerpt && (
-                                            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
-                                                {post.excerpt}
-                                            </p>
-                                        )}
-                                        <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-                                            {post.authorName && (
-                                                <span className="flex items-center gap-1">
-                                                    <User className="h-3 w-3" />
-                                                    {post.authorName}
-                                                </span>
-                                            )}
-                                            {post.publishedAt && (
-                                                <span className="flex items-center gap-1">
-                                                    <Calendar className="h-3 w-3" />
-                                                    {formatDate(post.publishedAt)}
-                                                </span>
-                                            )}
-                                            {post.readingTimeMinutes && (
-                                                <span className="flex items-center gap-1">
-                                                    <Clock className="h-3 w-3" />
-                                                    {post.readingTimeMinutes} min
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                </article>
+                            )}
                         </Link>
                     ))}
                 </div>

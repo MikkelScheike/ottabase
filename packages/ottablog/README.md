@@ -615,6 +615,14 @@ All admin blog pages share a persistent navigation bar (`BlogAdminNav`) for quic
 | Category Archive | `/blog/category/$slug` | Shows category info and all posts in that category    |
 | Series Archive   | `/blog/series/$slug`   | Shows series info and ordered list of posts in series |
 
+Archive pages are **theme-aware**: they use the active theme's `renderCard` for post cards and
+`archiveContainer`/`archiveTitle` classes for layout. Both built-in themes (Default and Minimal) provide distinct card
+renderers:
+
+- **Default** — Bordered cards with shadow hover, rounded hero thumbnails, and numbered circle badges for series order
+- **Minimal** — Border-bottom dashed, grayscale hero images, uppercase tracking-wider metadata, zero-padded series
+  numbers (01, 02…)
+
 ## Blog Studio (themes & plugins)
 
 Themes and plugins are managed in the database and applied at init so `BlogRenderer` uses the correct theme and plugin
@@ -679,11 +687,20 @@ const myTheme: Theme = {
   renderers: {
     renderTitle: (post) => <h1 className="custom-title">{post.title}</h1>,
     renderContent: (post) => <div className="custom-content">{/* render content */}</div>,
+    // renderCard controls post cards on archive/listing pages
+    renderCard: (post, props) => (
+      <article className="my-card">
+        <h2>{post.title}</h2>
+        {props.showExcerpt && post.excerpt && <p>{post.excerpt}</p>}
+      </article>
+    ),
     // ... other renderers
   },
   config: {
     classes: {
       container: 'max-w-4xl mx-auto px-4',
+      archiveContainer: 'max-w-4xl mx-auto px-4 py-8 space-y-8',
+      archiveTitle: 'text-3xl font-bold',
     },
   },
 };

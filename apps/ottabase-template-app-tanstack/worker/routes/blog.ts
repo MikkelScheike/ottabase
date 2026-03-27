@@ -112,9 +112,19 @@ export async function handleBlogStudioState(context: BlogRouteContext): Promise<
         await OttablogTheme.create({
             themeId: 'default',
             name: 'Default',
-            description: 'Clean, modern default theme',
+            description: 'Clean, modern default theme with dark mode support',
+            version: '1.0.0',
             appId,
             isActive: true,
+        });
+        await OttablogTheme.create({
+            themeId: 'minimal',
+            name: 'Minimal',
+            description: 'Clean, minimalist theme focused on typography and readability',
+            version: '1.0.0',
+            author: 'Ottabase',
+            appId,
+            isActive: false,
         });
     }
     if (state.plugins.length === 0) {
