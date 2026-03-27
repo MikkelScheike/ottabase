@@ -148,12 +148,18 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
         auditEnabled: true,
     },
 
-    // Blog tag links (junction table) - app-scoped
+    // Blog tag links (junction table) — no appId column; security inherits from parent entities
     {
         model: 'post_tag_links',
-        policy: RLSPolicies.AppScoped(), // Filter by appId
-        contextFields: ['appId'],
-        auditEnabled: true,
+        policy: { level: 'public' },
+        auditEnabled: false,
+    },
+
+    // Blog category links (junction table) — no appId column; security inherits from parent entities
+    {
+        model: 'post_category_links',
+        policy: { level: 'public' },
+        auditEnabled: false,
     },
 
     // Blog post versions - app-scoped
