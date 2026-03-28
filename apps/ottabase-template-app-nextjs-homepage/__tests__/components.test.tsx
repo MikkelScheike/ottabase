@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -302,5 +302,15 @@ describe('ThemePresetSwitcher', () => {
         // The crisp button should have the active styling (border-primary class)
         const crispButton = screen.getByText('crisp').closest('button');
         expect(crispButton?.className).toContain('border-primary');
+    });
+
+    it('applies and reports initial preset on load', async () => {
+        const onSwitch = vi.fn();
+        localStorage.setItem('ottabase.homepage.theme-preset', 'crisp');
+        render(<ThemePresetSwitcher onSwitch={onSwitch} />);
+
+        await waitFor(() => {
+            expect(onSwitch).toHaveBeenCalledWith(expect.objectContaining({ presetName: 'crisp' }));
+        });
     });
 });

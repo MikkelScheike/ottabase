@@ -21,6 +21,7 @@ app/
 ├── layout.tsx            # Root layout (SSR critical CSS)
 ├── layout-shell.tsx      # Navbar + Footer wrapper
 ├── providers.tsx         # Theme providers + saved preset restore
+├── globals.css           # Global styles
 ├── not-found.tsx         # 404
 ├── error.tsx             # Error boundary
 └── loading.tsx           # Route spinner
@@ -30,9 +31,13 @@ components/
 ├── Hero.tsx              # Hero section
 ├── FeatureCard.tsx       # Feature list items
 ├── CTASection.tsx        # Call-to-action block
-└── ThemePresetSwitcher.tsx  # Preset picker (persists to localStorage)
+├── ThemePresetSwitcher.tsx  # Preset picker (persists to localStorage)
+└── index.ts              # Barrel exports
 config/
 └── brand.config.ts       # Theme preset + brand overrides
+lib/
+└── brand-server.ts       # Server-side brand/theme utilities
+__tests__/                # Vitest test suite
 ```
 
 ## Theming
@@ -40,7 +45,7 @@ config/
 Edit `config/brand.config.ts`:
 
 ```typescript
-export const themePreset = 'artisan'; // default | neo | crisp | funky | artisan | midnight | rose | verdant
+export const themePreset = 'crisp'; // default | neo | crisp | funky | artisan | midnight | rose | verdant
 ```
 
 The selected preset is saved to `localStorage` (`ottabase.homepage.theme-preset`) and restored on page load. Visit
@@ -48,13 +53,18 @@ The selected preset is saved to `localStorage` (`ottabase.homepage.theme-preset`
 
 ## Scripts
 
-| Command        | Description                          |
-| -------------- | ------------------------------------ |
-| `pnpm dev`     | Dev server                           |
-| `pnpm build`   | Production build                     |
-| `pnpm preview` | Build + run on local `workerd`       |
-| `pnpm deploy`  | Build + deploy to Cloudflare Workers |
-| `pnpm test`    | Run tests                            |
+| Command              | Description                          |
+| -------------------- | ------------------------------------ |
+| `pnpm dev`           | Dev server                           |
+| `pnpm build`         | Production Next.js build             |
+| `pnpm build:worker`  | Build OpenNext Cloudflare worker     |
+| `pnpm start`         | Start production server locally      |
+| `pnpm preview`       | Build + run on local `workerd`       |
+| `pnpm deploy`        | Build + deploy to Cloudflare Workers |
+| `pnpm lint`          | ESLint                               |
+| `pnpm type-check`    | TypeScript validation                |
+| `pnpm test`          | Run tests                            |
+| `pnpm test:coverage` | Run tests with coverage              |
 
 ## Deployment
 

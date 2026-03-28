@@ -42,18 +42,40 @@ type ThemePresetSwitcherProps = {
 export function ThemePresetSwitcher({ onSwitch }: ThemePresetSwitcherProps = {}) {
     const { config } = useBrand();
     const { resolvedTheme } = useTheme();
-    // Initialize from localStorage if available, then config fallback
-    const [activePreset, setActivePreset] = useState<string>(() => {
+
+    const getInitialPreset = useCallback((): string => {
         if (typeof window !== 'undefined') {
             const saved = localStorage.getItem(THEME_STORAGE_KEY);
             if (saved && BUILTIN_THEME_NAMES.includes(saved)) return saved;
         }
-        return (config as any)?.themeBase ?? 'default';
-    });
+        const configThemeBase = (config as any)?.themeBase;
+        if (configThemeBase && BUILTIN_THEME_NAMES.includes(configThemeBase)) {
+            return configThemeBase;
+        }
+        return 'default';
+    }, [config]);
+
+    // Initialize from localStorage if available, then config fallback
+    const [activePreset, setActivePreset] = useState<string>(() => 'default');
 
     useEffect(() => {
         ensureRegistered();
     }, []);
+
+    // Keep active preset/theme in sync with persisted or SSR config on first load and mode changes
+    useEffect(() => {
+        ensureRegistered();
+
+        const presetName = getInitialPreset();
+        const base = getThemeByName(presetName);
+        if (!base) return;
+
+        const mode = resolvedTheme === 'dark' ? 'dark' : 'light';
+        const resolved = resolveTheme({ base, tenantOverrides: {}, mode });
+        applyBrandTheme(resolved);
+        setActivePreset(presetName);
+        onSwitch?.({ presetName, resolvedTheme: resolved });
+    }, [getInitialPreset, resolvedTheme, onSwitch]);
 
     const handleSelect = useCallback(
         (presetName: string) => {
