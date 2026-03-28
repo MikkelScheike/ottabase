@@ -1,4 +1,4 @@
-import { PACKAGES_ENABLED } from '@/ottabase/config';
+import { MEDIA_LIBRARY_ENABLED, PACKAGES_ENABLED } from '@/ottabase/config';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { IconMenu2 } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
@@ -81,6 +81,16 @@ const ADMIN_CATEGORIES: AdminCategory[] = [
                 href: '/admin/blog/studio',
                 icon: Palette,
             },
+            ...(MEDIA_LIBRARY_ENABLED
+                ? [
+                      {
+                          title: 'Media Library',
+                          description: 'Browse uploads with previews, metadata, and direct links for editors.',
+                          href: '/admin/media-library',
+                          icon: FileText,
+                      },
+                  ]
+                : []),
         ],
     },
     {
@@ -247,6 +257,11 @@ export function AdminIndexPage() {
                     {PACKAGES_ENABLED.shortlinks && (
                         <Link to="/shortlinks" className="text-sm text-primary hover:underline">
                             Shortlinks Manager
+                        </Link>
+                    )}
+                    {MEDIA_LIBRARY_ENABLED && (
+                        <Link to="/media-library" className="text-sm text-primary hover:underline">
+                            My Uploads
                         </Link>
                     )}
                 </div>

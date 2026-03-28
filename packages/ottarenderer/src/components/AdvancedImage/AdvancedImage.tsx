@@ -1,4 +1,5 @@
 import React from 'react';
+import { useMediaLightboxRegistration } from '@ottabase/medialibrary';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import { AdvancedImageData } from './advancedimage.types';
 
@@ -20,7 +21,31 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
         height,
         featuredImage = false,
         aspectRatio = 'original',
+        mediaId,
+        mimeType,
     } = data;
+
+    const lightboxItem = React.useMemo(
+        () => ({
+            id: mediaId || resolvedUrl,
+            url: resolvedUrl,
+            previewUrl: resolvedUrl,
+            thumbnailUrl: resolvedUrl,
+            title: caption || alt || null,
+            originalName: alt || caption || resolvedUrl.substring(resolvedUrl.lastIndexOf('/') + 1),
+            altText: alt || caption || null,
+            caption: caption || null,
+            mimeType: mimeType || null,
+            mediaKind: 'image' as const,
+            width: width || null,
+            height: height || null,
+        }),
+        [alt, caption, height, mediaId, mimeType, resolvedUrl, width],
+    );
+    const { open: openLightbox, isEnabled: hasLightbox } = useMediaLightboxRegistration(
+        mediaId || resolvedUrl,
+        linkUrl ? null : lightboxItem,
+    );
 
     // Base Tailwind classes for the figure (includes image-block container styles)
     let figureTailwindClasses = [
@@ -116,7 +141,18 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
         }
     }
 
-    const imageComponent = <img src={resolvedUrl} alt={altFinal} className={imageClasses} />;
+    const imageComponent = (
+        <img
+            src={resolvedUrl}
+            alt={altFinal}
+            className={imageClasses}
+            onClick={() => {
+                if (!linkUrl && hasLightbox) {
+                    openLightbox();
+                }
+            }}
+        />
+    );
 
     return (
         <>

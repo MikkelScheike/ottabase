@@ -23,6 +23,7 @@ module.exports = {
         '../../packages/spotlight/src/**/*.{js,ts,jsx,tsx}',
         '../../packages/ottarenderer/src/**/*.{js,ts,jsx,tsx}',
         '../../packages/ottablog/src/**/*.{js,ts,jsx,tsx}',
+        '../../packages/medialibrary/src/**/*.{js,ts,jsx,tsx}',
     ],
     theme: {
         extend: {

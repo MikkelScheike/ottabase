@@ -8,6 +8,7 @@
 import { useRBACToast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
+import { MEDIA_LIBRARY_ENABLED } from '@/ottabase/config';
 import { requestEmailVerification } from '@/lib/auth-api';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import {
@@ -38,6 +39,7 @@ import {
 } from '@ottabase/ui-shadcn';
 import { getTimezonesForSelect, setTimezoneConfig } from '@ottabase/utils/timezone';
 import { IconExternalLink, IconPencil, IconTrash } from '@tabler/icons-react';
+import { Link } from '@tanstack/react-router';
 import { Calendar, Check, Loader2, Mail, User } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { AvatarEditModal } from './AvatarEditModal';
@@ -307,6 +309,13 @@ export function UserProfilePage() {
             <div>
                 <h1 className="text-2xl font-bold">Profile Settings</h1>
                 <p className="text-muted-foreground mt-1">Manage your account settings and preferences</p>
+                {MEDIA_LIBRARY_ENABLED && (
+                    <div className="mt-3">
+                        <Button variant="outline" size="sm" asChild>
+                            <Link to="/media-library">Open My Uploads</Link>
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Profile Info */}

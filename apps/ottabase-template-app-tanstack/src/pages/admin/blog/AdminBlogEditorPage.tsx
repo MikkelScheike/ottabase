@@ -18,11 +18,13 @@ import {
 } from '@ottabase/ottablog';
 import {
     AdvancedImageTool,
+    MediaLibraryTool,
     useOttaEditor,
     type BlockToolConstructable,
     type OutputData,
     type ToolSettings,
 } from '@ottabase/ottaeditor';
+import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
@@ -184,6 +186,11 @@ const getEditorConfig = (placeholder: string) => ({
                 provider: 'r2',
                 uploadEndpoint: '/api/upload',
             } as ToolSettings,
+        },
+        {
+            name: 'mediaLibrary',
+            tool: MediaLibraryTool as unknown as BlockToolConstructable,
+            config: {} as ToolSettings,
         },
     ],
 });
@@ -1869,11 +1876,13 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                             {/* Main Content */}
                             {hasPreviewContent && (
                                 <div className="prose prose-slate dark:prose-invert max-w-none mb-12">
-                                    <Blocks
-                                        data={previewPost.content!}
-                                        renderers={customRenderers}
-                                        config={defaultEJSRConfigs}
-                                    />
+                                    <MediaLightboxProvider>
+                                        <Blocks
+                                            data={previewPost.content!}
+                                            renderers={customRenderers}
+                                            config={defaultEJSRConfigs}
+                                        />
+                                    </MediaLightboxProvider>
                                 </div>
                             )}
 
@@ -1882,11 +1891,13 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                 <aside className="border-t pt-8 mt-12">
                                     <h2 className="text-xl font-semibold mb-4">Footnotes</h2>
                                     <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-muted-foreground">
-                                        <Blocks
-                                            data={previewPost.footnotes!}
-                                            renderers={customRenderers}
-                                            config={defaultEJSRConfigs}
-                                        />
+                                        <MediaLightboxProvider>
+                                            <Blocks
+                                                data={previewPost.footnotes!}
+                                                renderers={customRenderers}
+                                                config={defaultEJSRConfigs}
+                                            />
+                                        </MediaLightboxProvider>
                                     </div>
                                 </aside>
                             )}

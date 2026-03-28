@@ -1,19 +1,76 @@
 import './MediaLibraryTool.css';
 
+/** Subset of the Editor.js Block API used by this tool */
+interface BlocksApi {
+    getCurrentBlockIndex(): number;
+    getBlocksCount(): number;
+    getBlockByIndex(index: number): { id: string } | undefined;
+    delete(index: number): void;
+    insert(
+        type: string,
+        data: Record<string, unknown>,
+        config: Record<string, unknown>,
+        index: number,
+        needToFocus: boolean,
+    ): Promise<void>;
+}
+
+interface EditorJsApi {
+    blocks: BlocksApi;
+}
+
+interface EditorJsBlock {
+    id: string;
+}
+
+interface MediaFilePayload {
+    url: string;
+    name?: string;
+    caption?: string;
+    alt?: string;
+    width?: number;
+    height?: number;
+    mediaId?: string;
+    mimeType?: string;
+}
+
 const globalState = {
     isActive: false,
     activeBlockIndex: null as number | null,
     activeBlockId: '',
 };
 
+// Single shared listener — delegates to the active instance via globalState.activeBlockId
+const instances = new Map<string, MediaLibraryTool>();
+let sharedListenerAttached = false;
+
+function attachSharedListener() {
+    if (sharedListenerAttached) return;
+    sharedListenerAttached = true;
+
+    window.addEventListener('media-library-selected-item', async (e: Event) => {
+        const customEvent = e as CustomEvent;
+        if (globalState.isActive) return;
+
+        // Route to the instance that opened the picker
+        const instance = instances.get(globalState.activeBlockId);
+        if (!instance) return;
+
+        globalState.isActive = true;
+        try {
+            await instance.handleMediaSelected(customEvent);
+        } finally {
+            globalState.isActive = false;
+        }
+    });
+}
+
 export default class MediaLibraryTool {
-    private api: any;
-    private editor: any;
+    private api: EditorJsApi;
     private wrapper: HTMLElement;
-    private block: any;
-    private mediaSelectedListener: (e: Event) => void;
-    private isActive: boolean = false;
-    private isListenerAttached: boolean = false;
+    private block: EditorJsBlock;
+    private hasMedia: boolean = false;
+    private placeholder: HTMLElement | null = null;
 
     static get toolbox() {
         return {
@@ -22,65 +79,66 @@ export default class MediaLibraryTool {
         };
     }
 
-    constructor({ api, config, block }: { api: any; config: any; block: any }) {
+    constructor({ api, config, block }: { api: EditorJsApi; config: Record<string, unknown>; block: EditorJsBlock }) {
         this.api = api;
-        this.editor = config.editor;
         this.block = block;
         this.wrapper = document.createElement('div');
 
-        // Define listener but don't attach it yet
-        this.mediaSelectedListener = async (e: Event) => {
-            const customEvent = e as CustomEvent;
-            if (globalState.isActive) return;
-            globalState.isActive = true;
-            try {
-                const file = customEvent.detail.media;
-                const mediaLibOpenedVia = customEvent.detail?.openedVia === 'programmatic';
-                console.log('Media selected:', file?.name, 'Media library opened via editor:', mediaLibOpenedVia);
-
-                let currentIndex = this.api.blocks.getCurrentBlockIndex();
-
-                // Delete the media library block first if it was opened programmatically (prevent index issues)
-                if (mediaLibOpenedVia && globalState.activeBlockIndex !== null) {
-                    const blockToDelete = this.api.blocks.getBlockByIndex(globalState.activeBlockIndex);
-                    if (blockToDelete && blockToDelete.id === globalState.activeBlockId) {
-                        console.log('Deleting media library block at index:', globalState.activeBlockIndex);
-                        this.api.blocks.delete(globalState.activeBlockIndex);
-                        // Adjust insertion index since we deleted a block
-                        currentIndex = globalState.activeBlockIndex;
-                    }
-                } else if (!mediaLibOpenedVia) {
-                    // Insert at the end if not opened via editor
-                    currentIndex = this.api.blocks.getBlocksCount();
-                }
-
-                // Ensure a valid index always
-                currentIndex =
-                    currentIndex < 0
-                        ? (globalState.activeBlockIndex ?? this.api.blocks.getBlocksCount())
-                        : currentIndex;
-
-                await this.insertImage(file, currentIndex);
-                console.log('Image block inserted at index:', currentIndex);
-
-                // Reset global state
-                globalState.activeBlockIndex = null;
-                globalState.activeBlockId = '';
-            } catch (error) {
-                console.error('Error inserting image block:', error);
-            } finally {
-                globalState.isActive = false;
-            }
-        };
+        // Register this instance and ensure the shared listener exists
+        instances.set(block.id, this);
+        attachSharedListener();
     }
 
-    async insertImage(file: any, index: number) {
+    async handleMediaSelected(customEvent: CustomEvent) {
+        const file = customEvent.detail.media as MediaFilePayload;
+        const mediaLibOpenedVia = customEvent.detail?.openedVia === 'programmatic';
+        console.log('Media selected:', file?.name, 'Media library opened via editor:', mediaLibOpenedVia);
+
+        try {
+            let currentIndex = this.api.blocks.getCurrentBlockIndex();
+
+            // Delete the media library block first if it was opened programmatically
+            if (mediaLibOpenedVia && globalState.activeBlockIndex !== null) {
+                const blockToDelete = this.api.blocks.getBlockByIndex(globalState.activeBlockIndex);
+                if (blockToDelete && blockToDelete.id === globalState.activeBlockId) {
+                    this.api.blocks.delete(globalState.activeBlockIndex);
+                    currentIndex = globalState.activeBlockIndex;
+                }
+            } else if (!mediaLibOpenedVia) {
+                currentIndex = this.api.blocks.getBlocksCount();
+            }
+
+            currentIndex =
+                currentIndex < 0 ? (globalState.activeBlockIndex ?? this.api.blocks.getBlocksCount()) : currentIndex;
+
+            await this.insertImage(file, currentIndex);
+
+            // Hide the placeholder since media was selected
+            this.hasMedia = true;
+            if (this.placeholder) {
+                this.placeholder.style.display = 'none';
+            }
+
+            globalState.activeBlockIndex = null;
+            globalState.activeBlockId = '';
+        } catch (error) {
+            console.error('Error inserting image block:', error);
+        }
+    }
+
+    private async insertImage(file: MediaFilePayload, index: number) {
         const imageData = {
             success: 1,
+            url: file.url,
             file: {
                 url: file.url,
             },
-            caption: file.name,
+            caption: file.caption || file.name,
+            alt: file.alt || '',
+            width: file.width || undefined,
+            height: file.height || undefined,
+            mediaId: file.mediaId || undefined,
+            mimeType: file.mimeType || undefined,
             withBorder: true,
             withBackground: true,
             stretched: false,
@@ -99,36 +157,32 @@ export default class MediaLibraryTool {
         // Store the current block index in global state
         globalState.activeBlockIndex = this.api.blocks.getCurrentBlockIndex();
         globalState.activeBlockId = this.block.id;
-        window.dispatchEvent(new CustomEvent('media-library-open'));
+        window.dispatchEvent(
+            new CustomEvent('media-library-open', {
+                detail: {
+                    source: 'editor',
+                },
+            }),
+        );
         console.log('Global state:', globalState);
     }
 
     render() {
         this.wrapper.classList.add('cdx-media-library', 'ob-plugin');
 
-        // Attach listener only once
-        if (!this.isListenerAttached) {
-            window.addEventListener('media-library-selected-item', this.mediaSelectedListener);
-            this.isListenerAttached = true;
-        }
-
-        const placeholder = document.createElement('div');
-        placeholder.classList.add('cdx-media-library-placeholder');
-        placeholder.innerHTML = `
+        this.placeholder = document.createElement('div');
+        this.placeholder.classList.add('cdx-media-library-placeholder');
+        this.placeholder.innerHTML = `
             <div class="cdx-media-library-placeholder-content">
                 Click to select media from library
             </div>
         `;
 
-        placeholder.addEventListener('click', () => {
+        this.placeholder.addEventListener('click', () => {
             this.openMediaLib();
         });
 
-        this.wrapper.appendChild(placeholder);
-
-        // Auto-open media library when this block is created?
-        // The original code does this:
-        this.openMediaLib();
+        this.wrapper.appendChild(this.placeholder);
 
         return this.wrapper;
     }
@@ -138,10 +192,6 @@ export default class MediaLibraryTool {
     }
 
     destroy() {
-        if (this.isListenerAttached) {
-            window.removeEventListener('media-library-selected-item', this.mediaSelectedListener);
-            this.isListenerAttached = false;
-        }
-        this.isActive = false;
+        instances.delete(this.block.id);
     }
 }

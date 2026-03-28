@@ -7,6 +7,7 @@ import { errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import type { CloudflareEnv } from '../../cloudflare-env';
 import { getAuthOptions } from '../lib/auth-utils';
+import { persistUploadedMediaRecord } from './media-library';
 
 export interface StorageRouteContext {
     request: Request;
@@ -150,6 +151,7 @@ export async function handleCloudflareR2(context: StorageRouteContext): Promise<
 
 export async function handleUpload(context: StorageRouteContext): Promise<Response> {
     const { request, env } = context;
+    const envConfig = env as Record<string, string | undefined>;
     if (request.method !== 'POST') {
         return errorResponse('Method not allowed', 405, {
             code: 'METHOD_NOT_ALLOWED',
@@ -160,14 +162,16 @@ export async function handleUpload(context: StorageRouteContext): Promise<Respon
         const formData = await request.formData();
         const file = formData.get('file');
         const provider = (formData.get('provider') as string) || 'r2';
+        const session = await getSession(request, env as any, getAuthOptions(env));
+        const customKey = formData.get('key') as string | null;
 
         if (!(file instanceof File)) {
             return errorResponse('file is required', 400);
         }
 
         if (provider === 'cloudflare-images') {
-            const accountId = env.CLOUDFLARE_ACCOUNT_ID as string;
-            const apiToken = env.CLOUDFLARE_API_TOKEN as string;
+            const accountId = envConfig.CLOUDFLARE_ACCOUNT_ID as string;
+            const apiToken = envConfig.CLOUDFLARE_API_TOKEN as string;
 
             if (!accountId || !apiToken) {
                 return errorResponse(
@@ -189,11 +193,21 @@ export async function handleUpload(context: StorageRouteContext): Promise<Respon
             );
 
             if (result.success) {
+                const media = await persistUploadedMediaRecord(request, env, {
+                    provider: 'cloudflare-images',
+                    storageKey: result.key || '',
+                    url: result.url || '',
+                    fileName: file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    fileSize: file.size,
+                });
+
                 return jsonResponse({
                     success: true,
                     url: result.url,
                     key: result.key,
                     provider: 'cloudflare-images',
+                    media,
                 });
             }
 
@@ -209,13 +223,11 @@ export async function handleUpload(context: StorageRouteContext): Promise<Respon
         }
 
         // Avatar upload: use fixed key {userId}/avatar.png so each upload overwrites
-        const customKey = formData.get('key') as string | null;
         let uploadOptions: { maxFileSize: number; generateKey?: (file: File) => string } = {
             maxFileSize: 50 * 1024 * 1024,
         };
 
         if (customKey === 'avatar') {
-            const session = await getSession(request, env as any, getAuthOptions(env));
             const userId = session?.user?.id;
             if (!userId) {
                 return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
@@ -224,17 +236,34 @@ export async function handleUpload(context: StorageRouteContext): Promise<Respon
             uploadOptions.generateKey = () => `${hash}/avatar.png`;
         }
 
-        const r2Client = createR2Client({ bucket: env.OBCF_R2 });
+        const r2Client = createR2Client({ bucket: env.OBCF_R2 as any });
         const result = await uploadFileToR2(file, r2Client, uploadOptions);
 
         if (result.success) {
             // Avatar: append ?v=timestamp for cache busting when user uploads new image
-            const url = customKey === 'avatar' ? `${result.url}?v=${Date.now()}` : result.url;
+            const url = customKey === 'avatar' ? `${result.url || ''}?v=${Date.now()}` : result.url || '';
+            const media = await persistUploadedMediaRecord(
+                request,
+                env,
+                {
+                    provider: 'r2',
+                    storageKey: result.key || '',
+                    url,
+                    fileName: file.name,
+                    mimeType: file.type || 'application/octet-stream',
+                    fileSize: file.size,
+                },
+                {
+                    upsertByStorageKey: customKey === 'avatar',
+                },
+            );
+
             return jsonResponse({
                 success: true,
                 url,
                 key: result.key,
                 provider: 'r2',
+                media,
             });
         }
 
@@ -271,8 +300,9 @@ export async function handleUploadFile(context: StorageRouteContext): Promise<Re
 
 export async function handleCloudflareImages(context: StorageRouteContext): Promise<Response> {
     const { env, request } = context;
-    const accountId = env.CF_IMAGES_ACCOUNT_ID;
-    const apiToken = env.CF_IMAGES_API_TOKEN;
+    const envConfig = env as Record<string, string | undefined>;
+    const accountId = envConfig.CF_IMAGES_ACCOUNT_ID;
+    const apiToken = envConfig.CF_IMAGES_API_TOKEN;
 
     if (!accountId || !apiToken) {
         return errorResponse('Cloudflare Images credentials not configured', 500, {

@@ -9,6 +9,7 @@ import { BLOG_DETAIL_QUERY_CONFIG, BLOG_LIST_QUERY_CONFIG } from '@/config/query
 import { api, isApiError } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useBlogStudio } from '@/ottabase/blog/BlogStudioContext';
+import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import { BlogRenderer, formatDate, type BlogPostData } from '@ottabase/ottablog';
 import type { OutputData } from '@ottabase/ottaeditor';
 import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
@@ -276,50 +277,54 @@ export function BlogDetailPage() {
             {/* Blog Renderer (full content when not locked) */}
             {!isLocked && (
                 <>
-                    <BlogRenderer
-                        key={studioReady ? 'studio-ready' : 'studio-loading'}
-                        post={blogPostData}
-                        showHeroImage
-                        showTitle
-                        showMetadata
-                        showExcerpt
-                        showFootnotes
-                        showSeries
-                        formatDate={formatDate}
-                        renderSeriesNav={(post) => {
-                            if (!series || seriesPosts.length <= 1) return null;
-                            return (
-                                <div className="mt-4 pt-4 border-t">
-                                    <div className="grid gap-4 sm:grid-cols-2">
-                                        {prevPost && (
-                                            <Link
-                                                to={`/blog/${prevPost.slug}`}
-                                                className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
-                                            >
-                                                <ArrowLeft className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <div className="text-xs text-muted-foreground mb-1">Previous</div>
-                                                    <div className="font-medium truncate">{prevPost.title}</div>
-                                                </div>
-                                            </Link>
-                                        )}
-                                        {nextPost && (
-                                            <Link
-                                                to={`/blog/${nextPost.slug}`}
-                                                className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors sm:text-right sm:flex-row-reverse"
-                                            >
-                                                <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                                                <div className="min-w-0">
-                                                    <div className="text-xs text-muted-foreground mb-1">Next</div>
-                                                    <div className="font-medium truncate">{nextPost.title}</div>
-                                                </div>
-                                            </Link>
-                                        )}
+                    <MediaLightboxProvider variant="immersive">
+                        <BlogRenderer
+                            key={studioReady ? 'studio-ready' : 'studio-loading'}
+                            post={blogPostData}
+                            showHeroImage
+                            showTitle
+                            showMetadata
+                            showExcerpt
+                            showFootnotes
+                            showSeries
+                            formatDate={formatDate}
+                            renderSeriesNav={(post) => {
+                                if (!series || seriesPosts.length <= 1) return null;
+                                return (
+                                    <div className="mt-4 pt-4 border-t">
+                                        <div className="grid gap-4 sm:grid-cols-2">
+                                            {prevPost && (
+                                                <Link
+                                                    to={`/blog/${prevPost.slug}`}
+                                                    className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors"
+                                                >
+                                                    <ArrowLeft className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs text-muted-foreground mb-1">
+                                                            Previous
+                                                        </div>
+                                                        <div className="font-medium truncate">{prevPost.title}</div>
+                                                    </div>
+                                                </Link>
+                                            )}
+                                            {nextPost && (
+                                                <Link
+                                                    to={`/blog/${nextPost.slug}`}
+                                                    className="flex items-center gap-3 p-4 rounded-lg border hover:bg-muted/50 transition-colors sm:text-right sm:flex-row-reverse"
+                                                >
+                                                    <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                                                    <div className="min-w-0">
+                                                        <div className="text-xs text-muted-foreground mb-1">Next</div>
+                                                        <div className="font-medium truncate">{nextPost.title}</div>
+                                                    </div>
+                                                </Link>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        }}
-                    />
+                                );
+                            }}
+                        />
+                    </MediaLightboxProvider>
 
                     {/* Tags */}
                     {displayPost.tags && displayPost.tags.length > 0 && (

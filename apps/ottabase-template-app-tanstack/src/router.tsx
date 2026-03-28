@@ -4,7 +4,7 @@ import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
 import { usePageViewTracking } from '@/hooks/usePageViewTracking';
 import { api, isApiError } from '@/lib/api';
 import { ConfigurableLayout } from '@/ottabase/components/ConfigurableLayout';
-import { APP_META, PACKAGES_ENABLED } from '@/ottabase/config';
+import { APP_META, MEDIA_LIBRARY_ENABLED, PACKAGES_ENABLED } from '@/ottabase/config';
 import { BrandPathSync, LayoutResolver } from '@ottabase/brand-engine-react';
 import { tanstackRouterAdapter } from '@ottabase/brand-engine-react/routers';
 import { Button, Toaster } from '@ottabase/ui-shadcn';
@@ -831,6 +831,16 @@ const adminDbRoute = new Route({
     ),
 });
 
+const adminMediaLibraryRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/admin/media-library',
+    component: lazyRouteComponent(() =>
+        import('@/pages/admin/AdminMediaLibraryPage').then((m) => ({
+            default: () => renderAdminRoute(<m.AdminMediaLibraryPage />),
+        })),
+    ),
+});
+
 const blogDetailRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/blog/$slug',
@@ -921,6 +931,20 @@ const userProfileRoute = new Route({
             default: () => (
                 <ProtectedRoute>
                     <m.UserProfilePage />
+                </ProtectedRoute>
+            ),
+        })),
+    ),
+});
+
+const userMediaLibraryRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/media-library',
+    component: lazyRouteComponent(() =>
+        import('@/pages/user/UserMediaLibraryPage').then((m) => ({
+            default: () => (
+                <ProtectedRoute>
+                    <m.UserMediaLibraryPage />
                 </ProtectedRoute>
             ),
         })),
@@ -1101,6 +1125,7 @@ const coreRoutes = [
     organizationRegistrationRoute,
     organizationSettingsRoute,
     userProfileRoute,
+    ...(MEDIA_LIBRARY_ENABLED ? [userMediaLibraryRoute, adminMediaLibraryRoute] : []),
 ];
 const routeTree = rootRoute.addChildren([
     ...coreRoutes,

@@ -1,0 +1,99 @@
+# @ottabase/medialibrary
+
+Shared media-library primitives for Ottabase apps.
+
+This package provides:
+
+- Media classification and upload-to-record normalization helpers.
+- Reusable preview components for images, video, audio, and documents.
+- A production-ready lightbox provider with fullscreen viewing, keyboard navigation, and thumbnail strip support.
+- Two viewer styles: the default admin/editor viewer and an immersive public-gallery viewer.
+
+> **Note:** The `media` table schema and `Media` model now live in `@ottabase/ottaorm` as a core table. This package
+> re-exports them for backward compatibility.
+
+## What Lives Here
+
+- Schema (re-exported from `@ottabase/ottaorm`): `mediaTable`
+- Helpers: `createMediaLibraryRecordInput()`, `getMediaKindFromMimeType()`, `toMediaSelectionPayload()`
+- Viewer UI: `MediaPreview`, `MediaLightboxProvider`
+
+The app still owns the OttaORM `BaseModel` class and route wiring, which keeps the package reusable across multiple
+Ottabase apps.
+
+## Basic Usage
+
+```typescript
+import { createMediaLibraryRecordInput } from '@ottabase/medialibrary';
+
+const record = createMediaLibraryRecordInput({
+    provider: 'r2',
+    storageKey: 'uploads/cover.webp',
+    url: '/api/upload/file/uploads/cover.webp',
+    fileName: 'cover.webp',
+    mimeType: 'image/webp',
+    fileSize: 248102,
+    appId: 'ottabase-template-app',
+    userId: 'user-123',
+});
+```
+
+## Wrap Renderer Output
+
+```tsx
+import { MediaLightboxProvider } from '@ottabase/medialibrary';
+import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
+
+// Admin / editor preview — shows metadata sidebar
+export function PostPreview({ content }: { content: any }) {
+    return (
+        <MediaLightboxProvider>
+            <Blocks data={content} renderers={customRenderers} config={defaultEJSRConfigs} />
+        </MediaLightboxProvider>
+    );
+}
+
+// Public blog page — cinematic gallery with auto-hiding controls
+export function PostContent({ content }: { content: any }) {
+    return (
+        <MediaLightboxProvider variant="immersive">
+            <Blocks data={content} renderers={customRenderers} config={defaultEJSRConfigs} />
+        </MediaLightboxProvider>
+    );
+}
+```
+
+When the renderer's image blocks are inside the provider, they automatically register themselves for:
+
+- fullscreen preview
+- previous / next navigation
+- keyboard controls (Escape, Arrow keys)
+- bottom thumbnail rail
+- auto-hiding controls after inactivity (immersive only)
+- caption/title overlay (immersive only)
+
+`variant="default"` — rich admin/editor viewer with metadata sidebar, download, and open-in-tab actions.
+`variant="immersive"` — cinematic end-user gallery: pure black backdrop, auto-hiding chrome, caption overlay, smooth
+thumbnail scrolling.
+
+## Editor Picker Payload
+
+```typescript
+import { toMediaSelectionPayload } from '@ottabase/medialibrary';
+
+const payload = toMediaSelectionPayload(mediaItem);
+window.dispatchEvent(
+    new CustomEvent('media-library-selected-item', {
+        detail: {
+            media: payload,
+            openedVia: 'programmatic',
+        },
+    }),
+);
+```
+
+## Notes
+
+- The `media` table is a core OttaORM table (defined in `@ottabase/ottaorm`), designed for RLS-aware apps.
+- The package is storage-provider agnostic for callers; the app decides how uploads are persisted.
+- The lightbox is intentionally opt-in. Wrap only the content areas where you want gallery behavior.

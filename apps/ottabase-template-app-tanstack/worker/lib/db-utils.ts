@@ -12,10 +12,18 @@ import {
     PostTagLink,
     PostVersion,
 } from '@ottabase/ottablog';
-import { clearConnection, hasConnection, initRLS, registerConnection, registerModels } from '@ottabase/ottaorm';
+import {
+    clearConnection,
+    hasConnection,
+    initRLS,
+    registerConnection,
+    registerModels,
+    registerPolicy,
+} from '@ottabase/ottaorm';
 import {
     Account,
     Authenticator,
+    Media,
     Organization,
     OrganizationMember,
     Permission,
@@ -30,6 +38,7 @@ import { Shortlink } from '@ottabase/shortlinks';
 import { errorResponse } from '@ottabase/utils/http-errors';
 import { getOttabaseConfig } from '../../ottabase/config.loader';
 import { Todo } from '../../ottabase/models/Todo';
+import { mediaLibraryPolicy } from '../../ottabase/models/mediaLibraryPolicy';
 import type { CloudflareEnv } from '../cloudflare-env';
 import { readJson } from './utils';
 
@@ -78,10 +87,12 @@ export function initDbConnection(env: CloudflareEnv): void {
 
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const packages = getOttabaseConfig(env).packages;
+    const config = getOttabaseConfig(env);
+    const packages = config.packages;
     const coreModels = [
         Account,
         Authenticator,
+        Media,
         Session,
         VerificationToken,
         ScheduledTask,
@@ -111,6 +122,8 @@ export function initDbConnection(env: CloudflareEnv): void {
     ];
     // Menu, MenuItem: use /api/brand/menus (cache-invalidating CRUD), not OttaORM
     const brandModels = [BrandKit, LayoutTemplate, LayoutRouteMapping, MenuSlotAssignment];
+    registerPolicy(mediaLibraryPolicy);
+
     const appModels = [Todo];
 
     registerModels([...coreModels, ...ottablogModels, ...packageModels, ...brandModels, ...appModels]);

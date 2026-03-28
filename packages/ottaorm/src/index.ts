@@ -64,7 +64,7 @@ export type {
 } from './base';
 
 // Validation (Zod schema builder from field metadata)
-export { buildZodSchema, validateField, validateWithSchema, ValidationError } from './validation';
+export { ValidationError, buildZodSchema, validateField, validateWithSchema } from './validation';
 export type { ValidationResult } from './validation';
 
 /**
@@ -77,6 +77,8 @@ export {
     AuditLog,
     // Auth.js SQL models (Edge-safe)
     Authenticator,
+    // Media (core — tracks all uploaded files)
+    Media,
     // Multi-tenant/RBAC models and tables
     Organization,
     OrganizationMember,
@@ -91,6 +93,7 @@ export {
     accountsTable,
     auditLogsTable,
     authenticatorsTable,
+    mediaTable,
     organizationMembersTable,
     organizationsTable,
     permissionsTable,
@@ -106,9 +109,11 @@ export type {
     AccountType,
     AuditLogType,
     AuthenticatorType,
+    MediaType,
     NewAccountType,
     NewAuditLogType,
     NewAuthenticatorType,
+    NewMediaType,
     NewOrganizationMemberType,
     NewOrganizationType,
     NewPermissionType,

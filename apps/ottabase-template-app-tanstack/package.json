@@ -43,6 +43,7 @@
         "@ottabase/forms": "workspace:*",
         "@ottabase/i18n": "workspace:*",
         "@ottabase/logger": "workspace:*",
+        "@ottabase/medialibrary": "workspace:*",
         "@ottabase/ottablog": "workspace:*",
         "@ottabase/ottadate": "workspace:*",
         "@ottabase/ottaeditor": "workspace:*",

@@ -31,6 +31,7 @@ import {
 import {
     accountsTable,
     authenticatorsTable,
+    mediaTable,
     sessionsTable,
     usersTable,
     verificationTokensTable,
@@ -38,7 +39,7 @@ import {
 import { referralTrackingTable } from '@ottabase/referrals';
 import { shortlinksTable } from '@ottabase/shortlinks';
 
-export { accountsTable, authenticatorsTable, sessionsTable, usersTable, verificationTokensTable };
+export { accountsTable, authenticatorsTable, mediaTable, sessionsTable, usersTable, verificationTokensTable };
 
 // ============================================================
 // APP-SPECIFIC TABLES

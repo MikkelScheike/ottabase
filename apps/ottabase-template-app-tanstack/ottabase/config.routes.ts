@@ -33,6 +33,7 @@
 //   }
 // ============================================================
 
+import { handleMediaLibraryPurge } from '../worker/routes/media-library';
 import type { ApiRouteContext } from '../worker/routes/router';
 
 /**
@@ -42,15 +43,13 @@ import type { ApiRouteContext } from '../worker/routes/router';
  * Return a Response to handle the route, or null to skip.
  */
 export async function handleCustomRoutes(context: ApiRouteContext): Promise<Response | null> {
-    // const { route, method } = context;
+    const { route, method } = context;
 
-    // Add your custom route handlers here.
-    // Example:
-    //   if (route === '/api/my-feature' && method === 'GET') {
-    //       return new Response(JSON.stringify({ hello: 'world' }), {
-    //           headers: { 'Content-Type': 'application/json' },
-    //       });
-    //   }
+    // Media library routes (media is a core table, always available)
+    const mediaPurgeMatch = route.match(/^\/api\/medialibrary\/([^/]+)\/purge$/);
+    if (method === 'DELETE' && mediaPurgeMatch) {
+        return handleMediaLibraryPurge(context, decodeURIComponent(mediaPurgeMatch[1]));
+    }
 
     return null;
 }

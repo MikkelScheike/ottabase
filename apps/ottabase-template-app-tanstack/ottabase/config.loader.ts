@@ -108,3 +108,5 @@ export const REFERRALS_CONFIG = appConfig.features.referrals;
 
 // ── Package toggles (SSOT from ottabase.config.ts) ──
 export const PACKAGES_ENABLED = baseCfg.packages;
+export const CUSTOM_PACKAGES_ENABLED = baseCfg.customPackages;
+export const MEDIA_LIBRARY_ENABLED = true; // Media is a core table, always available

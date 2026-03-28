@@ -20,6 +20,7 @@ import {
     accountsTable,
     auditLogsTable,
     authenticatorsTable,
+    mediaTable,
     organizationMembersTable,
     organizationsTable,
     permissionsTable,
@@ -42,6 +43,7 @@ export function getAllSchemas() {
     const coreTables = {
         accountsTable,
         authenticatorsTable,
+        mediaTable,
         sessionsTable,
         tagsTable,
         usersTable,
@@ -83,6 +85,7 @@ export function getSchemaSummary() {
     const coreTables = {
         accountsTable,
         authenticatorsTable,
+        mediaTable,
         sessionsTable,
         tagsTable,
         usersTable,

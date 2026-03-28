@@ -53,6 +53,8 @@ export default class AdvancedImageTool {
 
         this.data = {
             url: initialUrl,
+            mediaId: data?.mediaId || '',
+            mimeType: data?.mimeType || '',
             caption: data?.caption || '',
             withBorder: data?.withBorder ?? true,
             withBackground: data?.withBackground ?? true,
@@ -187,7 +189,7 @@ export default class AdvancedImageTool {
         img.src = this.data.url || '';
         img.classList.add('advanced-image');
         img.addEventListener('load', () => {
-            this.imageContainer.classList.add('advanced-image-container--loaded');
+            this.imageContainer?.classList.add('advanced-image-container--loaded');
         });
 
         this.imageContainer?.appendChild(img);
@@ -334,7 +336,12 @@ export default class AdvancedImageTool {
                 onSuccess: (response) => {
                     if (response.url) {
                         this.data.url = response.url;
-                        this.data.caption = file.name;
+                        this.data.mediaId = (response as any)?.media?.id || '';
+                        this.data.mimeType = (response as any)?.media?.mimeType || file.type || '';
+                        this.data.caption = (response as any)?.media?.caption || file.name;
+                        this.data.alt = (response as any)?.media?.altText || this.data.alt;
+                        this.data.width = (response as any)?.media?.width || this.data.width;
+                        this.data.height = (response as any)?.media?.height || this.data.height;
                         // match legacy format
                         this.data.file = { url: response.url };
                         this.renderImage();
@@ -573,6 +580,8 @@ export default class AdvancedImageTool {
     static get sanitize() {
         return {
             url: {}, // Use default sanitizer
+            mediaId: true,
+            mimeType: true,
             caption: true,
             withBorder: true,
             withBackground: true,

@@ -1,7 +1,8 @@
 import { api } from '@/lib/api';
 import enApp from '@/locales/en/app.json';
 import { BlogStudioProvider } from '@/ottabase/blog/BlogStudioContext';
-import { APP_ID, appConfig, PACKAGES_ENABLED } from '@/ottabase/config';
+import { APP_ID, MEDIA_LIBRARY_ENABLED, appConfig, PACKAGES_ENABLED } from '@/ottabase/config';
+import { MediaLibraryPickerBridge } from '@/components/media-library/MediaLibraryPickerBridge';
 import { i18nConfig } from '@/ottabase/config/i18n.config';
 import {
     headingFontFamily,
@@ -154,6 +155,7 @@ function ProvidersCore({
                                     shortcuts={appConfig.features.spotlight.shortcuts}
                                 >
                                     {children}
+                                    {MEDIA_LIBRARY_ENABLED && <MediaLibraryPickerBridge />}
                                 </SpotlightProvider>
                             </ShadcnProviders>
                         </ThemeProvider>
