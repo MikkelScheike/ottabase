@@ -1,6 +1,6 @@
-import React from 'react';
 import { useMediaLightboxRegistration } from '@ottabase/medialibrary';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
+import React from 'react';
 import { AdvancedImageData } from './advancedimage.types';
 
 const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' }) => {
@@ -56,8 +56,7 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
         'justify-center',
         'flex-col',
         'box-border',
-        'text-gray-700',
-        'dark:text-gray-100',
+        'text-foreground',
     ];
 
     // Add default width and centering if not stretched
@@ -67,10 +66,10 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
 
     // Conditional Tailwind classes based on data props
     if (withBorder) {
-        figureTailwindClasses.push('border', 'border-gray-200', 'dark:border-gray-700', 'p-1');
+        figureTailwindClasses.push('border', 'border-border', 'p-1');
     }
     if (withBackground) {
-        figureTailwindClasses.push('bg-gray-100', 'dark:bg-slate-900', 'p-2');
+        figureTailwindClasses.push('bg-muted', 'p-2');
     }
     if (stretched) {
         // For stretched images, we need special handling
@@ -83,7 +82,7 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
         className.includes('advanced-image-block--featured-image') ||
         className.includes('image-block--featured-image')
     ) {
-        figureTailwindClasses.push('shadow-lg', 'dark:shadow-gray-700/50', 'relative');
+        figureTailwindClasses.push('shadow-lg', 'dark:shadow-muted-foreground/20', 'relative');
     }
 
     // Add feature classes to className for CSS targeting
@@ -176,9 +175,7 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
                     imageComponent
                 )}
                 {caption && (
-                    <figcaption className="mt-2 text-sm italic text-center text-gray-600 dark:text-gray-400">
-                        {caption}
-                    </figcaption>
+                    <figcaption className="mt-2 text-sm italic text-center text-muted-foreground">{caption}</figcaption>
                 )}
             </figure>
         </>

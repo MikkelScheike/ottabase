@@ -179,7 +179,7 @@ export function MediaImmersiveLightbox({
             {caption && (
                 <div
                     className={`pointer-events-none absolute inset-x-0 z-20 px-6 transition-opacity duration-300 md:px-10 ${controlsClass}`}
-                    style={{ bottom: hasMultiple ? 80 : 12 }}
+                    style={{ bottom: hasMultiple ? 100 : 12 }}
                 >
                     <p
                         className="mx-auto max-w-3xl text-center text-sm leading-relaxed text-white md:text-base"
@@ -197,7 +197,8 @@ export function MediaImmersiveLightbox({
                 >
                     <div
                         ref={thumbnailStripRef}
-                        className="flex max-w-[90vw] gap-1.5 overflow-x-auto rounded-xl bg-black/40 p-1.5 backdrop-blur-md scrollbar-none md:gap-2 md:p-2"
+                        className="flex max-w-[90vw] gap-1.5 overflow-x-auto bg-black/40 p-1.5 backdrop-blur-md scrollbar-none md:gap-2 md:p-2"
+                        style={{ borderRadius: 'var(--lb-strip-radius, 0.75rem)' }}
                     >
                         {items.map((item, index) => {
                             const isActive = index === activeIndex;
@@ -209,11 +210,12 @@ export function MediaImmersiveLightbox({
                                         e.stopPropagation();
                                         onSelectIndex(index);
                                     }}
-                                    className={`h-12 w-12 shrink-0 overflow-hidden rounded-lg transition-all duration-200 md:h-14 md:w-14 ${
+                                    className={`h-12 w-12 shrink-0 overflow-hidden transition-all duration-200 md:h-14 md:w-14 ${
                                         isActive
                                             ? 'ring-2 ring-white ring-offset-1 ring-offset-black/50'
                                             : 'opacity-50 hover:opacity-80'
                                     }`}
+                                    style={{ borderRadius: 'var(--lb-thumb-radius, 0.5rem)' }}
                                     aria-label={`View image ${index + 1}`}
                                 >
                                     <MediaPreview item={item} mode="thumb" />

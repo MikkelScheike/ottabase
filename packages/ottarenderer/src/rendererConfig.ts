@@ -23,7 +23,7 @@ export const defaultEJSRConfigs = {
         sandbox: undefined,
     },
     header: {
-        className: `${blockClass} cdc-content-header mt-2 text-gray-700 dark:text-gray-200 text-3xl/10`,
+        className: `${blockClass} cdc-content-header mt-2 text-foreground text-3xl/10`,
     },
     image: {
         className: `${blockClass} image-block cdc-content-image`,
@@ -47,7 +47,7 @@ export const defaultEJSRConfigs = {
         className: `${blockClass} cdc-content-list`,
     },
     paragraph: {
-        className: `${blockClass} cdc-content-paragraph my-4 text-gray-700 dark:text-gray-200 text-md leading-relaxed`,
+        className: `${blockClass} cdc-content-paragraph my-4 text-foreground text-md leading-relaxed`,
     },
     quote: {
         className: `${blockClass} cdc-content-quote`,
