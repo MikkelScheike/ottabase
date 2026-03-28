@@ -29,7 +29,7 @@ export default function ThemeDemo() {
         <div className="mx-auto max-w-4xl space-y-10 px-4 py-12">
             <div>
                 <h1 className="font-heading text-4xl font-bold text-foreground">
-                    Theme Demo <span className="text-primary">— {presetName}</span>
+                    Theme Demo <span className="ml-1 text-primary capitalize">- {presetName}</span>
                 </h1>
                 <p className="mt-2 text-muted-foreground">
                     Select a preset below to change the entire site design instantly.
