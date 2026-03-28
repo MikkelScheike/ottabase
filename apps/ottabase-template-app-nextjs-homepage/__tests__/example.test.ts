@@ -1,72 +1,55 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
-describe('Next.js Homepage Template Tests', () => {
-    describe('Environment Setup', () => {
-        it('should have test environment configured', () => {
-            expect(process.env.NODE_ENV).toBe('test');
-        });
+// Mock transitive deps that Vite cannot resolve in test environment
+vi.mock('@ottabase/ottalayout', () => ({ DEFAULT_LAYOUT: {} }));
+vi.mock('@ottabase/brand-engine', () => ({
+    registerBuiltInThemes: vi.fn(),
+    getThemeByName: vi.fn(() => ({ name: 'artisan', colors: {} })),
+    resolveTheme: vi.fn(() => ({
+        colors: { primary: '30 80% 50%' },
+        typography: {
+            heading: { fontFamily: 'Outfit', url: '' },
+            body: { fontFamily: 'Inter', url: '' },
+            handwriting: { fontFamily: 'Great Vibes', url: '' },
+        },
+        radius: '0.5rem',
+    })),
+    buildCriticalCSS: vi.fn(() => ''),
+    BUILTIN_THEME_NAMES: ['default', 'neo', 'crisp', 'funky', 'artisan', 'midnight', 'rose', 'verdant'],
+    PRESET_MAP: {},
+    applyBrandTheme: vi.fn(),
+}));
+vi.mock('@ottabase/brand-engine-react', () => ({
+    BrandProvider: ({ children }: any) => children,
+    useBrand: () => ({ config: null }),
+}));
+
+describe('Brand Configuration', () => {
+    it('exports a valid theme preset', async () => {
+        const { themePreset } = await import('../config/brand.config');
+        const valid = ['default', 'neo', 'crisp', 'funky', 'artisan', 'midnight', 'rose', 'verdant'];
+        expect(valid).toContain(themePreset);
     });
 
-    describe('Brand Configuration', () => {
-        it('should have valid theme preset', async () => {
-            const { themePreset } = await import('../config/brand.config');
-            const validPresets = ['default', 'neo', 'crisp', 'funky', 'artisan', 'midnight', 'rose', 'verdant'];
-            expect(validPresets).toContain(themePreset);
-        });
-
-        it('should export brand config', async () => {
-            const { brandConfig } = await import('../config/brand.config');
-            expect(brandConfig).toBeDefined();
-            expect(typeof brandConfig).toBe('object');
-        });
+    it('exports brandConfig as an object', async () => {
+        const { brandConfig } = await import('../config/brand.config');
+        expect(brandConfig).toBeDefined();
+        expect(typeof brandConfig).toBe('object');
     });
+});
 
-    describe('App Metadata', () => {
-        it('should have proper metadata structure', async () => {
-            const { metadata } = await import('../app/layout');
-            expect(metadata).toBeDefined();
-            expect(metadata.title).toBeDefined();
-            expect(metadata.description).toBeDefined();
-        });
+describe('App Metadata', () => {
+    it('defines title and description', async () => {
+        const { metadata } = await import('../app/layout');
+        expect(metadata).toBeDefined();
+        expect(metadata.title).toBeDefined();
+        expect(metadata.description).toBeDefined();
     });
+});
 
-    describe('Utility Functions', () => {
-        it('should perform basic string operations', () => {
-            const str = 'Ottabase Next.js Homepage Template';
-            expect(str.includes('Next.js')).toBe(true);
-            expect(str.toLowerCase()).toBe('ottabase next.js homepage template');
-        });
-
-        it('should handle array operations', () => {
-            const features = ['Next.js 16', 'OpenNext', 'Brand Engine', 'TypeScript'];
-            expect(features.length).toBe(4);
-            expect(features).toContain('Brand Engine');
-        });
-    });
-
-    describe('Async Operations', () => {
-        it('should handle promises', async () => {
-            const promise = Promise.resolve('homepage loaded');
-            await expect(promise).resolves.toBe('homepage loaded');
-        });
-
-        it('should handle async/await', async () => {
-            const asyncFn = async () => {
-                return new Promise((resolve) => {
-                    setTimeout(() => resolve('page rendered'), 10);
-                });
-            };
-
-            const result = await asyncFn();
-            expect(result).toBe('page rendered');
-        });
-    });
-
-    describe('Error Handling', () => {
-        it('should catch errors', () => {
-            expect(() => {
-                throw new Error('test error');
-            }).toThrow('test error');
-        });
+describe('ThemePresetSwitcher storage key', () => {
+    it('uses the correct localStorage key', async () => {
+        const { THEME_STORAGE_KEY } = await import('../components/ThemePresetSwitcher');
+        expect(THEME_STORAGE_KEY).toBe('ottabase.homepage.theme-preset');
     });
 });

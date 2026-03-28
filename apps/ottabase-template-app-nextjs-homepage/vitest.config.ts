@@ -29,10 +29,19 @@ export default defineConfig({
         },
         include: ['app/**/*.{test,spec}.{ts,tsx}', '__tests__/**/*.{test,spec}.{ts,tsx}'],
         testTimeout: 30000,
+        // Pre-resolve packages whose dist may not be built in dev
+        server: {
+            deps: {
+                inline: ['@ottabase/ottalayout'],
+            },
+        },
     },
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './'),
+            // Stub packages that may not have dist built
+            '@ottabase/ottalayout/react': path.resolve(__dirname, './vitest.stubs.ts'),
+            '@ottabase/ottalayout': path.resolve(__dirname, './vitest.stubs.ts'),
         },
     },
 });

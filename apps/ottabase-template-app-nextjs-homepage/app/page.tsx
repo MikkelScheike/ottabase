@@ -1,88 +1,85 @@
-import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
-import { Button } from '@ottabase/ui-shadcn';
-import Link from 'next/link';
+import { Github, Palette, Rocket } from 'lucide-react';
+import { CTASection } from '../components/CTASection';
+import { FeaturesGrid } from '../components/FeatureCard';
+import { Hero } from '../components/Hero';
+
+const FEATURES = [
+    {
+        title: 'Cloudflare Workers',
+        description: 'Edge-deployed via OpenNext. No origin server needed.',
+    },
+    {
+        title: 'Brand Engine',
+        description: '8 theme presets with live switching and dark mode.',
+    },
+    {
+        title: 'Next.js 16',
+        description: 'App Router, RSC, and streaming out of the box.',
+    },
+    {
+        title: 'TypeScript',
+        description: 'End-to-end type safety across client and server.',
+    },
+];
 
 export default function HomePage() {
     return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-            <div className="flex max-w-3xl flex-col items-center gap-8 px-4 text-center">
-                {/* Dark Mode Toggle in corner */}
-                <div className="absolute right-5 top-5">
-                    <DarkModeToggle type="button" title="Toggle dark/light mode" />
-                </div>
+        <div className="flex flex-col items-center">
+            <Hero
+                title={
+                    <>
+                        <span className="text-primary">Ottabase</span>{' '}
+                        <span className="inline-flex items-baseline gap-2">
+                            Homepage
+                            <span className="rounded bg-muted px-2 py-0.5 font-mono text-[0.32em] font-medium text-muted-foreground">
+                                on Next.js
+                            </span>
+                        </span>
+                    </>
+                }
+                subtitle="Ship a themed, edge-deployed homepage on Cloudflare Workers in minutes."
+                actions={[
+                    { href: '/about', label: 'About', variant: 'default' },
+                    {
+                        href: '/theme-demo',
+                        label: (
+                            <span className="inline-flex items-center gap-1.5">
+                                <Palette className="h-4 w-4" /> Theme Demo
+                            </span>
+                        ),
+                        variant: 'secondary',
+                    },
+                    {
+                        href: 'https://github.com/thinkdj/ottabase',
+                        label: (
+                            <span className="inline-flex items-center gap-1.5">
+                                <Github className="h-4 w-4" /> GitHub
+                            </span>
+                        ),
+                        variant: 'outline',
+                        external: true,
+                    },
+                ]}
+            />
 
-                {/* Main Heading */}
-                <h1
-                    className="mb-4 mt-32 bg-gradient-to-r from-cyan-500 to-fuchsia-500 bg-clip-text text-6xl font-bold text-transparent"
-                    style={{
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
-                    }}
-                >
-                    Ottabase Next.js Homepage Template
-                </h1>
+            <FeaturesGrid features={FEATURES} />
 
-                {/* Description */}
-                <p className="mb-8 text-xl leading-relaxed text-muted-foreground">
-                    A barebone Next.js homepage template with OpenNext and Cloudflare Workers deployment
-                </p>
-
-                <p className="text-lg leading-relaxed text-muted-foreground">
-                    Built with <strong>Next.js 16</strong>, <strong>TypeScript</strong>, <strong>Tailwind CSS</strong>,
-                    and <strong>Brand Engine</strong>. Perfect for creating beautiful, dynamic homepages deployed to
-                    Cloudflare Workers.
-                </p>
-
-                {/* Action Buttons */}
-                <div className="mt-8 flex flex-wrap gap-4 justify-center">
-                    <Button asChild size="lg">
-                        <Link href="/about">About</Link>
-                    </Button>
-
-                    <Button asChild size="lg" variant="secondary">
-                        <Link href="/theme-demo">🎨 Theme Demo</Link>
-                    </Button>
-
-                    <Button asChild variant="outline" size="lg">
-                        <a href="https://github.com/thinkdj/ottabase" target="_blank" rel="noopener noreferrer">
-                            View on GitHub
-                        </a>
-                    </Button>
-                </div>
-
-                {/* Features Grid */}
-                <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-2xl">
-                    <div className="p-6 rounded-lg border border-border bg-card">
-                        <h3 className="text-lg font-semibold mb-2">🚀 Dynamic Workers</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Deploy to Cloudflare Workers with OpenNext for edge-optimized performance
-                        </p>
-                    </div>
-                    <div className="p-6 rounded-lg border border-border bg-card">
-                        <h3 className="text-lg font-semibold mb-2">🎨 Brand Engine</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Built-in theme system with 8+ presets and full customization support
-                        </p>
-                    </div>
-                    <div className="p-6 rounded-lg border border-border bg-card">
-                        <h3 className="text-lg font-semibold mb-2">⚡ Next.js 16</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Latest Next.js with App Router and React Server Components
-                        </p>
-                    </div>
-                    <div className="p-6 rounded-lg border border-border bg-card">
-                        <h3 className="text-lg font-semibold mb-2">🎯 Type Safe</h3>
-                        <p className="text-sm text-muted-foreground">
-                            Full TypeScript support for better developer experience
-                        </p>
-                    </div>
-                </div>
-
-                {/* Footer */}
-                <p className="mt-16 text-sm text-muted-foreground">
-                    © {new Date().getFullYear()} Ottabase. Open Source.
-                </p>
-            </div>
+            <CTASection
+                title="Ready to Ship?"
+                description="Clone the template, customize the brand, and deploy to Cloudflare Workers in minutes."
+                actions={[
+                    {
+                        href: 'https://github.com/thinkdj/ottabase',
+                        label: (
+                            <span className="inline-flex items-center gap-1.5">
+                                <Rocket className="h-4 w-4" /> Get Started
+                            </span>
+                        ),
+                        external: true,
+                    },
+                    { href: '/theme-demo', label: 'Explore Themes', variant: 'outline' },
+                ]}
+            />
         </div>
     );
 }

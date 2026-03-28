@@ -2,6 +2,7 @@ import { buildCriticalCSS } from '@ottabase/brand-engine';
 import type { Metadata } from 'next';
 import { generateBrandConfig } from '../lib/brand-server';
 import './globals.css';
+import { LayoutShell } from './layout-shell';
 import { Providers } from './providers';
 
 export const metadata: Metadata = {
@@ -31,8 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {theme.typography.body.url && <link rel="stylesheet" href={theme.typography.body.url} />}
                 {theme.typography.handwriting.url && <link rel="stylesheet" href={theme.typography.handwriting.url} />}
             </head>
-            <body>
-                <Providers initialBrandConfig={brandConfig}>{children}</Providers>
+            <body className="flex min-h-screen flex-col bg-background text-foreground">
+                <Providers initialBrandConfig={brandConfig}>
+                    <LayoutShell>{children}</LayoutShell>
+                </Providers>
             </body>
         </html>
     );
