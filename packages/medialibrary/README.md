@@ -76,6 +76,16 @@ When the renderer's image blocks are inside the provider, they automatically reg
 `variant="immersive"` — cinematic end-user gallery: pure black backdrop, auto-hiding chrome, caption overlay, smooth
 thumbnail scrolling.
 
+### Lightbox CSS Custom Properties
+
+The immersive lightbox exposes CSS custom properties for border-radius customization:
+
+```css
+/* Defaults — override in your own CSS to customise */
+--lb-strip-radius: 0.75rem; /* thumbnail strip container */
+--lb-thumb-radius: 0.5rem; /* individual thumbnail buttons */
+```
+
 ## Editor Picker Payload
 
 ```typescript

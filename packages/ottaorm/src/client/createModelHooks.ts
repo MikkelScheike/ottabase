@@ -4,19 +4,19 @@
 // Creates type-safe TanStack Query hooks for any OttaORM model
 // ============================================================
 
-import { useMemo } from 'react';
 import {
-    useQuery,
-    useMutation,
     useInfiniteQuery,
+    useMutation,
+    useQuery,
     useQueryClient,
-    type UseQueryOptions,
-    type UseMutationOptions,
     type InfiniteData,
+    type UseMutationOptions,
+    type UseQueryOptions,
 } from '@tanstack/react-query';
-import type { ModelQueryConfig, QueryOptions, PaginationResult, MutationContext, ApiClientFunction } from './types';
-import { createQueryKeys } from './types';
+import { useMemo } from 'react';
 import { useApiClient } from './QueryProvider';
+import type { ApiClientFunction, ModelQueryConfig, MutationContext, PaginationResult, QueryOptions } from './types';
+import { createQueryKeys } from './types';
 
 /**
  * Create a complete set of query hooks for an OttaORM model
@@ -140,6 +140,9 @@ export function createModelHooks<T extends { id: string | number }>(config: Mode
             if (options?.orderDirection) {
                 params.set('orderDirection', options.orderDirection);
             }
+            if (options?.search) {
+                params.set('search', options.search);
+            }
             if (options?.limit) {
                 params.set('limit', String(options.limit));
             }
@@ -239,6 +242,9 @@ export function createModelHooks<T extends { id: string | number }>(config: Mode
             }
             if (options?.orderDirection) {
                 params.set('orderDirection', options.orderDirection);
+            }
+            if (options?.search) {
+                params.set('search', options.search);
             }
 
             const url = `${apiPath}?${params.toString()}`;

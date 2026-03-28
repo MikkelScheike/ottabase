@@ -4,7 +4,7 @@ A flexible EditorJS wrapper with typesafe plugin management for React applicatio
 
 ## Features
 
-- **22 pre-installed plugins** (15 Editor.js + 7 custom blocks)
+- **23 pre-installed plugins** (15 Editor.js + 8 custom blocks)
 - **Type-safe plugin selection** with autocomplete
 - **TypeScript support**
 - **Custom plugin integration**
@@ -35,6 +35,8 @@ Raw HTML blocks are sanitized on save to remove wrapper/executable tags (for exa
 - **Disclosure** – Transparency block with AI usage disclosure (slight/mid/high/custom %) and sponsored-content
   disclaimer (preset or custom wording)
 - **Steps** – Minimal step-by-step timeline editor with add, reorder, and delete controls
+- **Media Embed** – Non-image media block (video, audio, PDF, document, archive) with native playback; hidden from
+  toolbox, inserted automatically when Media Library selects a non-image file
 
 CTA and Disclosure generate instance-scoped input IDs/names so multiple blocks can coexist without DOM ID or radio-group
 collisions.
@@ -91,7 +93,7 @@ Use these names with `defaultPlugins`:
 
 `'header'`, `'paragraph'`, `'list'`, `'checklist'`, `'code'`, `'quote'`, `'table'`, `'warning'`, `'delimiter'`,
 `'linkTool'`, `'embed'`, `'raw'`, `'Marker'`, `'underline'`, `'inlineCode'`, `'spoiler'`, `'cta'`, `'review'`, `'map'`,
-`'layout'`, `'disclosure'`, `'steps'`
+`'layout'`, `'disclosure'`, `'steps'`, `'mediaEmbed'`
 
 ## API
 
@@ -187,6 +189,25 @@ interface StepsData {
 }
 ```
 
+### Media Embed
+
+Inserted by the Media Library tool when a non-image file is selected. Routes automatically: image files → `image` block,
+everything else → `mediaEmbed` block.
+
+```typescript
+// Saved data shape
+interface MediaEmbedData {
+    url: string;
+    title?: string;
+    caption?: string;
+    mediaId?: string;
+    mimeType?: string;
+    mediaKind?: string; // 'video' | 'audio' | 'document' | 'archive' | 'other'
+    thumbnailUrl?: string;
+    previewUrl?: string;
+}
+```
+
 ## Styling
 
 All custom plugins use common classes from `ottaeditor-common.css` (imported by `editorjs-brandkit-theme.css`):
@@ -210,6 +231,7 @@ import type {
     DisclosureData,
     LayoutData,
     LayoutPreset,
+    MediaEmbedData,
     OttaEditorPlugin,
     OutputData,
 } from '@ottabase/ottaeditor';

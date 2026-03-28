@@ -197,6 +197,7 @@ export class Media extends BaseModel {
         caption: {
             type: 'string',
             editable: true,
+            searchable: true,
             uiConfig: { label: 'Caption', description: 'Optional caption shown in renderers' },
             formConfig: { visible: true, fieldType: 'textarea' },
             tableConfig: { visible: false },

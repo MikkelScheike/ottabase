@@ -80,6 +80,7 @@ Header, Paragraph, List, Quote, Code, Table, Delimiter, Attaches.
 | `Review`             | Product/service review card with star rating, pros/cons, CTA link, and verdict       |
 | `Spoiler`            | Click-to-reveal blurred text                                                         |
 | `Steps`              | Minimal numbered timeline for tutorials, onboarding, and walkthroughs                |
+| `MediaEmbed`         | Embedded media (video, audio, PDF, document) with native playback via `MediaPreview` |
 | `Table`              | Data table                                                                           |
 | `Warning`            | Alert/callout box                                                                    |
 

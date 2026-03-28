@@ -1,7 +1,7 @@
 import { getSession } from '@ottabase/auth/backend';
+import { createImagesClient } from '@ottabase/cf/images';
 import { createKVClient } from '@ottabase/cf/kv';
 import { createR2Client } from '@ottabase/cf/r2';
-import { createImagesClient } from '@ottabase/cf/images';
 import { uploadFileToCloudflareImages, uploadFileToR2 } from '@ottabase/ottaupload/server';
 import { errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
@@ -167,6 +167,11 @@ export async function handleUpload(context: StorageRouteContext): Promise<Respon
 
         if (!(file instanceof File)) {
             return errorResponse('file is required', 400);
+        }
+
+        // All uploads require an authenticated session to prevent orphan R2 objects and abuse
+        if (!session?.user?.id) {
+            return errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' });
         }
 
         if (provider === 'cloudflare-images') {

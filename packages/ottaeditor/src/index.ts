@@ -45,6 +45,8 @@ export type { AdvancedImageData } from './tools/AdvancedImageTool/types';
 export type { AIDisclosureLevel, DisclosureData } from './tools/DisclosureTool/DisclosureTool';
 export type { LayoutColumnData, LayoutData, LayoutPreset, LayoutToolConfig } from './tools/LayoutTool/LayoutTool';
 export type { MapData, MapProvider, MapTheme, MapToolConfig } from './tools/MapTool/MapTool';
+export { default as MediaEmbedTool } from './tools/MediaEmbedTool/MediaEmbedTool';
+export type { MediaEmbedData } from './tools/MediaEmbedTool/MediaEmbedTool';
 export { default as MediaLibraryTool } from './tools/MediaLibraryTool/MediaLibraryTool';
 export { default as RawHtmlTool } from './tools/RawHtmlTool/RawHtmlTool';
 export type { StepsData, StepsItem, StepsToolConfig } from './tools/StepsTool/StepsTool';

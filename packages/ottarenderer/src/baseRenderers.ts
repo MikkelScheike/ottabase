@@ -10,6 +10,7 @@ import CTA from './components/CTA';
 import Disclosure from './components/Disclosure';
 import List from './components/List';
 import Map from './components/Map';
+import MediaEmbed from './components/MediaEmbed';
 import Quote from './components/Quote';
 import Review from './components/Review';
 import Spoiler from './components/Spoiler';
@@ -32,4 +33,5 @@ export const baseRenderers = {
     review: Review,
     map: Map,
     steps: Steps,
+    mediaEmbed: MediaEmbed,
 };

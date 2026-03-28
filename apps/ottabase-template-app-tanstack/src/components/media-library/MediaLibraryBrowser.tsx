@@ -1,5 +1,4 @@
-import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
-import { mediaLibraryHooks, normalizeMediaLibraryListResponse } from '@/hooks/mediaLibraryHooks';
+import { mediaLibraryHooks } from '@/hooks/mediaLibraryHooks';
 import { api, isApiError } from '@/lib/api';
 import type { MediaKind, MediaLibraryItemLike } from '@ottabase/medialibrary';
 import {
@@ -103,6 +102,7 @@ export function MediaLibraryBrowser({
 }: MediaLibraryBrowserProps) {
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [searchValue, setSearchValue] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [activeKind, setActiveKind] = useState<MediaKind | 'all'>('all');
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -113,47 +113,47 @@ export function MediaLibraryBrowser({
         caption: '',
     });
 
-    const mediaListQuery = mediaLibraryHooks.useList(
+    // Debounce search input so we don't fire a request on every keystroke
+    useEffect(() => {
+        const timer = setTimeout(() => setDebouncedSearch(searchValue.trim()), 300);
+        return () => clearTimeout(timer);
+    }, [searchValue]);
+
+    const whereClause = useMemo(() => {
+        const clause: Record<string, unknown> = {
+            status: 'active',
+            ...(defaultWhere || {}),
+        };
+        // Push kind filter to the server when a specific tab is active
+        if (activeKind !== 'all') {
+            clause.mediaKind = activeKind;
+        }
+        return clause;
+    }, [activeKind, defaultWhere]);
+
+    const mediaListQuery = mediaLibraryHooks.useInfiniteList(
         {
-            where: {
-                status: 'active',
-                ...(defaultWhere || {}),
-            },
+            where: whereClause,
+            search: debouncedSearch || undefined,
             orderBy: 'createdAt',
             orderDirection: 'desc',
-            limit: 120,
         },
-        ADMIN_LIST_QUERY_CONFIG,
+        36,
     );
     const updateMedia = mediaLibraryHooks.useUpdate();
 
     const items = useMemo(
-        () => normalizeMediaLibraryListResponse(mediaListQuery.data) as MediaListItem[],
+        () => (mediaListQuery.data?.pages?.flatMap((page) => page.data) ?? []) as MediaListItem[],
         [mediaListQuery.data],
     );
 
     const allowedKinds = useMemo(() => acceptKinds ?? MEDIA_KIND_FILTERS, [acceptKinds]);
+
+    // Light client-side filter only for acceptKinds (restricts kinds in picker mode)
     const filteredItems = useMemo(() => {
-        const normalizedSearch = searchValue.trim().toLowerCase();
-
-        return items.filter((item) => {
-            if (acceptKinds && !acceptKinds.includes(item.mediaKind)) {
-                return false;
-            }
-
-            if (activeKind !== 'all' && item.mediaKind !== activeKind) {
-                return false;
-            }
-
-            if (!normalizedSearch) {
-                return true;
-            }
-
-            return [item.title, item.originalName, item.caption, item.mimeType, item.storageKey, item.mediaKind]
-                .filter(Boolean)
-                .some((value) => String(value).toLowerCase().includes(normalizedSearch));
-        });
-    }, [acceptKinds, activeKind, items, searchValue]);
+        if (!acceptKinds) return items;
+        return items.filter((item) => acceptKinds.includes(item.mediaKind));
+    }, [acceptKinds, items]);
 
     const selectedItem = useMemo(
         () => filteredItems.find((item) => item.id === selectedId) ?? filteredItems[0] ?? null,
@@ -367,58 +367,72 @@ export function MediaLibraryBrowser({
                                 </div>
                             </div>
                         ) : (
-                            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-                                {filteredItems.map((item) => {
-                                    const itemTitle = getMediaDisplayTitle(item);
-                                    const isSelected = selectedItem?.id === item.id;
+                            <>
+                                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+                                    {filteredItems.map((item) => {
+                                        const itemTitle = getMediaDisplayTitle(item);
+                                        const isSelected = selectedItem?.id === item.id;
 
-                                    return (
-                                        <button
-                                            key={item.id}
+                                        return (
+                                            <button
+                                                key={item.id}
+                                                type="button"
+                                                onClick={() => setSelectedId(item.id)}
+                                                onDoubleClick={() => {
+                                                    if (mode === 'picker' && onSelectItem) {
+                                                        onSelectItem(toMediaSelectionPayload(item), item);
+                                                    }
+                                                }}
+                                                className={`overflow-hidden rounded-2xl border text-left transition-all ${
+                                                    isSelected
+                                                        ? 'border-primary shadow-sm ring-2 ring-primary/20'
+                                                        : 'border-border hover:border-primary/40 hover:bg-muted/20'
+                                                }`}
+                                            >
+                                                <div className="aspect-[4/3] overflow-hidden bg-muted/30">
+                                                    <MediaPreview
+                                                        item={item}
+                                                        className="h-full w-full rounded-none border-0"
+                                                    />
+                                                </div>
+                                                <div className="space-y-3 p-4">
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <Badge variant="secondary" className="capitalize">
+                                                            {item.mediaKind}
+                                                        </Badge>
+                                                        <Badge variant="outline">
+                                                            {formatMediaFileSize(item.fileSize)}
+                                                        </Badge>
+                                                    </div>
+                                                    <div>
+                                                        <p className="truncate text-sm font-semibold text-foreground">
+                                                            {itemTitle}
+                                                        </p>
+                                                        <p className="truncate text-xs text-muted-foreground">
+                                                            {item.originalName}
+                                                        </p>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {formatCreatedAt(item.createdAt)}
+                                                    </p>
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                {mediaListQuery.hasNextPage && (
+                                    <div className="mt-6 flex justify-center">
+                                        <Button
                                             type="button"
-                                            onClick={() => setSelectedId(item.id)}
-                                            onDoubleClick={() => {
-                                                if (mode === 'picker' && onSelectItem) {
-                                                    onSelectItem(toMediaSelectionPayload(item), item);
-                                                }
-                                            }}
-                                            className={`overflow-hidden rounded-2xl border text-left transition-all ${
-                                                isSelected
-                                                    ? 'border-primary shadow-sm ring-2 ring-primary/20'
-                                                    : 'border-border hover:border-primary/40 hover:bg-muted/20'
-                                            }`}
+                                            variant="outline"
+                                            onClick={() => mediaListQuery.fetchNextPage()}
+                                            disabled={mediaListQuery.isFetchingNextPage}
                                         >
-                                            <div className="aspect-[4/3] overflow-hidden bg-muted/30">
-                                                <MediaPreview
-                                                    item={item}
-                                                    className="h-full w-full rounded-none border-0"
-                                                />
-                                            </div>
-                                            <div className="space-y-3 p-4">
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <Badge variant="secondary" className="capitalize">
-                                                        {item.mediaKind}
-                                                    </Badge>
-                                                    <Badge variant="outline">
-                                                        {formatMediaFileSize(item.fileSize)}
-                                                    </Badge>
-                                                </div>
-                                                <div>
-                                                    <p className="truncate text-sm font-semibold text-foreground">
-                                                        {itemTitle}
-                                                    </p>
-                                                    <p className="truncate text-xs text-muted-foreground">
-                                                        {item.originalName}
-                                                    </p>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {formatCreatedAt(item.createdAt)}
-                                                </p>
-                                            </div>
-                                        </button>
-                                    );
-                                })}
-                            </div>
+                                            {mediaListQuery.isFetchingNextPage ? 'Loading...' : 'Load more'}
+                                        </Button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </CardContent>
                 </Card>

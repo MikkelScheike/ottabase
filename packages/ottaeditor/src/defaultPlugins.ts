@@ -18,6 +18,7 @@ import CTATool from './tools/CTATool/CTATool';
 import DisclosureTool from './tools/DisclosureTool/DisclosureTool';
 import LayoutTool from './tools/LayoutTool/LayoutTool';
 import MapTool from './tools/MapTool/MapTool';
+import MediaEmbedTool from './tools/MediaEmbedTool/MediaEmbedTool';
 import RawHtmlTool from './tools/RawHtmlTool/RawHtmlTool';
 import ReviewTool from './tools/ReviewTool/ReviewTool';
 import SpoilerTool from './tools/SpoilerTool/SpoilerTool';
@@ -52,6 +53,7 @@ export const DEFAULT_PLUGIN_NAMES = {
     LAYOUT: 'layout',
     DISCLOSURE: 'disclosure',
     STEPS: 'steps',
+    MEDIA_EMBED: 'mediaEmbed',
 } as const;
 
 /**
@@ -223,6 +225,11 @@ export const defaultPlugins: OttaEditorPlugin[] = [
     {
         name: DEFAULT_PLUGIN_NAMES.STEPS,
         tool: StepsTool as any,
+        config: {} as any,
+    },
+    {
+        name: DEFAULT_PLUGIN_NAMES.MEDIA_EMBED,
+        tool: MediaEmbedTool as any,
         config: {} as any,
     },
 ];

@@ -32,6 +32,10 @@ interface MediaFilePayload {
     height?: number;
     mediaId?: string;
     mimeType?: string;
+    mediaKind?: string;
+    title?: string;
+    thumbnailUrl?: string;
+    previewUrl?: string;
 }
 
 /** Per-editor activation state, keyed by a namespace string (defaults to 'default') */
@@ -78,7 +82,7 @@ function attachSharedListener(ns: string) {
 
         state.isActive = true;
         try {
-            await instance.handleMediaSelected(customEvent);
+            await instance.handleMediaSelected(customEvent.detail);
         } finally {
             state.isActive = false;
         }
@@ -112,9 +116,9 @@ export default class MediaLibraryTool {
         attachSharedListener(this.namespace);
     }
 
-    async handleMediaSelected(customEvent: CustomEvent) {
-        const file = customEvent.detail.media as MediaFilePayload;
-        const mediaLibOpenedVia = customEvent.detail?.openedVia === 'programmatic';
+    async handleMediaSelected(detail: { media: MediaFilePayload; openedVia?: string }) {
+        const file = detail.media;
+        const mediaLibOpenedVia = detail.openedVia === 'programmatic';
         const state = getState(this.namespace);
 
         try {
@@ -134,7 +138,13 @@ export default class MediaLibraryTool {
             currentIndex =
                 currentIndex < 0 ? (state.activeBlockIndex ?? this.api.blocks.getBlocksCount()) : currentIndex;
 
-            await this.insertImage(file, currentIndex);
+            // Route to the correct block type based on mediaKind
+            const kind = file.mediaKind || 'image';
+            if (kind === 'image') {
+                await this.insertImage(file, currentIndex);
+            } else {
+                await this.insertMediaEmbed(file, currentIndex);
+            }
 
             // Hide the placeholder since media was selected
             this.hasMedia = true;
@@ -145,7 +155,7 @@ export default class MediaLibraryTool {
             state.activeBlockIndex = null;
             state.activeBlockId = '';
         } catch (error) {
-            console.error('Error inserting image block:', error);
+            console.error('Error inserting media block:', error);
         }
     }
 
@@ -153,9 +163,7 @@ export default class MediaLibraryTool {
         const imageData = {
             success: 1,
             url: file.url,
-            file: {
-                url: file.url,
-            },
+            file: { url: file.url },
             caption: file.caption || file.name,
             alt: file.alt || '',
             width: file.width || undefined,
@@ -166,14 +174,21 @@ export default class MediaLibraryTool {
             withBackground: true,
             stretched: false,
         };
-        return this.api.blocks.insert(
-            'image', // Tool - assuming 'image' or 'advancedImage' is available.
-            // Wait, if 'image' is alias to AdvancedImageTool, this works.
-            imageData, // Block's data
-            {}, // config
-            index, // at current index
-            true, // focus?
-        );
+        return this.api.blocks.insert('image', imageData, {}, index, true);
+    }
+
+    private async insertMediaEmbed(file: MediaFilePayload, index: number) {
+        const embedData = {
+            url: file.url,
+            title: file.title || file.name || '',
+            caption: file.caption || '',
+            mediaId: file.mediaId || undefined,
+            mimeType: file.mimeType || '',
+            mediaKind: file.mediaKind || 'other',
+            thumbnailUrl: file.thumbnailUrl || undefined,
+            previewUrl: file.previewUrl || undefined,
+        };
+        return this.api.blocks.insert('mediaEmbed', embedData, {}, index, true);
     }
 
     openMediaLib() {

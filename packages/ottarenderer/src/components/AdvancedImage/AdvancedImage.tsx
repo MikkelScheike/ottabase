@@ -122,7 +122,7 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
 
     // Image classes based on stretched state and aspect ratio
     let imageClasses = stretched
-        ? `w-full h-auto object-cover ${!linkUrl ? 'cursor-pointer' : ''}`
+        ? `w-full h-auto max-h-[100vh] object-cover ${!linkUrl ? 'cursor-pointer' : ''}`
         : `w-full h-auto max-w-2xl mx-auto object-contain ${!linkUrl ? 'cursor-pointer' : ''}`;
 
     // Apply aspect ratio classes
