@@ -5,14 +5,15 @@ from `main`.
 
 ## Workflows
 
-| Workflow               | Trigger                               | Purpose                                               |
-| ---------------------- | ------------------------------------- | ----------------------------------------------------- |
-| **deploy.yml**         | Push to `main`; `workflow_dispatch`   | Build & deploy to production (change-based or forced) |
-| **pr-preview.yml**     | Pull request (open/sync/reopen/close) | Build & deploy preview worker; cleanup on PR close    |
-| **build-packages.yml** | Called by deploy + pr-preview         | Build shared packages and cache for downstream jobs   |
-| **ci.yml**             | `workflow_dispatch`                   | Lint, type-check, test, build (no deploy)             |
+| Workflow               | Trigger                                               | Purpose                                               |
+| ---------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| **deploy.yml**         | Push to `main`; `workflow_dispatch`                   | Build & deploy to production (change-based or forced) |
+| **pr-preview.yml**     | Pull request (open/sync/reopen/close)                 | Build & deploy preview worker; cleanup on PR close    |
+| **build-packages.yml** | Called by deploy + pr-preview                         | Build shared packages and cache for downstream jobs   |
+| **ci.yml**             | Pull request to `main`/`develop`; `workflow_dispatch` | Lint, type-check, test, build (no deploy)             |
 
-**Target:** Cloudflare Workers only (not Pages). Deployed URLs: `https://<worker>-<env>.<subdomain>.workers.dev`.
+**Target:** Cloudflare Workers only (not Pages). Production URLs: `https://<worker>.<subdomain>.workers.dev`. Preview
+URLs use an explicit `--name` override (e.g. `my-app-pr-123`) so no `-preview` suffix is appended.
 
 ## Quick Start
 
@@ -71,8 +72,8 @@ Already configured; push to `main` or open PRs as usual.
     "deployable": true,
     "appType": "nextjs",
     "workerBuildCommand": "build:worker",
-    "outputDirectory": ".worker-next",
-    "verifyPaths": [".worker-next", ".worker-next/assets"]
+    "outputDirectory": ".open-next",
+    "verifyPaths": [".open-next"]
 }
 ```
 
@@ -129,10 +130,10 @@ PR preview uses isolated preview D1/KV/R2 so production data is never touched.
 
 ### Optional
 
-| Secret                | Default                          | Purpose                                                                         |
-| --------------------- | -------------------------------- | ------------------------------------------------------------------------------- |
-| `APPS_TO_DEPLOY`      | `ottabase-template-app-tanstack` | Comma-separated app names or folder names to deploy (production and PR preview) |
-| `CF_WORKER_SUBDOMAIN` | `apiary`                         | Subdomain in `*.workers.dev` (e.g. `apiary` → `my-worker.apiary.workers.dev`)   |
+| Secret                | Default                                                                | Purpose                                                                         |
+| --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `APPS_TO_DEPLOY`      | `ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage` | Comma-separated app names or folder names to deploy (production and PR preview) |
+| `CF_WORKER_SUBDOMAIN` | `apiary`                                                               | Subdomain in `*.workers.dev` (e.g. `apiary` → `my-worker.apiary.workers.dev`)   |
 
 ## Production deploy (deploy.yml)
 
@@ -147,9 +148,11 @@ PR preview uses isolated preview D1/KV/R2 so production data is never touched.
 **Deploy logic** — `#skipdeploy` is checked first (`check-skip-deploy`). When not skipping, the following run in
 `prepare-deployment`:
 
-1. **Target apps** — From secret `APPS_TO_DEPLOY` or default (e.g. `ottabase-template-app-tanstack`).
-2. **File change detection** — `CHANGED_FILES` (e.g. `git diff HEAD~1 HEAD`), then `PACKAGES_CHANGED` (any path under
-   `packages/`), and `CHANGED_APP_FOLDERS` (app dirs with changed files).
+1. **Target apps** — From secret `APPS_TO_DEPLOY` or default
+   (`ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage`).
+2. **File change detection** — `CHANGED_FILES` from the full push range (`github.event.before..github.sha`; first push
+   or force-push treated as all-changed), then `PACKAGES_CHANGED` (any path under `packages/`, or root config files like
+   `pnpm-lock.yaml`, `turbo.json`, `package.json`), and `CHANGED_APP_FOLDERS` (app dirs with changed files).
 3. **Per-app deploy decision** — `SHOULD_DEPLOY` = true if packages changed (deploy all target apps) or that app is in
    `CHANGED_APP_FOLDERS`; or if `FORCE_DEPLOY` is true on manual run.
 4. **Matrix build** — For each app to deploy: load config, check `deployable`, build matrix JSON; output `matrix` and
@@ -185,14 +188,11 @@ Use markers so PR preview or production deploy do not run when not needed (e.g. 
 
 **TanStack:** `pnpm run build` → `dist/` + `cloudflare-worker.ts` → `wrangler deploy`.
 
-**Next.js:** `pnpm run build` → `.next/`; then `pnpm run build:worker` (OpenNext) → `.worker-next/` → `wrangler deploy`.
+**Next.js:** `pnpm run build` → `.next/`; then `pnpm run build:worker` (OpenNext) → `.open-next/` → `wrangler deploy`.
 
 ## Local testing
 
 ```bash
-# Discovery (matrix of deployable apps)
-node .github/scripts/discover-deployable-apps.mjs
-
 # Build and preview one app
 cd apps/my-app
 pnpm build

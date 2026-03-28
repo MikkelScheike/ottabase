@@ -123,5 +123,14 @@ instantly without a full render.
 pnpm deploy
 ```
 
-CI/CD via `.github/workflows/deploy-homepage.yml` — deploys on pushes to `main`. Requires `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID` GitHub secrets.
+CI/CD is handled by the shared `.github/workflows/deploy.yml` — deploys on push to `main` with smart change detection
+(only re-deploys when this app or shared packages change).
+
+**Config-driven - no yml editing needed when renaming the app:**
+
+1. Update `cloudflare-config.json` `workerName` and `wrangler.jsonc` `name` to match your new app name.
+2. Set the `APPS_TO_DEPLOY` GitHub secret to a comma-separated list of app folder names, e.g. `main-app,homepage-app`.
+3. Set `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` GitHub secrets.
+
+The workflow reads `cloudflare-config.json` from each app folder to determine app type (`nextjs`), build commands,
+output paths and wrangler config — no hardcoded names in yml.

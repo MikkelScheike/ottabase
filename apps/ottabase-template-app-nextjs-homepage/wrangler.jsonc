@@ -60,5 +60,18 @@
                 "directory": ".open-next/assets",
             },
         },
+        // Preview environment for PR deployments
+        // The deploy workflow reads this block to verify secrets and generate wrangler.preview.jsonc
+        "preview": {
+            "vars": {
+                "ENVIRONMENT": "preview",
+                "NODE_ENV": "production",
+            },
+            // Asset bindings for Preview
+            "assets": {
+                "binding": "OBCF_ASSETS",
+                "directory": ".open-next/assets",
+            },
+        },
     },
 }

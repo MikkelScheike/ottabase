@@ -73,8 +73,8 @@ Complete reference for the deployment system. See [README.md](README.md) for qui
     "appType": "nextjs",
     "buildCommand": "build",
     "workerBuildCommand": "build:worker",
-    "outputDirectory": ".worker-next",
-    "verifyPaths": [".worker-next", ".worker-next/assets"]
+    "outputDirectory": ".open-next",
+    "verifyPaths": [".open-next"]
 }
 ```
 
@@ -164,28 +164,36 @@ node .github/scripts/discover-deployable-apps.mjs
 
 ## Deployment Workflow Steps
 
-### Job 1: Discover (5 min timeout)
+### Job 1: Prepare deployment (5 min timeout)
 
-1. Checkout code
+1. Checkout code (full history — needed for `github.event.before..github.sha` push-range diff)
 2. Setup Node.js
-3. Run discovery script
-4. Output matrix of deployable apps
+3. Read `APPS_TO_DEPLOY` secret (or use default)
+4. Detect changed files using the full push range; `PACKAGES_CHANGED=true` if `packages/`, root config files
+   (`pnpm-lock.yaml`, `turbo.json`, etc.), first push, or `FORCE_DEPLOY`
+5. Resolve each app’s folder + load its `cloudflare-config.json`
 
-### Job 2: Deploy (20 min timeout, per app)
+    > **Manual deploy (`workflow_dispatch`) note:** `FORCE_DEPLOY` defaults to `true`, so a manual run always deploys
+    > all apps in `APPS_TO_DEPLOY`. This is intentional — manual triggers are typically used when you need everything
+    > out now. To deploy a single app manually, set `FORCE_DEPLOY` to `false` and ensure only that app is listed in
+    > `APPS_TO_DEPLOY` (or pass a scoped override via the input field).
+
+6. Build and output matrix JSON for the deploy job
+
+### Job 2: Deploy (20 min timeout, per app matrix entry)
 
 1. **Load Configuration** - Parse app config from matrix
 2. **Verify Secrets** - Check all required secrets exist
 3. **Setup Environment** - Install pnpm, Node.js, dependencies
-4. **Cache** - Restore Turborepo and framework caches
-5. **Build Packages** - `pnpm --filter "./packages/**" run build`
-6. **Build App** - `pnpm --filter=<app> run <buildCommand>`
-7. **Verify App Build** - Check expected outputs exist
-8. **Build Worker** - `pnpm run <workerBuildCommand>`
-9. **Verify Worker Bundle** - Check all `verifyPaths` exist
-10. **Generate Wrangler Config** - Substitute production secrets
-11. **Deploy** - `wrangler deploy --env production`
-12. **Health Check** - Verify deployment accessible (3 retries)
-13. **Summary** - Report status
+4. **Restore Caches** - Restore pre-built packages (from `build-packages` job) + Turborepo + framework caches
+5. **Build App** - `pnpm --filter=<app> run <buildCommand>`
+6. **Verify App Build** - Check expected outputs exist
+7. **Build Worker** - `pnpm run <workerBuildCommand>`
+8. **Verify Worker Bundle** - Check all `verifyPaths` exist
+9. **Generate Wrangler Config** - Substitute production secrets
+10. **Deploy** - `wrangler deploy --env production`
+11. **Health Check** - Verify deployment accessible (3 retries)
+12. **Summary** - Report status
 
 ## Wrangler Configuration
 
@@ -298,12 +306,10 @@ Common issues:
 ❌ ERROR: Required paths not found after Worker build
 
 The following paths were expected but are missing:
-  • .worker-next/
-  • .worker-next/assets/
+  • .open-next/
 
-For Next.js apps using OpenNext, the expected structure is:
-  • .worker-next/ - Main worker output directory
-  • .worker-next/assets/ - Static assets directory
+For Next.js apps using OpenNext, the expected output is:
+  • .open-next/ - Main worker output directory (produced by opennextjs-cloudflare)
 
 This error usually means:
   1. The 'build:worker' command didn't complete successfully
@@ -358,10 +364,13 @@ Worker deployment indicators:
 ottabase/
 ├── .github/
 │   ├── scripts/
-│   │   ├── discover-deployable-apps.mjs
+│   │   ├── discover-deployable-apps.mjs  # Local utility (not used by workflows)
 │   │   └── substitute-wrangler-secrets.py  # Substitutes secrets into wrangler config
 │   ├── workflows/
-│   │   └── deploy.yml                 # Main workflow
+│   │   ├── deploy.yml           # Production deploy (main / manual)
+│   │   ├── pr-preview.yml       # PR preview deploy + cleanup
+│   │   ├── build-packages.yml   # Shared package build + cache
+│   │   └── ci.yml               # Lint, type-check, test, build (on PR)
 │   ├── README.md                      # Quick start
 │   └── DEPLOYMENT.md                  # This file
 │

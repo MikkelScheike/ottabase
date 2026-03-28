@@ -8,9 +8,10 @@ concurrency:
     group: pr-preview-${{ github.event.pull_request.number }}
     cancel-in-progress: true
 
+# cancel-in-progress (concurrency block above) is handled by the Actions runner
+# and does not require actions: write — contents: read is sufficient.
 permissions:
     contents: read
-    actions: write
 
 jobs:
     # Check PR title/body for #skippr or #skipdeploy to skip preview build & deploy
@@ -65,11 +66,15 @@ jobs:
               run: |
                   echo "🔍 Preparing preview deployment matrix..."
 
-                  # Always deploy previews for the configured apps
+                  # Always deploy previews for the configured apps.
+                  # APPS_TO_DEPLOY is a comma-separated list of app *folder* names under apps/.
+                  # Each app must have a cloudflare-config.json that drives its build + deploy.
+                  # When you rename/copy an app, update cloudflare-config.json + wrangler.jsonc
+                  # inside that app, then set the APPS_TO_DEPLOY secret - no yml editing needed.
                   APPS_TO_DEPLOY="${{ secrets.APPS_TO_DEPLOY }}"
                   if [ -z "$APPS_TO_DEPLOY" ]; then
-                    APPS_TO_DEPLOY="ottabase-template-app-tanstack"
-                    echo "📋 Using default app: ${APPS_TO_DEPLOY}"
+                    APPS_TO_DEPLOY="ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage"
+                    echo "📋 Using default apps: ${APPS_TO_DEPLOY}"
                   else
                     echo "📋 Apps from secret: ${APPS_TO_DEPLOY}"
                   fi
@@ -340,12 +345,14 @@ jobs:
               run: |
                   echo "📦 Restoring pre-built packages from cache..."
 
+                  # Must match build-packages.yml key: LOCK + ROOT + PACKAGE hashes
                   PACKAGE_HASH=$(find packages -type f \
                     -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" \
                     | sort | xargs cat | sha256sum | cut -d' ' -f1)
 
                   LOCK_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)
-                  CACHE_KEY="packages-build-${LOCK_HASH}-${PACKAGE_HASH}"
+                  ROOT_HASH=$(cat turbo.json package.json pnpm-workspace.yaml | sha256sum | cut -d' ' -f1)
+                  CACHE_KEY="packages-build-${LOCK_HASH}-${ROOT_HASH}-${PACKAGE_HASH}"
 
                   echo "cache-key=${CACHE_KEY}" >> $GITHUB_OUTPUT
                   echo "📦 Cache key: ${CACHE_KEY}"
@@ -481,6 +488,11 @@ jobs:
                   accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
                   workingDirectory: apps/${{ matrix.folder }}
                   command:
+                      # --env preview  → use env.preview bindings/vars from wrangler.preview.jsonc
+                      # --name <name>  → explicitly sets the deployed worker name; overrides the default
+                      #                  <name>-preview suffix that Wrangler would otherwise append.
+                      #                  The resulting worker is named exactly <base>-pr-<N>, not <base>-pr-<N>-preview.
+                      # This is intentional: cleanup uses wrangler delete --name <base>-pr-<N> to match.
                       deploy --env preview --name ${{ steps.preview-name.outputs.preview-name }} --config
                       wrangler.preview.jsonc
               continue-on-error: false
@@ -490,6 +502,25 @@ jobs:
               run: |
                   PREVIEW_URL="https://${{ steps.preview-name.outputs.preview-name }}.${{ steps.config.outputs.worker-subdomain }}.workers.dev/"
                   echo "✅ Preview deployed: ${PREVIEW_URL}"
+
+            - name: Verify deployed worker name via Cloudflare API
+              # Confirms the worker was registered under the exact --name we passed (not <name>-preview).
+              # Wrangler docs: explicit --name overrides any env-derived suffix; this step makes that visible.
+              # Soft check only — a failed API call does not fail the deployment.
+              if: success()
+              env:
+                  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+                  CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+              run: |
+                  PREVIEW_NAME="${{ steps.preview-name.outputs.preview-name }}"
+                  HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+                    -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
+                    "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/workers/scripts/${PREVIEW_NAME}")
+                  if [ "$HTTP" = "200" ]; then
+                    echo "✅ Worker '${PREVIEW_NAME}' confirmed in Cloudflare (HTTP 200) — no -preview suffix appended"
+                  else
+                    echo "::warning::Worker '${PREVIEW_NAME}' not found via API (HTTP ${HTTP}) — verify manually in Cloudflare dashboard"
+                  fi
 
             - name: Preview deployment failure summary
               if: failure()
@@ -527,51 +558,64 @@ jobs:
                   fi
                   echo "worker-subdomain=${WORKER_SUBDOMAIN}" >> $GITHUB_OUTPUT
 
-            - name: Compute preview worker name
-              id: cleanup-name
+            - name: Delete preview workers for all apps
+              # Loop over every configured app and delete its preview worker.
+              # Preview workers are deployed with an explicit --name override (not via --env),
+              # so wrangler delete must use --name to target the correct worker.
               run: |
                   APPS_TO_DEPLOY="${{ secrets.APPS_TO_DEPLOY }}"
                   if [ -z "$APPS_TO_DEPLOY" ]; then
-                    APPS_TO_DEPLOY="ottabase-template-app-tanstack"
+                    APPS_TO_DEPLOY="ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage"
                   fi
+
+                  WORKER_SUBDOMAIN="${{ steps.cleanup-config.outputs.worker-subdomain }}"
+                  PR_NUMBER="${{ github.event.pull_request.number }}"
 
                   IFS=',' read -ra TARGET_APPS <<< "$APPS_TO_DEPLOY"
-                  FIRST_APP="${TARGET_APPS[0]}"
-                  APP_FOLDER=""
 
-                  if [ -d "apps/${FIRST_APP}" ]; then
-                    APP_FOLDER="${FIRST_APP}"
-                  else
-                    for dir in apps/*/; do
-                      if [ -f "${dir}package.json" ]; then
-                        PKG_NAME=$(jq -r '.name // empty' "${dir}package.json")
-                        if [ "$PKG_NAME" == "$FIRST_APP" ]; then
-                          APP_FOLDER=$(basename "$dir")
-                          break
+                  for app in "${TARGET_APPS[@]}"; do
+                    app=$(echo "$app" | xargs) # trim whitespace
+
+                    # Resolve folder name (supports both folder name and package name)
+                    APP_FOLDER=""
+                    if [ -d "apps/${app}" ]; then
+                      APP_FOLDER="${app}"
+                    else
+                      for dir in apps/*/; do
+                        if [ -f "${dir}package.json" ]; then
+                          PKG_NAME=$(jq -r '.name // empty' "${dir}package.json")
+                          if [ "$PKG_NAME" == "$app" ]; then
+                            APP_FOLDER=$(basename "$dir")
+                            break
+                          fi
                         fi
-                      fi
-                    done
-                  fi
-
-                  if [ -z "$APP_FOLDER" ]; then
-                    echo "⚠️ Could not determine app folder, defaulting to ${FIRST_APP}"
-                    APP_FOLDER="${FIRST_APP}"
-                  fi
-
-                  CONFIG_JSON="apps/${APP_FOLDER}/cloudflare-config.json"
-                  BASE_NAME="${APP_FOLDER}"
-                  if [ -f "$CONFIG_JSON" ]; then
-                    CANDIDATE=$(jq -r '.workerName // empty' "$CONFIG_JSON")
-                    if [ -n "$CANDIDATE" ] && [ "$CANDIDATE" != "null" ]; then
-                      BASE_NAME="$CANDIDATE"
+                      done
                     fi
-                  fi
 
-                  echo "preview-name=${BASE_NAME}-pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+                    if [ -z "$APP_FOLDER" ]; then
+                      echo "⚠️ Could not find folder for '${app}', skipping cleanup"
+                      continue
+                    fi
 
-            - name: Delete preview worker
-              run: |
-                  pnpm exec wrangler delete ${{ steps.cleanup-name.outputs.preview-name }}
+                    # Determine base worker name from cloudflare-config.json
+                    CONFIG_JSON="apps/${APP_FOLDER}/cloudflare-config.json"
+                    BASE_NAME="${APP_FOLDER}"
+                    if [ -f "$CONFIG_JSON" ]; then
+                      CANDIDATE=$(jq -r '.workerName // empty' "$CONFIG_JSON")
+                      if [ -n "$CANDIDATE" ] && [ "$CANDIDATE" != "null" ]; then
+                        BASE_NAME="$CANDIDATE"
+                      fi
+                    fi
+
+                    PREVIEW_NAME="${BASE_NAME}-pr-${PR_NUMBER}"
+                    PREVIEW_URL="https://${PREVIEW_NAME}.${WORKER_SUBDOMAIN}.workers.dev/"
+
+                    echo "🧹 Deleting preview worker: ${PREVIEW_NAME}"
+                    # Use --name because previews are deployed with an explicit name override,
+                    # not via a named wrangler environment. --env would target a different worker.
+                    pnpm exec wrangler delete --name "${PREVIEW_NAME}" || echo "⚠️ Delete failed or worker already absent: ${PREVIEW_NAME}"
+                    echo "   ${PREVIEW_URL}"
+                  done
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
                   CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -579,12 +623,8 @@ jobs:
 
             - name: Cleanup summary
               if: success()
-              run: |
-                  PREVIEW_URL="https://${{ steps.cleanup-name.outputs.preview-name }}.${{ steps.cleanup-config.outputs.worker-subdomain }}.workers.dev/"
-                  echo "🧹 Preview worker cleaned up (or already absent): ${PREVIEW_URL}"
+              run: echo "🧹 Preview worker cleanup complete for PR #${{ github.event.pull_request.number }}"
 
             - name: Cleanup failure summary
               if: failure()
-              run: |
-                  PREVIEW_URL="https://${{ steps.cleanup-name.outputs.preview-name }}.${{ steps.cleanup-config.outputs.worker-subdomain }}.workers.dev/"
-                  echo "⚠️ Cleanup may have failed for ${PREVIEW_URL}"
+              run: echo "⚠️ One or more preview worker cleanups may have failed for PR #${{ github.event.pull_request.number }}"
