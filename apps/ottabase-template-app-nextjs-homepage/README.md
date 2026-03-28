@@ -3,6 +3,12 @@
 Next.js 16 homepage template deployed to Cloudflare Workers via OpenNext. Uses Brand Engine for theming with 8 presets
 and live switching.
 
+> **Monorepo note:** The main TanStack app (`ottabase-template-app-tanstack`) drives its brand config from a D1
+> database, editable via the admin UI at `/admin/brand-engine`. This homepage is intentionally **config-first** — no DB,
+> no API call; the preset is set in `config/brand.config.ts` and resolved at request time. Both apps use the same
+> underlying `@ottabase/brand-engine` presets, so to keep them visually in sync just match `themePreset` here to
+> whatever preset is active in the TanStack app.
+
 ## Quick Start
 
 ```bash
@@ -40,16 +46,61 @@ lib/
 __tests__/                # Vitest test suite
 ```
 
-## Theming
+## Brand Engine Integration
+
+This app is fully wired to `@ottabase/brand-engine` for SSR-safe theming without a database or API call.
+
+### How it works (end-to-end)
+
+```
+config/brand.config.ts          ← 1. Define your preset name + optional overrides
+        ↓
+lib/brand-server.ts             ← 2. Server resolves light + dark themes at request time
+        ↓
+app/layout.tsx (Server Component)
+  - generateBrandConfig()       ← 3. Builds FullBrandConfig (both color modes)
+  - buildCriticalCSS(theme)     ← 4. Injects CSS variables into <head> (prevents FOUC)
+  - font <link> tags            ← 5. Loads preset fonts (only if the theme defines URLs)
+        ↓
+app/providers.tsx (Client Component)
+  - BrandProvider               ← 6. Makes brand config available via useBrand()
+  - ThemeProvider (next-themes) ← 7. Manages light/dark class on <html>
+  - MutationObserver            ← 8. Watches dark class changes → calls applyBrandTheme()
+  - localStorage restore        ← 9. Restores a user-saved preset on hydration
+```
+
+### Customising the brand
 
 Edit `config/brand.config.ts`:
 
 ```typescript
+import type { BrandTheme } from '@ottabase/brand-engine';
+
+// Pick one of the 8 built-in presets
 export const themePreset = 'crisp'; // default | neo | crisp | funky | artisan | midnight | rose | verdant
+
+// Optionally override individual tokens — merged on top of the preset
+export const brandConfig: Partial<BrandTheme> = {
+    name: 'my-brand',
+    // primaryColor, fontHeading, spacing, etc.
+};
 ```
 
-The selected preset is saved to `localStorage` (`ottabase.homepage.theme-preset`) and restored on page load. Visit
-`/theme-demo` to switch presets live.
+Changes take effect on the next server render — no migration or API call needed.
+
+### Live preset switching
+
+`ThemePresetSwitcher` (`components/ThemePresetSwitcher.tsx`) applies a new preset instantly via `applyBrandTheme()` and
+persists the choice to `localStorage` (`ottabase.homepage.theme-preset`). On the next page load `providers.tsx` reads
+this key and re-applies the preset before paint.
+
+Visit `/theme-demo` to try all 8 presets live.
+
+### Dark mode
+
+`next-themes` adds/removes the `dark` class on `<html>`. `providers.tsx` observes that class and calls
+`applyBrandTheme()` with the correct `darkTheme` or `theme` from the resolved brand config, so CSS variables flip
+instantly without a full render.
 
 ## Scripts
 
