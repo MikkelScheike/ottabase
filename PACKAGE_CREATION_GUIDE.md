@@ -6,7 +6,8 @@ Quick reference for creating packages in the Ottabase Turborepo monorepo.
 
 - **Keep packages generic** - Reusable across different apps
 - **React dependencies allowed** - Packages can use React/React DOM as peer dependencies
-- **No Next.js specifics** - Next.js-specific code belongs in `apps/ottabase-template-app`
+- **No Next.js specifics** - Next.js-specific code belongs in app directories (e.g.
+  `apps/ottabase-template-app-nextjs-homepage`)
 
 ## Package Structure
 
@@ -142,10 +143,10 @@ pnpm dev  # Watch mode
 
 ## Testing
 
-Test components in [ottabase-template-app](../../apps/ottabase-template-app):
+Test components in the primary app (`apps/ottabase-template-app-tanstack`):
 
 ```typescript
-// apps/ottabase-template-app/app/page.tsx
+// apps/ottabase-template-app-tanstack/src/pages/test-page.tsx
 import { ComponentName } from '@ottabase/package-name/component-name';
 
 <ComponentName prop1="value" />
@@ -154,6 +155,6 @@ import { ComponentName } from '@ottabase/package-name/component-name';
 ## Key Reminders
 
 - Packages should be **framework-agnostic** as much as possible
-- Next.js-specific code (layouts, route handlers, middleware) goes in `apps/ottabase-template-app`
+- App-specific code goes in the relevant app directory (primary: `apps/ottabase-template-app-tanstack`)
 - Remove `rootDir` from tsconfig, use `skipLibCheck: true`
 - Include package sources in consumer app Tailwind config

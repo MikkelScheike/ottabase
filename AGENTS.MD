@@ -493,7 +493,7 @@ pnpm install
 | Model registry    | `apps/*/worker/lib/db-utils.ts` (initDbConnection) |
 | Custom routes     | `apps/*/ottabase/config.routes.ts`                 |
 | App config        | `apps/*/ottabase/ottabase.config.ts`               |
-| Client hooks      | `apps/*/ottabase/hooks/` or `src/ottabase/hooks/`  |
+| Client hooks      | `apps/*/src/ottabase/hooks/` or `apps/*/src/hooks/` |
 | Migrations        | `apps/*/ottabase/migrations/`                      |
 | API routes        | `apps/*/worker/routes/router.ts`                   |
 | Pages             | `apps/*/src/pages/`                                |

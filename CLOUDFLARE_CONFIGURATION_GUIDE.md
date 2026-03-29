@@ -29,15 +29,15 @@ This guide covers Cloudflare resource configuration, bindings, environment varia
 
 The following Cloudflare resources must be created and configured:
 
-| Resource Type        | Binding Name        | Purpose                        | Created By                  |
-| -------------------- | ------------------- | ------------------------------ | --------------------------- |
-| **D1 Database**      | `OBCF_D1`           | Primary SQLite database        | `cf:setup` script           |
-| **KV Namespace**     | `OBCF_KV`           | Key-value storage              | `cf:setup` script           |
-| **R2 Bucket**        | `OBCF_R2`           | Object storage                 | `cf:setup` script           |
-| **Queue**            | `OBCF_QUEUE`        | Async message processing       | `cf:setup` script           |
-| **Durable Object**   | `OBCF_REALTIME`     | WebSocket realtime connections | Auto-configured             |
-| **Rate Limiter**     | `OBCF_RATE_LIMITER` | Request throttling             | Auto-configured             |
-| **Analytics Engine** | `OBCF_ANALYTICS_*`  | Event tracking                 | Auto-created on first write |
+| Resource Type        | Binding Name                                                                   | Purpose                        | Created By                  |
+| -------------------- | ------------------------------------------------------------------------------ | ------------------------------ | --------------------------- |
+| **D1 Database**      | `OBCF_D1`                                                                      | Primary SQLite database        | `cf:setup` script           |
+| **KV Namespace**     | `OBCF_KV`                                                                      | Key-value storage              | `cf:setup` script           |
+| **R2 Bucket**        | `OBCF_R2`                                                                      | Object storage                 | `cf:setup` script           |
+| **Queue**            | `OBCF_QUEUE`                                                                   | Async message processing       | `cf:setup` script           |
+| **Durable Object**   | `OBCF_REALTIME`                                                                | WebSocket realtime connections | Auto-configured             |
+| **Rate Limiter**     | `OBCF_RATE_LIMITER`                                                            | Request throttling             | Auto-configured             |
+| **Analytics Engine** | `OBCF_ANALYTICS_CORE`, `OBCF_ANALYTICS_SHORTLINKS`, `OBCF_ANALYTICS_REFERRALS` | Event tracking                 | Auto-created on first write |
 
 **Note:** Run `pnpm cf:login` before `pnpm cf:setup` if not authenticated. cf:setup outputs resource IDs for GitHub
 Secrets; it does not modify wrangler.jsonc.
