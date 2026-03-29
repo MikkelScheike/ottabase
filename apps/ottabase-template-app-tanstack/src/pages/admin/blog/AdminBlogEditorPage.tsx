@@ -7,6 +7,7 @@
 import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
+import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import {
     CONTENT_TYPES,
     formatDate,
@@ -25,7 +26,6 @@ import {
     type OutputData,
     type ToolSettings,
 } from '@ottabase/ottaeditor';
-import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';

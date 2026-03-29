@@ -112,7 +112,8 @@ const sampleEditorJSData = {
                 items: [
                     {
                         title: 'Choose the right block mix',
-                        content: 'Start with headers, paragraphs, and supporting media so the content structure is clear.',
+                        content:
+                            'Start with headers, paragraphs, and supporting media so the content structure is clear.',
                     },
                     {
                         title: 'Layer in guided actions',
@@ -120,7 +121,8 @@ const sampleEditorJSData = {
                     },
                     {
                         title: 'Ship a polished walkthrough',
-                        content: 'Render the same saved block as a clean timeline in your frontend with minimal styling work.',
+                        content:
+                            'Render the same saved block as a clean timeline in your frontend with minimal styling work.',
                     },
                 ],
             },
