@@ -69,7 +69,12 @@ export async function provisionDefaultOrganizationForUser(params: {
     roleFallbacks?: ProvisionRoleName[];
     /** App ID for brand kit seeding — when provided, ensures app-scoped default kit exists */
     appId?: string | null;
-}): Promise<{ organizationId: string; organizationRole: 'owner' | 'member'; assignedRole: string | null }> {
+}): Promise<{
+    organizationId: string;
+    organizationRole: 'owner' | 'member';
+    assignedRole: string | null;
+    brandSetupError?: string;
+}> {
     const {
         user,
         email = null,
@@ -103,6 +108,7 @@ export async function provisionDefaultOrganizationForUser(params: {
         const orgName = `${baseName}'s Workspace`;
         const baseSlug = makeSlug(orgName) || `org-${userId.slice(0, 8)}`;
 
+        // Resolve a unique slug, then create with retry on unique-constraint conflict (TOCTOU guard)
         let slug = baseSlug;
         let attempt = 0;
         while (await Organization.findBySlug(slug)) {
@@ -114,11 +120,27 @@ export async function provisionDefaultOrganizationForUser(params: {
             }
         }
 
-        const organization = await Organization.create({
-            name: orgName,
-            slug,
-            ownerId: userId,
-        });
+        let organization: InstanceType<typeof Organization>;
+        try {
+            organization = await Organization.create({
+                name: orgName,
+                slug,
+                ownerId: userId,
+            });
+        } catch (err: unknown) {
+            // Handle unique-constraint race: another request may have taken the slug between findBySlug and create
+            const msg = err instanceof Error ? err.message : String(err);
+            if (/unique|constraint|duplicate/i.test(msg)) {
+                slug = `${baseSlug}-${crypto.randomUUID().slice(0, 6)}`;
+                organization = await Organization.create({
+                    name: orgName,
+                    slug,
+                    ownerId: userId,
+                });
+            } else {
+                throw err;
+            }
+        }
 
         organizationId = String(organization.get('id') || '');
 
@@ -130,11 +152,14 @@ export async function provisionDefaultOrganizationForUser(params: {
         });
     }
 
+    let brandSetupError: string | undefined;
+
     if (organizationId) {
         try {
             await ensureAppBrandDefaults(fallbackBrandName, appId ?? null);
         } catch (brandError) {
-            console.warn('[user-provisioning] Default brand setup failed:', brandError);
+            brandSetupError = brandError instanceof Error ? brandError.message : String(brandError);
+            console.error('[user-provisioning] Default brand setup failed:', brandError);
         }
     }
 
@@ -158,5 +183,6 @@ export async function provisionDefaultOrganizationForUser(params: {
         organizationId,
         organizationRole: resolvedOrganizationRole,
         assignedRole,
+        brandSetupError,
     };
 }

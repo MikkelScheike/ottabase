@@ -66,24 +66,35 @@ export async function writeKVState(env: CloudflareEnv, state: PlatformState): Pr
  * Call at bootstrap init so stale platform_state, RBAC, queue, and rate-limit entries
  * from a previous run or local dev session cannot skew a fresh install.
  */
-export async function clearKvNamespace(env: CloudflareEnv): Promise<{ deleted: number; skipped: boolean }> {
+export async function clearKvNamespace(
+    env: CloudflareEnv,
+): Promise<{ deleted: number; failed: number; skipped: boolean }> {
     if (!env.OBCF_KV) {
-        return { deleted: 0, skipped: true };
+        return { deleted: 0, failed: 0, skipped: true };
     }
 
     let deleted = 0;
+    let failed = 0;
     let cursor: string | undefined;
 
     do {
         const page = await env.OBCF_KV.list({ limit: 1000, cursor });
         for (const k of page.keys) {
-            await env.OBCF_KV.delete(k.name);
-            deleted++;
+            try {
+                await env.OBCF_KV.delete(k.name);
+                deleted++;
+            } catch {
+                failed++;
+            }
         }
         cursor = page.list_complete ? undefined : page.cursor;
     } while (cursor);
 
-    return { deleted, skipped: false };
+    if (failed > 0) {
+        console.warn(`KV cleanup: ${deleted} deleted, ${failed} failed`);
+    }
+
+    return { deleted, failed, skipped: false };
 }
 
 /**

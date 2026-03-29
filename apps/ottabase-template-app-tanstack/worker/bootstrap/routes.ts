@@ -337,9 +337,23 @@ async function handleInit(context: BootstrapContext): Promise<Response> {
         await writeDBState(env, 'BOOTSTRAPPING');
         await writeKVState(env, 'BOOTSTRAPPING');
 
-        // 3. Run ottaorm autoInit (creates all tables from Drizzle schemas)
-        const driver = createD1Driver(env.OBCF_D1);
+        // 3. Collect schemas and validate they're non-empty
         const allSchemas = getAllSchemas();
+        if (!allSchemas || Object.keys(allSchemas).length === 0) {
+            await writeDBState(env, 'UNINITIALIZED');
+            await writeKVState(env, 'UNINITIALIZED');
+            return jsonResp(
+                {
+                    success: false,
+                    error: 'Schema collection returned no tables — check config.migrations.ts and schemas-helper.ts',
+                    code: 'SCHEMA_EMPTY',
+                },
+                500,
+            );
+        }
+
+        // 4. Run ottaorm autoInit (creates all tables from Drizzle schemas)
+        const driver = createD1Driver(env.OBCF_D1);
         const initResult = await autoInit({
             driver,
             schema: allSchemas,
@@ -351,7 +365,7 @@ async function handleInit(context: BootstrapContext): Promise<Response> {
                 env.MIGRATION_ALLOW_DESTRUCTIVE?.trim().toLowerCase() === 'true',
         });
 
-        // 4. Run core SQL migrations (users, sessions, accounts, RBAC, multi-tenant)
+        // 5. Run core SQL migrations (users, sessions, accounts, RBAC, multi-tenant)
         const sqlResult = await runCoreSQLMigrations(env);
 
         return jsonResp({
@@ -363,6 +377,13 @@ async function handleInit(context: BootstrapContext): Promise<Response> {
             timestamp: Date.now(),
         });
     } catch (error: any) {
+        // Reset state so the platform isn't stuck in BOOTSTRAPPING on failure
+        try {
+            await writeDBState(env, 'UNINITIALIZED');
+            await writeKVState(env, 'UNINITIALIZED');
+        } catch {
+            // State rollback is best-effort; let the main error propagate
+        }
         return jsonResp({ success: false, error: error.message, code: 'INIT_FAILED' }, 500);
     }
 }

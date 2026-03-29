@@ -75,7 +75,21 @@ export function createModelHooks<T extends { id: string | number }>(config: Mode
         return [];
     }
 
-    function normalizePaginatedResponse(result: any, entity: string): PaginationResult<T> {
+    function normalizePaginatedResponse(result: any, entity: string, depth = 0): PaginationResult<T> {
+        // Guard against infinite recursion from deeply nested or circular responses
+        if (depth > 2) {
+            const list = normalizeListResponse(result, entity);
+            return {
+                data: list,
+                total: list.length,
+                page: 1,
+                perPage: list.length,
+                totalPages: 1,
+                hasNextPage: false,
+                hasPrevPage: false,
+            };
+        }
+
         // Already in PaginationResult shape
         if (result && typeof result === 'object' && 'data' in result && 'total' in result && 'page' in result) {
             return result as PaginationResult<T>;
@@ -106,7 +120,7 @@ export function createModelHooks<T extends { id: string | number }>(config: Mode
             const obj = result as Record<string, unknown>;
             const inner = obj.data;
             if (inner && typeof inner === 'object' && 'data' in (inner as any)) {
-                return normalizePaginatedResponse(inner, entity);
+                return normalizePaginatedResponse(inner, entity, depth + 1);
             }
         }
 
@@ -434,12 +448,50 @@ export function createModelHooks<T extends { id: string | number }>(config: Mode
         >,
     ) {
         const apiClient = useApiClient();
+        const queryClient = useQueryClient();
         const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
+
+        // Extract consumer handlers so the spread doesn't silently override optimistic behavior
+        const { onMutate: consumerOnMutate, onError: consumerOnError, ...restOptions } = mutationOptions ?? {};
 
         return useMutation<T, Error, { id: string | number; data: Partial<T> }, MutationContext<T>>({
             meta: { entity: entityName },
             mutationFn: ({ id, data }) => fetchers.updateItem(id, data),
-            ...mutationOptions,
+            // Optimistic update: patch the detail cache, then call consumer handler
+            onMutate: async (variables: { id: string | number; data: Partial<T> }) => {
+                const { id, data } = variables;
+                await queryClient.cancelQueries({ queryKey: queryKeys.detail(id) });
+                const previousItem = queryClient.getQueryData<T>(queryKeys.detail(id)) ?? undefined;
+                if (previousItem) {
+                    queryClient.setQueryData<T>(queryKeys.detail(id), {
+                        ...previousItem,
+                        ...data,
+                    } as T);
+                }
+                const context: MutationContext<T> = { previousItem };
+                // Consumer onMutate may return extra context; merge it
+                if (consumerOnMutate) {
+                    const extra = await (consumerOnMutate as Function)(variables);
+                    if (extra && typeof extra === 'object') {
+                        Object.assign(context, extra);
+                    }
+                }
+                return context;
+            },
+            onError: (
+                err: Error,
+                variables: { id: string | number; data: Partial<T> },
+                context: MutationContext<T> | undefined,
+            ) => {
+                // Rollback on error
+                if (context?.previousItem) {
+                    queryClient.setQueryData(queryKeys.detail(variables.id), context.previousItem);
+                }
+                if (consumerOnError) {
+                    (consumerOnError as Function)(err, variables, context);
+                }
+            },
+            ...restOptions,
         });
     }
 
@@ -447,12 +499,38 @@ export function createModelHooks<T extends { id: string | number }>(config: Mode
         mutationOptions?: Partial<UseMutationOptions<boolean, Error, string | number, MutationContext<T>>>,
     ) {
         const apiClient = useApiClient();
+        const queryClient = useQueryClient();
         const fetchers = useMemo(() => createFetchers(apiClient), [apiClient]);
+
+        const { onMutate: consumerOnMutate, onError: consumerOnError, ...restOptions } = mutationOptions ?? {};
 
         return useMutation<boolean, Error, string | number, MutationContext<T>>({
             meta: { entity: entityName },
             mutationFn: fetchers.deleteItem,
-            ...mutationOptions,
+            // Optimistic delete: remove from detail cache, then call consumer handler
+            onMutate: async (id: string | number) => {
+                await queryClient.cancelQueries({ queryKey: queryKeys.detail(id) });
+                const previousItem = queryClient.getQueryData<T>(queryKeys.detail(id)) ?? undefined;
+                queryClient.removeQueries({ queryKey: queryKeys.detail(id) });
+                const context: MutationContext<T> = { previousItem };
+                if (consumerOnMutate) {
+                    const extra = await (consumerOnMutate as Function)(id);
+                    if (extra && typeof extra === 'object') {
+                        Object.assign(context, extra);
+                    }
+                }
+                return context;
+            },
+            onError: (err: Error, id: string | number, context: MutationContext<T> | undefined) => {
+                // Rollback on error
+                if (context?.previousItem) {
+                    queryClient.setQueryData(queryKeys.detail(id), context.previousItem);
+                }
+                if (consumerOnError) {
+                    (consumerOnError as Function)(err, id, context);
+                }
+            },
+            ...restOptions,
         });
     }
 

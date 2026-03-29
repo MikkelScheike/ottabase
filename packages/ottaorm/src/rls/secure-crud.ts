@@ -106,7 +106,7 @@ export async function secureCrud(options: SecureCrudOptions): Promise<Response> 
                         },
                     );
                 }
-                query.limit = parsedLimit;
+                query.limit = Math.min(Math.max(1, parsedLimit), 1000);
             }
 
             const offset = url.searchParams.get('offset');
@@ -124,7 +124,7 @@ export async function secureCrud(options: SecureCrudOptions): Promise<Response> 
                         },
                     );
                 }
-                query.offset = parsedOffset;
+                query.offset = Math.min(Math.max(0, parsedOffset), 100_000);
             }
 
             const page = url.searchParams.get('page');

@@ -10,6 +10,11 @@ An ORM for Cloudflare D1 and SQLite. Fat model pattern with all logic in one pla
 - **Automated Migrations** - Auto-creates tables from Models, no CLI needed
 - **Type-Safe** - Full TypeScript support with Drizzle ORM
 - **Relationships** - belongsTo, hasMany, hasOne, belongsToMany
+- **Eager Loading** - `instance.load('author', 'comments')` for relationship loading
+- **Soft Deletes** - Optional `deletedAt` support with `restore()`, `withTrashed()`, `onlyTrashed()`
+- **Batch Operations** - Atomic batch execution via D1's native batch API
+- **Optimistic Updates** - Built-in optimistic cache updates in TanStack Query mutation hooks
+- **Query Safeguards** - Auto-capped `limit` (max 1000) and `offset` (max 100k) on list endpoints
 - **Field Metadata** - UI config, validation, form/table config
 - **Type Casting** - Automatic boolean, date, json conversion
 - **Per-App Models** - Core models + app-specific models
@@ -453,6 +458,86 @@ await todo.delete();
 
 // Static delete
 await Todo.destroy('todo-id');
+```
+
+### Soft Deletes
+
+Enable soft deletes on a model by setting `softDeletes = true`. The table must have a `deletedAt` integer column.
+
+```typescript
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+
+export const postsTable = sqliteTable('posts', {
+    id: text('id').primaryKey(),
+    title: text('title').notNull(),
+    deletedAt: integer('deleted_at'), // required for soft deletes
+});
+
+export class Post extends BaseModel {
+    static entity = 'posts';
+    static table = postsTable;
+    static softDeletes = true; // enables soft deletes
+}
+
+// Soft delete — sets deletedAt, row stays in DB
+await Post.delete('post-id');
+
+// Queries automatically exclude soft-deleted records
+const posts = await Post.where({}); // excludes deleted
+
+// Include soft-deleted records
+const allPosts = await Post.withTrashed().where({});
+
+// Query only soft-deleted records
+const trashed = await Post.onlyTrashed();
+
+// Restore a soft-deleted record
+await Post.restore('post-id');
+
+// Permanently delete (bypasses soft delete)
+await Post.forceDelete('post-id');
+```
+
+### Batch Operations
+
+Execute multiple SQL statements atomically using D1's native batch API:
+
+```typescript
+await BaseModel.batch([
+    "INSERT INTO todos (id, title) VALUES ('1', 'First')",
+    "INSERT INTO todos (id, title) VALUES ('2', 'Second')",
+]);
+// All succeed or all fail — atomic execution
+```
+
+### Eager Loading
+
+Load relationships after the initial query:
+
+```typescript
+// Single instance — loads each relation in parallel
+const post = await Post.find('post-id');
+await post.load('author', 'comments');
+console.log(post.get('author')); // { id: '...', name: '...' }
+console.log(post.get('comments')); // [{ id: '...', content: '...' }, ...]
+
+// Collection — loads each instance's relations in parallel (N queries per relation)
+// For truly batched loading, use whereIn directly on the related model
+const posts = await Post.where({});
+await Post.loadAll(posts, 'author', 'tags');
+```
+
+Relationship methods must be defined as instance methods on the model:
+
+```typescript
+export class Post extends BaseModel {
+    async author() {
+        return this.belongsTo(User, 'authorId');
+    }
+    async comments() {
+        return this.hasMany(Comment, 'postId');
+    }
+}
 ```
 
 ## Relationships
@@ -969,9 +1054,22 @@ Search uses fields marked `searchable: true` in model metadata and supports pagi
 GET /api/ottaorm/posts?search=hello&orderBy=createdAt&orderDirection=desc&page=1&perPage=10
 ```
 
+### Query Limits
+
+To prevent abuse, the CRUD API enforces upper bounds on query parameters:
+
+| Parameter | Paginated | Non-paginated |
+| --------- | --------- | ------------- |
+| `perPage` | max 100   | N/A           |
+| `limit`   | N/A       | max 1000      |
+| `offset`  | N/A       | max 100,000   |
+
+Values exceeding these limits are silently capped to the maximum.
+
 ### Client Hooks
 
-TanStack Query hooks for React components:
+TanStack Query hooks for React components. Mutations include built-in optimistic updates — `useUpdate` patches the
+detail cache immediately and rolls back on error, `useDelete` removes the cached item and restores it on failure.
 
 ```typescript
 import { createModelHooks } from '@ottabase/ottaorm/client';
@@ -988,7 +1086,7 @@ function BlogDetailPage() {
     // List all
     const { data: posts } = blogPostHooks.useList();
 
-    // Mutations
+    // Mutations (with built-in optimistic updates)
     const createPost = blogPostHooks.useCreate();
     const updatePost = blogPostHooks.useUpdate();
     const deletePost = blogPostHooks.useDelete();

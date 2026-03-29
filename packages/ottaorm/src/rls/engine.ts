@@ -394,8 +394,10 @@ export class RLSError extends Error {
                 timestamp: Date.now(),
             };
 
-            // Log security violation
-            logSecurityViolation(this.violation);
+            // Log security violation (async, cannot await in constructor)
+            logSecurityViolation(this.violation).catch(() => {
+                // Errors already logged inside logSecurityViolation
+            });
         }
     }
 }

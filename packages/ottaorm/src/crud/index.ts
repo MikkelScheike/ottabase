@@ -4,7 +4,16 @@
 // Single handler for all model CRUD operations
 // ============================================================
 
-import { getModel, hasModel } from '../registry';
+import { getModel, getRegisteredModels, hasModel } from '../registry';
+import { ValidationError } from '../validation';
+
+// Type declaration for process (may not exist in Cloudflare Workers)
+declare const process: { env?: { NODE_ENV?: string } } | undefined;
+
+/** Maximum allowed limit for non-paginated list queries */
+const MAX_LIST_LIMIT = 1000;
+/** Maximum allowed offset for list queries */
+const MAX_LIST_OFFSET = 100_000;
 
 export interface CrudRequest {
     method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE';
@@ -65,9 +74,15 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
 
     // Check if model is registered
     if (!hasModel(entityName)) {
+        // Only show registered model names in non-production to avoid info leakage
+        const isProduction = typeof process !== 'undefined' && process?.env?.NODE_ENV === 'production';
         return {
             success: false,
-            error: `Model '${entityName}' not found. Make sure to register it with registerModel().`,
+            error: `Model '${entityName}' not found. Register it in worker/lib/db-utils.ts initDbConnection().`,
+            code: 'MODEL_NOT_FOUND',
+            ...(isProduction
+                ? {}
+                : { hint: `Available models: ${getRegisteredModels().join(', ') || '(none registered)'}` }),
             status: 404,
         };
     }
@@ -201,20 +216,23 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
                 };
             }
 
-            // Regular list (non-paginated)
+            // Regular list (non-paginated) — cap limit/offset to prevent abuse
+            const cappedLimit = query?.limit ? Math.min(Math.max(1, query.limit), MAX_LIST_LIMIT) : undefined;
+            const cappedOffset = query?.offset ? Math.min(Math.max(0, query.offset), MAX_LIST_OFFSET) : undefined;
+
             const records =
                 search && searchableFields.length > 0 && typeof Model.search === 'function'
                     ? await Model.search(search, searchableFields, query?.where, {
                           orderBy: query?.orderBy,
                           orderDirection: query?.orderDirection,
-                          limit: query?.limit,
-                          offset: query?.offset,
+                          limit: cappedLimit,
+                          offset: cappedOffset,
                       })
                     : await Model.where(query?.where || {}, {
                           orderBy: query?.orderBy,
                           orderDirection: query?.orderDirection,
-                          limit: query?.limit,
-                          offset: query?.offset,
+                          limit: cappedLimit,
+                          offset: cappedOffset,
                       });
 
             const total = records.length;
@@ -320,6 +338,19 @@ export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
             status: 400,
         };
     } catch (error) {
+        // Return structured field errors for validation failures
+        if (error instanceof ValidationError) {
+            return {
+                success: false,
+                error: error.message,
+                code: 'VALIDATION_ERROR',
+                fieldErrors: Object.fromEntries(
+                    Object.entries(error.fieldErrors).map(([k, v]) => [k, Array.isArray(v) ? v : [v]]),
+                ),
+                status: 422,
+            };
+        }
+
         const message = error instanceof Error ? error.message : 'Unknown error';
         const isD1Error = message.includes('D1_ERROR') || message.includes('SQLITE_ERROR');
 
