@@ -107,3 +107,7 @@ window.dispatchEvent(
 - The `media` table is a core OttaORM table (defined in `@ottabase/ottaorm`), designed for RLS-aware apps.
 - The package is storage-provider agnostic for callers; the app decides how uploads are persisted.
 - The lightbox is intentionally opt-in. Wrap only the content areas where you want gallery behavior.
+- **appId consistency:** The media RLS policy filters by `appId`. All upload paths must store the same `appId` that the
+  listing/browser UI sends. Use the app's configured `api` client (which injects `X-App-Id` automatically) for uploads
+  rather than raw `fetch`/XHR. The server-side `getResolvedMediaSecurityContext` also resolves `appId` from
+  `ottabase.config.ts` when the header is absent, so vanilla upload tools (e.g. EditorJS) work without extra wiring.

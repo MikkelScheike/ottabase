@@ -2,6 +2,7 @@
  * Admin changelog editor — OttaEditor body + optional hero image/video JSON.
  */
 import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { generateSlug } from '@ottabase/ottablog';
 import {
@@ -258,8 +259,10 @@ function ChangelogEditorForm({
             const formData = new FormData();
             formData.append('file', file);
             formData.append('provider', 'r2');
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            const result = (await res.json()) as { success?: boolean; url?: string };
+            const result = await api<{ success?: boolean; url?: string }>('/api/upload', {
+                method: 'POST',
+                body: formData,
+            });
             if (!result?.success || !result.url) throw new Error('Upload failed');
             const url = result.url.startsWith('http') ? result.url : `${window.location.origin}${result.url}`;
             // Detect if video

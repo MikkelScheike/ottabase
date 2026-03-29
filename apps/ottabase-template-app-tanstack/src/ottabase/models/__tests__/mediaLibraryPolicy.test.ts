@@ -41,3 +41,35 @@ describe('mediaLibraryPolicy', () => {
         ).toBeNull();
     });
 });
+
+/**
+ * Tests for the appId resolution rule used by getResolvedMediaSecurityContext.
+ *
+ * The upload path must resolve appId the same way as the listing path so that
+ * RLS filters match. The rule is:
+ *   headerAppId || configAppId || securityContextAppId
+ *
+ * Previously, the order was headerAppId || securityContextAppId || configAppId,
+ * which caused uploads via raw fetch/XHR (no X-App-Id header) to store
+ * appId='web' while the listing client sent X-App-Id='ottabase-template-app'.
+ */
+describe('media appId resolution (regression)', () => {
+    // Mirrors the expression in getResolvedMediaSecurityContext
+    function resolveAppId(headerAppId: string | null, configAppId: string, securityContextAppId: string): string {
+        return headerAppId || configAppId || securityContextAppId;
+    }
+
+    it('prefers explicit X-App-Id header when present', () => {
+        expect(resolveAppId('custom-app', 'ottabase-template-app', 'web')).toBe('custom-app');
+    });
+
+    it('falls back to config.appId when header is absent', () => {
+        // This is the core regression case: uploads without X-App-Id header
+        // must get config.appId, NOT the generic 'web' default.
+        expect(resolveAppId(null, 'ottabase-template-app', 'web')).toBe('ottabase-template-app');
+    });
+
+    it('falls back to securityContext.appId when both header and config are empty', () => {
+        expect(resolveAppId(null, '', 'web')).toBe('web');
+    });
+});

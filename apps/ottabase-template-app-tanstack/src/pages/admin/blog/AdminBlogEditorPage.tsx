@@ -5,6 +5,7 @@
  * hero image upload, SEO settings, and all post fields.
  */
 import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
+import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import {
     CONTENT_TYPES,
@@ -739,17 +740,10 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             const formData = new FormData();
             formData.append('file', file);
 
-            const response = await fetch('/api/upload', {
+            const data = await api<{ url?: string; cfImageId?: string }>('/api/upload', {
                 method: 'POST',
                 body: formData,
             });
-
-            if (!response.ok) throw new Error('Upload failed');
-
-            const data = (await response.json()) as {
-                url?: string;
-                cfImageId?: string;
-            };
             if (data.url) {
                 setHeroImage({
                     url: data.url,

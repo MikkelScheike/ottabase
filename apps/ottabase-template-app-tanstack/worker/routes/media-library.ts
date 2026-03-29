@@ -19,11 +19,14 @@ async function getResolvedMediaSecurityContext(request: Request, env: Cloudflare
     const config = getOttabaseConfig(env as Record<string, unknown>);
     const securityContext = await getSecurityContext(request, session);
 
+    // Prefer explicit header, then configured appId, then the generic default.
+    // config.appId takes precedence over securityContext.appId ('web') so that
+    // uploads without the X-App-Id header still get the correct app identity.
     return {
         session,
         securityContext: {
             ...securityContext,
-            appId: request.headers.get('x-app-id') || securityContext.appId || config.appId,
+            appId: request.headers.get('x-app-id') || config.appId || securityContext.appId,
         },
     };
 }
