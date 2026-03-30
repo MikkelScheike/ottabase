@@ -549,6 +549,9 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile --ignore-scripts=false
 
+            - name: Install wrangler CLI
+              run: pnpm add -w wrangler@4 --save-dev
+
             - name: Determine worker subdomain
               id: cleanup-config
               run: |
@@ -559,6 +562,7 @@ jobs:
                   echo "worker-subdomain=${WORKER_SUBDOMAIN}" >> $GITHUB_OUTPUT
 
             - name: Delete preview workers for all apps
+              id: delete-previews
               # Loop over every configured app and delete its preview worker.
               # Preview workers are deployed with an explicit --name override (not via --env),
               # so wrangler delete must use --name to target the correct worker.
@@ -613,7 +617,7 @@ jobs:
                     echo "🧹 Deleting preview worker: ${PREVIEW_NAME}"
                     # Use --name because previews are deployed with an explicit name override,
                     # not via a named wrangler environment. --env would target a different worker.
-                    npx --yes wrangler@4 delete --name "${PREVIEW_NAME}" || echo "⚠️ Delete failed or worker already absent: ${PREVIEW_NAME}"
+                    pnpm exec wrangler delete --name "${PREVIEW_NAME}" || echo "⚠️ Delete failed or worker already absent: ${PREVIEW_NAME}"
                     echo "   ${PREVIEW_URL}"
                   done
               env:
@@ -622,11 +626,11 @@ jobs:
               continue-on-error: true
 
             - name: Cleanup summary
-              if: success()
+              if: always() && steps.delete-previews.outcome == 'success'
               run: |
                   echo "🧹 Preview worker cleanup complete for PR #${{ github.event.pull_request.number }}"
 
             - name: Cleanup failure summary
-              if: failure()
+              if: always() && steps.delete-previews.outcome == 'failure'
               run: |
                   echo "⚠️ One or more preview worker cleanups may have failed for PR #${{ github.event.pull_request.number }}"
