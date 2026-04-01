@@ -542,6 +542,9 @@ Install recommended extensions in `.vscode/extensions.json` for Prettier format-
   workflows. Local development user is responsible for running full app builds, and shall share output with the agent as
   required.
 - Do not make stray .MD files after a task (like SUMMARY.MD)
+- Do not remove existing documentation or comments inside files, unless it is deemed incorrect or outdated after careful
+  review. If you find something that is wrong, add a comment in the code and also update the documentation to reflect
+  the correct information.
 - Add comments in code snippets to explain what they do, especially for complex logic.
 - **Create/Edit README.MD and Tests** - whenever you make changes to the codebase, update the appropriate README.MD and
   tests accordingly. Keep `README.MD` concise and focused on the task at hand, with examples. Do not add Possible Issues

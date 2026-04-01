@@ -36,7 +36,7 @@ function getShellClassName(mode: NonNullable<MediaPreviewProps['mode']>, classNa
             : mode === 'detail'
               ? 'h-full w-full overflow-hidden rounded-xl border border-border bg-muted/30'
               : mode === 'immersive'
-                ? 'h-full w-full flex items-center justify-center overflow-hidden bg-transparent'
+                ? 'h-full w-full flex rounded-lg items-center justify-center overflow-hidden bg-muted/5 dark:bg-muted/10' // In immersive mode, we use a subtle background to indicate the media boundaries without a hard border
                 : mode === 'lightbox'
                   ? 'h-full w-full overflow-hidden rounded-2xl bg-black/20'
                   : 'h-full w-full overflow-hidden rounded-xl border border-border bg-muted/20';
