@@ -34,6 +34,7 @@ import {
     IconSearch,
     IconTrash,
     IconCheck,
+    IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -102,7 +103,7 @@ export function MediaLibraryBrowser({
     showUpload = true,
     allowDelete = true,
     mode = 'page',
-    confirmLabel = 'Use this file',
+    confirmLabel = 'Insert this file',
     allowMultiselect = false,
     onSelectItem,
     onSelectItems,
@@ -175,6 +176,32 @@ export function MediaLibraryBrowser({
         () => filteredItems.find((item) => item.id === selectedId) ?? filteredItems[0] ?? null,
         [filteredItems, selectedId],
     );
+
+    // Ordered list of full item objects for the current multi-selection (capped at 5 for the card stack visual)
+    const multiSelectedItems = useMemo(
+        () =>
+            multiSelectedIds
+                .map((id) => filteredItems.find((item) => item.id === id))
+                .filter(Boolean) as MediaListItem[],
+        [multiSelectedIds, filteredItems],
+    );
+
+    const multiSelectionSummary = useMemo(() => {
+        if (multiSelectedItems.length === 0) return null;
+        const totalSize = multiSelectedItems.reduce((sum, item) => sum + (item.fileSize || 0), 0);
+        // Build a readable kinds breakdown, e.g. "3 images · 1 video"
+        const kindCounts = multiSelectedItems.reduce<Record<string, number>>((acc, item) => {
+            acc[item.mediaKind] = (acc[item.mediaKind] || 0) + 1;
+            return acc;
+        }, {});
+        const kindsSummary = Object.entries(kindCounts)
+            .map(([kind, count]) => `${count} ${kind}${count !== 1 ? 's' : ''}`)
+            .join(' · ');
+        return { totalSize, kindsSummary };
+    }, [multiSelectedItems]);
+
+    // Cards shown in the stack — keep to 5 so the fan stays readable
+    const stackCards = multiSelectedItems.slice(0, 5);
 
     useEffect(() => {
         if (selectedItem && selectedId !== selectedItem.id) {
@@ -291,16 +318,6 @@ export function MediaLibraryBrowser({
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                    <div className="relative min-w-[16rem]">
-                        <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                            value={searchValue}
-                            onChange={(event) => setSearchValue(event.target.value)}
-                            placeholder="Search files, titles, or captions..."
-                            className="pl-9"
-                        />
-                    </div>
-
                     {showUpload && (
                         <>
                             <input
@@ -362,11 +379,33 @@ export function MediaLibraryBrowser({
                                     {filteredItems.length} item{filteredItems.length === 1 ? '' : 's'} available
                                 </CardDescription>
                             </div>
-                            {mediaListQuery.isLoading && (
-                                <Badge variant="secondary" className="font-normal">
-                                    Refreshing
-                                </Badge>
-                            )}
+                            <div className="flex items-center gap-3">
+                                {/* Search moved here, next to the Library title */}
+                                <div className="relative min-w-[16rem]">
+                                    <IconSearch className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                    <Input
+                                        value={searchValue}
+                                        onChange={(event) => setSearchValue(event.target.value)}
+                                        placeholder="Search files, titles, or captions..."
+                                        className={`pl-9 ${searchValue ? 'pr-8' : ''}`}
+                                    />
+                                    {searchValue && (
+                                        <button
+                                            type="button"
+                                            aria-label="Clear search"
+                                            onClick={() => setSearchValue('')}
+                                            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded text-muted-foreground hover:text-foreground focus:outline-none"
+                                        >
+                                            <IconX className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
+                                {mediaListQuery.isLoading && (
+                                    <Badge variant="secondary" className="font-normal">
+                                        Refreshing
+                                    </Badge>
+                                )}
+                            </div>
                         </div>
                     </CardHeader>
                     <CardContent>
@@ -393,20 +432,30 @@ export function MediaLibraryBrowser({
                                             {multiSelectedIds.length} item{multiSelectedIds.length === 1 ? '' : 's'}{' '}
                                             selected
                                         </span>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            onClick={() => {
-                                                // Collect payloads in the order they were selected
-                                                const ordered = multiSelectedIds
-                                                    .map((id) => filteredItems.find((item) => item.id === id))
-                                                    .filter(Boolean) as MediaListItem[];
-                                                onSelectItems?.(ordered.map(toMediaSelectionPayload));
-                                            }}
-                                        >
-                                            Insert {multiSelectedIds.length} item
-                                            {multiSelectedIds.length === 1 ? '' : 's'}
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                onClick={() => setMultiSelectedIds([])}
+                                            >
+                                                Clear selection
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                size="sm"
+                                                onClick={() => {
+                                                    // Collect payloads in the order they were selected
+                                                    const ordered = multiSelectedIds
+                                                        .map((id) => filteredItems.find((item) => item.id === id))
+                                                        .filter(Boolean) as MediaListItem[];
+                                                    onSelectItems?.(ordered.map(toMediaSelectionPayload));
+                                                }}
+                                            >
+                                                Insert {multiSelectedIds.length} item
+                                                {multiSelectedIds.length === 1 ? '' : 's'}
+                                            </Button>
+                                        </div>
                                     </div>
                                 )}
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
@@ -498,13 +547,105 @@ export function MediaLibraryBrowser({
 
                 <Card className="h-fit xl:sticky xl:top-6">
                     <CardHeader>
-                        <CardTitle>{mode === 'picker' ? 'Selected asset' : 'File details'}</CardTitle>
-                        <CardDescription>
-                            {selectedItem ? 'Inspect and manage the selected file.' : 'Select a file to inspect it.'}
-                        </CardDescription>
+                        {allowMultiselect && mode === 'picker' && multiSelectedIds.length > 1 ? (
+                            <>
+                                <CardTitle>{multiSelectedIds.length} files selected</CardTitle>
+                                <CardDescription>
+                                    Use &ldquo;Insert {multiSelectedIds.length} items&rdquo; above to add them all at
+                                    once.
+                                </CardDescription>
+                            </>
+                        ) : (
+                            <>
+                                <CardTitle>{mode === 'picker' ? 'Selected asset' : 'File details'}</CardTitle>
+                                <CardDescription>
+                                    {selectedItem
+                                        ? 'Inspect and manage the selected file.'
+                                        : 'Select a file to inspect it.'}
+                                </CardDescription>
+                            </>
+                        )}
                     </CardHeader>
                     <CardContent className="space-y-5">
-                        {selectedItem ? (
+                        {/* ── Multi-select stacked-card view ── */}
+                        {allowMultiselect && mode === 'picker' && multiSelectedIds.length > 1 ? (
+                            <>
+                                {/* Fan of up to 5 thumbnails */}
+                                <div className="relative flex items-center justify-center" style={{ height: '160px' }}>
+                                    {stackCards.map((item, i) => {
+                                        const mid = (stackCards.length - 1) / 2;
+                                        const offset = i - mid;
+                                        // Spread cards in a fan: outermost cards are most rotated & offset
+                                        const rotate = offset * 9;
+                                        const translateX = offset * 22;
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                className="absolute overflow-hidden rounded-xl border-2 border-background bg-muted/30 shadow-md"
+                                                style={{
+                                                    width: '100px',
+                                                    height: '130px',
+                                                    transform: `rotate(${rotate}deg) translateX(${translateX}px)`,
+                                                    zIndex: i + 1,
+                                                }}
+                                            >
+                                                <MediaPreview
+                                                    item={item}
+                                                    className="h-full w-full rounded-none border-0"
+                                                    fit="cover"
+                                                />
+                                            </div>
+                                        );
+                                    })}
+                                    {/* +N badge when selection exceeds the 5-card stack */}
+                                    {multiSelectedIds.length > 5 && (
+                                        <div className="absolute bottom-0 right-6 z-10 flex h-6 min-w-6 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-bold text-primary-foreground shadow">
+                                            +{multiSelectedIds.length - 5}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Selection summary metadata */}
+                                {multiSelectionSummary && (
+                                    <div className="grid gap-3 text-sm">
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                                    Files
+                                                </p>
+                                                <p className="mt-1 font-medium text-foreground">
+                                                    {multiSelectedIds.length}
+                                                </p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                                    Total size
+                                                </p>
+                                                <p className="mt-1 text-foreground">
+                                                    {formatMediaFileSize(multiSelectionSummary.totalSize)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                                                Breakdown
+                                            </p>
+                                            <p className="mt-1 text-foreground">{multiSelectionSummary.kindsSummary}</p>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Button
+                                    type="button"
+                                    className="w-full"
+                                    onClick={() => {
+                                        onSelectItems?.(multiSelectedItems.map(toMediaSelectionPayload));
+                                    }}
+                                >
+                                    Insert {multiSelectedIds.length} items
+                                </Button>
+                            </>
+                        ) : selectedItem ? (
                             <>
                                 <div className="overflow-hidden rounded-2xl border border-border bg-muted/20">
                                     <div className="aspect-[4/3]">
@@ -619,6 +760,10 @@ export function MediaLibraryBrowser({
                                         type="button"
                                         variant={mode === 'picker' ? 'default' : 'outline'}
                                         className="w-full"
+                                        // In multi-select mode, the action bar handles batch insertion;
+                                        // disable this button when more than one item is already selected
+                                        // so the user isn't confused about which path fires.
+                                        disabled={allowMultiselect && mode === 'picker' && multiSelectedIds.length > 1}
                                         onClick={() => {
                                             if (mode === 'picker' && onSelectItem) {
                                                 onSelectItem(toMediaSelectionPayload(selectedItem), selectedItem);

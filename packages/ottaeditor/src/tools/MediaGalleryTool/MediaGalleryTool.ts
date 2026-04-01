@@ -283,6 +283,12 @@ export default class MediaGalleryTool implements BlockTool {
         clearButton.addEventListener('click', (event) => {
             event.preventDefault();
             if (this.data.items.length === 0) return;
+            if (
+                !window.confirm(
+                    `Remove all ${this.data.items.length} item${this.data.items.length === 1 ? '' : 's'} from the gallery?`,
+                )
+            )
+                return;
             this.data.items = [];
             this.itemCardEls = [];
             this.renderItems();

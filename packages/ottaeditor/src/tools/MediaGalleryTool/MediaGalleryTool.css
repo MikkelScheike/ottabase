@@ -124,12 +124,12 @@
 }
 
 .cdx-media-gallery__layout-cell.tall {
-    min-height: 44px;
+    min-height: 60px;
 }
 
 /* Short cells are used in the masonry preview to convey height variation */
 .cdx-media-gallery__layout-cell.short {
-    min-height: 10px;
+    min-height: 20px;
 }
 
 .cdx-media-gallery__layout-cell.strip {
@@ -150,6 +150,7 @@
     display: block;
     columns: 3;
     column-gap: var(--mg-space-1);
+    min-height: 120px;
 }
 
 .cdx-media-gallery__layout-preview--masonry .cdx-media-gallery__layout-cell {
