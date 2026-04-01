@@ -1,11 +1,17 @@
 name: PR Preview Deployments
 
 on:
+    workflow_dispatch:
+        inputs:
+            pr_number:
+                description: "PR number for manual preview naming/cleanup alignment (optional)"
+                required: false
+                type: string
     pull_request:
         types: [opened, synchronize, reopened, closed]
 
 concurrency:
-    group: pr-preview-${{ github.event.pull_request.number }}
+    group: pr-preview-${{ github.event.pull_request.number || github.run_id }}
     cancel-in-progress: true
 
 # cancel-in-progress (concurrency block above) is handled by the Actions runner
@@ -14,36 +20,52 @@ permissions:
     contents: read
 
 jobs:
-    # Check PR title/body for #skippr or #skipdeploy to skip preview build & deploy
-    check-skip-pr:
+    # Preview deploy is opt-in: run on manual dispatch or when PR title/body contains #deploy/#preview
+    check-preview-requested:
         runs-on: ubuntu-latest
         outputs:
-            skip_pr: ${{ steps.check.outputs.skip_pr }}
+            preview_requested: ${{ steps.check.outputs.preview_requested }}
         steps:
-            - name: Check for skip markers
+            - name: Check preview trigger markers
               id: check
               env:
-                  PR_TITLE: ${{ github.event.pull_request.title }}
-                  PR_BODY: ${{ github.event.pull_request.body || '' }}
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_ACTION: ${{ github.event.action || '' }}
+                  PR_TITLE: ${{ github.event_name == 'pull_request' && github.event.pull_request.title || '' }}
+                  PR_BODY: ${{ github.event_name == 'pull_request' && github.event.pull_request.body || '' }}
               run: |
-                  if printf '%s\n' "$PR_TITLE" "$PR_BODY" | grep -qiE '#skippr|#skipdeploy'; then
-                    echo "skip_pr=true" >> $GITHUB_OUTPUT
-                    echo "⏭️  Skipping PR preview: #skippr or #skipdeploy found in PR title/description"
+                  # Closed PR events are cleanup-only; no preview deploy needed.
+                  if [ "$EVENT_NAME" = "pull_request" ] && [ "$PR_ACTION" = "closed" ]; then
+                    echo "preview_requested=false" >> $GITHUB_OUTPUT
+                    echo "🧹 PR closed event detected — deploy jobs disabled; cleanup job will handle teardown"
+                    exit 0
+                  fi
+
+                  # Manual workflow runs are explicitly opt-in.
+                  if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+                    echo "preview_requested=true" >> $GITHUB_OUTPUT
+                    echo "✅ Manual preview requested via workflow_dispatch"
+                    exit 0
+                  fi
+
+                  if printf '%s\n' "$PR_TITLE" "$PR_BODY" | grep -qiE '#deploy|#preview'; then
+                    echo "preview_requested=true" >> $GITHUB_OUTPUT
+                    echo "✅ Preview requested: found #deploy or #preview in PR title/description"
                   else
-                    echo "skip_pr=false" >> $GITHUB_OUTPUT
-                    echo "✅ No skip markers – PR preview will run"
+                    echo "preview_requested=false" >> $GITHUB_OUTPUT
+                    echo "⏭️  Skipping PR preview: add #deploy or #preview to PR title/description, or run manually"
                   fi
 
     # Build and cache packages first (reusable workflow)
     build-packages:
-        needs: check-skip-pr
-        if: github.event.action != 'closed' && needs.check-skip-pr.outputs.skip_pr != 'true'
+        needs: check-preview-requested
+        if: github.event.action != 'closed' && needs.check-preview-requested.outputs.preview_requested == 'true'
         uses: ./.github/workflows/build-packages.yml
 
-    # Prepare deployment matrix for preview environments (skipped when build-packages is skipped, i.e. skip_pr=true)
+    # Prepare deployment matrix for preview environments (runs only when preview is requested)
     prepare-deployment:
-        needs: [build-packages, check-skip-pr]
-        if: github.event.action != 'closed'
+        needs: [build-packages, check-preview-requested]
+        if: github.event.action != 'closed' && needs.check-preview-requested.outputs.preview_requested == 'true'
         runs-on: ubuntu-latest
         timeout-minutes: 5
         name: Prepare preview deployment
@@ -194,7 +216,16 @@ jobs:
               id: preview-name
               run: |
                   BASE_NAME="${{ matrix.config.workerName || matrix.folder }}"
-                  echo "preview-name=${BASE_NAME}-pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+
+                  if [ "${{ github.event_name }}" = "pull_request" ]; then
+                    SUFFIX="pr-${{ github.event.pull_request.number }}"
+                  elif [ -n "${{ inputs.pr_number }}" ]; then
+                    SUFFIX="pr-${{ inputs.pr_number }}"
+                  else
+                    SUFFIX="manual-${{ github.run_number }}"
+                  fi
+
+                  echo "preview-name=${BASE_NAME}-${SUFFIX}" >> $GITHUB_OUTPUT
 
             - name: Load app configuration
               id: config

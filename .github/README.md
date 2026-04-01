@@ -160,29 +160,30 @@ PR preview uses isolated preview D1/KV/R2 so production data is never touched.
 
 ## PR preview (pr-preview.yml)
 
-- **Triggers:** PR opened, synchronized, reopened, or closed.
+- **Triggers:** PR opened/synchronized/reopened/closed, or manual **Run workflow**.
 - **Open/sync/reopen:** Builds packages, builds app(s), deploys preview worker(s) named e.g. `my-app-pr-123` using
   **env.preview** bindings (ottabase-db-preview D1, OBCF_KV_preview, ottabase-bucket-preview). Preview URL:
   `https://<preview-name>.<CF_WORKER_SUBDOMAIN>.workers.dev`.
 - **Closed:** Deletes the preview worker (preview D1/KV persist; shared across PRs).
-- **Skip:** If PR title or description contains `#skippr` or `#skipdeploy`, preview build and deploy are skipped. See
-  [Skip deployment](#skip-deployment).
+- **Opt-in:** Preview deploy runs only when PR title/description contains `#deploy` or `#preview`, or when manually
+  dispatched from Actions. If `pr_number` is provided on manual run, worker naming/cleanup aligns with that PR.
 
 ## Skip deployment
 
 Use markers so PR preview or production deploy do not run when not needed (e.g. docs-only PRs).
 
-| Marker        | Where                                        | Effect                            |
-| ------------- | -------------------------------------------- | --------------------------------- |
-| `#skippr`     | PR title or description                      | Skips PR preview build and deploy |
-| `#skipdeploy` | PR title/description                         | Skips PR preview                  |
-| `#skipdeploy` | Commit message on `main` (e.g. merge commit) | Skips production deploy           |
+| Marker        | Where                                        | Effect                              |
+| ------------- | -------------------------------------------- | ----------------------------------- |
+| `#deploy`     | PR title or description                      | Enables PR preview build and deploy |
+| `#preview`    | PR title or description                      | Enables PR preview build and deploy |
+| `#skipdeploy` | Commit message on `main` (e.g. merge commit) | Skips production deploy             |
 
 **Examples:**
 
-- PR title: `Docs: fix typo #skippr` → no preview deploy.
-- PR title: `Chore: deps #skipdeploy` → no preview; after merge, if merge commit message contains `#skipdeploy`, no
-  production deploy.
+- PR title: `Feature: blog editor #preview` → preview deploy runs.
+- PR title: `Fix: auth callback #deploy` → preview deploy runs.
+- PR title: `Docs: typo fix` → no preview deploy (unless manually dispatched).
+- Merge commit message on `main`: `Release patch #skipdeploy` → production deploy is skipped.
 
 ## Build flow (per app type)
 
@@ -207,7 +208,7 @@ pnpm preview       # if available
 | App not discovered  | `deployable: true` in `cloudflare-config.json`; `package.json` has required scripts; `wrangler.jsonc` present if no cloudflare-config |
 | Build fails         | Actions logs; locally: `pnpm --filter=@ottabase/my-app run build`                                                                     |
 | Deploy fails        | Required secrets set; `wrangler.jsonc` valid; no unsubstituted placeholders in generated config                                       |
-| Preview not created | PR without `#skippr` / `#skipdeploy`; secrets set; app in `APPS_TO_DEPLOY` or default                                                 |
+| Preview not created | PR missing `#deploy`/`#preview`; secrets set; app in `APPS_TO_DEPLOY` or default                                                      |
 
 Errors in workflows include what failed, why, and how to fix (e.g. missing secrets with links to Cloudflare).
 
