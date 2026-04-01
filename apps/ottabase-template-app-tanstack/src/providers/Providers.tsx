@@ -3,6 +3,7 @@ import enApp from '@/locales/en/app.json';
 import { BlogStudioProvider } from '@/ottabase/blog/BlogStudioContext';
 import { APP_ID, MEDIA_LIBRARY_ENABLED, appConfig, PACKAGES_ENABLED } from '@/ottabase/config';
 import { MediaLibraryPickerBridge } from '@/components/media-library/MediaLibraryPickerBridge';
+import { MediaGalleryConfirmBridge } from '@/components/editor/MediaGalleryConfirmBridge';
 import { i18nConfig } from '@/ottabase/config/i18n.config';
 import {
     headingFontFamily,
@@ -156,6 +157,8 @@ function ProvidersCore({
                                 >
                                     {children}
                                     {MEDIA_LIBRARY_ENABLED && <MediaLibraryPickerBridge />}
+                                    {/* Provides shadcn AlertDialog confirmation for MediaGalleryTool delete/clear actions */}
+                                    <MediaGalleryConfirmBridge />
                                 </SpotlightProvider>
                             </ShadcnProviders>
                         </ThemeProvider>

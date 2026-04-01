@@ -18,6 +18,9 @@ import {
 } from '@ottabase/ui-shadcn';
 import { useEffect, useState } from 'react';
 
+// Marker key read by MediaGalleryTool to detect whether the bridge is mounted.
+const BRIDGE_ACTIVE_KEY = '__mgConfirmBridgeActive';
+
 interface ConfirmRequest {
     /** Unique id so the tool can match the response to the right pending action */
     id: string;
@@ -32,6 +35,14 @@ export const MEDIA_GALLERY_CONFIRM_RESULT_EVENT = 'media-gallery-confirm-result'
 
 export function MediaGalleryConfirmBridge() {
     const [pending, setPending] = useState<ConfirmRequest | null>(null);
+
+    useEffect(() => {
+        // Signal to the vanilla-DOM tool that the React bridge is active
+        (window as Record<string, unknown>)[BRIDGE_ACTIVE_KEY] = true;
+        return () => {
+            delete (window as Record<string, unknown>)[BRIDGE_ACTIVE_KEY];
+        };
+    }, []);
 
     useEffect(() => {
         const handleRequest = (event: Event) => {

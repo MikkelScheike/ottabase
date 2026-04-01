@@ -283,15 +283,15 @@ export default class MediaGalleryTool implements BlockTool {
         clearButton.addEventListener('click', (event) => {
             event.preventDefault();
             if (this.data.items.length === 0) return;
-            if (
-                !window.confirm(
-                    `Remove all ${this.data.items.length} item${this.data.items.length === 1 ? '' : 's'} from the gallery?`,
-                )
-            )
-                return;
-            this.data.items = [];
-            this.itemCardEls = [];
-            this.renderItems();
+            this.requestConfirm(
+                `Remove all ${this.data.items.length} item${this.data.items.length === 1 ? '' : 's'} from the gallery?`,
+                'Clear all',
+                () => {
+                    this.data.items = [];
+                    this.itemCardEls = [];
+                    this.renderItems();
+                },
+            );
         });
 
         itemsHeader.appendChild(itemsLabel);
@@ -462,10 +462,10 @@ export default class MediaGalleryTool implements BlockTool {
             '×',
             'Remove item',
             () => {
-                // Ask for confirmation before discarding the item
-                if (!window.confirm('Remove this item from the gallery?')) return;
-                const idx = this.data.items.indexOf(item);
-                if (idx !== -1) this.removeItem(idx);
+                this.requestConfirm('Remove this item from the gallery?', 'Remove', () => {
+                    const idx = this.data.items.indexOf(item);
+                    if (idx !== -1) this.removeItem(idx);
+                });
             },
             true,
         ) as HTMLButtonElement;
@@ -636,6 +636,45 @@ export default class MediaGalleryTool implements BlockTool {
         this.data.items.splice(index, 1);
         // Remove single node without a full rebuild
         this.removeItemCardAt(index);
+    }
+
+    /**
+     * Request confirmation via the React `MediaGalleryConfirmBridge` (shadcn AlertDialog).
+     * Falls back to window.confirm() when the bridge is not mounted (e.g. tests / storybook).
+     *
+     * @param message     - Human-readable message shown in the dialog body.
+     * @param confirmLabel - Label for the destructive confirm button (default: "Remove").
+     * @param onConfirmed - Callback executed only when the user clicks confirm.
+     */
+    private requestConfirm(message: string, confirmLabel: string, onConfirmed: () => void) {
+        const CONFIRM_EVENT = 'media-gallery-confirm';
+        const RESULT_EVENT = 'media-gallery-confirm-result';
+        const id = `${this.block.id}-${Date.now()}`;
+
+        // Check whether the React bridge is present by seeing if anything is listening.
+        // CustomEvent is always dispatchable; we detect the bridge via a marker on window.
+        const bridgePresent = Boolean((window as Record<string, unknown>)['__mgConfirmBridgeActive']);
+
+        if (!bridgePresent) {
+            // Fallback for environments without the React bridge
+            if (window.confirm(message)) onConfirmed();
+            return;
+        }
+
+        // One-time listener for the response
+        const handleResult = (event: Event) => {
+            const detail = (event as CustomEvent<{ id: string; confirmed: boolean }>).detail;
+            if (detail?.id !== id) return;
+            window.removeEventListener(RESULT_EVENT, handleResult);
+            if (detail.confirmed) onConfirmed();
+        };
+        window.addEventListener(RESULT_EVENT, handleResult);
+
+        window.dispatchEvent(
+            new CustomEvent(CONFIRM_EVENT, {
+                detail: { id, message, confirmLabel },
+            }),
+        );
     }
 
     private openMediaLibrary() {

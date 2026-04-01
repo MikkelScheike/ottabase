@@ -119,12 +119,25 @@ describe('MediaGalleryTool', () => {
             ],
         });
 
+        // Simulate the React bridge being mounted so the tool fires the event instead of window.confirm
+        (window as Record<string, unknown>)['__mgConfirmBridgeActive'] = true;
+
+        // Auto-confirm: listen for the request event and immediately fire back a confirmed result
+        const autoConfirm = (event: Event) => {
+            const { id } = (event as CustomEvent).detail;
+            window.dispatchEvent(new CustomEvent('media-gallery-confirm-result', { detail: { id, confirmed: true } }));
+        };
+        window.addEventListener('media-gallery-confirm', autoConfirm);
+
         // Clear all must live in the items-header, not the preview panel
         const itemsHeader = wrapper.querySelector('.cdx-media-gallery__items-header') as HTMLElement;
         expect(itemsHeader).toBeTruthy();
         const clearBtn = itemsHeader.querySelector('.cdx-media-gallery__clear-button') as HTMLButtonElement;
         expect(clearBtn).toBeTruthy();
         clearBtn.click();
+
+        window.removeEventListener('media-gallery-confirm', autoConfirm);
+        delete (window as Record<string, unknown>)['__mgConfirmBridgeActive'];
 
         expect(tool.save().items).toHaveLength(0);
         expect(wrapper.querySelector('.cdx-media-gallery__empty')).toBeTruthy();
