@@ -4,6 +4,43 @@ Shared UI components for Ottabase applications.
 
 ## Components
 
+### ConfirmDialog
+
+A shared confirmation dialog wrapper built on top of `@ottabase/ui-shadcn`'s alert dialog primitives.
+
+#### Props
+
+- `open?: boolean` - Controlled open state
+- `onOpenChange?: (open: boolean) => void` - Controlled state callback
+- `title: React.ReactNode` - Dialog title
+- `description?: React.ReactNode` - Optional supporting copy
+- `tone?: 'default' | 'destructive' | 'unsaved-changes'` - Confirmation behavior and styling
+- `primaryActionText?: React.ReactNode` - Semantic alias for the primary action button text
+- `secondaryActionText?: React.ReactNode` - Semantic alias for the secondary action button text
+- `confirmLabel?: React.ReactNode` - Confirm button label override
+- `cancelLabel?: React.ReactNode` - Cancel button label override
+- `onConfirm?: MouseEventHandler<HTMLButtonElement>` - Confirm action
+- `onCancel?: MouseEventHandler<HTMLButtonElement>` - Cancel action
+
+`primaryActionText` and `secondaryActionText` take precedence over `confirmLabel` and `cancelLabel` when both are
+provided.
+
+#### Usage
+
+```tsx
+import { ConfirmDialog } from '@ottabase/ui-components';
+
+<ConfirmDialog
+    open={open}
+    onOpenChange={setOpen}
+    title="Delete post?"
+    description="This action cannot be undone."
+    tone="destructive"
+    confirmLabel="Delete"
+    onConfirm={handleDelete}
+/>;
+```
+
 ### DarkModeToggle
 
 A versatile component that provides both toggle switch and button interfaces for switching between light and dark
@@ -113,6 +150,7 @@ import { DarkModeToggle } from '@ottabase/ui-components';
 ## Available Atomic Imports
 
 - `@ottabase/ui-components/dark-mode-toggle` - DarkModeToggle component
+- `@ottabase/ui-components/confirm-dialog` - ConfirmDialog component
 - `@ottabase/ui-components/logo` - Logo component
 
 ## Installation

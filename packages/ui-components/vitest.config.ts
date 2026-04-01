@@ -23,6 +23,7 @@ export default defineConfig({
     resolve: {
         alias: {
             '@': path.resolve(__dirname, './src'),
+            '@ottabase/ui-shadcn': path.resolve(__dirname, '../ui-shadcn/src/index.ts'),
         },
     },
 });
