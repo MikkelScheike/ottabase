@@ -1,18 +1,6 @@
 import { useSession } from '@/lib/auth';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    Avatar,
-    AvatarFallback,
-    AvatarImage,
-    Button,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
+import { Avatar, AvatarFallback, AvatarImage, Button } from '@ottabase/ui-shadcn';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { LogIn, LogOut } from 'lucide-react';
 import { memo, useCallback, useState } from 'react';
@@ -73,20 +61,15 @@ export const UserSection = memo(function UserSection({ compact }: { compact?: bo
                 </Button>
             </div>
 
-            <AlertDialog open={logoutConfirmOpen} onOpenChange={setLogoutConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Log out?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            You will be signed out of your current session and returned to the home page.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmLogout}>Log out</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={logoutConfirmOpen}
+                onOpenChange={setLogoutConfirmOpen}
+                title="Log out?"
+                description="You will be signed out of your current session and returned to the home page."
+                secondaryActionText="Cancel"
+                primaryActionText="Log out"
+                onConfirm={handleConfirmLogout}
+            />
         </>
     );
 });

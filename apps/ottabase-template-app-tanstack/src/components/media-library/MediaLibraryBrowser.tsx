@@ -1,6 +1,7 @@
 import { mediaLibraryHooks } from '@/hooks/mediaLibraryHooks';
 import { api, isApiError } from '@/lib/api';
 import type { MediaKind, MediaLibraryItemLike } from '@ottabase/medialibrary';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     MediaPreview,
     formatMediaFileSize,
@@ -8,14 +9,6 @@ import {
     toMediaSelectionPayload,
 } from '@ottabase/medialibrary';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -818,26 +811,16 @@ export function MediaLibraryBrowser({
                 </Card>
             </div>
 
-            <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete this media item?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This permanently removes the file from storage and the media library. This action cannot be
-                            undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={Boolean(deleteTarget)}
+                onOpenChange={(open) => !open && setDeleteTarget(null)}
+                title="Delete this media item?"
+                description="This permanently removes the file from storage and the media library. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

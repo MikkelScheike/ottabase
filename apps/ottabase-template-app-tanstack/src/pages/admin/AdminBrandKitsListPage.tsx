@@ -2,15 +2,8 @@
 // Brand Kits list – Create, Clone, navigate to detail
 // ---------------------------------------------------------------------------
 
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -219,28 +212,21 @@ function KitCard({
                 </DropdownMenu>
             </div>
 
-            <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Brand Kit?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This cannot be undone. The Brand Kit &quot;{kit.name}&quot; will be permanently deleted.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                onDelete();
-                                setDeleteOpen(false);
-                            }}
-                            disabled={deleting}
-                        >
-                            {deleting ? 'Deleting…' : 'Delete'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                title="Delete Brand Kit?"
+                description={`This cannot be undone. The Brand Kit "${kit.name}" will be permanently deleted.`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={deleting ? 'Deleting…' : 'Delete'}
+                onConfirm={() => {
+                    onDelete();
+                    setDeleteOpen(false);
+                }}
+                confirmProps={{ disabled: deleting }}
+                cancelProps={{ disabled: deleting }}
+            />
         </Link>
     );
 }

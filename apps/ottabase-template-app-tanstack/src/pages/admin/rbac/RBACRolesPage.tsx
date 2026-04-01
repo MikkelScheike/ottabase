@@ -1,15 +1,8 @@
 import { api, isApiError } from '@/lib/api';
 import type { RoleRecord } from '@/types/rbac';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     Badge,
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Button,
     Card,
     CardContent,
@@ -334,21 +327,16 @@ export function RBACRolesPage() {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Role?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete the role and remove it from all users. This action cannot be
-                            undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={!!deleteDialog}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Role?"
+                description="This will permanently delete the role and remove it from all users. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

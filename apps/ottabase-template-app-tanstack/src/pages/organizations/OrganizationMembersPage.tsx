@@ -5,15 +5,8 @@ import { useRBACToast } from '@/hooks/useToast';
 import { isApiError } from '@/lib/api';
 import { organizationIdAtom } from '@/ottabase/state/appState';
 import type { BadgeVariant, MemberRole, OrganizationMemberRecord } from '@/types/rbac';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -296,20 +289,16 @@ export function OrganizationMembersPage() {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Remove Member?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will remove the member from the organization. They will lose access immediately.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Remove</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={!!deleteDialog}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Remove Member?"
+                description="This will remove the member from the organization. They will lose access immediately."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Remove"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

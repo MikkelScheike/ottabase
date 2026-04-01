@@ -4,15 +4,8 @@ import { useCreateOrganization, useDeleteOrganization, useOrganizations, useUpda
 import { useRBACToast } from '@/hooks/useToast';
 import { isApiError } from '@/lib/api';
 import type { BadgeVariant, OrganizationRecord } from '@/types/rbac';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -232,21 +225,16 @@ export function OrganizationsPage() {
             </Dialog>
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Organization?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete the organization and all associated data. This action cannot be
-                            undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={!!deleteDialog}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Organization?"
+                description="This will permanently delete the organization and all associated data. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

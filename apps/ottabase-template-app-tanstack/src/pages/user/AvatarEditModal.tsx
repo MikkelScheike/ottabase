@@ -6,15 +6,8 @@
 
 import { api } from '@/lib/api';
 import { Cropper } from '@ottabase/ui-cropper';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Button,
     Dialog,
     DialogContent,
@@ -230,38 +223,30 @@ export function AvatarEditModal({
                 </DialogContent>
             </Dialog>
 
-            <AlertDialog open={removeConfirmOpen} onOpenChange={setRemoveConfirmOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Remove profile picture?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to remove your profile picture? You can add a new one anytime.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isRemoving}>Cancel</AlertDialogCancel>
-                        {/* Prevent Radix auto-close so the loading state is visible
-                            while the async PATCH completes. Close manually on success. */}
-                        <AlertDialogAction
-                            onClick={(e) => {
-                                e.preventDefault();
-                                handleRemove();
-                            }}
-                            disabled={isRemoving}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {isRemoving ? (
-                                <>
-                                    <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Removing...
-                                </>
-                            ) : (
-                                'Remove'
-                            )}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={removeConfirmOpen}
+                onOpenChange={setRemoveConfirmOpen}
+                title="Remove profile picture?"
+                description="Are you sure you want to remove your profile picture? You can add a new one anytime."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={
+                    isRemoving ? (
+                        <>
+                            <IconLoader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Removing...
+                        </>
+                    ) : (
+                        'Remove'
+                    )
+                }
+                onConfirm={(e) => {
+                    e.preventDefault();
+                    handleRemove();
+                }}
+                confirmProps={{ disabled: isRemoving }}
+                cancelProps={{ disabled: isRemoving }}
+            />
         </>
     );
 }

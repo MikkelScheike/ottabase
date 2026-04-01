@@ -5,15 +5,8 @@
  */
 import { generateSlug } from '@ottabase/ottablog';
 import { createModelHooks } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -314,21 +307,16 @@ export function AdminBlogSeriesPage() {
             </Sheet>
 
             {/* Delete Confirmation */}
-            <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Series</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete &quot;{deleteDialog?.title}&quot;? Posts in this series will
-                            be unlinked. This cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={!!deleteDialog}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Series"
+                description={`Are you sure you want to delete "${deleteDialog?.title}"? Posts in this series will be unlinked. This cannot be undone.`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

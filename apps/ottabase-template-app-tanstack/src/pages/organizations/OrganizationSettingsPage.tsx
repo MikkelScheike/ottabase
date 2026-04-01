@@ -10,17 +10,10 @@ import { TableSkeleton } from '@/components/LoadingSkeletons';
 import { useDeleteOrganization, useOrganization, useUpdateOrganization } from '@/hooks/useRBAC';
 import { useRBACToast } from '@/hooks/useToast';
 import { organizationIdAtom } from '@/ottabase/state/appState';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     Alert,
     AlertDescription,
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     AlertTitle,
     Badge,
     Button,
@@ -355,26 +348,21 @@ export function OrganizationSettingsPage() {
             </Card>
 
             {/* Delete Confirmation Dialog */}
-            <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete <strong>{org.name}</strong> and all associated data. This
-                            action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDelete}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete Permanently
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={showDeleteDialog}
+                onOpenChange={setShowDeleteDialog}
+                title="Are you absolutely sure?"
+                description={
+                    <>
+                        This will permanently delete <strong>{org.name}</strong> and all associated data. This action
+                        cannot be undone.
+                    </>
+                }
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete Permanently"
+                onConfirm={handleDelete}
+            />
         </div>
     );
 }

@@ -1,20 +1,6 @@
 import { api, isApiError } from '@/lib/api';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    Button,
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    Input,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
@@ -202,23 +188,18 @@ export function CloudflareD1DemoPage() {
                         )}
                     </div>
 
-                    <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Todo?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    Are you sure you want to delete &quot;{deleteDialog?.title}&quot;? This cannot be
-                                    undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleConfirmDelete} disabled={loading}>
-                                    Delete
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <ConfirmDialog
+                        open={deleteDialog !== null}
+                        onOpenChange={(open) => !open && setDeleteDialog(null)}
+                        title="Delete Todo?"
+                        description={`Are you sure you want to delete "${deleteDialog?.title}"? This cannot be undone.`}
+                        tone="destructive"
+                        secondaryActionText="Cancel"
+                        primaryActionText="Delete"
+                        onConfirm={handleConfirmDelete}
+                        confirmProps={{ disabled: loading }}
+                        cancelProps={{ disabled: loading }}
+                    />
                 </>
             ) : null}
         </div>

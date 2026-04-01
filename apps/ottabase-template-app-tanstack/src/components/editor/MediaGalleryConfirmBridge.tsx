@@ -6,16 +6,7 @@
  * window.confirm(). This React component listens, shows the dialog, then fires
  * `media-gallery-confirm-result` with { id, confirmed } so the tool can proceed.
  */
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import { useEffect, useState } from 'react';
 
 // Marker key read by MediaGalleryTool to detect whether the bridge is mounted.
@@ -67,27 +58,18 @@ export function MediaGalleryConfirmBridge() {
     }
 
     return (
-        <AlertDialog
+        <ConfirmDialog
             open={Boolean(pending)}
             onOpenChange={(open) => {
                 if (!open) respond(false);
             }}
-        >
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                    <AlertDialogDescription>{pending?.message}</AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogCancel onClick={() => respond(false)}>Cancel</AlertDialogCancel>
-                    <AlertDialogAction
-                        onClick={() => respond(true)}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                        {pending?.confirmLabel ?? 'Remove'}
-                    </AlertDialogAction>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+            title="Are you sure?"
+            description={pending?.message}
+            tone="destructive"
+            secondaryActionText="Cancel"
+            primaryActionText={pending?.confirmLabel ?? 'Remove'}
+            onConfirm={() => respond(true)}
+            onCancel={() => respond(false)}
+        />
     );
 }

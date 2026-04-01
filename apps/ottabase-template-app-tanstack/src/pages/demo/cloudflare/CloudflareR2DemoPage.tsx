@@ -1,19 +1,5 @@
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    Button,
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    Input,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import { useEffect, useState } from 'react';
 
@@ -279,24 +265,18 @@ export function CloudflareR2DemoPage() {
                 </CardContent>
             </Card>
 
-            <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete File?</AlertDialogTitle>
-                        <AlertDialogDescription>Delete {deleteDialog}?</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={loading}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmDelete}
-                            disabled={loading}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteDialog !== null}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete File?"
+                description={`Delete ${deleteDialog}?`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+                confirmProps={{ disabled: loading }}
+                cancelProps={{ disabled: loading }}
+            />
         </div>
     );
 }

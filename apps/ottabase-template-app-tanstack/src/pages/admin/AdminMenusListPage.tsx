@@ -2,15 +2,8 @@
 // Menus list – Create, navigate to detail, assign to slots (Ottamenu)
 // ---------------------------------------------------------------------------
 
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Button,
     Card,
     CardContent,
@@ -127,28 +120,21 @@ export function AdminMenusListPage() {
                 </CardContent>
             </Card>
 
-            <AlertDialog open={deleteMenuId !== null} onOpenChange={(open) => !open && setDeleteMenuId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Menu?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            All items in this menu will be removed. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                if (deleteMenuId) deleteMutation.mutate(deleteMenuId);
-                                setDeleteMenuId(null);
-                            }}
-                            disabled={deleteMutation.isPending}
-                        >
-                            {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteMenuId !== null}
+                onOpenChange={(open) => !open && setDeleteMenuId(null)}
+                title="Delete Menu?"
+                description="All items in this menu will be removed. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+                onConfirm={() => {
+                    if (deleteMenuId) deleteMutation.mutate(deleteMenuId);
+                    setDeleteMenuId(null);
+                }}
+                confirmProps={{ disabled: deleteMutation.isPending }}
+                cancelProps={{ disabled: deleteMutation.isPending }}
+            />
         </div>
     );
 }

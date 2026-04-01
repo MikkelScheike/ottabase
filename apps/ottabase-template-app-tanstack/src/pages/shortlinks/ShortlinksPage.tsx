@@ -1,15 +1,8 @@
 import { api, isApiError } from '@/lib/api';
 import type { PaginatedResponse, Pagination } from '@/lib/api-types';
 import type { ShortlinkRecord } from '@ottabase/shortlinks';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -544,18 +537,16 @@ export function ShortlinksPage() {
                 </CardContent>
             </Card>
 
-            <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Shortlink?</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to delete this shortlink?</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteDialog !== null}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Shortlink?"
+                description="Are you sure you want to delete this shortlink?"
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

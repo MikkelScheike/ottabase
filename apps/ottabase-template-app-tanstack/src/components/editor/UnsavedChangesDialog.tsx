@@ -11,16 +11,7 @@
  *   <UnsavedChangesDialog blocker={blocker} />
  */
 import type { EditorLeaveBlocker } from '@/hooks/useEditorLeaveGuard';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
 
 interface UnsavedChangesDialogProps {
     blocker: EditorLeaveBlocker;
@@ -28,24 +19,15 @@ interface UnsavedChangesDialogProps {
 
 export function UnsavedChangesDialog({ blocker }: UnsavedChangesDialogProps) {
     return (
-        <AlertDialog open={blocker.status === 'blocked'}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You have unsaved changes that will be lost if you leave this page.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                    <AlertDialogAction
-                        onClick={blocker.proceed}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                        Leave without saving
-                    </AlertDialogAction>
-                    <AlertDialogCancel onClick={blocker.reset}>Stay and keep editing</AlertDialogCancel>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
+        <ConfirmDialog
+            open={blocker.status === 'blocked'}
+            title="Unsaved changes"
+            description="You have unsaved changes that will be lost if you leave this page."
+            tone="unsaved-changes"
+            primaryActionText="Leave without saving"
+            secondaryActionText="Stay and keep editing"
+            onConfirm={blocker.proceed}
+            onCancel={blocker.reset}
+        />
     );
 }

@@ -7,25 +7,8 @@
 import { api } from '@/lib/api';
 import { clearStoredReferralCode, getReferralExpiryInfo, getStoredReferralCode } from '@/lib/referrals';
 import { validateReferralUsername } from '@ottabase/referrals';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-    Badge,
-    Button,
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-    Input,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@ottabase/ui-shadcn';
 import { Copy, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -315,27 +298,20 @@ export function ReferralDashboard({ userId }: ReferralDashboardProps) {
                             </div>
                         </div>
 
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
+                        <ConfirmDialog
+                            trigger={
                                 <Button variant="destructive" size="sm">
                                     <X className="h-4 w-4 mr-2" />
                                     Clear Stored Referral
                                 </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Clear Stored Referral?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will remove the stored referral code from your browser. This action cannot
-                                        be undone.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleClearStoredReferral}>Clear</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                            }
+                            title="Clear Stored Referral?"
+                            description="This will remove the stored referral code from your browser. This action cannot be undone."
+                            tone="destructive"
+                            secondaryActionText="Cancel"
+                            primaryActionText="Clear"
+                            onConfirm={handleClearStoredReferral}
+                        />
                     </CardContent>
                 </Card>
             )}

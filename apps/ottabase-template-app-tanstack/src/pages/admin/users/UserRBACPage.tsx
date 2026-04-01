@@ -7,15 +7,8 @@
 
 import { useState } from 'react';
 import { useParams, Link } from '@tanstack/react-router';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Avatar,
     AvatarFallback,
     AvatarImage,
@@ -378,23 +371,18 @@ export function UserRBACPage() {
                 </CardContent>
             </Card>
 
-            <AlertDialog open={removeMembership !== null} onOpenChange={(open) => !open && setRemoveMembership(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Remove from Organization?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Remove this user from {removeMembership?.orgName ?? 'the organization'}? They will lose
-                            access to all resources in this organization.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={removeMember.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmRemove} disabled={removeMember.isPending}>
-                            {removeMember.isPending ? 'Removing…' : 'Remove'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={removeMembership !== null}
+                onOpenChange={(open) => !open && setRemoveMembership(null)}
+                title="Remove from Organization?"
+                description={`Remove this user from ${removeMembership?.orgName ?? 'the organization'}? They will lose access to all resources in this organization.`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={removeMember.isPending ? 'Removing…' : 'Remove'}
+                onConfirm={handleConfirmRemove}
+                confirmProps={{ disabled: removeMember.isPending }}
+                cancelProps={{ disabled: removeMember.isPending }}
+            />
         </div>
     );
 }

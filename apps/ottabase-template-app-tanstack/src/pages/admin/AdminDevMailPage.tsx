@@ -1,17 +1,9 @@
 import { api, isApiError } from '@/lib/api';
 import { useApiMutation } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     Alert,
     AlertDescription,
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
     AlertTitle,
     Badge,
     Button,
@@ -142,8 +134,8 @@ export function AdminDevMailPage() {
                         <RefreshCw className="h-4 w-4 mr-1.5" /> Refresh
                     </Button>
                     {/* Clear all with confirmation */}
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
+                    <ConfirmDialog
+                        trigger={
                             <Button
                                 variant="destructive"
                                 size="sm"
@@ -151,26 +143,14 @@ export function AdminDevMailPage() {
                             >
                                 <Trash2 className="h-4 w-4 mr-1.5" /> Clear inbox
                             </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Clear all emails?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will permanently delete all {messages.length} captured email
-                                    {messages.length !== 1 ? 's' : ''} from the dev trap. This action cannot be undone.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={() => clearMutation.mutate({})}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                    Clear inbox
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                        }
+                        title="Clear all emails?"
+                        description={`This will permanently delete all ${messages.length} captured email${messages.length !== 1 ? 's' : ''} from the dev trap. This action cannot be undone.`}
+                        tone="destructive"
+                        secondaryActionText="Cancel"
+                        primaryActionText="Clear inbox"
+                        onConfirm={() => clearMutation.mutate({})}
+                    />
                 </div>
             </div>
 
@@ -303,8 +283,8 @@ export function AdminDevMailPage() {
                                     <div className="flex items-center gap-2 shrink-0">
                                         <Badge variant="outline">{selectedMessage.provider}</Badge>
                                         {/* Delete single email with confirmation */}
-                                        <AlertDialog>
-                                            <AlertDialogTrigger asChild>
+                                        <ConfirmDialog
+                                            trigger={
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
@@ -313,26 +293,14 @@ export function AdminDevMailPage() {
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
-                                            </AlertDialogTrigger>
-                                            <AlertDialogContent>
-                                                <AlertDialogHeader>
-                                                    <AlertDialogTitle>Delete this email?</AlertDialogTitle>
-                                                    <AlertDialogDescription>
-                                                        "{selectedMessage.subject}" will be permanently removed from the
-                                                        dev trap.
-                                                    </AlertDialogDescription>
-                                                </AlertDialogHeader>
-                                                <AlertDialogFooter>
-                                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                                    <AlertDialogAction
-                                                        onClick={() => deleteMutation.mutate(selectedMessage.id)}
-                                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                                    >
-                                                        Delete
-                                                    </AlertDialogAction>
-                                                </AlertDialogFooter>
-                                            </AlertDialogContent>
-                                        </AlertDialog>
+                                            }
+                                            title="Delete this email?"
+                                            description={`"${selectedMessage.subject}" will be permanently removed from the dev trap.`}
+                                            tone="destructive"
+                                            secondaryActionText="Cancel"
+                                            primaryActionText="Delete"
+                                            onConfirm={() => deleteMutation.mutate(selectedMessage.id)}
+                                        />
                                     </div>
                                 </div>
 

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useApiMutation } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
@@ -773,89 +773,59 @@ export function AdminQueuePage() {
             </div>
 
             {/* Reset Stats Confirmation Dialog */}
-            <AlertDialog open={resetStatsDialog} onOpenChange={setResetStatsDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Reset Queue Statistics?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will reset all queue statistics. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmResetStats}
-                            disabled={isResetting}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {isResetting ? 'Resetting...' : 'Reset Stats'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={resetStatsDialog}
+                onOpenChange={setResetStatsDialog}
+                title="Reset Queue Statistics?"
+                description="This will reset all queue statistics. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={isResetting ? 'Resetting...' : 'Reset Stats'}
+                onConfirm={handleConfirmResetStats}
+                confirmProps={{ disabled: isResetting }}
+                cancelProps={{ disabled: isResetting }}
+            />
 
             {/* Delete Job Confirmation Dialog */}
-            <AlertDialog open={deleteJobDialog !== null} onOpenChange={(open) => !open && setDeleteJobDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Remove Job from Dead Letter Queue?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This job will be permanently deleted from the queue. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deletingJobId !== null}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmDeleteJob}
-                            disabled={deletingJobId !== null}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {deletingJobId !== null ? 'Deleting...' : 'Delete'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteJobDialog !== null}
+                onOpenChange={(open) => !open && setDeleteJobDialog(null)}
+                title="Remove Job from Dead Letter Queue?"
+                description="This job will be permanently deleted from the queue. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={deletingJobId !== null ? 'Deleting...' : 'Delete'}
+                onConfirm={handleConfirmDeleteJob}
+                confirmProps={{ disabled: deletingJobId !== null }}
+                cancelProps={{ disabled: deletingJobId !== null }}
+            />
 
             {/* Retry All Confirmation Dialog */}
-            <AlertDialog open={retryAllDialog} onOpenChange={setRetryAllDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Retry All Dead Letter Queue Jobs?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will retry all jobs currently in the Dead Letter Queue.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isRetryingAll}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmRetryAll} disabled={isRetryingAll}>
-                            {isRetryingAll ? 'Retrying...' : 'Retry All'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={retryAllDialog}
+                onOpenChange={setRetryAllDialog}
+                title="Retry All Dead Letter Queue Jobs?"
+                description="This will retry all jobs currently in the Dead Letter Queue."
+                secondaryActionText="Cancel"
+                primaryActionText={isRetryingAll ? 'Retrying...' : 'Retry All'}
+                onConfirm={handleConfirmRetryAll}
+                confirmProps={{ disabled: isRetryingAll }}
+                cancelProps={{ disabled: isRetryingAll }}
+            />
 
             {/* Purge DLQ Confirmation Dialog */}
-            <AlertDialog open={purgeDLQDialog} onOpenChange={setPurgeDLQDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Permanently Delete All DLQ Jobs?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This will permanently delete ALL jobs from the Dead Letter Queue. This action cannot be
-                            undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isPurgingDLQ}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmPurgeDLQ}
-                            disabled={isPurgingDLQ}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {isPurgingDLQ ? 'Purging...' : 'Delete All'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={purgeDLQDialog}
+                onOpenChange={setPurgeDLQDialog}
+                title="Permanently Delete All DLQ Jobs?"
+                description="This will permanently delete ALL jobs from the Dead Letter Queue. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={isPurgingDLQ ? 'Purging...' : 'Delete All'}
+                onConfirm={handleConfirmPurgeDLQ}
+                confirmProps={{ disabled: isPurgingDLQ }}
+                cancelProps={{ disabled: isPurgingDLQ }}
+            />
 
             {/* Alert/Info Dialog */}
             <AlertDialog

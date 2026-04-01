@@ -4,15 +4,8 @@
 
 import type { MenuItemTreeNode } from '@ottabase/ottamenu';
 import { buildItemTree, renderMenu } from '@ottabase/ottamenu';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Button,
     Card,
     CardContent,
@@ -389,28 +382,21 @@ function MenuItemsEditor({ menu }: { menu: MenuWithItemsDto }) {
                 )}
             </CardContent>
 
-            <AlertDialog open={deleteItemId !== null} onOpenChange={(open) => !open && setDeleteItemId(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Remove Menu Item?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This item and all its children will be removed. This action cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleteItemMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={() => {
-                                if (deleteItemId) deleteItemMutation.mutate(deleteItemId);
-                                setDeleteItemId(null);
-                            }}
-                            disabled={deleteItemMutation.isPending}
-                        >
-                            {deleteItemMutation.isPending ? 'Removing…' : 'Remove'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteItemId !== null}
+                onOpenChange={(open) => !open && setDeleteItemId(null)}
+                title="Remove Menu Item?"
+                description="This item and all its children will be removed. This action cannot be undone."
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={deleteItemMutation.isPending ? 'Removing…' : 'Remove'}
+                onConfirm={() => {
+                    if (deleteItemId) deleteItemMutation.mutate(deleteItemId);
+                    setDeleteItemId(null);
+                }}
+                confirmProps={{ disabled: deleteItemMutation.isPending }}
+                cancelProps={{ disabled: deleteItemMutation.isPending }}
+            />
         </Card>
     );
 }

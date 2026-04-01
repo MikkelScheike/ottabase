@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     // Layout & Structure
     Accordion,
@@ -9,15 +10,6 @@ import {
     Alert,
     AlertDescription,
     // Overlays & Dialogs
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
     AlertTitle,
     AspectRatio,
     // Display & Media
@@ -682,21 +674,13 @@ export function ShadcnDemoPage() {
                             <CardDescription>Confirmation dialogs</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button variant="outline">Delete Item</Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>This action cannot be undone.</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction>Continue</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            <ConfirmDialog
+                                trigger={<Button variant="outline">Delete Item</Button>}
+                                title="Are you sure?"
+                                description="This action cannot be undone."
+                                secondaryActionText="Cancel"
+                                primaryActionText="Continue"
+                            />
                         </CardContent>
                     </Card>
 

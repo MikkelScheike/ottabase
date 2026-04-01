@@ -1,14 +1,7 @@
 import { api, isApiError } from '@/lib/api';
 import { useApiQuery } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Button,
     Card,
     CardContent,
@@ -502,50 +495,45 @@ export function AdminDbPage() {
                 </div>
             </div>
 
-            <AlertDialog open={deleteRowDialog !== null} onOpenChange={(open) => !open && setDeleteRowDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Row?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete this row? ({deleteRowDialog?.pkField}: {deleteRowDialog?.id}
-                            )
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleteRowMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDeleteRow} disabled={deleteRowMutation.isPending}>
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteRowDialog !== null}
+                onOpenChange={(open) => !open && setDeleteRowDialog(null)}
+                title="Delete Row?"
+                description={
+                    <>
+                        Are you sure you want to delete this row? ({deleteRowDialog?.pkField}: {deleteRowDialog?.id})
+                    </>
+                }
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDeleteRow}
+                confirmProps={{ disabled: deleteRowMutation.isPending }}
+                cancelProps={{ disabled: deleteRowMutation.isPending }}
+            />
 
             {/* Drop Table Confirmation Dialog */}
-            <AlertDialog open={isDropTableDialogOpen} onOpenChange={setIsDropTableDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>
-                            Drop Table <code className="font-mono">{selectedTable}</code>?
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the table{' '}
-                            <code className="font-mono">{selectedTable}</code> and all of its data from the database.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleteTableMutation.status === 'pending'}>
-                            Cancel
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleConfirmDropTable}
-                            disabled={deleteTableMutation.status === 'pending'}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            {deleteTableMutation.status === 'pending' ? 'Dropping...' : 'Drop Table'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={isDropTableDialogOpen}
+                onOpenChange={setIsDropTableDialogOpen}
+                title={
+                    <>
+                        Drop Table <code className="font-mono">{selectedTable}</code>?
+                    </>
+                }
+                description={
+                    <>
+                        This action cannot be undone. This will permanently delete the table{' '}
+                        <code className="font-mono">{selectedTable}</code> and all of its data from the database.
+                    </>
+                }
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={deleteTableMutation.status === 'pending' ? 'Dropping...' : 'Drop Table'}
+                onConfirm={handleConfirmDropTable}
+                confirmProps={{ disabled: deleteTableMutation.status === 'pending' }}
+                cancelProps={{ disabled: deleteTableMutation.status === 'pending' }}
+            />
         </div>
     );
 }

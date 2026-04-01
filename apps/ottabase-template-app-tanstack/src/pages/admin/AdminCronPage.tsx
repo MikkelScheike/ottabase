@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useApiMutation } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
@@ -568,22 +568,18 @@ export function AdminCronPage() {
                 </Card>
             )}
 
-            <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Scheduled Task?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Delete scheduled task "{deleteDialog?.taskName}"?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} disabled={deleteMutation.isPending}>
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteDialog !== null}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Scheduled Task?"
+                description={`Delete scheduled task "${deleteDialog?.taskName}"?`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+                confirmProps={{ disabled: deleteMutation.isPending }}
+                cancelProps={{ disabled: deleteMutation.isPending }}
+            />
 
             <AlertDialog
                 open={alertDialog.open}

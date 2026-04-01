@@ -30,10 +30,10 @@ import {
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
@@ -2084,66 +2084,39 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             </Dialog>
 
             {/* Load Version Confirmation Dialog */}
-            <AlertDialog
+            <ConfirmDialog
                 open={loadVersionDialog?.open ?? false}
                 onOpenChange={(open) => !open && setLoadVersionDialog(null)}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Load Version?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Load version {loadVersionDialog?.versionNumber} into the editor?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleLoadVersion}>Load</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                title="Load Version?"
+                description={`Load version ${loadVersionDialog?.versionNumber} into the editor?`}
+                secondaryActionText="Cancel"
+                primaryActionText="Load"
+                onConfirm={handleLoadVersion}
+            />
 
             {/* Delete Version Confirmation Dialog */}
-            <AlertDialog
+            <ConfirmDialog
                 open={deleteVersionDialog?.open ?? false}
                 onOpenChange={(open) => !open && setDeleteVersionDialog(null)}
-            >
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Version?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Delete version {deleteVersionDialog?.versionNumber}?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDeleteVersion}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+                title="Delete Version?"
+                description={`Delete version ${deleteVersionDialog?.versionNumber}?`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleDeleteVersion}
+            />
 
             {/* Delete Post Confirmation Dialog */}
-            <AlertDialog open={deletePostDialog} onOpenChange={setDeletePostDialog}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Post?</AlertDialogTitle>
-                        <AlertDialogDescription>Are you sure you want to delete this post?</AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                            onClick={handleDeletePost}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deletePostDialog}
+                onOpenChange={setDeletePostDialog}
+                title="Delete Post?"
+                description="Are you sure you want to delete this post?"
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleDeletePost}
+            />
 
             {/* Unsaved changes — navigation blocker dialog */}
             <UnsavedChangesDialog blocker={blocker} />

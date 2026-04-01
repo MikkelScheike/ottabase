@@ -5,15 +5,8 @@
  */
 import { generateSlug } from '@ottabase/ottablog';
 import { createModelHooks } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -305,20 +298,16 @@ export function AdminBlogTagsPage() {
             </Sheet>
 
             {/* Delete Confirmation */}
-            <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Tag</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete &quot;{deleteDialog?.name}&quot;? This cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={!!deleteDialog}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Tag"
+                description={`Are you sure you want to delete "${deleteDialog?.name}"? This cannot be undone.`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

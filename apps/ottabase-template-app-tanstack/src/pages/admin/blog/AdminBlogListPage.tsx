@@ -6,10 +6,10 @@
 import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
 import { CONTENT_TYPES, formatShortDate, POST_STATUSES, type ContentType, type PostStatus } from '@ottabase/ottablog';
 import { createModelHooks } from '@ottabase/ottaorm/client';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     AlertDialog,
     AlertDialogAction,
-    AlertDialogCancel,
     AlertDialogContent,
     AlertDialogDescription,
     AlertDialogFooter,
@@ -372,22 +372,18 @@ export function AdminBlogListPage() {
                 </div>
             )}
 
-            <AlertDialog open={deleteDialog !== null} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Post?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete "{deleteDialog?.title}"?
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deletePost.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} disabled={deletePost.isPending}>
-                            Delete
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteDialog !== null}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Post?"
+                description={`Are you sure you want to delete "${deleteDialog?.title}"?`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+                confirmProps={{ disabled: deletePost.isPending }}
+                cancelProps={{ disabled: deletePost.isPending }}
+            />
 
             <AlertDialog
                 open={alertDialog.open}

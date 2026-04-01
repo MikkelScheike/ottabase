@@ -6,15 +6,8 @@
 import { generateSlug } from '@ottabase/ottablog';
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
     Badge,
     Button,
     Card,
@@ -415,21 +408,16 @@ export function AdminBlogCategoriesPage() {
             </Sheet>
 
             {/* Delete Confirmation */}
-            <AlertDialog open={!!deleteDialog} onOpenChange={(open) => !open && setDeleteDialog(null)}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Category</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Are you sure you want to delete &quot;{deleteDialog?.name}&quot;? Child categories will
-                            become root-level. This cannot be undone.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete}>Delete</AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={!!deleteDialog}
+                onOpenChange={(open) => !open && setDeleteDialog(null)}
+                title="Delete Category"
+                description={`Are you sure you want to delete "${deleteDialog?.name}"? Child categories will become root-level. This cannot be undone.`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText="Delete"
+                onConfirm={handleConfirmDelete}
+            />
         </div>
     );
 }

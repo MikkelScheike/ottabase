@@ -5,20 +5,8 @@
 import { buildCSSVarMap, buildPreviewTheme, injectFont } from '@ottabase/brand-engine';
 import { useBrand } from '@ottabase/brand-engine-react';
 import { useApiQuery } from '@ottabase/ottaorm/client';
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    Tabs,
-    TabsContent,
-    TabsList,
-    TabsTrigger,
-} from '@ottabase/ui-shadcn';
+import { ConfirmDialog } from '@ottabase/ui-components';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@ottabase/ui-shadcn';
 import {
     IconActivity,
     IconArrowLeft,
@@ -644,23 +632,18 @@ export function AdminBrandKitDetailPage() {
                 </div>
             </div>
 
-            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Brand Kit?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This cannot be undone. The Brand Kit &quot;{kitForView.name}&quot; will be permanently
-                            deleted.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleConfirmDelete} disabled={deleteMutation.isPending}>
-                            {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
+            <ConfirmDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                title="Delete Brand Kit?"
+                description={`This cannot be undone. The Brand Kit "${kitForView.name}" will be permanently deleted.`}
+                tone="destructive"
+                secondaryActionText="Cancel"
+                primaryActionText={deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+                onConfirm={handleConfirmDelete}
+                confirmProps={{ disabled: deleteMutation.isPending }}
+                cancelProps={{ disabled: deleteMutation.isPending }}
+            />
         </div>
     );
 }
