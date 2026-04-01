@@ -559,7 +559,6 @@ function ChangelogEditorForm({
                             variant="default"
                             onClick={() => void handlePublish()}
                             disabled={isSaving}
-                            className="bg-green-600 text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
                         >
                             {isSaving ? (
                                 <IconLoader2 className="mr-2 size-4 animate-spin" aria-hidden />

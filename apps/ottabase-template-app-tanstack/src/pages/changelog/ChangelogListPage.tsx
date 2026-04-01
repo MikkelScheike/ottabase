@@ -3,9 +3,11 @@
  */
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { useSession } from '@/lib/auth';
 import type { OutputData } from '@ottabase/ottaeditor';
 import { useApiQuery } from '@ottabase/ottaorm/client';
-import { IconArrowRight, IconPlayerPlay, IconStarFilled } from '@tabler/icons-react';
+import { Button } from '@ottabase/ui-shadcn';
+import { IconArrowRight, IconPlayerPlay, IconPlus, IconStarFilled } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 
 type ChangelogHeroMedia =
@@ -48,6 +50,7 @@ function formatChangelogDate(iso: string | null): string {
 }
 
 export function ChangelogListPage() {
+    const { isAuthenticated } = useSession({ skipAutoSync: true });
     const listParams = new URLSearchParams();
     listParams.set('page', '1');
     listParams.set('perPage', String(PER_PAGE));
@@ -72,12 +75,24 @@ export function ChangelogListPage() {
 
             <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
                 <header className="mb-12 border-b border-border pb-8 dark:border-border">
-                    <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-foreground sm:text-4xl">
-                        What&apos;s New
-                    </h1>
-                    <p className="mt-2 text-muted-foreground dark:text-muted-foreground">
-                        Updates, fixes, and improvements to the product.
-                    </p>
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight text-foreground dark:text-foreground sm:text-4xl">
+                                What&apos;s New
+                            </h1>
+                            <p className="mt-2 text-muted-foreground dark:text-muted-foreground">
+                                Updates, fixes, and improvements to the product.
+                            </p>
+                        </div>
+                        {isAuthenticated && (
+                            <Button asChild>
+                                <Link to="/admin/changelog/new">
+                                    <IconPlus className="mr-2 h-4 w-4" />
+                                    New Entry
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </header>
 
                 {isLoading && (
