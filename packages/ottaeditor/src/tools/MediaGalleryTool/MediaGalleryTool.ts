@@ -653,7 +653,9 @@ export default class MediaGalleryTool implements BlockTool {
 
         // Check whether the React bridge is present by seeing if anything is listening.
         // CustomEvent is always dispatchable; we detect the bridge via a marker on window.
-        const bridgePresent = Boolean((window as Record<string, unknown>)['__mgConfirmBridgeActive']);
+        const bridgePresent = Boolean(
+            (window as Window & { __mgConfirmBridgeActive?: boolean }).__mgConfirmBridgeActive,
+        );
 
         if (!bridgePresent) {
             // Fallback for environments without the React bridge
