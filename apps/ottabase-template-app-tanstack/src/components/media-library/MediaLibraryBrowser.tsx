@@ -292,6 +292,7 @@ export function MediaLibraryBrowser({
                                 type="file"
                                 multiple
                                 className="hidden"
+                                aria-label="Upload media files"
                                 onChange={(event) => {
                                     if (event.target.files) {
                                         handleUploadFiles(event.target.files);
@@ -328,6 +329,7 @@ export function MediaLibraryBrowser({
                         variant={activeKind === kind ? 'default' : 'outline'}
                         size="sm"
                         onClick={() => setActiveKind(kind)}
+                        className="capitalize"
                     >
                         {kind}
                     </Button>
