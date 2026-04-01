@@ -11,6 +11,7 @@ import Disclosure from './components/Disclosure';
 import List from './components/List';
 import Map from './components/Map';
 import MediaEmbed from './components/MediaEmbed';
+import MediaGallery from './components/MediaGallery';
 import Quote from './components/Quote';
 import Review from './components/Review';
 import Spoiler from './components/Spoiler';
@@ -34,4 +35,5 @@ export const baseRenderers = {
     map: Map,
     steps: Steps,
     mediaEmbed: MediaEmbed,
+    mediaGallery: MediaGallery,
 };

@@ -9,6 +9,10 @@ vi.mock('@ottabase/medialibrary', () => ({
             {item.title ?? 'untitled'}
         </div>
     ),
+    useMediaLightboxRegistration: () => ({
+        open: vi.fn(),
+        isEnabled: false,
+    }),
 }));
 
 describe('MediaEmbed Renderer', () => {

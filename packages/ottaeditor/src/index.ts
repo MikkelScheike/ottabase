@@ -47,6 +47,13 @@ export type { LayoutColumnData, LayoutData, LayoutPreset, LayoutToolConfig } fro
 export type { MapData, MapProvider, MapTheme, MapToolConfig } from './tools/MapTool/MapTool';
 export { default as MediaEmbedTool } from './tools/MediaEmbedTool/MediaEmbedTool';
 export type { MediaEmbedData } from './tools/MediaEmbedTool/MediaEmbedTool';
+export { default as MediaGalleryTool } from './tools/MediaGalleryTool/MediaGalleryTool';
+export type {
+    MediaGalleryData,
+    MediaGalleryItem,
+    MediaGalleryLayoutPreset,
+    MediaGalleryToolConfig,
+} from './tools/MediaGalleryTool/MediaGalleryTool';
 export { default as MediaLibraryTool } from './tools/MediaLibraryTool/MediaLibraryTool';
 export { default as RawHtmlTool } from './tools/RawHtmlTool/RawHtmlTool';
 export type { StepsData, StepsItem, StepsToolConfig } from './tools/StepsTool/StepsTool';

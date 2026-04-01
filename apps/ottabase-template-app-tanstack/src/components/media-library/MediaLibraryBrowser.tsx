@@ -33,6 +33,7 @@ import {
     IconPhotoPlus,
     IconSearch,
     IconTrash,
+    IconCheck,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -60,7 +61,11 @@ interface MediaLibraryBrowserProps {
     allowDelete?: boolean;
     mode?: 'page' | 'picker';
     confirmLabel?: string;
+    /** Allow selecting multiple items at once. Only applies when mode='picker'. Default: false */
+    allowMultiselect?: boolean;
     onSelectItem?: (item: ReturnType<typeof toMediaSelectionPayload>, rawItem: MediaListItem) => void;
+    /** Called when the user confirms a multi-selection; receives payloads in selection order. */
+    onSelectItems?: (items: ReturnType<typeof toMediaSelectionPayload>[]) => void;
 }
 
 interface UploadApiResponse {
@@ -98,13 +103,17 @@ export function MediaLibraryBrowser({
     allowDelete = true,
     mode = 'page',
     confirmLabel = 'Use this file',
+    allowMultiselect = false,
     onSelectItem,
+    onSelectItems,
 }: MediaLibraryBrowserProps) {
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [searchValue, setSearchValue] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [activeKind, setActiveKind] = useState<MediaKind | 'all'>('all');
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    // Multi-select: ordered list of selected IDs (preserves pick order for insertion)
+    const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
     const [deleteTarget, setDeleteTarget] = useState<MediaListItem | null>(null);
     const [formValues, setFormValues] = useState({
@@ -112,6 +121,13 @@ export function MediaLibraryBrowser({
         altText: '',
         caption: '',
     });
+
+    const multiSelectedSet = useMemo(() => new Set(multiSelectedIds), [multiSelectedIds]);
+
+    // Toggle an item in/out of the multi-selection set
+    const toggleMultiSelect = useCallback((id: string) => {
+        setMultiSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    }, []);
 
     // Debounce search input so we don't fire a request on every keystroke
     useEffect(() => {
@@ -370,27 +386,68 @@ export function MediaLibraryBrowser({
                             </div>
                         ) : (
                             <>
+                                {/* Multi-select action bar — shown when at least one item is selected */}
+                                {allowMultiselect && mode === 'picker' && multiSelectedIds.length > 0 && (
+                                    <div className="mb-4 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2">
+                                        <span className="text-sm text-foreground">
+                                            {multiSelectedIds.length} item{multiSelectedIds.length === 1 ? '' : 's'}{' '}
+                                            selected
+                                        </span>
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => {
+                                                // Collect payloads in the order they were selected
+                                                const ordered = multiSelectedIds
+                                                    .map((id) => filteredItems.find((item) => item.id === id))
+                                                    .filter(Boolean) as MediaListItem[];
+                                                onSelectItems?.(ordered.map(toMediaSelectionPayload));
+                                            }}
+                                        >
+                                            Insert {multiSelectedIds.length} item
+                                            {multiSelectedIds.length === 1 ? '' : 's'}
+                                        </Button>
+                                    </div>
+                                )}
                                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
                                     {filteredItems.map((item) => {
                                         const itemTitle = getMediaDisplayTitle(item);
                                         const isSelected = selectedItem?.id === item.id;
+                                        const isMultiSelected = multiSelectedSet.has(item.id);
 
                                         return (
                                             <button
                                                 key={item.id}
                                                 type="button"
-                                                onClick={() => setSelectedId(item.id)}
+                                                onClick={() => {
+                                                    if (allowMultiselect && mode === 'picker') {
+                                                        // In multi-select mode toggling is the primary action;
+                                                        // also update the detail panel to show the last-clicked item
+                                                        toggleMultiSelect(item.id);
+                                                        setSelectedId(item.id);
+                                                    } else {
+                                                        setSelectedId(item.id);
+                                                    }
+                                                }}
                                                 onDoubleClick={() => {
-                                                    if (mode === 'picker' && onSelectItem) {
+                                                    if (mode === 'picker' && !allowMultiselect && onSelectItem) {
                                                         onSelectItem(toMediaSelectionPayload(item), item);
                                                     }
                                                 }}
-                                                className={`overflow-hidden rounded-2xl border text-left transition-all ${
-                                                    isSelected
+                                                className={`relative overflow-hidden rounded-2xl border text-left transition-all ${
+                                                    isMultiSelected
                                                         ? 'border-primary shadow-sm ring-2 ring-primary/20'
-                                                        : 'border-border hover:border-primary/40 hover:bg-muted/20'
+                                                        : isSelected
+                                                          ? 'border-primary shadow-sm ring-2 ring-primary/20'
+                                                          : 'border-border hover:border-primary/40 hover:bg-muted/20'
                                                 }`}
                                             >
+                                                {/* Checkmark badge for multi-select */}
+                                                {allowMultiselect && mode === 'picker' && isMultiSelected && (
+                                                    <span className="absolute right-2 top-2 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-primary-foreground shadow">
+                                                        <IconCheck className="h-3 w-3" />
+                                                    </span>
+                                                )}
                                                 <div className="aspect-[4/3] overflow-hidden bg-muted/30">
                                                     <MediaPreview
                                                         item={item}

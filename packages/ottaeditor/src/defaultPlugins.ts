@@ -19,6 +19,7 @@ import DisclosureTool from './tools/DisclosureTool/DisclosureTool';
 import LayoutTool from './tools/LayoutTool/LayoutTool';
 import MapTool from './tools/MapTool/MapTool';
 import MediaEmbedTool from './tools/MediaEmbedTool/MediaEmbedTool';
+import MediaGalleryTool from './tools/MediaGalleryTool/MediaGalleryTool';
 import RawHtmlTool from './tools/RawHtmlTool/RawHtmlTool';
 import ReviewTool from './tools/ReviewTool/ReviewTool';
 import SpoilerTool from './tools/SpoilerTool/SpoilerTool';
@@ -54,6 +55,7 @@ export const DEFAULT_PLUGIN_NAMES = {
     DISCLOSURE: 'disclosure',
     STEPS: 'steps',
     MEDIA_EMBED: 'mediaEmbed',
+    MEDIA_GALLERY: 'mediaGallery',
 } as const;
 
 /**
@@ -75,6 +77,7 @@ function buildLayoutNestedTools(): Record<string, any> {
         list: { class: NestedList, config: { defaultStyle: 'unordered' } },
         checklist: { class: CheckList },
         table: { class: Table, config: { rows: 2, cols: 3 } },
+        mediaGallery: { class: MediaGalleryTool },
     };
 }
 
@@ -232,6 +235,11 @@ export const defaultPlugins: OttaEditorPlugin[] = [
         tool: MediaEmbedTool as any,
         config: {} as any,
     },
+    {
+        name: DEFAULT_PLUGIN_NAMES.MEDIA_GALLERY,
+        tool: MediaGalleryTool as any,
+        config: {} as any,
+    },
 ];
 
 /**
@@ -272,6 +280,7 @@ export {
     LayoutTool,
     LinkTool,
     MapTool,
+    MediaGalleryTool,
     Marker,
     NestedList,
     Paragraph,

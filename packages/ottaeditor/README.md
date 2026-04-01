@@ -4,7 +4,7 @@ A flexible EditorJS wrapper with typesafe plugin management for React applicatio
 
 ## Features
 
-- **23 pre-installed plugins** (15 Editor.js + 8 custom blocks)
+- **24 pre-installed plugins** (15 Editor.js + 9 custom blocks)
 - **Type-safe plugin selection** with autocomplete
 - **TypeScript support**
 - **Custom plugin integration**
@@ -37,6 +37,8 @@ Raw HTML blocks are sanitized on save to remove wrapper/executable tags (for exa
 - **Steps** – Minimal step-by-step timeline editor with add, reorder, and delete controls
 - **Media Embed** – Non-image media block (video, audio, PDF, document, archive) with native playback; hidden from
   toolbox, inserted automatically when Media Library selects a non-image file
+- **Media Gallery** – Full gallery block with media-library picker integration, 5 layout presets, drag-friendly item
+  ordering controls, and per-item metadata
 
 CTA and Disclosure generate instance-scoped input IDs/names so multiple blocks can coexist without DOM ID or radio-group
 collisions.
@@ -93,7 +95,7 @@ Use these names with `defaultPlugins`:
 
 `'header'`, `'paragraph'`, `'list'`, `'checklist'`, `'code'`, `'quote'`, `'table'`, `'warning'`, `'delimiter'`,
 `'linkTool'`, `'embed'`, `'raw'`, `'Marker'`, `'underline'`, `'inlineCode'`, `'spoiler'`, `'cta'`, `'review'`, `'map'`,
-`'layout'`, `'disclosure'`, `'steps'`, `'mediaEmbed'`
+`'layout'`, `'disclosure'`, `'steps'`, `'mediaEmbed'`, `'mediaGallery'`
 
 ## API
 
@@ -208,6 +210,30 @@ interface MediaEmbedData {
 }
 ```
 
+### Media Gallery
+
+```typescript
+type MediaGalleryLayoutPreset = 'grid-balanced' | 'grid-featured' | 'masonry' | 'filmstrip' | 'mosaic';
+
+interface MediaGalleryData {
+    title?: string;
+    caption?: string;
+    layout: MediaGalleryLayoutPreset;
+    items: Array<{
+        id?: string;
+        url: string;
+        title?: string;
+        caption?: string;
+        mediaId?: string;
+        mimeType?: string;
+        mediaKind?: string;
+        thumbnailUrl?: string;
+        previewUrl?: string;
+        altText?: string;
+    }>;
+}
+```
+
 ## Styling
 
 All custom plugins use common classes from `ottaeditor-common.css` (imported by `editorjs-brandkit-theme.css`):
@@ -231,6 +257,7 @@ import type {
     DisclosureData,
     LayoutData,
     LayoutPreset,
+    MediaGalleryData,
     MediaEmbedData,
     OttaEditorPlugin,
     OutputData,

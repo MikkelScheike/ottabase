@@ -12,6 +12,7 @@ export { default as Layout } from './components/Layout';
 export { default as List } from './components/List';
 export { default as Map } from './components/Map';
 export { default as MediaEmbed } from './components/MediaEmbed';
+export { default as MediaGallery } from './components/MediaGallery';
 export { default as Quote } from './components/Quote';
 export { default as Review } from './components/Review';
 export { default as Spoiler } from './components/Spoiler';
@@ -27,6 +28,7 @@ export type { AIDisclosureLevel, DisclosureData } from './components/Disclosure'
 export type { LayoutData, LayoutPreset } from './components/Layout';
 export type { MapData, MapProvider, MapTheme } from './components/Map';
 export type { MediaEmbedData } from './components/MediaEmbed';
+export type { MediaGalleryData, MediaGalleryItem, MediaGalleryLayoutPreset } from './components/MediaGallery';
 export type { QuoteData } from './components/Quote';
 export type { ReviewData } from './components/Review';
 export type { StepItem, StepsData } from './components/Steps';

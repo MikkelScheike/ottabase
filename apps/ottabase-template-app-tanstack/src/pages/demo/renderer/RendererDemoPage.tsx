@@ -1,5 +1,6 @@
 import { Blocks, customRenderers, defaultEJSRConfigs, HtmlRenderer } from '@ottabase/ottarenderer';
 import '@ottabase/ottarenderer/styles';
+import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import {
     Card,
     CardContent,
@@ -79,6 +80,45 @@ const sampleEditorJSData = {
                 withBackground: true,
                 featuredImage: true,
                 stretched: true,
+            },
+        },
+        {
+            id: 'header-media-gallery',
+            type: 'header',
+            data: {
+                text: 'Media Gallery Block',
+                level: 2,
+            },
+        },
+        {
+            id: 'mediagallery1',
+            type: 'mediaGallery',
+            data: {
+                title: 'Mixed Media Gallery',
+                caption: 'Click any item to open the immersive lightbox.',
+                layout: 'grid-featured',
+                items: [
+                    {
+                        url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&q=80',
+                        title: 'Code Workspace',
+                        caption: 'Image item',
+                        mediaKind: 'image',
+                    },
+                    {
+                        url: 'https://cdn.coverr.co/videos/coverr-aerial-view-of-a-city-at-sunset-1579/1080p.mp4',
+                        title: 'City Sunset Clip',
+                        caption: 'Video item',
+                        mediaKind: 'video',
+                        mimeType: 'video/mp4',
+                    },
+                    {
+                        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                        title: 'Sample Audio',
+                        caption: 'Audio item',
+                        mediaKind: 'audio',
+                        mimeType: 'audio/mpeg',
+                    },
+                ],
             },
         },
         {
@@ -345,11 +385,13 @@ export function RendererDemoPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="prose dark:prose-invert max-w-none">
-                                <Blocks
-                                    data={sampleEditorJSData}
-                                    config={defaultEJSRConfigs}
-                                    renderers={customRenderers}
-                                />
+                                <MediaLightboxProvider variant="immersive">
+                                    <Blocks
+                                        data={sampleEditorJSData}
+                                        config={defaultEJSRConfigs}
+                                        renderers={customRenderers}
+                                    />
+                                </MediaLightboxProvider>
                             </div>
                         </CardContent>
                     </Card>
