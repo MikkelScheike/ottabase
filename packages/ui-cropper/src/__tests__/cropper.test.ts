@@ -129,6 +129,30 @@ describe('Cropper', () => {
         document.body.removeChild(el);
     });
 
+    it('updates upload button label to Replace image after an image loads', () => {
+        const el = document.createElement('div');
+        document.body.appendChild(el);
+        const c = new Cropper(el);
+
+        const chooseBtn = el.querySelector('button[title="Choose image"]') as HTMLButtonElement | null;
+        expect(chooseBtn).toBeTruthy();
+        expect(chooseBtn?.textContent).toContain('Choose image');
+
+        c.loadFromUrl('https://example.com/avatar.png');
+        (c as any).render = () => undefined;
+        const img = (c as any).img as HTMLImageElement;
+        Object.defineProperty(img, 'naturalWidth', { value: 200, configurable: true });
+        Object.defineProperty(img, 'naturalHeight', { value: 200, configurable: true });
+        img.onload?.(new Event('load'));
+
+        const replaceBtn = el.querySelector('button[title="Replace image"]') as HTMLButtonElement | null;
+        expect(replaceBtn).toBeTruthy();
+        expect(replaceBtn?.textContent).toContain('Replace image');
+
+        c.destroy();
+        document.body.removeChild(el);
+    });
+
     it('accepts onImageLoad callback option', () => {
         const el = document.createElement('div');
         let called = false;

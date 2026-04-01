@@ -42,6 +42,10 @@ export class Cropper {
     private img: HTMLImageElement | null = null;
     private canvas: HTMLCanvasElement | null = null;
     private wrap: HTMLDivElement | null = null;
+    private fileInput: HTMLInputElement | null = null;
+    private uploadBtn: HTMLButtonElement | null = null;
+    private uploadBtnLabel: HTMLSpanElement | null = null;
+    private hasLoadedImage = false;
     // Crop in rotated/visible coordinates (what user sees on screen)
     private crop = { x: 0, y: 0, w: 0, h: 0 };
     private flipH = false;
@@ -89,6 +93,7 @@ export class Cropper {
         input.accept = this.options.accept;
         input.style.cssText = 'position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);border:0;';
         input.id = 'cropper-file-input';
+        this.fileInput = input;
 
         const fileNameLabel = document.createElement('span');
         fileNameLabel.id = 'cropper-file-name';
@@ -105,7 +110,13 @@ export class Cropper {
         const uploadBtn = document.createElement('button');
         uploadBtn.type = 'button';
         uploadBtn.title = 'Choose image';
-        uploadBtn.innerHTML = `${SVG_UPLOAD}<span style="margin-left:6px">Choose image</span>`;
+        const uploadLabel = document.createElement('span');
+        uploadLabel.style.marginLeft = '6px';
+        uploadLabel.textContent = 'Choose image';
+        uploadBtn.innerHTML = SVG_UPLOAD;
+        uploadBtn.appendChild(uploadLabel);
+        this.uploadBtn = uploadBtn;
+        this.uploadBtnLabel = uploadLabel;
         uploadBtn.style.cssText = [
             'display:inline-flex',
             'align-items:center',
@@ -127,7 +138,11 @@ export class Cropper {
         uploadBtn.onmouseleave = () => {
             uploadBtn.style.background = 'var(--background, transparent)';
         };
-        uploadBtn.onclick = () => input.click();
+        uploadBtn.onclick = () => {
+            // Reset value so selecting the same file again still triggers onChange.
+            input.value = '';
+            input.click();
+        };
 
         // Row wrapper for button + filename
         const fileRow = document.createElement('div');
@@ -206,6 +221,8 @@ export class Cropper {
             this.img.crossOrigin = 'anonymous';
         }
         this.img.onload = () => {
+            this.hasLoadedImage = true;
+            this.updateUploadButtonLabel();
             this.rotation = 0;
             this.zoom = this.options.zoom;
             this.flipH = false;
@@ -245,6 +262,8 @@ export class Cropper {
         this.img = new Image();
         this.img.onload = () => {
             URL.revokeObjectURL(url);
+            this.hasLoadedImage = true;
+            this.updateUploadButtonLabel();
             this.rotation = 0; // Reset rotation on new image
             this.zoom = this.options.zoom; // Reset zoom
             this.flipH = false;
@@ -258,6 +277,12 @@ export class Cropper {
             this.options.onImageLoad?.();
         };
         this.img.src = url;
+    }
+
+    private updateUploadButtonLabel() {
+        const nextLabel = this.hasLoadedImage ? 'Replace image' : 'Choose image';
+        if (this.uploadBtn) this.uploadBtn.title = nextLabel;
+        if (this.uploadBtnLabel) this.uploadBtnLabel.textContent = nextLabel;
     }
 
     /** Get image dimensions in CURRENT rotation (what user sees) */
@@ -882,6 +907,10 @@ export class Cropper {
         this.img = null;
         this.canvas = null;
         this.wrap = null;
+        this.fileInput = null;
+        this.uploadBtn = null;
+        this.uploadBtnLabel = null;
+        this.hasLoadedImage = false;
         this.container.innerHTML = '';
     }
 }

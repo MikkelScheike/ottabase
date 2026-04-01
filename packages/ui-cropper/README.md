@@ -14,6 +14,7 @@ PNG/JPEG. Zero React. ~3–4 KB gzipped.
 - **Flexible aspect ratios** - Freeform, square, landscape, portrait, or custom ratios
 - **Shape support** - Rectangular or circular crop viewfinder
 - **Intuitive drag** - Drag to reposition, cursor changes for different actions
+- **Replace-friendly upload** - Upload button changes from "Choose image" to "Replace image" after first load
 
 ## Usage
 
