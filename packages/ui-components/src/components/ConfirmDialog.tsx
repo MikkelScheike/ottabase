@@ -10,6 +10,7 @@ import {
     AlertDialogFooter,
     AlertDialogHeader,
     AlertDialogTitle,
+    AlertDialogTrigger,
     buttonVariants,
     cn,
 } from '@ottabase/ui-shadcn';
@@ -20,6 +21,7 @@ export interface ConfirmDialogProps extends Omit<React.ComponentPropsWithoutRef<
     title: React.ReactNode;
     description?: React.ReactNode;
     children?: React.ReactNode;
+    trigger?: React.ReactElement;
     tone?: ConfirmDialogTone;
     primaryActionText?: React.ReactNode;
     secondaryActionText?: React.ReactNode;
@@ -36,6 +38,7 @@ export function ConfirmDialog({
     title,
     description,
     children,
+    trigger,
     tone = 'default',
     primaryActionText,
     secondaryActionText,
@@ -74,6 +77,7 @@ export function ConfirmDialog({
 
     return (
         <AlertDialog {...rootProps}>
+            {trigger ? <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger> : null}
             <AlertDialogContent className={contentClassName} {...restContentProps}>
                 <AlertDialogHeader>
                     <AlertDialogTitle>{title}</AlertDialogTitle>

@@ -21,9 +21,19 @@ export default defineConfig({
         include: ['src/**/*.{test,spec}.{ts,tsx}', '__tests__/**/*.{test,spec}.{ts,tsx}'],
     },
     resolve: {
-        alias: {
-            '@': path.resolve(__dirname, './src'),
-            '@ottabase/ui-shadcn': path.resolve(__dirname, '../ui-shadcn/src/index.ts'),
-        },
+        alias: [
+            {
+                find: '@',
+                replacement: path.resolve(__dirname, './src'),
+            },
+            {
+                find: /^@ottabase\/ui-shadcn$/,
+                replacement: path.resolve(__dirname, '../ui-shadcn/src/index.ts'),
+            },
+            {
+                find: /^@ottabase\/ui-shadcn\/(.*)$/,
+                replacement: path.resolve(__dirname, '../ui-shadcn/src/$1'),
+            },
+        ],
     },
 });

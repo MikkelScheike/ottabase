@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import React from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -31,6 +31,7 @@ describe('ConfirmDialog', () => {
                 open
                 onOpenChange={vi.fn()}
                 title="Publish changes?"
+                description="Confirm publishing the latest edits."
                 confirmLabel="Publish"
                 onConfirm={onConfirm}
                 confirmProps={{ disabled: true, 'data-testid': 'confirm-action' }}
@@ -69,6 +70,7 @@ describe('ConfirmDialog', () => {
                 open
                 onOpenChange={vi.fn()}
                 title="Custom actions"
+                description="Choose one of the custom actions."
                 primaryActionText="Proceed now"
                 secondaryActionText="Not yet"
             />,
@@ -76,5 +78,47 @@ describe('ConfirmDialog', () => {
 
         expect(screen.getByRole('button', { name: 'Proceed now' })).toBeTruthy();
         expect(screen.getByRole('button', { name: 'Not yet' })).toBeTruthy();
+    });
+
+    it('renders an optional trigger', () => {
+        render(<ConfirmDialog title="Triggered dialog" trigger={<button type="button">Open dialog</button>} />);
+
+        expect(screen.getByRole('button', { name: 'Open dialog' })).toBeTruthy();
+    });
+
+    it('opens and closes when using the optional trigger in uncontrolled mode', async () => {
+        render(
+            <ConfirmDialog
+                title="Triggered dialog"
+                description="Dialog opened from trigger"
+                trigger={<button type="button">Open dialog</button>}
+            />,
+        );
+
+        expect(screen.queryByText('Dialog opened from trigger')).toBeNull();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open dialog' }));
+        expect(screen.getByText('Dialog opened from trigger')).toBeTruthy();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+        await waitFor(() => {
+            expect(screen.queryByText('Dialog opened from trigger')).toBeNull();
+        });
+    });
+
+    it('emits onOpenChange when trigger is used in controlled mode', () => {
+        const onOpenChange = vi.fn();
+
+        render(
+            <ConfirmDialog
+                open={false}
+                onOpenChange={onOpenChange}
+                title="Controlled dialog"
+                trigger={<button type="button">Open controlled dialog</button>}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open controlled dialog' }));
+        expect(onOpenChange).toHaveBeenCalledWith(true);
     });
 });

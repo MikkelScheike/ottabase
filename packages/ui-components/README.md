@@ -14,6 +14,7 @@ A shared confirmation dialog wrapper built on top of `@ottabase/ui-shadcn`'s ale
 - `onOpenChange?: (open: boolean) => void` - Controlled state callback
 - `title: React.ReactNode` - Dialog title
 - `description?: React.ReactNode` - Optional supporting copy
+- `trigger?: React.ReactElement` - Optional trigger element for uncontrolled usage
 - `tone?: 'default' | 'destructive' | 'unsaved-changes'` - Confirmation behavior and styling
 - `primaryActionText?: React.ReactNode` - Semantic alias for the primary action button text
 - `secondaryActionText?: React.ReactNode` - Semantic alias for the secondary action button text
