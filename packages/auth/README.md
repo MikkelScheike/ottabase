@@ -336,6 +336,7 @@ Components use Tailwind CSS and follow shadcn/ui design patterns. They automatic
 
 ```typescript
 import {
+    changePassword,
     signInWithCredentials,
     signInWithProvider,
     sendMagicLink,
@@ -353,6 +354,9 @@ await sendMagicLink(email, { redirectTo: '/dashboard' });
 
 // Registration (requires /api/auth/register endpoint)
 await registerWithCredentials({ name, email, password, referralCode });
+
+// Authenticated password change (requires /api/auth/password/change endpoint)
+await changePassword({ currentPassword, newPassword });
 ```
 
 ## Providers

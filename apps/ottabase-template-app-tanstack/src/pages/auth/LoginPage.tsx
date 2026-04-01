@@ -45,6 +45,7 @@ export function LoginPage() {
                 authSecretConfigured: false,
             }) as ReturnType<typeof getLoginConfig> & { authSecretConfigured: boolean },
     );
+    const passwordChanged = new URLSearchParams(window.location.search).get('passwordChanged') === '1';
 
     useEffect(() => {
         let mounted = true;
@@ -220,6 +221,14 @@ export function LoginPage() {
                     <h1 className="text-3xl font-bold">Welcome</h1>
                     <p className="text-muted-foreground">Sign in to access your dashboard</p>
                 </div>
+
+                {passwordChanged && (
+                    <Card className="border-green-500/50 bg-green-50 dark:bg-green-950/20">
+                        <CardContent className="p-6 text-sm text-green-700 dark:text-green-400">
+                            Password changed successfully. Please sign in with your new password.
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Configuration Warnings */}
                 {warnings.length > 0 && (

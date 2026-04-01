@@ -90,6 +90,7 @@ export {
 // CLIENT API (Frontend)
 // ============================================================
 export {
+    changePassword,
     getCsrfToken,
     getSession as getSessionClient,
     isAuthenticated as isAuthenticatedClient,
@@ -103,6 +104,7 @@ export {
     signOut,
     verifyEmail,
     type AuthClientOptions,
+    type ChangePasswordResponse,
     type AuthResponse,
     type AuthSession,
     type EmailVerificationResponse,

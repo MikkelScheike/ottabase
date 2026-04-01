@@ -94,6 +94,14 @@ export interface PasswordResetResponse {
 }
 
 /**
+ * Authenticated password change response
+ */
+export interface ChangePasswordResponse {
+    success: boolean;
+    error?: string;
+}
+
+/**
  * Client configuration options
  */
 export interface AuthClientOptions {
@@ -636,6 +644,42 @@ export async function resetPassword(
         return {
             success: false,
             error: error instanceof Error ? error.message : 'Password reset failed',
+        };
+    }
+}
+
+/**
+ * Change password for the current authenticated user
+ */
+export async function changePassword(
+    data: { currentPassword: string; newPassword: string },
+    options?: { clientOptions?: AuthClientOptions },
+): Promise<ChangePasswordResponse> {
+    const baseUrl = options?.clientOptions?.baseUrl ?? defaultOptions.baseUrl;
+
+    try {
+        const response = await fetch(`${baseUrl}/password/change`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(data),
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'Password change failed' }));
+            return {
+                success: false,
+                error: error.error || 'Password change failed',
+            };
+        }
+
+        return { success: true };
+    } catch (error) {
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Password change failed',
         };
     }
 }

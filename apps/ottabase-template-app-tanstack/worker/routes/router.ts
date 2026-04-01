@@ -41,6 +41,7 @@ import { handleAdminUserById, handleAdminUsers } from './admin-users';
 import {
     handleAuthConfig,
     handleAuthJsRequest,
+    handlePasswordChange,
     handleAuthRegister,
     handlePasswordResetConfirm,
     handlePasswordResetRequest,
@@ -391,6 +392,10 @@ async function handlePostRoutes(context: ApiRouteContext): Promise<Response | nu
 
     if (route === '/api/auth/password/reset/confirm') {
         return handlePasswordResetConfirm(context);
+    }
+
+    if (route === '/api/auth/password/change') {
+        return handlePasswordChange(context);
     }
 
     if (route === '/api/email/test') {

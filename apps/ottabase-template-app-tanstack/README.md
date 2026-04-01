@@ -68,6 +68,8 @@ This template ships with Auth.js + D1 integration and tighter session handling:
 - **Rate limiting**: Auth endpoints run through the shared rate limiter (per IP bucket for signin, register, signout).
 - **Email flows**: `/api/auth/verify-email`, `/api/auth/verify-email/resend`, `/api/auth/password/reset/request`,
   `/api/auth/password/reset/confirm`.
+- **In-session password change**: `/api/auth/password/change` for authenticated users with current password + new
+  password.
 - **Credentials storage**: PBKDF2 hashes in `users.password_hash`, email verification/roles stored alongside.
 - **Session sync tip**: If you mutate `/api/users/me`, call `refreshSession()` (or `updateUser()`) so the cached local
   session picks up the KV-triggered profile version bump immediately.
@@ -83,6 +85,7 @@ This template ships with Auth.js + D1 integration and tighter session handling:
 | `/api/auth/verify-email/resend`    | `POST`  | Sends a new verification token; rate-limited by `enforceRateLimit`.                                                                                     |
 | `/api/auth/password/reset/request` | `POST`  | Sends reset token email (supports Resend/Ses/KV mailers).                                                                                               |
 | `/api/auth/password/reset/confirm` | `POST`  | Applies a new password and revokes existing JWTs via `auth:usr:{userId}:revoked`.                                                                       |
+| `/api/auth/password/change`        | `POST`  | Authenticated password change (requires current password), validates strength, then revokes active JWTs.                                                |
 | `/api/users/me`                    | `GET`   | Returns the authenticated user (filters out password data).                                                                                             |
 | `/api/users/me`                    | `PATCH` | Updates profile fields (`name`, `image`), enforces validation, and bumps `auth:usr:{userId}:profile:version` in KV for session refresh.                 |
 

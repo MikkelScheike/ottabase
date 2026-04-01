@@ -8,6 +8,7 @@
 // ============================================================
 
 export {
+    changePassword,
     getCsrfToken,
     getSession,
     isAuthenticated,
@@ -23,6 +24,7 @@ export {
     type AuthClientOptions,
     type AuthResponse,
     type AuthSession,
+    type ChangePasswordResponse,
     type EmailVerificationResponse,
     type PasswordResetResponse,
     type RegisterCredentials,

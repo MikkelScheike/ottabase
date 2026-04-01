@@ -9,7 +9,7 @@ import { useRBACToast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { MEDIA_LIBRARY_ENABLED } from '@/ottabase/config';
-import { requestEmailVerification } from '@/lib/auth-api';
+import { changePassword, requestEmailVerification } from '@/lib/auth-api';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import {
     AlertDialog,
@@ -37,6 +37,7 @@ import {
     Label,
     Separator,
 } from '@ottabase/ui-shadcn';
+import { clearAuthSessionStorage } from '@ottabase/auth/react';
 import { getTimezonesForSelect, setTimezoneConfig } from '@ottabase/utils/timezone';
 import { IconExternalLink, IconPencil, IconTrash } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
@@ -72,6 +73,14 @@ export function UserProfilePage() {
     const [hasChanges, setHasChanges] = useState(false);
     const [verificationStatus, setVerificationStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
     const [verificationError, setVerificationError] = useState<string | null>(null);
+    const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+    const [isChangingPassword, setIsChangingPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [passwordForm, setPasswordForm] = useState({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+    });
 
     const normalize = useCallback((value: string) => value.trim(), []);
 
@@ -296,6 +305,72 @@ export function UserProfilePage() {
             setVerificationError(message);
             toast.error('Verification failed', message);
             setVerificationStatus('idle');
+        }
+    };
+
+    const resetPasswordDialogState = () => {
+        setPasswordError(null);
+        setPasswordForm({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+        });
+    };
+
+    const handleChangePassword = async () => {
+        setPasswordError(null);
+
+        const currentPassword = passwordForm.currentPassword.trim();
+        const newPassword = passwordForm.newPassword.trim();
+        const confirmPassword = passwordForm.confirmPassword.trim();
+
+        if (!currentPassword) {
+            setPasswordError('Current password is required.');
+            return;
+        }
+
+        if (!newPassword) {
+            setPasswordError('New password is required.');
+            return;
+        }
+
+        if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])/.test(newPassword) || newPassword.length < 8) {
+            setPasswordError(
+                'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.',
+            );
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setPasswordError('New password and confirmation do not match.');
+            return;
+        }
+
+        if (newPassword === currentPassword) {
+            setPasswordError('New password must be different from current password.');
+            return;
+        }
+
+        setIsChangingPassword(true);
+        try {
+            const result = await changePassword({ currentPassword, newPassword });
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update password.');
+            }
+
+            toast.success('Password updated', 'Please sign in again with your new password.');
+            resetPasswordDialogState();
+            setIsPasswordDialogOpen(false);
+            clearAuthSessionStorage();
+            if (typeof window !== 'undefined') {
+                window.location.href = '/login?passwordChanged=1';
+            }
+        } catch (err) {
+            const message = err instanceof Error ? err.message : 'Failed to update password.';
+            setPasswordError(message);
+            toast.error('Password update failed', message);
+        } finally {
+            setIsChangingPassword(false);
         }
     };
 
@@ -612,7 +687,15 @@ export function UserProfilePage() {
                             Member Since
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                            {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'Unknown'}
+                            {user.createdAt
+                                ? new Date(user.createdAt).toLocaleString(undefined, {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric',
+                                      hour: 'numeric',
+                                      minute: '2-digit',
+                                  })
+                                : 'Unknown'}
                         </p>
                     </div>
                 </CardContent>
@@ -668,11 +751,16 @@ export function UserProfilePage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <h4 className="font-medium">Password</h4>
-                            <p className="text-sm text-muted-foreground">
-                                Password management is not available from this app.
-                            </p>
+                            <p className="text-sm text-muted-foreground">Update your account password.</p>
                         </div>
-                        <Button variant="outline" size="sm" disabled>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                                resetPasswordDialogState();
+                                setIsPasswordDialogOpen(true);
+                            }}
+                        >
                             Change Password
                         </Button>
                     </div>
@@ -690,6 +778,83 @@ export function UserProfilePage() {
                     </div>
                 </CardContent>
             </Card>
+
+            <Dialog
+                open={isPasswordDialogOpen}
+                onOpenChange={(open) => {
+                    setIsPasswordDialogOpen(open);
+                    if (!open) {
+                        resetPasswordDialogState();
+                    }
+                }}
+            >
+                <DialogContent className="max-w-md">
+                    <DialogTitle>Change Password</DialogTitle>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="currentPassword">Current Password</Label>
+                            <Input
+                                id="currentPassword"
+                                type="password"
+                                autoComplete="current-password"
+                                value={passwordForm.currentPassword}
+                                onChange={(e) =>
+                                    setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
+                                }
+                                disabled={isChangingPassword}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="newPassword">New Password</Label>
+                            <Input
+                                id="newPassword"
+                                type="password"
+                                autoComplete="new-password"
+                                value={passwordForm.newPassword}
+                                onChange={(e) => setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))}
+                                disabled={isChangingPassword}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                            <Input
+                                id="confirmPassword"
+                                type="password"
+                                autoComplete="new-password"
+                                value={passwordForm.confirmPassword}
+                                onChange={(e) =>
+                                    setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                                }
+                                disabled={isChangingPassword}
+                            />
+                        </div>
+
+                        {passwordError && <p className="text-sm text-destructive">{passwordError}</p>}
+
+                        <div className="flex justify-end gap-2">
+                            <Button
+                                variant="outline"
+                                onClick={() => setIsPasswordDialogOpen(false)}
+                                disabled={isChangingPassword}
+                            >
+                                Cancel
+                            </Button>
+                            <Button onClick={handleChangePassword} disabled={isChangingPassword}>
+                                {isChangingPassword ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Updating...
+                                    </>
+                                ) : (
+                                    'Update Password'
+                                )}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

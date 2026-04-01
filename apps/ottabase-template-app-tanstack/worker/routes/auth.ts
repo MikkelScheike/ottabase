@@ -1,4 +1,4 @@
-import { getSession, handleAuthRequest, hashPassword } from '@ottabase/auth/backend';
+import { getSession, handleAuthRequest, hashPassword, verifyPassword } from '@ottabase/auth/backend';
 import { getLoginConfig } from '@ottabase/auth/components';
 import { userKey } from '@ottabase/cf/cache-keys';
 import { createD1Driver } from '@ottabase/db/drizzle-d1';
@@ -319,6 +319,110 @@ export async function handlePasswordResetConfirm(context: AuthRouteContext): Pro
     await user.save();
 
     await VerificationToken.deleteByIdentifierAndToken(identifier, token);
+
+    if (env.OBCF_KV) {
+        try {
+            const revokedAt = Math.floor(Date.now() / 1000);
+            await env.OBCF_KV.put(userKey('auth', String(user.get('id')), 'revoked'), String(revokedAt), {
+                expirationTtl: Number(env.AUTH_SESSION_MAX_AGE) || 30 * 24 * 60 * 60,
+            });
+        } catch {
+            // ignore revocation errors
+        }
+    }
+
+    return withAuthCors(jsonResponse({ success: true }));
+}
+
+export async function handlePasswordChange(context: AuthRouteContext): Promise<Response> {
+    const { request, env, withAuthCors } = context;
+    const ip = getClientIpAddress(request);
+    const rateLimit = await enforceRateLimit(request, env, `auth:password-change:${ip}`);
+    if (rateLimit) return withAuthCors(rateLimit);
+
+    if (!env.OBCF_D1) {
+        return withAuthCors(
+            errorResponse('D1 database binding not configured', 500, {
+                code: 'CONFIG_ERROR',
+            }),
+        );
+    }
+
+    const session = await getSession(request, env as any, getAuthOptions(env));
+    const userId = session?.user?.id;
+    if (!userId) {
+        return withAuthCors(errorResponse('Unauthorized', 401, { code: 'UNAUTHORIZED' }));
+    }
+
+    registerConnection('default', createD1Driver(env.OBCF_D1));
+
+    const body = await readJson<{ currentPassword?: string; newPassword?: string }>(request);
+    const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : '';
+    const newPassword = typeof body.newPassword === 'string' ? body.newPassword : '';
+
+    const fieldErrors: Record<string, string[]> = {};
+
+    if (!currentPassword) {
+        fieldErrors.currentPassword = ['Current password is required'];
+    }
+    if (!newPassword) {
+        fieldErrors.newPassword = ['New password is required'];
+    } else if (!isStrongPassword(newPassword)) {
+        fieldErrors.newPassword = [
+            'Password must be at least 8 characters and include uppercase, lowercase, number, and symbol',
+        ];
+    }
+
+    if (Object.keys(fieldErrors).length > 0) {
+        return withAuthCors(
+            errorResponse('Validation failed', 400, {
+                code: 'VALIDATION_ERROR',
+                fieldErrors,
+            }),
+        );
+    }
+
+    const user = await User.find(userId);
+    if (!user) {
+        return withAuthCors(errorResponse('User not found', 404, { code: 'NOT_FOUND' }));
+    }
+
+    const existingHash = user.get('passwordHash');
+    if (!existingHash || typeof existingHash !== 'string') {
+        return withAuthCors(
+            errorResponse('Password change is not available for this account', 400, {
+                code: 'PASSWORD_CHANGE_UNAVAILABLE',
+            }),
+        );
+    }
+
+    const isCurrentValid = await verifyPassword(currentPassword, existingHash);
+    if (!isCurrentValid) {
+        return withAuthCors(
+            errorResponse('Current password is incorrect', 400, {
+                code: 'INVALID_CURRENT_PASSWORD',
+                fieldErrors: {
+                    currentPassword: ['Current password is incorrect'],
+                },
+            }),
+        );
+    }
+
+    const isSamePassword = await verifyPassword(newPassword, existingHash);
+    if (isSamePassword) {
+        return withAuthCors(
+            errorResponse('New password must be different from current password', 400, {
+                code: 'PASSWORD_UNCHANGED',
+                fieldErrors: {
+                    newPassword: ['New password must be different from current password'],
+                },
+            }),
+        );
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    user.set('passwordHash', passwordHash);
+    await user.save();
 
     if (env.OBCF_KV) {
         try {
