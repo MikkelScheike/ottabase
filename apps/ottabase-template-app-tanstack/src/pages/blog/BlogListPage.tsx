@@ -6,11 +6,12 @@
  */
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_LIST_QUERY_CONFIG, SERIES_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { useSession } from '@/lib/auth';
 import { CONTENT_TYPES, formatDate, type ContentType } from '@ottabase/ottablog';
 import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
 import { Badge, Button, Card, CardContent, Input } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
-import { Calendar, ChevronLeft, ChevronRight, Clock, Lock, Search, Tag, User } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Clock, Lock, Plus, Search, Tag, User } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 interface BlogPostTag {
@@ -59,6 +60,7 @@ const blogSeriesHooks = createModelHooks<BlogSeries>({
 const POSTS_PER_PAGE = 12;
 
 export function BlogListPage() {
+    const { isAuthenticated } = useSession({ skipAutoSync: true });
     const [search, setSearch] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [contentType, setContentType] = useState<ContentType | ''>('');
@@ -126,6 +128,16 @@ export function BlogListPage() {
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                     Thoughts, tutorials, and updates from our team.
                 </p>
+                {isAuthenticated && (
+                    <div>
+                        <Button asChild>
+                            <Link to="/admin/blog/new">
+                                <Plus className="h-4 w-4 mr-2" />
+                                New Post
+                            </Link>
+                        </Button>
+                    </div>
+                )}
             </div>
 
             {/* Filters */}
