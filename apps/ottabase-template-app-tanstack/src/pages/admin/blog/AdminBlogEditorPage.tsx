@@ -5,6 +5,7 @@
  * hero image upload, SEO settings, and all post fields.
  */
 import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
+import { MediaLibraryBrowser } from '@/components/media-library/MediaLibraryBrowser';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { MediaLightboxProvider } from '@ottabase/medialibrary';
@@ -248,6 +249,8 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     // Hero image state
     const [heroImage, setHeroImage] = useState<HeroImage | null>(initialData?.heroImage || null);
     const [isUploadingHero, setIsUploadingHero] = useState(false);
+    const [isHeroMediaPickerOpen, setIsHeroMediaPickerOpen] = useState(false);
+    const [isHeroDropActive, setIsHeroDropActive] = useState(false);
 
     // SEO state - initialized from props
     const [seoTitle, setSeoTitle] = useState(initialData?.seoMeta?.title || '');
@@ -730,11 +733,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         if (slug.trim() !== initialSlug) doSlugCheck();
     };
 
-    // Handle hero image upload
-    const handleHeroImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
+    const uploadHeroFile = async (file: File) => {
         setIsUploadingHero(true);
         try {
             const formData = new FormData();
@@ -748,6 +747,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                 setHeroImage({
                     url: data.url,
                     alt: heroImage?.alt || file.name,
+                    caption: heroImage?.caption,
                     cfImageId: data.cfImageId,
                 });
             }
@@ -759,9 +759,42 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         }
     };
 
-    // Update hero image URL
-    const handleHeroUrlChange = (url: string) => {
-        setHeroImage(url ? { url, alt: heroImage?.alt || '' } : null);
+    // Handle hero image drop zone interactions
+    const handleHeroDrop = async (e: React.DragEvent<HTMLElement>) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setIsHeroDropActive(false);
+
+        const file = e.dataTransfer.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('image/')) {
+            setAlertDialog({ open: true, title: 'Invalid file', message: 'Please drop an image file.' });
+            return;
+        }
+
+        await uploadHeroFile(file);
+    };
+
+    const handleHeroMediaSelect = (item: {
+        url: string;
+        name?: string;
+        alt?: string;
+        caption?: string;
+        mediaId?: string;
+        width?: number;
+        height?: number;
+    }) => {
+        setHeroImage({
+            url: item.url,
+            alt: item.alt || heroImage?.alt || item.name || '',
+            caption: item.caption,
+            mediaId: item.mediaId,
+            width: item.width,
+            height: item.height,
+            cfImageId: heroImage?.cfImageId,
+        });
+        setIsHeroMediaPickerOpen(false);
     };
 
     // Update hero image alt
@@ -1277,12 +1310,40 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                         </CardHeader>
                         <CardContent className="space-y-4">
                             {heroImage?.url ? (
-                                <div className="relative">
+                                <div
+                                    className={`relative rounded-lg transition-colors ${
+                                        isHeroDropActive ? 'ring-2 ring-primary ring-offset-2' : ''
+                                    }`}
+                                    onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsHeroDropActive(true);
+                                    }}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsHeroDropActive(true);
+                                    }}
+                                    onDragLeave={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsHeroDropActive(false);
+                                    }}
+                                    onDrop={handleHeroDrop}
+                                >
                                     <img
                                         src={heroImage.url}
                                         alt={heroImage.alt || 'Hero image'}
                                         className="w-full rounded-lg object-cover aspect-video"
                                     />
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        className="absolute top-2 left-2"
+                                        onClick={() => setIsHeroMediaPickerOpen(true)}
+                                    >
+                                        Replace
+                                    </Button>
                                     <Button
                                         variant="destructive"
                                         size="icon"
@@ -1293,36 +1354,46 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                                <button
+                                    type="button"
+                                    className={`w-full border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                                        isHeroDropActive
+                                            ? 'border-primary bg-primary/5'
+                                            : 'border-border hover:border-primary/50 hover:bg-muted/30'
+                                    }`}
+                                    onClick={() => setIsHeroMediaPickerOpen(true)}
+                                    onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsHeroDropActive(true);
+                                    }}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsHeroDropActive(true);
+                                    }}
+                                    onDragLeave={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setIsHeroDropActive(false);
+                                    }}
+                                    onDrop={handleHeroDrop}
+                                    disabled={isUploadingHero}
+                                >
                                     <ImageIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
                                     <p className="mt-2 text-sm text-muted-foreground">No hero image set</p>
-                                </div>
+                                    <p className="mt-1 text-xs text-muted-foreground">
+                                        Click to choose from Media Library or drag and drop an image here
+                                    </p>
+                                </button>
                             )}
 
-                            <div className="space-y-2">
-                                <Label>Upload Image</Label>
-                                <Input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleHeroImageUpload}
-                                    disabled={isUploadingHero}
-                                />
-                                {isUploadingHero && (
-                                    <p className="text-sm text-muted-foreground flex items-center gap-2">
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                        Uploading...
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label>Or paste URL</Label>
-                                <Input
-                                    value={heroImage?.url || ''}
-                                    onChange={(e) => handleHeroUrlChange(e.target.value)}
-                                    placeholder="https://..."
-                                />
-                            </div>
+                            {isUploadingHero && (
+                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Uploading...
+                                </p>
+                            )}
 
                             <div className="space-y-2">
                                 <Label>Alt Text</Label>
@@ -1334,6 +1405,26 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                             </div>
                         </CardContent>
                     </Card>
+
+                    <Dialog open={isHeroMediaPickerOpen} onOpenChange={setIsHeroMediaPickerOpen}>
+                        <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
+                            <DialogHeader>
+                                <DialogTitle>Select Hero Image</DialogTitle>
+                                <DialogDescription>
+                                    Choose an existing file from Media Library for this post hero image.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <MediaLibraryBrowser
+                                title="Media picker"
+                                description="Search existing uploads or add a new one and pick it as the hero image."
+                                emptyTitle="No matching media yet"
+                                emptyDescription="Upload a file here to add it to your media library."
+                                acceptKinds={['image']}
+                                mode="picker"
+                                onSelectItem={(payload) => handleHeroMediaSelect(payload)}
+                            />
+                        </DialogContent>
+                    </Dialog>
 
                     {/* Post Settings */}
                     <Card>

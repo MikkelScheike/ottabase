@@ -322,6 +322,8 @@ apps/ottabase-template-app-tanstack/
 - `/login` - Login (OAuth / Magic Link / Credentials)
 - `/register` - Registration (Credentials)
 - `/dashboard` - Protected route
+- `/admin/blog/new` - Blog post editor with hero image selection from Media Library (click-to-pick) and drag-and-drop
+  image upload
 - `/admin/brand-engine` - Brand kit list (admin only)
 - `/admin/brand-engine/kits/:id` - Brand kit editor (Theme, Brand, Logo, Fonts, Motion, Cursors, Advanced tabs)
 - `/demo/mantine` - Mantine UI components demo

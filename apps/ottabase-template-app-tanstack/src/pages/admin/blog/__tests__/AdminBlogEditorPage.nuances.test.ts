@@ -29,6 +29,84 @@ function isSaveDisabled(isSaving: boolean, isEditMode: boolean, isDirty: boolean
 }
 
 describe('AdminBlogEditorPage nuances', () => {
+    describe('hero image mapping', () => {
+        function mapPickerPayloadToHeroImage(
+            payload: {
+                url: string;
+                name?: string;
+                alt?: string;
+                caption?: string;
+                mediaId?: string;
+                width?: number;
+                height?: number;
+            },
+            currentAlt?: string,
+            currentCfImageId?: string,
+        ) {
+            return {
+                url: payload.url,
+                alt: payload.alt || currentAlt || payload.name || '',
+                caption: payload.caption,
+                mediaId: payload.mediaId,
+                width: payload.width,
+                height: payload.height,
+                cfImageId: currentCfImageId,
+            };
+        }
+
+        function mapUploadResponseToHeroImage(
+            response: { url?: string; cfImageId?: string },
+            fileName: string,
+            currentAlt?: string,
+            currentCaption?: string,
+        ) {
+            if (!response.url) return null;
+            return {
+                url: response.url,
+                alt: currentAlt || fileName,
+                caption: currentCaption,
+                cfImageId: response.cfImageId,
+            };
+        }
+
+        it('should prefer picker alt text, then current alt, then media name', () => {
+            const fromPickerAlt = mapPickerPayloadToHeroImage(
+                { url: 'https://img.test/1.jpg', alt: 'Library alt', name: 'fallback-name' },
+                'Current alt',
+            );
+            expect(fromPickerAlt.alt).toBe('Library alt');
+
+            const fromCurrentAlt = mapPickerPayloadToHeroImage(
+                { url: 'https://img.test/2.jpg', name: 'fallback-name' },
+                'Current alt',
+            );
+            expect(fromCurrentAlt.alt).toBe('Current alt');
+
+            const fromName = mapPickerPayloadToHeroImage({ url: 'https://img.test/3.jpg', name: 'fallback-name' });
+            expect(fromName.alt).toBe('fallback-name');
+        });
+
+        it('should map upload response to hero image and preserve caption', () => {
+            const mapped = mapUploadResponseToHeroImage(
+                { url: 'https://img.test/uploaded.jpg', cfImageId: 'cf-123' },
+                'photo.png',
+                '',
+                'Existing caption',
+            );
+
+            expect(mapped).toEqual({
+                url: 'https://img.test/uploaded.jpg',
+                alt: 'photo.png',
+                caption: 'Existing caption',
+                cfImageId: 'cf-123',
+            });
+        });
+
+        it('should return null when upload response has no url', () => {
+            expect(mapUploadResponseToHeroImage({}, 'photo.png')).toBeNull();
+        });
+    });
+
     describe('slug availability check (only when slug changed)', () => {
         it('should run check when slug has changed from initial', () => {
             expect(shouldRunSlugCheck('new-slug', 'old-slug')).toBe(true);
