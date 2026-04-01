@@ -60,6 +60,8 @@ import {
     Textarea,
 } from '@ottabase/ui-shadcn';
 import { useQueryClient } from '@tanstack/react-query';
+import { UnsavedChangesDialog } from '@/components/editor/UnsavedChangesDialog';
+import { useEditorLeaveGuard } from '@/hooks/useEditorLeaveGuard';
 import { Link, useNavigate, useParams } from '@tanstack/react-router';
 import * as Diff from 'diff';
 import {
@@ -540,6 +542,28 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
 
     const saveDisabled = isSaving || (isEditMode && !isDirty);
 
+    // Navigation guard: warn on leave only when there's actual user input to lose.
+    // New post mode: warn if title typed or any editor has content.
+    // Edit mode: warn if isDirty (form or editor diverges from saved data).
+    const shouldWarnOnLeave = useMemo(() => {
+        if (isEditMode) return isDirty;
+        return (
+            title.trim() !== '' ||
+            mainEditor.hasUnsavedChanges ||
+            notesEditor.hasUnsavedChanges ||
+            footnotesEditor.hasUnsavedChanges
+        );
+    }, [
+        isEditMode,
+        isDirty,
+        title,
+        mainEditor.hasUnsavedChanges,
+        notesEditor.hasUnsavedChanges,
+        footnotesEditor.hasUnsavedChanges,
+    ]);
+
+    const { blocker, allowNavigateRef } = useEditorLeaveGuard(shouldWarnOnLeave);
+
     const applyVersionToEditor = async (version: BlogPostVersion) => {
         if (!version) return;
 
@@ -997,7 +1021,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                     );
                 }
 
-                // Go to the new post's editor so user stays on "blog details" for that post
+                // Go to the new post's editor so user stays on "blog details" for that post.
+                // Mark as intentional so the navigation guard doesn't block the redirect.
+                allowNavigateRef.current = true;
                 if (newPostId) {
                     navigate({ to: '/admin/blog/$postId/edit', params: { postId: newPostId } });
                 } else {
@@ -1049,6 +1075,8 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
             try {
                 // Use OttaORM delete hook (same as list page) instead of non-existent /api/admin/blog/:id
                 await deletePost.mutateAsync(postId);
+                // Post is gone — no unsaved changes to warn about.
+                allowNavigateRef.current = true;
                 navigate({ to: '/admin/blog' });
             } catch (error) {
                 console.error('Failed to delete post:', error);
@@ -2116,6 +2144,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+
+            {/* Unsaved changes — navigation blocker dialog */}
+            <UnsavedChangesDialog blocker={blocker} />
 
             {/* General Alert Dialog */}
             <AlertDialog

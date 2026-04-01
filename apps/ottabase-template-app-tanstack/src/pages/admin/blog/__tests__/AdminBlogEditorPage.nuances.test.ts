@@ -232,3 +232,110 @@ describe('AdminBlogEditorPage nuances', () => {
         });
     });
 });
+
+// ---------------------------------------------------------------------------
+// useEditorLeaveGuard — shouldWarnOnLeave logic
+// ---------------------------------------------------------------------------
+
+/**
+ * Mirror of the shouldWarnOnLeave computation used in editor pages.
+ * Edit mode: warn when isDirty. New mode: warn when title typed or any
+ * editor has unsaved changes.
+ */
+function computeShouldWarn({
+    isEditMode,
+    isDirty,
+    title,
+    editorDirty,
+}: {
+    isEditMode: boolean;
+    isDirty: boolean;
+    title: string;
+    editorDirty: boolean;
+}): boolean {
+    if (isEditMode) return isDirty;
+    return title.trim() !== '' || editorDirty;
+}
+
+describe('useEditorLeaveGuard — shouldWarnOnLeave', () => {
+    describe('edit mode', () => {
+        it('warns when form is dirty', () => {
+            expect(computeShouldWarn({ isEditMode: true, isDirty: true, title: '', editorDirty: false })).toBe(true);
+        });
+
+        it('does not warn when clean', () => {
+            expect(computeShouldWarn({ isEditMode: true, isDirty: false, title: '', editorDirty: false })).toBe(false);
+        });
+
+        it('does not warn even if editor has changes once isDirty is false', () => {
+            // isDirty already incorporates editorDirty — editorDirty is redundant in edit mode
+            expect(computeShouldWarn({ isEditMode: true, isDirty: false, title: 'My Title', editorDirty: true })).toBe(
+                false,
+            );
+        });
+    });
+
+    describe('new mode', () => {
+        it('does not warn on a blank form', () => {
+            expect(computeShouldWarn({ isEditMode: false, isDirty: false, title: '', editorDirty: false })).toBe(false);
+        });
+
+        it('warns when title has been typed', () => {
+            expect(computeShouldWarn({ isEditMode: false, isDirty: false, title: 'Draft', editorDirty: false })).toBe(
+                true,
+            );
+        });
+
+        it('does not warn when title is only whitespace', () => {
+            expect(computeShouldWarn({ isEditMode: false, isDirty: false, title: '   ', editorDirty: false })).toBe(
+                false,
+            );
+        });
+
+        it('warns when editor has unsaved changes even though title is empty', () => {
+            expect(computeShouldWarn({ isEditMode: false, isDirty: false, title: '', editorDirty: true })).toBe(true);
+        });
+    });
+
+    describe('allowNavigateRef one-shot bypass', () => {
+        /**
+         * Mirrors the shouldBlockFn logic:
+         * - if allowNavigateRef is true, reset it and return false (allow)
+         * - otherwise return shouldWarn
+         */
+        function shouldBlock(allowRef: { current: boolean }, shouldWarn: boolean): boolean {
+            if (allowRef.current) {
+                allowRef.current = false;
+                return false;
+            }
+            return shouldWarn;
+        }
+
+        it('bypasses the block when allowNavigateRef is true (post-save redirect)', () => {
+            const ref = { current: true };
+            expect(shouldBlock(ref, true)).toBe(false);
+        });
+
+        it('resets allowNavigateRef after the one-shot bypass', () => {
+            const ref = { current: true };
+            shouldBlock(ref, true);
+            expect(ref.current).toBe(false);
+        });
+
+        it('blocks normally after the one-shot is consumed', () => {
+            const ref = { current: true };
+            shouldBlock(ref, true); // consume
+            expect(shouldBlock(ref, true)).toBe(true); // next navigation is blocked again
+        });
+
+        it('blocks when allowNavigateRef is false and shouldWarn is true', () => {
+            const ref = { current: false };
+            expect(shouldBlock(ref, true)).toBe(true);
+        });
+
+        it('does not block when allowNavigateRef is false and shouldWarn is false', () => {
+            const ref = { current: false };
+            expect(shouldBlock(ref, false)).toBe(false);
+        });
+    });
+});

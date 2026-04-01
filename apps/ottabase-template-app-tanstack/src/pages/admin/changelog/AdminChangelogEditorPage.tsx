@@ -4,6 +4,8 @@
 import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
+import { UnsavedChangesDialog } from '@/components/editor/UnsavedChangesDialog';
+import { useEditorLeaveGuard } from '@/hooks/useEditorLeaveGuard';
 import { generateSlug } from '@ottabase/ottablog';
 import {
     AdvancedImageTool,
@@ -181,6 +183,18 @@ function ChangelogEditorForm({
     const updateEntry = changelogHooks.useUpdate();
     const isSaving = createEntry.isPending || updateEntry.isPending;
 
+    // Dirty state: warn when the user has edited anything and hasn't saved yet.
+    // New mode: any title input or editor content counts.
+    // Edit mode: title / summary / status fields or editor content has diverged.
+    const isDirty = isEditMode
+        ? title !== (initialData?.title ?? '') ||
+          summary !== (initialData?.summary ?? '') ||
+          status !== (initialData?.status ?? 'draft') ||
+          editor.hasUnsavedChanges
+        : title.trim() !== '' || editor.hasUnsavedChanges;
+
+    const { blocker, allowNavigateRef } = useEditorLeaveGuard(isDirty);
+
     const doSlugCheck = useCallback(
         (slugToCheck?: string) => {
             const toCheck = (slugToCheck ?? (slug || generateSlug(title))).trim();
@@ -329,6 +343,8 @@ function ChangelogEditorForm({
             } else {
                 await createEntry.mutateAsync(body);
             }
+            // Saved — no changes to warn about on the redirect
+            allowNavigateRef.current = true;
             navigate({ to: '/admin/changelog' });
         } catch (e) {
             setAlertMsg(e instanceof Error ? e.message : 'Save failed');
@@ -347,6 +363,8 @@ function ChangelogEditorForm({
             } else {
                 await createEntry.mutateAsync(body);
             }
+            // Saved — no changes to warn about on the redirect
+            allowNavigateRef.current = true;
             navigate({ to: '/admin/changelog' });
         } catch (e) {
             setAlertMsg(e instanceof Error ? e.message : 'Publish failed');
@@ -573,6 +591,8 @@ function ChangelogEditorForm({
                     </div>
                 </CardContent>
             </Card>
+
+            <UnsavedChangesDialog blocker={blocker} />
         </div>
     );
 }
