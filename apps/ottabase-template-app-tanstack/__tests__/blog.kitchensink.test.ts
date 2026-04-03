@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-    findByMock: vi.fn(),
+    findBySlugMock: vi.fn(),
     createMock: vi.fn(),
     requireAdminAccessMock: vi.fn(),
 }));
@@ -28,7 +28,7 @@ vi.mock('@ottabase/ottablog', () => ({
     PostTagLink: class {},
     StudioManager: class {},
     Post: {
-        findBy: mocks.findByMock,
+        findBySlug: mocks.findBySlugMock,
         create: mocks.createMock,
     },
 }));
@@ -71,7 +71,7 @@ describe('handleBlogKitchensink', () => {
     it('returns exists on unique-race create failure for idempotent behavior', async () => {
         mocks.requireAdminAccessMock.mockResolvedValue({ user: { id: 'admin' } });
 
-        mocks.findByMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+        mocks.findBySlugMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
             get: (key: string) => {
                 if (key === 'id') return 'post-1';
                 if (key === 'slug') return 'kitchensink-ottablog';
@@ -87,5 +87,33 @@ describe('handleBlogKitchensink', () => {
         expect(res.status).toBe(200);
         expect(body.status).toBe('exists');
         expect(body.slug).toBe('kitchensink-ottablog');
+    });
+
+    it('publishes an existing draft kitchensink post so public blog url works', async () => {
+        mocks.requireAdminAccessMock.mockResolvedValue({ user: { id: 'admin' } });
+
+        const saveMock = vi.fn().mockResolvedValue(undefined);
+        const setMock = vi.fn();
+        mocks.findBySlugMock.mockResolvedValueOnce({
+            get: (key: string) => {
+                if (key === 'id') return 'post-1';
+                if (key === 'slug') return 'kitchensink-ottablog';
+                if (key === 'status') return 'draft';
+                if (key === 'publishedAt') return null;
+                return null;
+            },
+            set: setMock,
+            save: saveMock,
+        });
+
+        const res = await handleBlogKitchensink(makeContext());
+        const body = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(body.status).toBe('published');
+        expect(body.slug).toBe('kitchensink-ottablog');
+        expect(setMock).toHaveBeenCalledWith('status', 'published');
+        expect(setMock).toHaveBeenCalledWith('publishedAt', expect.any(String));
+        expect(saveMock).toHaveBeenCalled();
     });
 });

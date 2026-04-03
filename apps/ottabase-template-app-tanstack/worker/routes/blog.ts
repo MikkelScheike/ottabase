@@ -710,8 +710,19 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
     // Idempotent: skip if already exists
-    const existing = await Post.findBy('slug', 'kitchensink-ottablog');
+    const existing = await Post.findBySlug('kitchensink-ottablog');
     if (existing) {
+        // Keep kitchensink publicly viewable: auto-publish if a prior seed left it as draft/scheduled.
+        const existingStatus = existing.get('status') as string | null;
+        if (existingStatus !== 'published') {
+            existing.set('status', 'published');
+            if (!existing.get('publishedAt')) {
+                existing.set('publishedAt', new Date().toISOString());
+            }
+            await existing.save();
+            return jsonResponse({ status: 'published', id: existing.get('id'), slug: existing.get('slug') });
+        }
+
         return jsonResponse({ status: 'exists', id: existing.get('id'), slug: existing.get('slug') });
     }
 
@@ -945,7 +956,8 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
                 'A demo post showcasing every block type available in OttaEditor — use this to test rendering, styling, and export.',
             content: KITCHENSINK_CONTENT,
             contentType: 'blog',
-            status: 'draft',
+            status: 'published',
+            publishedAt: new Date().toISOString(),
             wordCount: 200,
         });
     } catch (error) {
@@ -953,7 +965,7 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
         const message = error instanceof Error ? error.message : String(error);
         const isUniqueViolation = /unique|constraint|duplicate/i.test(message);
         if (isUniqueViolation) {
-            const concurrent = await Post.findBy('slug', 'kitchensink-ottablog');
+            const concurrent = await Post.findBySlug('kitchensink-ottablog');
             if (concurrent) {
                 return jsonResponse({
                     status: 'exists',

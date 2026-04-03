@@ -79,10 +79,11 @@ export function AdminBlogListPage() {
         setKitchensinkState('loading');
         try {
             const res = await fetch('/api/blog/kitchensink', { method: 'POST' });
-            const json = await res.json<{ status: string; slug?: string }>();
+            const json = await res.json<{ status: string; id?: string; slug?: string }>();
             setKitchensinkSlug(json.slug ?? null);
             setKitchensinkState(json.status === 'exists' ? 'exists' : 'created');
         } catch {
+            setKitchensinkSlug(null);
             setKitchensinkState('idle');
         }
     };
@@ -186,7 +187,7 @@ export function AdminBlogListPage() {
                     {(kitchensinkState === 'created' || kitchensinkState === 'exists') && kitchensinkSlug ? (
                         <Badge variant="outline" className="text-xs">
                             {kitchensinkState === 'created' ? '✓ Created' : 'Already exists'}{' '}
-                            <a href={`/admin/blog/${kitchensinkSlug}`} className="ml-1 underline text-primary">
+                            <a href={`/blog/${kitchensinkSlug}`} className="ml-1 underline text-primary">
                                 View
                             </a>
                         </Badge>
