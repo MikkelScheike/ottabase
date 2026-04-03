@@ -68,15 +68,20 @@ describe('handleBlogKitchensink', () => {
         expect(res.status).toBe(401);
     });
 
-    it('returns exists on unique-race create failure for idempotent behavior', async () => {
+    it('upserts on unique-race create failure for idempotent behavior', async () => {
         mocks.requireAdminAccessMock.mockResolvedValue({ user: { id: 'admin' } });
 
+        const saveMock = vi.fn().mockResolvedValue(undefined);
+        const setMock = vi.fn();
         mocks.findBySlugMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
             get: (key: string) => {
                 if (key === 'id') return 'post-1';
                 if (key === 'slug') return 'kitchensink-ottablog';
+                if (key === 'publishedAt') return null;
                 return null;
             },
+            set: setMock,
+            save: saveMock,
         });
 
         mocks.createMock.mockRejectedValueOnce(new Error('UNIQUE constraint failed: posts.slug'));
@@ -85,11 +90,13 @@ describe('handleBlogKitchensink', () => {
         const body = await res.json();
 
         expect(res.status).toBe(200);
-        expect(body.status).toBe('exists');
+        expect(body.status).toBe('upserted');
         expect(body.slug).toBe('kitchensink-ottablog');
+        expect(setMock).toHaveBeenCalledWith('content', expect.any(Object));
+        expect(saveMock).toHaveBeenCalled();
     });
 
-    it('publishes an existing draft kitchensink post so public blog url works', async () => {
+    it('upserts an existing kitchensink post so public blog url always works', async () => {
         mocks.requireAdminAccessMock.mockResolvedValue({ user: { id: 'admin' } });
 
         const saveMock = vi.fn().mockResolvedValue(undefined);
@@ -110,10 +117,48 @@ describe('handleBlogKitchensink', () => {
         const body = await res.json();
 
         expect(res.status).toBe(200);
-        expect(body.status).toBe('published');
+        expect(body.status).toBe('upserted');
         expect(body.slug).toBe('kitchensink-ottablog');
         expect(setMock).toHaveBeenCalledWith('status', 'published');
+        expect(setMock).toHaveBeenCalledWith('content', expect.any(Object));
         expect(setMock).toHaveBeenCalledWith('publishedAt', expect.any(String));
         expect(saveMock).toHaveBeenCalled();
+    });
+
+    it('seeds extended kitchensink blocks for full plugin coverage', async () => {
+        mocks.requireAdminAccessMock.mockResolvedValue({ user: { id: 'admin' } });
+        mocks.findBySlugMock.mockResolvedValueOnce(null);
+        mocks.createMock.mockResolvedValueOnce({
+            get: (key: string) => {
+                if (key === 'id') return 'post-1';
+                if (key === 'slug') return 'kitchensink-ottablog';
+                return null;
+            },
+        });
+
+        const res = await handleBlogKitchensink(makeContext());
+
+        expect(res.status).toBe(200);
+        expect(mocks.createMock).toHaveBeenCalledTimes(1);
+
+        const createPayload = mocks.createMock.mock.calls[0][0] as {
+            content: { blocks: Array<{ type: string }> };
+        };
+        const blockTypes = createPayload.content.blocks.map((block) => block.type);
+
+        expect(blockTypes).toEqual(
+            expect.arrayContaining([
+                'advancedImage',
+                'embed',
+                'raw',
+                'beforeAfter',
+                'map',
+                'mediaEmbed',
+                'imageHotspots',
+                'layout',
+                'mediaGallery',
+                'references',
+            ]),
+        );
     });
 });
