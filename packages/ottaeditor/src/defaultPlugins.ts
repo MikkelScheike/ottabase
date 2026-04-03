@@ -13,9 +13,13 @@ import Table from '@editorjs/table';
 import Underline from '@editorjs/underline';
 import Warning from '@editorjs/warning';
 import AdvancedImageTool from './tools/AdvancedImageTool/AdvancedImageTool';
+import AnnotationTool from './tools/AnnotationTool/AnnotationTool';
+import BeforeAfterTool from './tools/BeforeAfterTool/BeforeAfterTool';
 import CodeTool from './tools/CodeTool/CodeTool';
 import CTATool from './tools/CTATool/CTATool';
 import DisclosureTool from './tools/DisclosureTool/DisclosureTool';
+import FaqTool from './tools/FaqTool/FaqTool';
+import ImageHotspotsTool from './tools/ImageHotspotsTool/ImageHotspotsTool';
 import LayoutTool from './tools/LayoutTool/LayoutTool';
 import MapTool from './tools/MapTool/MapTool';
 import MediaEmbedTool from './tools/MediaEmbedTool/MediaEmbedTool';
@@ -24,6 +28,8 @@ import RawHtmlTool from './tools/RawHtmlTool/RawHtmlTool';
 import ReviewTool from './tools/ReviewTool/ReviewTool';
 import SpoilerTool from './tools/SpoilerTool/SpoilerTool';
 import StepsTool from './tools/StepsTool/StepsTool';
+import ReferencesTool from './tools/ReferencesTool/ReferencesTool';
+import TestimonialTool from './tools/TestimonialTool/TestimonialTool';
 import type { OttaEditorPlugin } from './types';
 
 const Raw = RawHtmlTool;
@@ -47,6 +53,8 @@ export const DEFAULT_PLUGIN_NAMES = {
     MARKER: 'Marker',
     UNDERLINE: 'underline',
     INLINE_CODE: 'inlineCode',
+    ANNOTATION: 'annotation',
+    BEFORE_AFTER: 'beforeAfter',
     SPOILER: 'spoiler',
     CTA: 'cta',
     REVIEW: 'review',
@@ -56,6 +64,10 @@ export const DEFAULT_PLUGIN_NAMES = {
     STEPS: 'steps',
     MEDIA_EMBED: 'mediaEmbed',
     MEDIA_GALLERY: 'mediaGallery',
+    FAQ: 'faq',
+    IMAGE_HOTSPOTS: 'imageHotspots',
+    TESTIMONIAL: 'testimonial',
+    REFERENCES: 'references',
 } as const;
 
 /**
@@ -185,6 +197,16 @@ export const defaultPlugins: OttaEditorPlugin[] = [
         config: {},
     },
     {
+        name: DEFAULT_PLUGIN_NAMES.ANNOTATION,
+        tool: AnnotationTool as any,
+        config: {},
+    },
+    {
+        name: DEFAULT_PLUGIN_NAMES.BEFORE_AFTER,
+        tool: BeforeAfterTool as any,
+        config: {} as any,
+    },
+    {
         name: DEFAULT_PLUGIN_NAMES.SPOILER,
         tool: SpoilerTool as any,
         config: {
@@ -240,6 +262,32 @@ export const defaultPlugins: OttaEditorPlugin[] = [
         tool: MediaGalleryTool as any,
         config: {} as any,
     },
+    {
+        name: DEFAULT_PLUGIN_NAMES.FAQ,
+        tool: FaqTool as any,
+        config: {
+            questionPlaceholder: 'Enter the question...',
+            answerPlaceholder: 'Enter the answer...',
+            defaultStyle: 'accordion',
+        } as any,
+    },
+    {
+        name: DEFAULT_PLUGIN_NAMES.IMAGE_HOTSPOTS,
+        tool: ImageHotspotsTool as any,
+        config: {} as any,
+    },
+    {
+        name: DEFAULT_PLUGIN_NAMES.TESTIMONIAL,
+        tool: TestimonialTool as any,
+        config: {
+            defaultVariant: 'card',
+        } as any,
+    },
+    {
+        name: DEFAULT_PLUGIN_NAMES.REFERENCES,
+        tool: ReferencesTool as any,
+        config: {} as any,
+    },
 ];
 
 /**
@@ -269,13 +317,17 @@ export function getDefaultPlugins(names: DefaultPluginName[] | 'all'): OttaEdito
  * Re-export all default plugins for custom usage
  */
 export {
+    AnnotationTool,
+    BeforeAfterTool,
     CheckList,
     CodeTool,
     CTATool,
     Delimiter,
     DisclosureTool,
     Embed,
+    FaqTool,
     Header,
+    ImageHotspotsTool,
     InlineCode,
     LayoutTool,
     LinkTool,
@@ -286,10 +338,12 @@ export {
     Paragraph,
     Quote,
     Raw,
+    ReferencesTool,
     ReviewTool,
     SpoilerTool,
     StepsTool,
     Table,
+    TestimonialTool,
     Underline,
     Warning,
 };

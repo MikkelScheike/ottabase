@@ -8,6 +8,13 @@ export { OttaEditor } from './OttaEditor';
 export { OttaEditorComponent } from './OttaEditorComponent';
 export { useOttaEditor } from './useOttaEditor';
 
+// Export/import utilities
+export { exportToJSON, exportToMarkdown } from './export';
+
+// Undo/redo manager
+export { UndoRedoManager } from './undo-redo';
+export type { UndoRedoState, UndoRedoManagerOptions } from './undo-redo';
+
 // Export default plugins configuration
 export {
     CTATool,
@@ -17,7 +24,9 @@ export {
     Delimiter,
     DisclosureTool,
     Embed,
+    FaqTool,
     Header,
+    ImageHotspotsTool,
     InlineCode,
     LayoutTool,
     LinkTool,
@@ -27,12 +36,15 @@ export {
     Paragraph,
     Quote,
     Raw,
+    ReferencesTool,
     ReviewTool,
     SpoilerTool,
     StepsTool,
     Table,
+    TestimonialTool,
     Underline,
     Warning,
+    BeforeAfterTool,
     defaultPlugins,
     defaultPluginsMap,
     getDefaultPlugins,
@@ -57,6 +69,19 @@ export type {
 export { default as MediaLibraryTool } from './tools/MediaLibraryTool/MediaLibraryTool';
 export { default as RawHtmlTool } from './tools/RawHtmlTool/RawHtmlTool';
 export type { StepsData, StepsItem, StepsToolConfig } from './tools/StepsTool/StepsTool';
+export type { FaqData, FaqItem, FaqToolConfig } from './tools/FaqTool/FaqTool';
+export type { ReferenceItem, ReferencesData, ReferencesToolConfig } from './tools/ReferencesTool/ReferencesTool';
+export type {
+    TestimonialData,
+    TestimonialToolConfig,
+    TestimonialVariant,
+} from './tools/TestimonialTool/TestimonialTool';
+export type { BeforeAfterData, BeforeAfterToolConfig } from './tools/BeforeAfterTool/BeforeAfterTool';
+export type {
+    HotspotItem,
+    ImageHotspotsData,
+    ImageHotspotsToolConfig,
+} from './tools/ImageHotspotsTool/ImageHotspotsTool';
 
 export type { DefaultPluginName } from './defaultPlugins';
 

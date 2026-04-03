@@ -120,7 +120,7 @@ describe('MediaGalleryTool', () => {
         });
 
         // Simulate the React bridge being mounted so the tool fires the event instead of window.confirm
-        (window as Record<string, unknown>)['__mgConfirmBridgeActive'] = true;
+        (window as unknown as Record<string, unknown>)['__mgConfirmBridgeActive'] = true;
 
         // Auto-confirm: listen for the request event and immediately fire back a confirmed result
         const autoConfirm = (event: Event) => {
@@ -137,7 +137,7 @@ describe('MediaGalleryTool', () => {
         clearBtn.click();
 
         window.removeEventListener('media-gallery-confirm', autoConfirm);
-        delete (window as Record<string, unknown>)['__mgConfirmBridgeActive'];
+        delete (window as unknown as Record<string, unknown>)['__mgConfirmBridgeActive'];
 
         expect(tool.save().items).toHaveLength(0);
         expect(wrapper.querySelector('.cdx-media-gallery__empty')).toBeTruthy();
