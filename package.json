@@ -1,6 +1,33 @@
 {
     "name": "ottabase",
     "version": "1.0.0",
+    "description": "Edge-native SaaS framework monorepo for Cloudflare Workers with ORM, Auth, RBAC, and a host of UI packages.",
+    "keywords": [
+        "ottabase",
+        "saas",
+        "framework",
+        "monorepo",
+        "typescript",
+        "cloudflare",
+        "workers",
+        "edge",
+        "orm",
+        "d1",
+        "kv",
+        "r2",
+        "rbac",
+        "rls",
+        "auth"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/thinkdj/ottabase.git"
+    },
+    "bugs": {
+        "url": "https://github.com/thinkdj/ottabase/issues"
+    },
+    "homepage": "https://github.com/thinkdj/ottabase#readme",
+    "license": "MIT",
     "private": true,
     "workspaces": [
         "apps/*",
@@ -10,6 +37,7 @@
         "dev": "node dev.js",
         "dev:fe": "pnpm --filter @ottabase/ottabase-template-app-tanstack dev",
         "dev:homepage": "pnpm --filter @ottabase/ottabase-template-app-nextjs-homepage dev",
+        "dev:homepage-ob": "pnpm --filter @ottabase/homepage-ob dev",
         "dev:be": "pnpm --filter @ottabase/ottabase-template-app-tanstack dev:worker",
         "dev:kill:ports": "node packages/scripts/bin/kill-ports.cjs",
         "dev:ui": "turbo dev --filter=@ottabase/ottabase-template-app-tanstack --filter=@ottabase/ui-*",
