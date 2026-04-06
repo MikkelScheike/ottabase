@@ -376,6 +376,7 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 ## Docs
 
 - [Architecture](./ARCHITECTURE.md)
+- [Changelog](./CHANGELOG.md)
 - [TanStack App README](./apps/ottabase-template-app-tanstack/README.md)
 - [OttaORM README](./packages/ottaorm/README.md)
 - [Cloudflare Deploy](./CLOUDFLARE_DEPLOY.md)
