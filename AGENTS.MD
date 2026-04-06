@@ -18,6 +18,22 @@ Monorepo using **pnpm workspaces** + **Turborepo**. TanStack Router + Vite app w
 5. **Edge Runtime**: This is a Cloudflare Workers project. Avoid Node.js-only APIs (fs, child_process) in app code.
 6. **Fat Models**: Encapsulate logic in models. E.g., `user.activate()` instead of `authService.activate(user)`.
 
+## Always-On Rules
+
+- **Explicit over magic**: prefer clear, auditable logic and avoid hidden side effects.
+- **Multi-tenant isolation is critical**: never mix organization data across tenants.
+- **RLS context is mandatory**: always provide adequate context (`organizationId`, `userId`, `appId`) and never bypass
+  RLS behavior.
+- **Controller/service anti-pattern**: keep business logic in models, not controllers/services.
+- **Relationship safety**: use dynamic imports inside `BaseModel` relationship methods to avoid circular dependencies.
+- **Cloudflare binding parity**: when bindings change, keep `wrangler.jsonc` and `cloudflare-env.d.ts` in sync.
+- **Error response consistency**: for API failures, use `errorResponse(...)` from `@ottabase/utils/http-errors`.
+- **Docs + tests are mandatory**: update README/docs and tests for every meaningful code change.
+- **No noise docs**: do not create stray summary files (for example, `SUMMARY.MD`).
+- **KISS + DRY by default**: prefer the simplest maintainable implementation and reuse existing repo primitives.
+- **Type-safe only**: use TypeScript; do not invent APIs or rely on implicit behavior.
+- **Ask when uncertain**: if architecture or behavior is unclear, ask rather than guessing.
+
 ## High-Impact Nuances (Agent Checklist)
 
 Use this as the default decision tree when shipping new work.
@@ -86,7 +102,7 @@ export class Todo extends BaseModel {
 
 ## Structure
 
-```
+```text
 ottabase/
 ├── apps/
 │   └── ottabase-template-app-tanstack/  # Primary app (TanStack + Workers)
@@ -97,7 +113,7 @@ ottabase/
 
 - **OS**: Windows 11
 - **Terminal**: Command Prompt (cmd) - avoid PowerShell due to path issues
-- **Deployment (CI/CD)**: would run on Ubuntu.
+- **Deployment (CI/CD)**: would run on Ubuntu
 - **Runtime**: Node.js 24+
 - **Package Manager**: pnpm with workspaces
 - **Build**: Turborepo
@@ -191,6 +207,9 @@ Tables created/updated automatically:
 ```bash
 curl -X POST http://localhost:3004/api/ottaorm/init
 ```
+
+This can also be called from the bootstrap process for new tenants and from Admin > Migrations. It runs
+`getAllSchemas()` to collect tables from core/app/packages, then applies them to D1.
 
 **Capabilities:**
 
@@ -564,7 +583,7 @@ Install recommended extensions in `.vscode/extensions.json` for Prettier format-
 
 ## Agent Workflow Checklist
 
-1. **Review documentation first** - Read this file and `AI_RULES.MD` before making changes.
+1. **Review documentation first** - Read this file before making changes.
 2. **Install dependencies** with `pnpm install` if needed; never use npm or yarn.
 3. **Build packages first** with `pnpm build:pkg` when working with shared code.
 4. **For code changes**, run quality checks:
@@ -593,9 +612,11 @@ Install recommended extensions in `.vscode/extensions.json` for Prettier format-
 ### Maintainers / Contacts
 
 - **Maintainer:** @thinkdj: architecture questions & exceptions.
-- **Escalation:** Open an issue with the `architecture` label or ping the `#dev-ops` channel for urgent infra problems.
+- **Escalation:** Open an issue with the `architecture` label or ping the `#dev-ops` channel.
 
 </INSTRUCTIONS>
+
+---
 
 ## Cursor Cloud specific instructions
 
