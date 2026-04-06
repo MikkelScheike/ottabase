@@ -5,7 +5,7 @@ Durable Objects.
 
 ## Structure
 
-```
+```text
 ottabase/
 ├── apps/
 │   ├── ottabase-template-app-tanstack/       # TanStack Router + Vite + Workers (primary)
@@ -375,6 +375,7 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 
 ## Docs
 
+- [Architecture](./ARCHITECTURE.md)
 - [TanStack App README](./apps/ottabase-template-app-tanstack/README.md)
 - [OttaORM README](./packages/ottaorm/README.md)
 - [Cloudflare Deploy](./CLOUDFLARE_DEPLOY.md)
