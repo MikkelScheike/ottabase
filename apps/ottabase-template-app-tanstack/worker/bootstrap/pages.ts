@@ -219,6 +219,35 @@ export function renderWizardPage(state: PlatformStateResult): string {
       }
       ${!state.bindings.kv ? `<div class="alert alert-warning">KV (OBCF_KV) is recommended for state caching and session management.</div>` : ''}
     </div>
+    <div class="card">
+      <h2>Cloudflare API Variables</h2>
+      <p>These are <em>not</em> Worker bindings - they are environment variables used by the CLI and optional analytics features.</p>
+      <table class="env-table" style="margin-top:0.5rem">
+        <thead>
+          <tr style="font-size:0.6875rem;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-dim)">
+            <td style="padding-bottom:0.5rem">Variable</td>
+            <td style="padding-bottom:0.5rem">Required</td>
+            <td style="padding-bottom:0.5rem">Purpose & Notes</td>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>CLOUDFLARE_ACCOUNT_ID</td>
+            <td><span class="badge badge-warning">Prod</span></td>
+            <td>Needed by <code>wrangler deploy</code>, <code>pnpm cf:setup</code>, and CI/CD. Set as a GitHub Secret (<code>CF_ACCOUNT_ID</code>) for deployments. Not required for local <code>wrangler dev</code> - Wrangler emulates all bindings locally without it.</td>
+          </tr>
+          <tr style="border-bottom:none">
+            <td>CLOUDFLARE_ANALYTICS_API_TOKEN</td>
+            <td><span class="badge badge-muted">Optional</span></td>
+            <td>Enables Cloudflare Analytics Engine queries (traffic stats, custom metrics). The app works fully without it - analytics dashboards will simply show no data until it is set.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="alert alert-warning" style="margin-top:0.75rem;font-size:0.75rem">
+        <strong>Why are the bindings above green without these?</strong><br>
+        Worker bindings (OBCF_D1, OBCF_KV, etc.) come from <code>wrangler.jsonc</code> and are emulated by Wrangler locally - no Cloudflare account credentials are needed. These two variables are only used by the <em>Wrangler CLI</em> and optional API calls, not by the running Worker itself.
+      </div>
+    </div>
     <div class="card" ${!state.bindings.d1 ? 'style="opacity:0.5;pointer-events:none"' : ''}>
       <h2>Initialize Database</h2>
       <p>Creates all schema tables and runs core auth and content migrations (users, accounts, sessions, verification tokens, authenticators, posts, tags), and sets up tracking.</p>
@@ -332,7 +361,8 @@ wrangler secret put MIGRATION_SECRET</pre>
         <div class="alert alert-success" style="margin-bottom:0.75rem">
           <strong>Setup complete!</strong> Your platform is live and ready to go.
         </div>
-        <a href="/" class="btn btn-primary" style="text-decoration:none">Open Application</a>
+        <p style="font-size:0.8125rem;color:var(--text-muted);margin-bottom:0.75rem">Sign in with the owner account you just created to get started.</p>
+        <a href="/login" class="btn btn-primary" style="text-decoration:none">Go to Login</a>
       </div>
     </div>
   </div>
@@ -628,9 +658,9 @@ wrangler secret put MIGRATION_SECRET</pre>
               },
               expires: data.sessionExpires || (Date.now() + 30 * 24 * 60 * 60 * 1000)
             };
-            localStorage.setItem('ottabase.auth-session', JSON.stringify(session));
+            //localStorage.setItem('ottabase.auth-session', JSON.stringify(session)); //Changed:Let user login
             if (data.organizationId) {
-              localStorage.setItem('ottabase.current-org-id', data.organizationId);
+              //localStorage.setItem('ottabase.current-org-id', data.organizationId); //Changed:Let user login
             }
           } catch (e) { /* ignore storage failures */ }
 
