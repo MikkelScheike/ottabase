@@ -113,7 +113,9 @@ export const defaultTheme: Theme = {
             return (
                 <div className={`${props.contentClassName || ''} ${defaultTheme.config?.classes?.content || ''}`}>
                     <Blocks
-                        data={post.content as EditorJSData}
+                        // Ensure version is always present — editorjs-blocks-react-renderer
+                        // calls data.version.includes() unconditionally and will throw if absent.
+                        data={{ version: '2.30.0', ...(post.content as EditorJSData) }}
                         renderers={customRenderers}
                         config={defaultEJSRConfigs}
                     />
@@ -128,7 +130,7 @@ export const defaultTheme: Theme = {
                     <h2 className="text-xl font-semibold mb-4">Footnotes</h2>
                     <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-muted-foreground">
                         <Blocks
-                            data={post.footnotes as EditorJSData}
+                            data={{ version: '2.30.0', ...(post.footnotes as EditorJSData) }}
                             renderers={customRenderers}
                             config={defaultEJSRConfigs}
                         />

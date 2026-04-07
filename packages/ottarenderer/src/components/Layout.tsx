@@ -68,7 +68,10 @@ const Layout: RenderFn<LayoutData> = ({ data, className = '' }) => {
                         >
                             {hasContent ? (
                                 <Blocks
-                                    data={colData?.content as any}
+                                    // editorjs-blocks-react-renderer requires `version` to exist on data.
+                                    // Column content only carries { blocks } — inject a fallback so the
+                                    // renderer doesn't throw "data.version is undefined".
+                                    data={{ version: '2.30.0', ...(colData?.content as any) }}
                                     config={defaultEJSRConfigs}
                                     renderers={{ ...baseRenderers, layout: Layout }}
                                 />
