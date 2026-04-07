@@ -1,6 +1,6 @@
 {
     "name": "@ottabase/cf-realtime",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "A Pusher alternative for real-time pub/sub using Cloudflare Actors and Durable Objects",
     "main": "dist/index.js",
     "module": "dist/index.mjs",

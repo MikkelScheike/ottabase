@@ -1,6 +1,6 @@
-import { Link } from '@tanstack/react-router';
-import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { CodeBlock } from '@ottabase/ui-code-highlight';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
+import { Link } from '@tanstack/react-router';
 
 export function CodeBlockDemoPage() {
     // Example code snippets
@@ -102,7 +102,7 @@ export function Counter() {
   "dependencies": {
     "react": "^18.3.1",
     "@tanstack/react-router": "^1.101.1",
-    "@ottabase/ui-code-highlight": "^0.1.0"
+    "@ottabase/ui-code-highlight": "^1.0.0"
   },
   "scripts": {
     "dev": "vite",

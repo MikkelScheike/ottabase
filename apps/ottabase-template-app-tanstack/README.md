@@ -465,8 +465,8 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 In production apps, you can safely delete:
 
 - `src/pages/demo/` - All demo pages
-- Related routes in `src/router.tsx`
-- Demo API handlers in `cloudflare-worker.ts`
+- Demo routes in `src/router.tsx` (`/demo*`)
+- Demo-only API handlers in `worker/routes/demo.ts`
 
 ## Documentation
 

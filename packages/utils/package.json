@@ -1,6 +1,6 @@
 {
     "name": "@ottabase/utils",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "Set of common utility functions for file operations, string manipulation, currency formatting, email parsing, JSON handling, git operations, browser detection, timezone management, and more.",
     "main": "dist/index.js",
     "module": "dist/index.mjs",

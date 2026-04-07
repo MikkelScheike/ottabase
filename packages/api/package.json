@@ -1,6 +1,6 @@
 {
     "name": "@ottabase/api",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "description": "Type-safe API client with standardized error handling, auth token injection, and configurable request options.",
     "main": "dist/index.js",
     "module": "dist/index.mjs",

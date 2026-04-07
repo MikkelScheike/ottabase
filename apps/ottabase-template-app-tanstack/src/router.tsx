@@ -224,7 +224,7 @@ const demoSplitPaneRoute = new Route({
     getParentRoute: () => demoLayoutRoute,
     path: 'split-pane',
     component: lazyRouteComponent(() =>
-        import('@/pages/demos/split-pane/SplitPaneDemoPage').then((m) => ({
+        import('@/pages/demo/split-pane/SplitPaneDemoPage').then((m) => ({
             default: m.SplitPaneDemoPage,
         })),
     ),

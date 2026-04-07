@@ -49,6 +49,7 @@ import {
     handleVerifyEmail,
     handleVerifyEmailResend,
 } from './auth';
+import { handleAuditLogs } from './audit';
 import {
     handleBlogCategoryBySlug,
     handleBlogKitchensink,
@@ -87,7 +88,7 @@ import {
     handleUploadFile,
 } from './cloudflare-storage';
 import { handleCoreAnalytics } from './core-analytics';
-import { handleAuditLogs, handleDemo, handleDemoError } from './demo';
+import { handleDemo, handleDemoError } from './demo';
 import { handleEmailProviders, handleEmailTest } from './email';
 import { handleOttaormCrud } from './ottaorm-crud';
 import { handleModelsMetadata, handleOttaormInit } from './ottaorm-init';
