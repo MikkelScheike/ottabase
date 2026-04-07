@@ -14,7 +14,7 @@ Thank you for your interest in contributing to Ottabase! This guide will help yo
 
 ```bash
 # 1. Fork and clone the repo
-git clone https://github.com/<your-username>/ottabase.git
+git clone https://github.com/thinkdj/ottabase.git
 cd ottabase
 
 # 2. Install dependencies
@@ -29,7 +29,7 @@ pnpm dev
 
 ### Project Structure
 
-```
+```text
 ottabase/
 ├── apps/           # Application templates
 ├── packages/       # Shared packages (@ottabase/*)

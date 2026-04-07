@@ -1,6 +1,107 @@
-# Cloudflare Deployment - Complete Reference
+# Cloudflare Workers Deployment
 
-Complete reference for the deployment system. See [README.md](README.md) for quick start.
+This is the complete reference for the deployment system: workflow behavior, quick start, secrets, configuration,
+deployment internals, troubleshooting, nuances and extension points.
+
+## Workflows
+
+| Workflow               | Trigger                                               | Purpose                                               |
+| ---------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
+| **deploy.yml**         | Push to `main`; `workflow_dispatch`                   | Build & deploy to production (change-based or forced) |
+| **pr-preview.yml**     | Pull request (open/sync/reopen/close)                 | Build & deploy preview worker; cleanup on PR close    |
+| **build-packages.yml** | Called by deploy + pr-preview                         | Build shared packages and cache for downstream jobs   |
+| **ci.yml**             | Pull request to `main`/`develop`; `workflow_dispatch` | Lint, type-check, test, build (no deploy)             |
+
+**Target:** Cloudflare Workers only (not Pages). Production URLs: `https://<worker>.<subdomain>.workers.dev`. Preview
+URLs use an explicit `--name` override (for example `my-app-pr-1234`) so no `-preview` suffix is appended.
+
+## Quick Start
+
+### Add a deployable app
+
+1. In your app folder (for example `apps/my-app/`), add `cloudflare-config.json`:
+
+```json
+{
+    "deployable": true,
+    "appType": "tanstack"
+}
+```
+
+1. Ensure `package.json` has a `build` script and, if needed, `wrangler.jsonc` exists.
+1. Push to `main` and the production deploy runs when that app or `packages/` changes. Open a PR and preview deploy runs
+   unless skipped.
+
+### Existing apps
+
+Already configured; push to `main` or open PRs as usual.
+
+## Secrets
+
+### Where to add secrets
+
+Settings → Secrets and variables → Actions
+
+### Required for production deploy
+
+| Secret                  | Where to get it                      |
+| ----------------------- | ------------------------------------ |
+| `CLOUDFLARE_API_TOKEN`  | Cloudflare → My Profile → API Tokens |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare → Workers & Pages         |
+| `D1_DATABASE_ID`        | `pnpm cf:setup` output (ottabase-db) |
+| `KV_NAMESPACE_ID`       | `pnpm cf:setup` output (OBCF_KV)     |
+
+### Required for PR preview deploy
+
+| Secret                    | Where to get it                              |
+| ------------------------- | -------------------------------------------- |
+| `D1_PREVIEW_DATABASE_ID`  | `pnpm cf:setup` output (ottabase-db-preview) |
+| `KV_PREVIEW_NAMESPACE_ID` | `pnpm cf:setup` output (OBCF_KV_preview)     |
+
+PR preview uses isolated preview D1/KV/R2 so production data is never touched.
+
+### Optional
+
+| Secret                | Default                                                                | Purpose                                                                              |
+| --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| `APPS_TO_DEPLOY`      | `ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage` | Comma-separated app names or folder names to deploy (production and PR preview)      |
+| `CF_WORKER_SUBDOMAIN` | `apiary`                                                               | Subdomain in `*.workers.dev` (for example `apiary` → `my-worker.apiary.workers.dev`) |
+
+## Production Deploy
+
+- **Triggers:** Push to `main`; or **Run workflow** with optional `FORCE_DEPLOY` (default `true` = deploy all target
+  apps).
+- **Change detection:** Only apps with changes in that app or under `packages/` are deployed unless `FORCE_DEPLOY` is
+  true.
+- **Skip:** If the commit message on `main` contains `#skipdeploy`, it is checked first (`check-skip-deploy` job); then
+  `build-packages` and deploy are skipped, and `prepare-deployment` outputs an empty matrix. See
+  [Skip Deployment](#skip-deployment).
+
+## PR Preview
+
+- **Triggers:** PR opened, synchronized, reopened, closed, or manual **Run workflow**.
+- **Open/sync/reopen:** Builds packages, builds app(s), deploys preview worker(s) named for example `my-app-pr-123`
+  using **env.preview** bindings. Preview URL: `https://<preview-name>.<CF_WORKER_SUBDOMAIN>.workers.dev`.
+- **Closed:** Deletes the preview worker. Preview D1/KV persist and can be shared across PRs.
+- **Opt-in:** Preview deploy runs only when PR title or description contains `#deploy` or `#preview`, or when manually
+  dispatched from Actions. If `pr_number` is provided on manual run, worker naming and cleanup align with that PR.
+
+## Skip Deployment
+
+Use markers so PR preview or production deploy do not run when not needed, such as docs-only changes.
+
+| Marker        | Where                                               | Effect                              |
+| ------------- | --------------------------------------------------- | ----------------------------------- |
+| `#deploy`     | PR title or description                             | Enables PR preview build and deploy |
+| `#preview`    | PR title or description                             | Enables PR preview build and deploy |
+| `#skipdeploy` | Commit message on `main` (for example merge commit) | Skips production deploy             |
+
+**Examples:**
+
+- PR title: `Feature: blog editor #preview` → preview deploy runs.
+- PR title: `Fix: auth callback #deploy` → preview deploy runs.
+- PR title: `Docs: typo fix` → no preview deploy unless manually dispatched.
+- Merge commit message on `main`: `Release patch #skipdeploy` → production deploy is skipped.
 
 ## Configuration Properties
 
@@ -252,7 +353,7 @@ wrangler (e.g. build-time).
 
 ### Missing Secrets
 
-```
+```text
 ❌ ERROR: Missing required GitHub secrets for deployment
 
 The following secrets are required but not configured:
@@ -271,7 +372,7 @@ Required secret locations:
 
 ### Build Failure
 
-```
+```text
 ❌ ERROR: Application build failed
 
 The 'build' command failed for @ottabase/my-app
@@ -280,7 +381,7 @@ Check the build output above for specific error messages.
 
 ### Next.js Build Missing
 
-```
+```text
 ❌ ERROR: Next.js build output not found
 
 Expected directory 'apps/my-app/.next' was not created.
@@ -289,7 +390,7 @@ This indicates the Next.js build did not complete successfully.
 
 ### Worker Build Failure
 
-```
+```text
 ❌ ERROR: Cloudflare Worker build failed
 
 The 'build:worker' command failed.
@@ -302,7 +403,7 @@ Common issues:
 
 ### Missing Worker Output
 
-```
+```text
 ❌ ERROR: Required paths not found after Worker build
 
 The following paths were expected but are missing:
@@ -322,7 +423,7 @@ Current directory contents:
 
 ### Wrangler Config Missing
 
-```
+```text
 ❌ ERROR: Wrangler configuration file not found
 
 Expected file: wrangler.jsonc
@@ -336,7 +437,7 @@ Make sure your app has a wrangler.jsonc file in its root directory.
 
 From `.github/scripts/substitute-wrangler-secrets.py`:
 
-```
+```text
 ❌ ERROR: Secret substitution incomplete
 
   Placeholders detected in env.production but no matching GitHub Secret:
@@ -360,7 +461,7 @@ Worker deployment indicators:
 
 ## File Structure
 
-```
+```text
 ottabase/
 ├── .github/
 │   ├── scripts/
@@ -371,7 +472,6 @@ ottabase/
 │   │   ├── pr-preview.yml       # PR preview deploy + cleanup
 │   │   ├── build-packages.yml   # Shared package build + cache
 │   │   └── ci.yml               # Lint, type-check, test, build (on PR)
-│   ├── README.md                      # Quick start
 │   └── DEPLOYMENT.md                  # This file
 │
 ├── schemas/
