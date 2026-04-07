@@ -16,9 +16,6 @@ jobs:
         name: CI - Build & Test
         runs-on: ubuntu-latest
         timeout-minutes: 15
-        strategy:
-            fail-fast: false
-
         steps:
             - name: Checkout
               uses: actions/checkout@v4
@@ -35,7 +32,10 @@ jobs:
                   cache: "pnpm"
 
             - name: Install dependencies
-              run: pnpm install --frozen-lockfile
+              run: pnpm install --frozen-lockfile --ignore-scripts=false
+
+            - name: Rebuild native binaries for CI
+              run: pnpm rebuild esbuild workerd
 
             # Cache Turborepo build outputs
             - name: Setup Turborepo cache
@@ -74,7 +74,10 @@ jobs:
                   cache: "pnpm"
 
             - name: Install Dependencies
-              run: pnpm install --frozen-lockfile
+              run: pnpm install --frozen-lockfile --ignore-scripts=false
+
+            - name: Rebuild native binaries for CI
+              run: pnpm rebuild esbuild workerd
 
             - name: Validate Cloudflare Configuration
               id: cf-validate
