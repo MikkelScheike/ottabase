@@ -19,20 +19,55 @@ Durable Objects.
 ## Links
 
 - Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md)
-- Demo: coming soon
+- Demo: demo.ottabase.com
 - Community chat: coming soon
 
 ## Comparison
 
-| Capability                          | Ottabase                           | Supabase         | Railway              | Convex                       |
-| ----------------------------------- | ---------------------------------- | ---------------- | -------------------- | ---------------------------- |
-| Primary model                       | Edge-native app framework monorepo | Backend platform | App hosting platform | Backend application platform |
-| Cloudflare Workers-first            | ✅ Yes                             | ❌ No            | ❌ No                | ❌ No                        |
-| Full-stack starter in your repo     | ✅ Yes                             | ❌ No            | ❌ No                | ⚠️ Partial                   |
-| Model-driven CRUD primitives        | ✅ Built in                        | ⚠️ DIY           | ❌ No                | ⚠️ Partial                   |
-| RBAC + multi-tenant SaaS primitives | ✅ Included                        | ⚠️ DIY           | ❌ No                | ⚠️ DIY                       |
-| UI/component packages included      | ✅ Yes                             | ❌ No            | ❌ No                | ❌ No                        |
-| Blog/CMS package included           | ✅ Yes                             | ❌ No            | ❌ No                | ❌ No                        |
+| Capability               | Ottabase         | DIY Stack (Next.js + Supabase + Stripe + etc) |
+| ------------------------ | ---------------- | --------------------------------------------- |
+| Setup complexity         | ✅ Minimal       | ❗ High                                       |
+| Integration effort       | ✅ None          | ❗ High                                       |
+| Time to MVP / App Launch | ⚡ Hours to days | ⏳ Weeks to months                            |
+
+### 🧠 Positioning
+
+| Capability         | Ottabase                                    | Supabase                          | Railway                   | Convex                            |
+| ------------------ | ------------------------------------------- | --------------------------------- | ------------------------- | --------------------------------- |
+| Primary model      | Edge-native full-stack framework (monorepo) | Backend-as-a-service              | App hosting platform      | Realtime backend platform         |
+| Best for           | Solo founders shipping SaaS - super fast    | Backend-heavy apps / Firebase alt | Simple deployments        | Realtime-first apps               |
+| Opinionation level | ✅ Strong (batteries-included)              | ⚠️ Medium                         | ❌ Low                    | ⚠️ Medium                         |
+| Build vs Configure | **Build product directly**                  | Configure backend + build app     | Build everything yourself | Build within platform constraints |
+
+---
+
+### ⚡ Developer Speed
+
+| Capability                          | Ottabase             | Supabase      | Railway             | Convex     |
+| ----------------------------------- | -------------------- | ------------- | ------------------- | ---------- |
+| Time to MVP                         | ⚡ Hours to days     | ⏳ Days–weeks | ⏳ Weeks            | ⏳ Days    |
+| Full-stack starter in your repo     | ✅ Yes               | ❌ No         | ❌ No               | ⚠️ Partial |
+| Model-driven CRUD primitives        | ✅ Built in          | ⚠️ DIY        | ❌ No               | ⚠️ Partial |
+| RBAC + multi-tenant SaaS primitives | ✅ Included          | ⚠️ DIY        | ❌ No               | ⚠️ DIY     |
+| UI/component packages included      | ✅ Yes               | ❌ No         | ❌ No               | ❌ No      |
+| Blog/CMS package included           | ✅ Yes               | ❌ No         | ❌ No               | ❌ No      |
+| Type safety (TS-first)              | ✅ Deeply integrated | ⚠️ Partial    | ⚠️ Depends on stack | ✅ Strong  |
+| Local dev experience                | ✅ Unified           | ⚠️ Mixed      | ⚠️ Basic            | ✅ Good    |
+
+---
+
+### 🌍 Infrastructure & Scale
+
+| Capability             | Ottabase                             | Supabase                   | Railway         | Convex                      |
+| ---------------------- | ------------------------------------ | -------------------------- | --------------- | --------------------------- |
+| Edge-native (global)   | ✅ Cloudflare Workers-first          | ❌ No                      | ❌ No           | ❌ No                       |
+| AI Gateway (global)    | ✅ Cloudflare Workers-first          | ❌ No                      | ❌ No           | ❌ No                       |
+| Global latency         | ✅ Low (edge execution)              | ⚠️ Region-based            | ⚠️ Region-based | ⚠️ Region-based             |
+| Cold starts            | ✅ Minimal                           | ⚠️ Possible                | ⚠️ Possible     | ⚠️ Possible                 |
+| Built-in CDN / caching | ✅ Native (Cloudflare)               | ❌ No                      | ❌ No           | ❌ No                       |
+| Queues / cron support  | ✅ Native (CF bindings)              | ⚠️ Limited / external      | ⚠️ External     | ⚠️ Limited                  |
+| Cost predictability    | ✅ High                              | ⚠️ Can scale unpredictably | ⚠️ Infra-based  | ⚠️ Usage-based              |
+| Vendor lock-in         | ⚠️ High (Framework + infra coupling) | ⚠️ Medium (infra coupling) | ⚠️ Low          | ❗ High (proprietary model) |
 
 ## Built With Ottabase
 
