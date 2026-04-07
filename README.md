@@ -1,7 +1,43 @@
 # Ottabase Monorepo
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node-%3E%3D24-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![pnpm](https://img.shields.io/badge/pnpm-10.27.0-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
+[![CI - Build & Test](https://github.com/thinkdj/ottabase/actions/workflows/ci.yml/badge.svg)](https://github.com/thinkdj/ottabase/actions/workflows/ci.yml)
+
 Modern full-stack monorepo with pnpm workspaces and Turborepo. Deploy to Cloudflare Workers with D1, KV, R2, Queues, and
 Durable Objects.
+
+## Why Ottabase?
+
+- Cloudflare-first by design: Workers, D1, KV, R2, Queues, and Durable Objects are first-class citizens.
+- Batteries included for SaaS work: auth, RBAC, OttaORM, forms, docs, realtime, queues, and blog/CMS live in one repo.
+- Fat-model architecture keeps domain logic close to data instead of scattering it across controllers and services.
+- Monorepo ergonomics let you ship integrated changes across apps and packages without version skew.
+
+## Links
+
+- Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md)
+- Demo: coming soon
+- Community chat: coming soon
+
+## Comparison
+
+| Capability                          | Ottabase                           | Supabase         | Railway              | Convex                       |
+| ----------------------------------- | ---------------------------------- | ---------------- | -------------------- | ---------------------------- |
+| Primary model                       | Edge-native app framework monorepo | Backend platform | App hosting platform | Backend application platform |
+| Cloudflare Workers-first            | ✅ Yes                             | ❌ No            | ❌ No                | ❌ No                        |
+| Full-stack starter in your repo     | ✅ Yes                             | ❌ No            | ❌ No                | ⚠️ Partial                   |
+| Model-driven CRUD primitives        | ✅ Built in                        | ⚠️ DIY           | ❌ No                | ⚠️ Partial                   |
+| RBAC + multi-tenant SaaS primitives | ✅ Included                        | ⚠️ DIY           | ❌ No                | ⚠️ DIY                       |
+| UI/component packages included      | ✅ Yes                             | ❌ No            | ❌ No                | ❌ No                        |
+| Blog/CMS package included           | ✅ Yes                             | ❌ No            | ❌ No                | ❌ No                        |
+
+## Built With Ottabase
+
+- Launch showcase coming soon.
+- Early adopters can be featured here after the public launch.
 
 ## Structure
 
@@ -203,6 +239,15 @@ createTodo.mutate({ title: 'New Todo' });
 | `@ottabase/cron`      | Cron handlers — static code-defined and DB scheduler (Laravel-style)   |
 | `@ottabase/scripts`   | CLI tools: `cf:login`, `cf:setup`, `cf:validate`, `clean:*`, `db:*`    |
 
+### Brand, Layout & Content
+
+| Package                        | Purpose                                                              |
+| ------------------------------ | -------------------------------------------------------------------- |
+| `@ottabase/brand-engine`       | Design tokens, preset expansion, CSS injection, email branding       |
+| `@ottabase/brand-engine-react` | `BrandProvider`, `LayoutResolver`, `useBrand()` React bindings       |
+| `@ottabase/ottalayout`         | Layout types, 10 presets, path resolver, React slots, LayoutMeta     |
+| `@ottabase/ottablog`           | Blog/CMS models (Post, Category, Tag, Series, Version) + Blog Studio |
+
 ### UI Components
 
 | Package                       | Purpose                                                  |
@@ -221,15 +266,6 @@ createTodo.mutate({ title: 'New Todo' });
 | `@ottabase/spotlight`         | Spotlight/command palette component                      |
 | `@ottabase/docs`              | Markdown doc viewer with layout themes                   |
 | `@ottabase/forms`             | Auto-generated CRUD forms from OttaORM models            |
-
-### Brand, Layout & Content
-
-| Package                        | Purpose                                                              |
-| ------------------------------ | -------------------------------------------------------------------- |
-| `@ottabase/brand-engine`       | Design tokens, preset expansion, CSS injection, email branding       |
-| `@ottabase/brand-engine-react` | `BrandProvider`, `LayoutResolver`, `useBrand()` React bindings       |
-| `@ottabase/ottalayout`         | Layout types, 10 presets, path resolver, React slots, LayoutMeta     |
-| `@ottabase/ottablog`           | Blog/CMS models (Post, Category, Tag, Series, Version) + Blog Studio |
 
 ### Features & Realtime
 
@@ -294,9 +330,9 @@ All models include a nullable `appId` column:
 **Full-stack SPA** (TanStack Router, OttaORM, Auth, RBAC, all CF bindings):
 
 ```bash
-# Unix/macOS: cp -r apps/ottabase-template-app-tanstack apps/my-app
-# Windows:    xcopy /E /I apps\ottabase-template-app-tanstack apps\my-app
-cd apps/my-app
+# Unix/macOS: cp -r apps/ottabase-template-app-tanstack apps/my-new-app
+# Windows:    xcopy /E /I apps\ottabase-template-app-tanstack apps\my-new-app
+cd apps/my-new-app
 # Update package.json name
 # Delete src/pages/demo/  (optional — remove demo pages)
 ```
@@ -304,9 +340,9 @@ cd apps/my-app
 **Marketing homepage** (Next.js, OpenNext, Brand Engine):
 
 ```bash
-# Unix/macOS: cp -r apps/ottabase-template-app-nextjs-homepage apps/my-homepage
-# Windows:    xcopy /E /I apps\ottabase-template-app-nextjs-homepage apps\my-homepage
-cd apps/my-homepage
+# Unix/macOS: cp -r apps/ottabase-template-app-nextjs-homepage apps/my-new-homepage
+# Windows:    xcopy /E /I apps\ottabase-template-app-nextjs-homepage apps\my-new-homepage
+cd apps/my-new-homepage
 # Update package.json name
 # Edit config/brand.config.ts to customize theme
 ```
@@ -377,7 +413,9 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 
 - [Architecture](./ARCHITECTURE.md)
 - [Changelog](./CHANGELOG.md)
-- [TanStack App README](./apps/ottabase-template-app-tanstack/README.md)
+- [Contributing Guide](./CONTRIBUTING.md)
+- [Security Policy](./SECURITY.md)
+- [Template App README](./apps/ottabase-template-app-tanstack/README.md)
 - [OttaORM README](./packages/ottaorm/README.md)
 - [Cloudflare Deploy](./CLOUDFLARE_DEPLOY.md)
 - [Cloudflare Config](./CLOUDFLARE_CONFIGURATION_GUIDE.md)
@@ -386,3 +424,5 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 ---
 
 [![Built on Cloudflare](https://workers.cloudflare.com/built-with-cloudflare.svg)](https://cloudflare.com)
+
+~ by [@thinkdj](https://twitter.com/@thinkdj/). Licensed under [MIT](./LICENSE).

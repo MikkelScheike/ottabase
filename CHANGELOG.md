@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ### Added (Planned)
 
+- YAML issue forms for bug reports, feature requests, and support questions.
+- GitHub community health files for CODEOWNERS, funding, Dependabot, and discussion templates.
 - Placeholder for post-launch features.
 
 ### Changed (Planned)
