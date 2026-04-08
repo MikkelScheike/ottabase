@@ -3,12 +3,18 @@ import { Button, Input } from '@ottabase/ui-shadcn';
 import { cn } from '@ottabase/ui-shadcn/lib/utils';
 import { Link, Outlet, useLocation } from '@tanstack/react-router';
 import { Layout, Search, X } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DEMO_ITEMS } from './demoItems';
 
 export function DemoLayout() {
     const location = useLocation();
     const [search, setSearch] = useState('');
+    const contentRef = useRef<HTMLElement | null>(null);
+
+    useEffect(() => {
+        // Keep demo navigation predictable: every /demo/* page starts at top.
+        contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+    }, [location.pathname]);
 
     const filteredItems = useMemo(() => {
         const q = search.trim().toLowerCase();
@@ -93,7 +99,7 @@ export function DemoLayout() {
             </aside>
 
             {/* Content */}
-            <main className="flex-1 overflow-auto bg-background/50">
+            <main ref={contentRef} className="flex-1 overflow-auto bg-background/50">
                 <div className="container mx-auto px-6 py-12 max-w-7xl">
                     <div className="mb-6">
                         <Breadcrumbs />

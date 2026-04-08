@@ -1,4 +1,4 @@
-# Ottabase Template App (TanStack)
+# Ottabase Template App
 
 TanStack Router + Query template with automated OttaORM migrations and Cloudflare Workers deployment.
 
@@ -333,6 +333,13 @@ apps/ottabase-template-app-tanstack/
 - `/demo/shadcn` - shadcn/ui components demo
 - `/demo/ottaeditor` - Rich text editor demo
 - `/demo/ottaorm` - OttaORM (User/Post CRUD) demo
+- `/demo/spotlight` - Command palette and keyboard shortcuts demo
+- `/demo/menus` - OttaMenu renderer variants demo
+- `/demo/medialibrary` - Media viewer and lightbox demo
+- `/demo/analytics` - Analytics track/query demo
+- `/demo/auth` - Auth session and storage helper demo
+- `/demo/brand-engine` - Brand runtime route resolution demo
+- `/demo/layout` - OttaLayout presets and resolver demo
 - `/demo/timezone` - Timezone utilities demo
 - `/demo/cloudflare` - Cloudflare services index
 - `/demo/cloudflare/d1` - D1 SQLite database demo

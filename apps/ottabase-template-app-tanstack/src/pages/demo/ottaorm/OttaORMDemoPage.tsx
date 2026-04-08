@@ -1,3 +1,4 @@
+import { useSession } from '@/lib/auth';
 import { createModelHooks, useApiMutation } from '@ottabase/ottaorm/client';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
@@ -34,15 +35,25 @@ const postHooks = createModelHooks<Post>({ entityName: 'posts' });
 // ============================================================
 
 export function OttaORMDemoPage() {
+    const { isAuthenticated, isLoading: authLoading } = useSession();
     const [newUserName, setNewUserName] = useState('');
     const [newUserEmail, setNewUserEmail] = useState('');
     const [newPostTitle, setNewPostTitle] = useState('');
     const [selectedUserId, setSelectedUserId] = useState('');
+    const canUseCrud = isAuthenticated && !authLoading;
 
     // TanStack Query hooks - automatic caching, loading states, and refetching
-    const { data: users = [], isLoading: usersLoading, error: usersError } = userHooks.useList();
+    const {
+        data: users = [],
+        isLoading: usersLoading,
+        error: usersError,
+    } = userHooks.useList(undefined, { enabled: canUseCrud });
 
-    const { data: posts = [], isLoading: postsLoading, error: postsError } = postHooks.useList();
+    const {
+        data: posts = [],
+        isLoading: postsLoading,
+        error: postsError,
+    } = postHooks.useList(undefined, { enabled: canUseCrud });
 
     // Database initialization mutation
     const initDb = useApiMutation<{ success: boolean }>({
@@ -67,6 +78,7 @@ export function OttaORMDemoPage() {
 
     const handleAddUser = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canUseCrud) return;
         if (!newUserName.trim() || !newUserEmail.trim()) return;
 
         await createUser.mutateAsync({
@@ -79,6 +91,7 @@ export function OttaORMDemoPage() {
 
     const handleAddPost = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canUseCrud) return;
         if (!newPostTitle.trim() || !selectedUserId) return;
 
         await createPost.mutateAsync({
@@ -109,7 +122,15 @@ export function OttaORMDemoPage() {
                 </div>
             ) : null}
 
-            {!dbReady && !error ? (
+            {!canUseCrud ? (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                        Sign in to enable OttaORM CRUD requests in this demo.
+                    </p>
+                </div>
+            ) : null}
+
+            {canUseCrud && !dbReady && !error ? (
                 <div className="rounded-lg border bg-muted/50 p-4">
                     <p className="mb-3 text-sm text-muted-foreground">
                         Database not initialized. Click below to set up tables.

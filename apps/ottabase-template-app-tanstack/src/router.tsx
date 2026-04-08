@@ -480,6 +480,76 @@ const demoOttaDateRoute = new Route({
     ),
 });
 
+const demoSpotlightRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'spotlight',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/spotlight/SpotlightDemoPage').then((m) => ({
+            default: m.SpotlightDemoPage,
+        })),
+    ),
+});
+
+const demoMenusRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'menus',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/menus/MenusDemoPage').then((m) => ({
+            default: m.MenusDemoPage,
+        })),
+    ),
+});
+
+const demoMediaLibraryRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'medialibrary',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/medialibrary/MediaLibraryDemoPage').then((m) => ({
+            default: m.MediaLibraryDemoPage,
+        })),
+    ),
+});
+
+const demoAnalyticsRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'analytics',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/analytics/AnalyticsDemoPage').then((m) => ({
+            default: m.AnalyticsDemoPage,
+        })),
+    ),
+});
+
+const demoAuthRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'auth',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/auth/AuthDemoPage').then((m) => ({
+            default: m.AuthDemoPage,
+        })),
+    ),
+});
+
+const demoBrandEngineRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'brand-engine',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/brand-engine/BrandEngineDemoPage').then((m) => ({
+            default: m.BrandEngineDemoPage,
+        })),
+    ),
+});
+
+const demoLayoutSystemRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'layout',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/layout/LayoutDemoPage').then((m) => ({
+            default: m.LayoutDemoPage,
+        })),
+    ),
+});
+
 const commentsDemoRoute = new Route({
     getParentRoute: () => demoLayoutRoute,
     path: 'comments',
@@ -1117,6 +1187,13 @@ demoLayoutRoute.addChildren([
     demoCodeBlockRoute,
     demoNotificationsRoute,
     demoOttaDateRoute,
+    demoSpotlightRoute,
+    demoMenusRoute,
+    demoMediaLibraryRoute,
+    demoAnalyticsRoute,
+    demoAuthRoute,
+    demoBrandEngineRoute,
+    demoLayoutSystemRoute,
     commentsDemoRoute,
 ]);
 

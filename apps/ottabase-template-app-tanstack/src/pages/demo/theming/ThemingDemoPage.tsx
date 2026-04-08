@@ -15,11 +15,32 @@ import {
     TabsTrigger,
 } from '@ottabase/ui-shadcn';
 import { useTheme as useNextTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
 export function ThemingDemoPage() {
-    const { theme, config } = useTheme();
+    const { theme, config, resolved } = useTheme();
     const { setTheme: setMode, theme: mode, resolvedTheme } = useNextTheme();
     const activeMode = resolvedTheme || mode || 'light';
+    const [fontVars, setFontVars] = useState({
+        heading: '—',
+        body: '—',
+        handwriting: '—',
+    });
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const styles = window.getComputedStyle(document.documentElement);
+        setFontVars({
+            heading: styles.getPropertyValue('--font-heading').trim() || '—',
+            body: styles.getPropertyValue('--font-body').trim() || '—',
+            handwriting: styles.getPropertyValue('--font-handwriting').trim() || '—',
+        });
+    }, [
+        activeMode,
+        resolved?.typography?.heading?.fontFamily,
+        resolved?.typography?.body?.fontFamily,
+        resolved?.typography?.handwriting?.fontFamily,
+    ]);
 
     return (
         <div className="space-y-theme-section animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -74,19 +95,25 @@ export function ThemingDemoPage() {
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground w-16">Heading:</span>
                                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
-                                    {config?.typography?.heading?.fontFamily ?? '—'}
+                                    {resolved?.typography?.heading?.fontFamily ?? '—'}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground w-16">Body:</span>
                                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
-                                    {config?.typography?.body?.fontFamily ?? '—'}
+                                    {resolved?.typography?.body?.fontFamily ?? '—'}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground w-16">Cursive:</span>
                                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
-                                    {config?.typography?.handwriting?.fontFamily ?? '—'}
+                                    {resolved?.typography?.handwriting?.fontFamily ?? '—'}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <span className="text-muted-foreground w-16">Vars:</span>
+                                <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
+                                    H:{fontVars.heading} / B:{fontVars.body} / C:{fontVars.handwriting}
                                 </span>
                             </div>
                         </div>
@@ -94,13 +121,14 @@ export function ThemingDemoPage() {
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground w-16">Radius:</span>
                                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
-                                    {config?.radius ?? '—'}
+                                    {resolved?.radius ?? '—'}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <span className="text-muted-foreground w-16">Spacing:</span>
                                 <span className="font-mono text-xs bg-muted px-1 py-0.5 rounded">
-                                    {config?.spacing?.section || 'N/A'} (Sec) / {config?.spacing?.card || 'N/A'} (Card)
+                                    {resolved?.spacing?.section || 'N/A'} (Sec) / {resolved?.spacing?.card || 'N/A'}{' '}
+                                    (Card)
                                 </span>
                             </div>
                         </div>
@@ -181,20 +209,18 @@ export function ThemingDemoPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                {Object.entries((config?.colors ?? {})[activeMode as 'light' | 'dark'] ?? {}).map(
-                                    ([key, value]) => (
-                                        <div key={key} className="space-y-1.5">
-                                            <div
-                                                className="h-12 w-full rounded border ring-offset-background transition-shadow hover:ring-2 hover:ring-ring hover:ring-offset-2"
-                                                style={{ backgroundColor: `hsl(${value})` }}
-                                            />
-                                            <div className="space-y-0.5">
-                                                <p className="text-sm font-medium leading-none">{key}</p>
-                                                <p className="text-xs text-muted-foreground">{value as string}</p>
-                                            </div>
+                                {Object.entries(resolved?.colors ?? {}).map(([key, value]) => (
+                                    <div key={key} className="space-y-1.5">
+                                        <div
+                                            className="h-12 w-full rounded border ring-offset-background transition-shadow hover:ring-2 hover:ring-ring hover:ring-offset-2"
+                                            style={{ backgroundColor: `hsl(${value})` }}
+                                        />
+                                        <div className="space-y-0.5">
+                                            <p className="text-sm font-medium leading-none">{key}</p>
+                                            <p className="text-xs text-muted-foreground">{value as string}</p>
                                         </div>
-                                    ),
-                                )}
+                                    </div>
+                                ))}
                             </div>
                         </CardContent>
                     </Card>

@@ -5,6 +5,7 @@
  * Lets users send prompts, pick providers/models, and see responses.
  */
 import { api, isApiError } from '@/lib/api';
+import { useSession } from '@/lib/auth';
 import {
     Badge,
     Button,
@@ -76,6 +77,7 @@ const PROVIDER_MODELS: Record<string, Array<{ value: string; label: string }>> =
 // ── Component ───────────────────────────────────────────────────────────────
 
 export function CloudflareAIDemoPage() {
+    const { isAuthenticated, isLoading: authLoading } = useSession();
     const [status, setStatus] = useState<AIStatus | null>(null);
     const [providers, setProviders] = useState<ProviderInfo[]>([]);
     const [loading, setLoading] = useState(false);
@@ -126,6 +128,10 @@ export function CloudflareAIDemoPage() {
     };
 
     const sendChat = useCallback(async () => {
+        if (!isAuthenticated || authLoading) {
+            setError('Please log in to send AI chat messages.');
+            return;
+        }
         if (!prompt.trim()) return;
 
         setChatLoading(true);
@@ -179,7 +185,7 @@ export function CloudflareAIDemoPage() {
         } finally {
             setChatLoading(false);
         }
-    }, [mode, prompt, systemPrompt, selectedProvider, selectedModel, fallbackChain]);
+    }, [mode, prompt, systemPrompt, selectedProvider, selectedModel, fallbackChain, isAuthenticated, authLoading]);
 
     const currentModels = PROVIDER_MODELS[selectedProvider] || [];
 
@@ -230,6 +236,14 @@ export function CloudflareAIDemoPage() {
             {error ? (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4">
                     <p className="text-sm text-destructive">{error}</p>
+                </div>
+            ) : null}
+
+            {!authLoading && !isAuthenticated ? (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4">
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                        AI sending is disabled for guest users. Please sign in to send prompts.
+                    </p>
                 </div>
             ) : null}
 
@@ -478,16 +492,21 @@ export function CloudflareAIDemoPage() {
                             placeholder="Ask anything..."
                             rows={3}
                             onKeyDown={(e) => {
-                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && isAuthenticated && !authLoading) {
                                     void sendChat();
                                 }
                             }}
                         />
                     </div>
-                    <Button onClick={() => void sendChat()} disabled={chatLoading || !prompt.trim()}>
+                    <Button
+                        onClick={() => void sendChat()}
+                        disabled={chatLoading || !prompt.trim() || !isAuthenticated || authLoading}
+                    >
                         {chatLoading ? 'Sending...' : 'Send'}
                     </Button>
-                    <span className="ml-2 text-xs text-muted-foreground">Ctrl+Enter to send</span>
+                    <span className="ml-2 text-xs text-muted-foreground">
+                        {isAuthenticated ? 'Ctrl+Enter to send' : 'Sign in required to send'}
+                    </span>
                 </CardContent>
             </Card>
 

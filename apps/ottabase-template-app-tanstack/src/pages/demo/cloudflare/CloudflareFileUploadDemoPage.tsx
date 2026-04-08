@@ -2,12 +2,23 @@ import { FileUploader } from '@ottabase/ottaupload/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 export function CloudflareFileUploadDemoPage() {
     const [uploadMode, setUploadMode] = useState<'dropzone' | 'button'>('dropzone');
 
     const handleUpload = async (files: File[]) => {
         console.log('Files to upload:', files);
+    };
+
+    // FileUploader uses XHR (not the global api client), so errors don't go through
+    // the global onError/onUnauthorized handlers. Wire onUploadError to toast here.
+    const handleUploadError = (error: Error) => {
+        const message = error.message || 'Upload failed';
+        const is401 = message.includes('401');
+        toast.error(is401 ? 'Unauthorized' : 'Upload failed', {
+            description: is401 ? 'You must be signed in to upload files.' : message,
+        });
     };
 
     return (
@@ -94,6 +105,7 @@ export function CloudflareFileUploadDemoPage() {
                         maxFileSize={10 * 1024 * 1024} // 10MB
                         autoUpload={true}
                         uploadEndpoint="/api/upload"
+                        onUploadError={handleUploadError}
                     />
                 </CardContent>
             </Card>
@@ -111,6 +123,7 @@ export function CloudflareFileUploadDemoPage() {
                         maxFileSize={10 * 1024 * 1024} // 10MB
                         autoUpload={false}
                         uploadEndpoint="/api/upload"
+                        onUploadError={handleUploadError}
                     />
                 </CardContent>
             </Card>
@@ -129,6 +142,7 @@ export function CloudflareFileUploadDemoPage() {
                         acceptedFileTypes={['image/*']}
                         autoUpload={true}
                         uploadEndpoint="/api/upload"
+                        onUploadError={handleUploadError}
                     />
                 </CardContent>
             </Card>

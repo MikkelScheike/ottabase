@@ -78,7 +78,8 @@ export function MantineDemoPage() {
                         }}
                     >
                         <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 14 }}>
-                            ⚠ Proof of Concept: Mantine Wrapper Required (MantineLayout)
+                            ⚠ Proof of Concept for seamless third-party UI library integration: Mantine Wrapper Required
+                            (MantineLayout)
                         </p>
                         <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>
                             This page is a <strong>proof of concept</strong> for <code>@ottabase/ui-mantine</code>.
