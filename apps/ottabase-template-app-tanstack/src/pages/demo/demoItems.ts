@@ -49,12 +49,11 @@ export interface DemoItem {
 
 export const DEMO_ITEMS: DemoItem[] = [
     {
-        to: '/demo/state',
-        icon: Settings,
-        label: 'State Management',
-        title: 'State Management',
-        description:
-            'Global state with Jotai atoms: theme, user, sidebar, scale, zoom. Integrates with next-themes for light/dark mode.',
+        to: '/demo/theming',
+        icon: Paintbrush,
+        label: 'Brand Engine (Theming)',
+        title: 'Theming Configurator',
+        description: 'Theme presets and light/dark mode. Admin-configured Brand Engine themes with live preview.',
         buttonVariant: 'outline',
     },
     {
@@ -98,6 +97,15 @@ export const DEMO_ITEMS: DemoItem[] = [
         title: 'Code Highlighting',
         description:
             'GitHub-style syntax highlighting with highlight.js. Supports 190+ languages, copy to clipboard, line numbers, and light/dark themes.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/state',
+        icon: Settings,
+        label: 'Global State Management',
+        title: 'Global State Management',
+        description:
+            'Global state with Jotai atoms: theme, user, sidebar, scale, zoom. Integrates with next-themes for light/dark mode.',
         buttonVariant: 'outline',
     },
     {
@@ -306,14 +314,6 @@ export const DEMO_ITEMS: DemoItem[] = [
         label: 'shadcn/ui',
         title: 'shadcn/ui Demo',
         description: 'Explore shadcn/ui primitives with Tailwind utilities and shared theme providers',
-        buttonVariant: 'outline',
-    },
-    {
-        to: '/demo/theming',
-        icon: Paintbrush,
-        label: 'Theming',
-        title: 'Theming Configurator',
-        description: 'Theme presets and light/dark mode. Admin-configured Brand Engine themes with live preview.',
         buttonVariant: 'outline',
     },
 ];
