@@ -36,6 +36,9 @@ jobs:
             - name: Install dependencies
               run: pnpm install --frozen-lockfile
 
+            - name: Verify toolchain binaries
+              run: pnpm exec tsc --version && pnpm exec tsup --version && pnpm exec turbo --version
+
             # Cache Turborepo build outputs
             - name: Setup Turborepo cache
               uses: actions/cache@v4

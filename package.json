@@ -109,7 +109,7 @@
         "tailwindcss": "catalog:",
         "tailwindcss-animate": "catalog:",
         "tsup": "catalog:",
-        "turbo": "^2.8.0",
+        "turbo": "^2.9.5",
         "vitest": "catalog:",
         "webpack": "^5.104.1"
     },
