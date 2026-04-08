@@ -1,5 +1,5 @@
 import { useApiQuery } from '@ottabase/ottaorm/client';
-import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, Label } from '@ottabase/ui-shadcn';
+import { Button, Card, CardContent, CardHeader, CardTitle, Checkbox, Input, Label } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,6 +42,7 @@ export function MigrationStatusPage() {
         Core: true,
         Unknown: true,
     });
+    const [secretInput, setSecretInput] = useState('');
 
     // Call /api/ottaorm/init via fetch so we can handle 401 (MIGRATION_SECRET) locally
     // without triggering the global API client's "session expired" redirect.
@@ -90,6 +91,9 @@ export function MigrationStatusPage() {
     useEffect(() => {
         const searchParams = new URLSearchParams(window.location.search);
         const secret = searchParams.get('secret');
+        if (secret) {
+            setSecretInput(secret);
+        }
         runInit(secret ?? undefined);
     }, [runInit]);
 
@@ -173,6 +177,17 @@ export function MigrationStatusPage() {
                 <p className="text-sm text-muted-foreground mt-1">
                     This ensures all schemas (core, app, and packages) are migrated properly.
                 </p>
+                <div className="mt-4 flex max-w-xl items-center gap-2">
+                    <Input
+                        type="password"
+                        placeholder="Migration Secret (required for production)"
+                        value={secretInput}
+                        onChange={(e) => setSecretInput(e.target.value)}
+                        spellCheck={false}
+                        autoComplete="off"
+                    />
+                    <Button onClick={() => runInit(secretInput || undefined)}>Run Migration</Button>
+                </div>
             </div>
 
             {initError ? (
@@ -446,8 +461,8 @@ export function MigrationStatusPage() {
                         <Button
                             onClick={() => {
                                 const searchParams = new URLSearchParams(window.location.search);
-                                const secret = searchParams.get('secret');
-                                runInit(secret ?? undefined);
+                                const secret = secretInput || searchParams.get('secret') || undefined;
+                                runInit(secret);
                             }}
                         >
                             Run Again

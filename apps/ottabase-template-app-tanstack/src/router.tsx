@@ -67,17 +67,26 @@ function HomeRouteComponent() {
     };
 
     return (
-        <div className="flex flex-col gap-theme-section">
+        <div className="flex flex-col gap-theme-section max-w-3xl">
             <h1 className="text-4xl font-bold">{APP_META.appName}</h1>
-            <p className="text-muted-foreground">{APP_META.description}</p>
 
-            <p className="text-sm text-muted-foreground">
-                Built with <strong>Vite</strong>, <strong>TanStack Router</strong>, and
-                <strong> TanStack Query</strong>. Deploys to <strong>Cloudflare Workers</strong> (assets served by the
-                Worker).
-            </p>
+            <div className="space-y-4 text-muted-foreground text-sm leading-relaxed">
+                <p>
+                    A full-stack starter template and monorepo ecosystem built on <strong>Vite</strong>,{' '}
+                    <strong>TanStack Router</strong>, and <strong>Cloudflare Workers</strong>.
+                </p>
+                <p>
+                    Powered by <strong>OttaORM</strong>, a <em>fat-model</em> system that unifies Drizzle schema,
+                    business logic, RLS isolation, and auto-generated TanStack Query hooks into single TypeScript
+                    classes.
+                </p>
+                <p>
+                    Includes plug-and-play modules for Runtime UI theming (Brand Engine), Auth.js, granular RBAC, and a
+                    headless CMS (Ottablog) to help you ship SaaS applications to the Edge faster.
+                </p>
+            </div>
 
-            <div className="flex flex-col gap-theme-card">
+            <div className="flex flex-col gap-theme-card mt-4">
                 <div className="flex flex-wrap gap-2">
                     <Button asChild variant="outline">
                         <Link to="/demo">Go to Demo</Link>
