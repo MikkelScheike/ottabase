@@ -23,26 +23,32 @@ const Quote: RenderFn<QuoteData> = ({ data, className = '' }) => {
             center: 'text-center',
             right: 'text-right',
         }[alignment] || 'text-left';
+    const captionAlignmentClass =
+        {
+            left: 'justify-start',
+            center: 'justify-center',
+            right: 'justify-end',
+        }[alignment] || 'justify-start';
 
     return (
-        <div className={`${className} ${alignmentClass}`}>
-            <blockquote className="relative group my-16">
+        <div className={`${className} not-prose ${alignmentClass}`}>
+            <blockquote className="relative group my-16 mx-0 border-0 pl-0 pr-0">
                 {/* Floating quote mark */}
                 <div className="absolute -top-4 -left-2 text-6xl font-serif text-muted-foreground/20 leading-none select-none pointer-events-none opacity-60 group-hover:opacity-100 transition-opacity duration-300">
                     <IconQuote className="w-10 h-10" />
                 </div>
                 {/* QUOTE*/}
                 {text && (
-                    <div className="relative z-10 text-2xl font-light text-foreground leading-relaxed tracking-normal mb-4 pl-8">
+                    <div className="relative z-10 text-2xl font-light text-foreground leading-relaxed tracking-normal mb-4 pl-8 m-0">
                         {text}
                     </div>
                 )}
                 {/* Author / Caption */}
                 {caption && (
-                    <footer className="flex items-center justify-end">
+                    <footer className={`flex items-center ${captionAlignmentClass}`}>
                         <div className="flex items-center space-x-3">
                             <div className="w-8 h-px bg-gradient-to-r from-transparent to-border"></div>
-                            <cite className="text-sm font-medium text-muted-foreground not-italic tracking-wider uppercase">
+                            <cite className="text-sm font-medium text-muted-foreground not-italic tracking-wider uppercase m-0">
                                 {caption}
                             </cite>
                         </div>

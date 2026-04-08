@@ -1,21 +1,23 @@
 {
-    "time": 1775244767605,
-    "version": "2.30.7",
+    "time": 1775651802672,
     "blocks": [
         {
+            "id": "f9FE1I4QEv",
             "type": "header",
             "data": {
-                "text": "The Kitchensink of Ottablog",
+                "text": "The Ottablog Kitchensink",
                 "level": 1
             }
         },
         {
+            "id": "P8cvY45gey",
             "type": "paragraph",
             "data": {
                 "text": "This post demonstrates <b>every block type</b> available in OttaEditor. Use it to test rendering, styling, and export."
             }
         },
         {
+            "id": "X1kXlgRZH9",
             "type": "header",
             "data": {
                 "text": "Text Blocks",
@@ -23,12 +25,14 @@
             }
         },
         {
+            "id": "X9m30DLRk-",
             "type": "paragraph",
             "data": {
                 "text": "A regular paragraph with <i>italic</i>, <b>bold</b>, and <code>inline code</code> formatting."
             }
         },
         {
+            "id": "hKv1V2gWKg",
             "type": "quote",
             "data": {
                 "text": "The best way to predict the future is to invent it.",
@@ -37,6 +41,7 @@
             }
         },
         {
+            "id": "GP9bA9GgyH",
             "type": "warning",
             "data": {
                 "title": "Important Note",
@@ -44,10 +49,12 @@
             }
         },
         {
+            "id": "wekwdC8vze",
             "type": "delimiter",
             "data": {}
         },
         {
+            "id": "CAky9wkOVK",
             "type": "header",
             "data": {
                 "text": "Lists",
@@ -55,6 +62,7 @@
             }
         },
         {
+            "id": "tw8eFgqcWf",
             "type": "list",
             "data": {
                 "style": "ordered",
@@ -84,6 +92,7 @@
             }
         },
         {
+            "id": "HY-N5zYh2g",
             "type": "checklist",
             "data": {
                 "items": [
@@ -103,23 +112,37 @@
             }
         },
         {
+            "id": "RRc4ix3vB5",
             "type": "header",
             "data": {
-                "text": "Code & Data",
+                "text": "Code &amp; Data",
                 "level": 2
             }
         },
         {
+            "id": "UNPLNTvBzH",
             "type": "code",
             "data": {
                 "code": "function greet(name: string): string {\n  return `Hello, ${name}!`;\n}\n\nconsole.log(greet(\"World\"));",
-                "languageCode": "typescript"
+                "language": "javascript",
+                "showLineNumbers": true,
+                "lineNumberStart": 1,
+                "maxHeight": "200px",
+                "wrapLongLines": false,
+                "hideHeader": false,
+                "hideCopyButton": false,
+                "highlightLines": "",
+                "tabSize": 4,
+                "collapsible": false,
+                "collapsibleThreshold": 20
             }
         },
         {
+            "id": "BH3G4Jg6Uw",
             "type": "table",
             "data": {
                 "withHeadings": true,
+                "stretched": false,
                 "content": [
                     ["Feature", "Status", "Notes"],
                     ["Export JSON", "Done", "Via useOttaEditor"],
@@ -129,42 +152,22 @@
             }
         },
         {
+            "id": "x7Jnwh2DIY",
             "type": "header",
             "data": {
-                "text": "Visual & Embed Blocks",
+                "text": "Visual &amp; Embed Blocks",
                 "level": 2
             }
         },
         {
-            "type": "advancedImage",
-            "data": {
-                "url": "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=1600",
-                "alt": "Colorful mountain valley at sunset",
-                "caption": "Advanced image block with caption and featured styling.",
-                "featuredImage": true,
-                "withBorder": true,
-                "withBackground": true,
-                "aspectRatio": "16:9"
-            }
-        },
-        {
-            "type": "embed",
-            "data": {
-                "service": "youtube",
-                "source": "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-                "embed": "https://www.youtube.com/embed/dQw4w9WgXcQ",
-                "width": 580,
-                "height": 320,
-                "caption": "Embed block (YouTube) for third-party media."
-            }
-        },
-        {
+            "id": "_jVRRfLo54",
             "type": "raw",
             "data": {
-                "html": "<div style=\"padding:12px;border:1px dashed #999;border-radius:8px\"><strong>Raw HTML block:</strong> custom markup rendered intentionally.</div>"
+                "html": "<div><strong>Raw HTML block:</strong> custom markup rendered intentionally.</div>"
             }
         },
         {
+            "id": "-lczZ8_LTp",
             "type": "beforeAfter",
             "data": {
                 "beforeUrl": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200",
@@ -172,66 +175,80 @@
                 "beforeLabel": "Before",
                 "afterLabel": "After",
                 "orientation": "horizontal",
-                "sliderPosition": 45,
-                "caption": "Before/After comparison block with interactive slider."
+                "sliderPosition": 52,
+                "caption": "Before/After comparison block with interactive slider.",
+                "height": "420px",
+                "imageFit": "cover",
+                "beforePosition": "center",
+                "afterPosition": "center"
             }
         },
         {
+            "id": "tGuxrS0uU-",
             "type": "map",
             "data": {
                 "url": "https://www.openstreetmap.org/#map=13/47.3769/8.5417",
                 "provider": "openstreetmap",
                 "theme": "default",
                 "height": 340,
-                "zoom": 13,
-                "caption": "Map block centered on Zurich."
+                "caption": "Map block centered on Zurich.",
+                "zoom": 13
             }
         },
         {
+            "id": "GQNWwAFXSK",
             "type": "mediaEmbed",
             "data": {
                 "url": "https://samplelib.com/lib/preview/mp4/sample-5s.mp4",
                 "title": "Short Media Embed Demo",
                 "caption": "MediaEmbed block for non-image assets.",
+                "mediaId": "",
+                "mimeType": "video/mp4",
                 "mediaKind": "video",
-                "mimeType": "video/mp4"
+                "thumbnailUrl": "",
+                "previewUrl": ""
             }
         },
         {
+            "id": "yWXVRnpj9z",
             "type": "imageHotspots",
             "data": {
                 "imageUrl": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1600",
                 "alt": "Mountain ridge with valleys",
                 "caption": "Image hotspots block with click-to-reveal annotations.",
-                "imageFit": "cover",
-                "height": "420px",
                 "hotspots": [
                     {
                         "id": "peak",
-                        "x": 24,
-                        "y": 28,
+                        "x": 7,
+                        "y": 20,
                         "title": "Primary Peak",
                         "content": "Tallest visible summit in this frame."
                     },
                     {
                         "id": "trail",
-                        "x": 63,
-                        "y": 66,
+                        "x": 71,
+                        "y": 65,
                         "title": "Ridge Trail",
                         "content": "The trail line where hikers usually traverse."
                     }
-                ]
+                ],
+                "height": "420px",
+                "imageFit": "contain",
+                "imagePosition": "center"
             }
         },
         {
+            "id": "B5Vica4TPW",
             "type": "layout",
             "data": {
-                "preset": "1-1",
+                "preset": "2-1",
                 "columns": [
                     {
                         "content": {
+                            "time": 1775651802672,
                             "blocks": [
                                 {
+                                    "id": "hjc_iUuUxp",
                                     "type": "header",
                                     "data": {
                                         "text": "Layout Column A",
@@ -239,18 +256,22 @@
                                     }
                                 },
                                 {
+                                    "id": "U5ZnhWppnN",
                                     "type": "paragraph",
                                     "data": {
-                                        "text": "This is nested content inside a layout column."
+                                        "text": "This is nested content inside a layout column. 67%"
                                     }
                                 }
-                            ]
+                            ],
+                            "version": "2.31.0"
                         }
                     },
                     {
                         "content": {
+                            "time": 1775651802672,
                             "blocks": [
                                 {
+                                    "id": "k089BxKCxO",
                                     "type": "header",
                                     "data": {
                                         "text": "Layout Column B",
@@ -258,6 +279,14 @@
                                     }
                                 },
                                 {
+                                    "id": "ftH1FwUQHJ",
+                                    "type": "paragraph",
+                                    "data": {
+                                        "text": "This is 33%"
+                                    }
+                                },
+                                {
+                                    "id": "BO9O_f0tKU",
                                     "type": "checklist",
                                     "data": {
                                         "items": [
@@ -272,13 +301,15 @@
                                         ]
                                     }
                                 }
-                            ]
+                            ],
+                            "version": "2.31.0"
                         }
                     }
                 ]
             }
         },
         {
+            "id": "IPui901K4U",
             "type": "header",
             "data": {
                 "text": "Media",
@@ -286,39 +317,53 @@
             }
         },
         {
+            "id": "w9u4YXNRj-",
             "type": "mediaGallery",
             "data": {
+                "title": "Gallery of Mountains",
+                "caption": "Layout preset = Mosaic",
+                "layout": "mosaic",
                 "items": [
                     {
                         "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800",
                         "altText": "Mountain landscape",
                         "caption": "Swiss Alps at sunrise",
-                        "mediaKind": "image"
+                        "mediaKind": "image",
+                        "title": ""
                     },
                     {
                         "url": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800",
                         "altText": "Night sky mountains",
                         "caption": "Stars over the mountains",
-                        "mediaKind": "image"
+                        "mediaKind": "image",
+                        "title": ""
                     },
                     {
                         "url": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800",
                         "altText": "Rocky mountains",
                         "caption": "Rocky Mountain National Park",
-                        "mediaKind": "image"
+                        "mediaKind": "image",
+                        "title": ""
                     },
                     {
                         "url": "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800",
                         "altText": "Green hills aerial",
                         "caption": "Rolling hills from above",
-                        "mediaKind": "image"
+                        "mediaKind": "image",
+                        "title": ""
                     }
-                ],
-                "layout": "grid",
-                "columns": 2
+                ]
             }
         },
         {
+            "id": "LuK1uW6oLA",
+            "type": "spoiler",
+            "data": {
+                "text": "Dont spoil "
+            }
+        },
+        {
+            "id": "JbmGCBfu9c",
             "type": "header",
             "data": {
                 "text": "Interactive Blocks",
@@ -326,29 +371,20 @@
             }
         },
         {
-            "type": "spoiler",
-            "data": {
-                "title": "Click to reveal the answer",
-                "content": "The answer to life, the universe, and everything is 42."
-            }
-        },
-        {
+            "id": "T1acrJa6Xq",
             "type": "faq",
             "data": {
                 "style": "accordion",
                 "items": [
                     {
-                        "id": "1",
                         "question": "What is OttaEditor?",
                         "answer": "OttaEditor is a flexible EditorJS wrapper with plugin management, undo/redo, and export capabilities."
                     },
                     {
-                        "id": "2",
                         "question": "What export formats are supported?",
                         "answer": "JSON and Markdown are supported out of the box."
                     },
                     {
-                        "id": "3",
                         "question": "Is it production ready?",
                         "answer": "Yes! It ships with undo/redo, export, and 20+ block types."
                     }
@@ -356,15 +392,19 @@
             }
         },
         {
+            "id": "X7CpiSibh7",
             "type": "cta",
             "data": {
                 "text": "Get Started with OttaEditor",
                 "url": "https://github.com/thinkdj/ottabase",
-                "style": "primary",
-                "alignment": "center"
+                "style": "secondary",
+                "alignment": "center",
+                "openInNewTab": true,
+                "icon": ""
             }
         },
         {
+            "id": "3uE7pFAgbX",
             "type": "header",
             "data": {
                 "text": "Rich Content Blocks",
@@ -372,6 +412,7 @@
             }
         },
         {
+            "id": "ITztlLrKWk",
             "type": "testimonial",
             "data": {
                 "quote": "OttaEditor has completely transformed our content workflow. The undo/redo and export features alone saved us hours every week.",
@@ -379,21 +420,30 @@
                 "authorRole": "Head of Content",
                 "authorCompany": "TechCorp",
                 "rating": 5,
-                "variant": "card"
+                "variant": "card",
+                "verified": true
             }
         },
         {
+            "id": "HpqxU1KdBh",
             "type": "review",
             "data": {
+                "image": "",
                 "title": "OttaEditor",
-                "summary": "A powerful EditorJS wrapper with all the features you need for production content creation.",
-                "rating": 4.5,
-                "maxRating": 5,
+                "content": "",
+                "linkUrl": "",
+                "linkLabel": "",
                 "pros": ["Easy plugin system", "Undo/redo built in", "Great export options", "Theme-aware UI"],
-                "cons": ["EditorJS dependency", "React only"]
+                "cons": ["EditorJS dependency", "React only"],
+                "rating": 4.5,
+                "maxStars": 5,
+                "allowHalfStars": true,
+                "summary": "A powerful EditorJS wrapper with all the features you need for production content creation.",
+                "compact": false
             }
         },
         {
+            "id": "T-kbyyxqFC",
             "type": "steps",
             "data": {
                 "items": [
@@ -417,14 +467,19 @@
             }
         },
         {
+            "id": "vWqf8yzgLp",
             "type": "disclosure",
             "data": {
                 "aiEnabled": true,
                 "aiLevel": "slight",
-                "sponsoredEnabled": false
+                "aiPercent": 50,
+                "sponsoredEnabled": false,
+                "sponsoredType": "preset",
+                "sponsoredText": ""
             }
         },
         {
+            "id": "IGLbnLRkxg",
             "type": "header",
             "data": {
                 "text": "References",
@@ -432,6 +487,7 @@
             }
         },
         {
+            "id": "sjbx1oHl7K",
             "type": "references",
             "data": {
                 "style": "numbered",
@@ -456,5 +512,6 @@
                 ]
             }
         }
-    ]
+    ],
+    "version": "2.31.0"
 }

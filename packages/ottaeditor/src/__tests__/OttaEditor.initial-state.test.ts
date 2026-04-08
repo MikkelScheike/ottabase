@@ -62,6 +62,9 @@ describe('OttaEditor initial undo baseline', () => {
         expect(editor.getUndoRedoState()).toEqual({ canUndo: false, canRedo: false });
         expect(lastEditorConfig).toBeTruthy();
 
+        // Simulate real user interaction before change tracking starts
+        holder.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', bubbles: true }));
+
         await lastEditorConfig.onChange?.({}, {});
         vi.advanceTimersByTime(600);
         await Promise.resolve();

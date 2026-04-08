@@ -14,6 +14,8 @@ export class OttaEditor implements IOttaEditor {
     private undoRedoManager: UndoRedoManager | null = null;
     /** Prevents onChange from recording state during programmatic undo/redo renders */
     private isUndoRedoAction = false;
+    /** Track whether the user has interacted with the editor since mount */
+    private hasUserInteracted = false;
 
     constructor(config: OttaEditorConfig) {
         this.config = config;
@@ -70,12 +72,13 @@ export class OttaEditor implements IOttaEditor {
 
                 // Register keyboard shortcuts on the editor holder element
                 this.registerKeyboardShortcuts();
+                this.registerInteractionTracking();
 
                 this.config.onReady?.();
             },
             onChange: async (api, event) => {
                 // Skip recording during programmatic undo/redo renders
-                if (!this.isUndoRedoAction && this.editor && this.undoRedoManager) {
+                if (!this.isUndoRedoAction && this.editor && this.undoRedoManager && this.hasUserInteracted) {
                     const data = await this.editor.save();
                     this.undoRedoManager.pushState(data);
                 }
@@ -99,6 +102,25 @@ export class OttaEditor implements IOttaEditor {
 
         holder.addEventListener('keydown', this.handleKeyDown);
     }
+
+    /**
+     * Mark first real user interaction so init-time editor mutations don't pollute undo history.
+     */
+    private registerInteractionTracking(): void {
+        const holder =
+            typeof this.config.holder === 'string' ? document.getElementById(this.config.holder) : this.config.holder;
+
+        if (!holder) return;
+
+        holder.addEventListener('pointerdown', this.handleInteraction, true);
+        holder.addEventListener('keydown', this.handleInteraction, true);
+        holder.addEventListener('input', this.handleInteraction, true);
+        holder.addEventListener('paste', this.handleInteraction, true);
+    }
+
+    private handleInteraction = (): void => {
+        this.hasUserInteracted = true;
+    };
 
     /** Bound keydown handler for undo/redo shortcuts */
     private handleKeyDown = (e: KeyboardEvent): void => {
@@ -221,6 +243,10 @@ export class OttaEditor implements IOttaEditor {
         const holder =
             typeof this.config.holder === 'string' ? document.getElementById(this.config.holder) : this.config.holder;
         holder?.removeEventListener('keydown', this.handleKeyDown);
+        holder?.removeEventListener('pointerdown', this.handleInteraction, true);
+        holder?.removeEventListener('keydown', this.handleInteraction, true);
+        holder?.removeEventListener('input', this.handleInteraction, true);
+        holder?.removeEventListener('paste', this.handleInteraction, true);
 
         if (this.undoRedoManager) {
             this.undoRedoManager.destroy();
@@ -233,6 +259,7 @@ export class OttaEditor implements IOttaEditor {
         await this.editor.destroy();
         this.editor = null;
         this.isInitialized = false;
+        this.hasUserInteracted = false;
     }
 
     /**

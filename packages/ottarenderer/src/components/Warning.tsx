@@ -2,7 +2,7 @@ import { RenderFn } from 'editorjs-blocks-react-renderer';
 
 const WarningIcon = () => (
     <svg
-        className="h-5 w-5 flex-shrink-0 text-yellow-500 dark:text-yellow-400 mt-0.5"
+        className="h-5 w-5 flex-shrink-0 text-yellow-500 dark:text-yellow-400"
         viewBox="0 0 20 20"
         fill="currentColor"
         aria-hidden="true"
@@ -18,19 +18,21 @@ const WarningIcon = () => (
 const Warning: RenderFn<{ title?: string; message?: string }> = ({ data, className = '' }) => {
     return (
         <div
-            className={`${className} border-l-4 border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-800/25 p-4 my-4 rounded-md shadow-sm`}
+            className={`${className} not-prose border-l-4 border-yellow-400 dark:border-yellow-500 bg-yellow-50 dark:bg-yellow-800/25 p-4 my-6 rounded-md shadow-sm`}
             role="alert"
         >
             <div className="flex items-start gap-2.5">
                 <WarningIcon />
                 <div className="min-w-0">
                     {data?.title && (
-                        <h4 className="text-base font-semibold leading-6 text-yellow-800 dark:text-yellow-200">
+                        <h4 className="m-0 text-base font-semibold leading-6 text-yellow-800 dark:text-yellow-200">
                             {data.title}
                         </h4>
                     )}
                     {data?.message && (
-                        <p className="mt-1 text-sm leading-6 text-yellow-700 dark:text-yellow-300">{data.message}</p>
+                        <p className="m-0 mt-1 text-sm leading-6 text-yellow-700 dark:text-yellow-300">
+                            {data.message}
+                        </p>
                     )}
                 </div>
             </div>

@@ -127,6 +127,9 @@ export function useOttaEditor(options: UseOttaEditorOptions = {}): UseOttaEditor
     const editorRef = useRef<HTMLDivElement>(null);
     const editorInstanceRef = useRef<OttaEditor | null>(null);
     const initializingRef = useRef(false);
+    const hasUserInteractedRef = useRef(false);
+    const interactionHolderRef = useRef<HTMLDivElement | null>(null);
+    const interactionListenerRef = useRef<(() => void) | null>(null);
     const [isReady, setIsReady] = useState(false);
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [canUndo, setCanUndo] = useState(false);
@@ -171,7 +174,9 @@ export function useOttaEditor(options: UseOttaEditorOptions = {}): UseOttaEditor
                         editorConfig.onReady?.();
                     },
                     onChange: (api, event) => {
-                        setHasUnsavedChanges(true);
+                        if (hasUserInteractedRef.current) {
+                            setHasUnsavedChanges(true);
+                        }
                         editorConfig.onChange?.(api, event);
                     },
                     onUndoRedoStateChange: (state) => {
@@ -188,6 +193,20 @@ export function useOttaEditor(options: UseOttaEditorOptions = {}): UseOttaEditor
                 // Initialize
                 await editor.init();
                 editorInstanceRef.current = editor;
+
+                // Track first real user interaction to avoid false "dirty" state on editor bootstrap.
+                const holder = editorRef.current;
+                if (holder) {
+                    const markInteracted = () => {
+                        hasUserInteractedRef.current = true;
+                    };
+                    interactionHolderRef.current = holder;
+                    interactionListenerRef.current = markInteracted;
+                    holder.addEventListener('pointerdown', markInteracted, true);
+                    holder.addEventListener('keydown', markInteracted, true);
+                    holder.addEventListener('input', markInteracted, true);
+                    holder.addEventListener('paste', markInteracted, true);
+                }
             } catch (error) {
                 console.error('Failed to initialize OttaEditor:', error);
                 initializingRef.current = false;
@@ -198,11 +217,23 @@ export function useOttaEditor(options: UseOttaEditorOptions = {}): UseOttaEditor
 
         // Cleanup on unmount
         return () => {
+            if (interactionHolderRef.current && interactionListenerRef.current) {
+                const holder = interactionHolderRef.current;
+                const listener = interactionListenerRef.current;
+                holder.removeEventListener('pointerdown', listener, true);
+                holder.removeEventListener('keydown', listener, true);
+                holder.removeEventListener('input', listener, true);
+                holder.removeEventListener('paste', listener, true);
+                interactionHolderRef.current = null;
+                interactionListenerRef.current = null;
+            }
             if (editorInstanceRef.current) {
                 editorInstanceRef.current.destroy().catch(console.error);
                 editorInstanceRef.current = null;
                 initializingRef.current = false;
                 setIsReady(false);
+                hasUserInteractedRef.current = false;
+                setHasUnsavedChanges(false);
             }
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

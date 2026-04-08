@@ -253,7 +253,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const [excerpt, setExcerpt] = useState(initialData?.excerpt || '');
     const [contentType, setContentType] = useState<ContentType>(initialData?.contentType || 'blog');
     const [status, setStatus] = useState<PostStatus>(initialData?.status || 'draft');
-    const [authorName, setAuthorName] = useState(initialData?.authorName || user?.name || '');
+    const [authorName, setAuthorName] = useState(initialData?.authorName ?? (isEditMode ? '' : (user?.name ?? '')));
     const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured || false);
     const [allowComments, setAllowComments] = useState(initialData?.allowComments ?? true);
     const [isProtected, setIsProtected] = useState(initialData?.isProtected ?? false);
@@ -457,7 +457,7 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
         setExcerpt(initialData.excerpt ?? '');
         setContentType(initialData.contentType ?? 'blog');
         setStatus(initialData.status ?? 'draft');
-        setAuthorName(initialData.authorName ?? user?.name ?? '');
+        setAuthorName(initialData.authorName ?? (isEditMode ? '' : (user?.name ?? '')));
         setIsFeatured(initialData.isFeatured ?? false);
         setAllowComments(initialData.allowComments ?? true);
         setIsProtected(initialData.isProtected ?? false);
@@ -1502,14 +1502,8 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
 
                     <Dialog open={isHeroMediaPickerOpen} onOpenChange={setIsHeroMediaPickerOpen}>
                         <DialogContent className="max-w-7xl max-h-[95vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle>Select Hero Image</DialogTitle>
-                                <DialogDescription>
-                                    Choose an existing file from Media Library for this post hero image.
-                                </DialogDescription>
-                            </DialogHeader>
                             <MediaLibraryBrowser
-                                title="Media picker"
+                                title="Media gallery"
                                 description="Search existing uploads or add a new one and pick it as the hero image."
                                 emptyTitle="No matching media yet"
                                 emptyDescription="Upload a file here to add it to your media library."
