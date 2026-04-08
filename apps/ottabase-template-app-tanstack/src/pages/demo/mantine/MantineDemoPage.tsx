@@ -1,11 +1,22 @@
 import { APP_META, appConfig } from '@/ottabase/config';
-import { MANTINE_DEMO_THEME_COLORS } from '@ottabase/ui-mantine';
 import { appStateAtom, sidebarStateAtom, themeAtom } from '@/ottabase/state/appState';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import { BlogPagination } from '@ottabase/ui-components';
 import { DarkModeToggle } from '@ottabase/ui-components/dark-mode-toggle';
 import { Logo } from '@ottabase/ui-components/logo';
-import { Badge, Button, Card, Code, Container, Group, Stack, Switch, Text, Title } from '@ottabase/ui-mantine';
+import {
+    Badge,
+    Button,
+    Card,
+    Code,
+    Container,
+    Group,
+    MANTINE_DEMO_THEME_COLORS,
+    Stack,
+    Switch,
+    Text,
+    Title,
+} from '@ottabase/ui-mantine';
 import { useAtom, useAtomValue } from 'jotai';
 import { useState } from 'react';
 import { mantineThemePresetAtom, type MantineThemePreset } from './MantineLayout';
@@ -56,7 +67,28 @@ export function MantineDemoPage() {
                         directory.
                     </Text>
 
-                    <Group mt="lg">
+                    {/* Proof-of-concept notice — explains the wrapper pattern used on this page */}
+                    <div
+                        style={{
+                            background: 'rgba(250,204,21,0.12)',
+                            border: '1px solid rgba(250,204,21,0.5)',
+                            borderRadius: 8,
+                            padding: '12px 16px',
+                            marginTop: 24,
+                        }}
+                    >
+                        <p style={{ margin: '0 0 4px', fontWeight: 600, fontSize: 14 }}>
+                            ⚠ Proof of Concept: Mantine Wrapper Required (MantineLayout)
+                        </p>
+                        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6 }}>
+                            This page is a <strong>proof of concept</strong> for <code>@ottabase/ui-mantine</code>.
+                            Mantine requires its own provider (<code>MantineLayout</code>) scoped only to this route -
+                            the core app and core layout are <em>not</em> affected. <code>MantineDemoRoute</code> wraps
+                            this page in <code>MantineLayout</code> so there is zero overhead anywhere else in the app.
+                            Apply the same wrapper pattern for any production route that needs Mantine.
+                        </p>
+                    </div>
+                    {/* <Group mt="lg">
                         <Button component="a" href="/demo/shadcn" variant="outline">
                             Explore shadcn/ui demo
                         </Button>
@@ -66,7 +98,7 @@ export function MantineDemoPage() {
                         <Button component="a" href="/demo/state" variant="outline">
                             Explore State demo
                         </Button>
-                    </Group>
+                    </Group> */}
                 </div>
 
                 <Card shadow="sm" padding="lg" radius="md" withBorder>
