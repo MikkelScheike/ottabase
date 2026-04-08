@@ -40,7 +40,7 @@ pnpm dev
 curl -X POST http://localhost:3004/api/ottaorm/init
 
 # 5. Seed database (optional)
-pnpm --filter @ottabase/ottaorm seed
+# See Step 2: Seed Data section below for manual seeding instructions
 ```
 
 **You now have:**
@@ -148,11 +148,12 @@ Permissions are assigned via roles, scoped by organization (and optionally by ap
 import { User, Role, UserRole } from '@ottabase/ottaorm/models';
 
 // Assign role to user in organization
+// Note: appId is not a parameter of assignRole; use buildAppContext to scope by app
 await user.assignRole(
     adminRoleId,
     assignedBy.id,
     'org-acme', // organizationId (REQUIRED)
-    'web', // appId (OPTIONAL - null means all apps)
+    { cache: rbacCache }, // options (OPTIONAL)
 );
 
 // Check permissions
@@ -235,11 +236,7 @@ curl -X POST http://localhost:3004/api/ottaorm/init
 
 ### Step 2: Seed Data (Optional)
 
-```bash
-pnpm --filter @ottabase/ottaorm seed
-```
-
-Or manually:
+Seed manually (no built-in seed script exists in `@ottabase/ottaorm`):
 
 ```typescript
 import { Role, Permission } from '@ottabase/ottaorm/models';
@@ -260,8 +257,8 @@ for (const perm of permissions) {
     });
 }
 
-// Link permissions to roles
-await adminRole.assignPermission(permission.id);
+// Link permissions to roles (pass the permission name string, not an id)
+await adminRole.addPermission(permission.name);
 ```
 
 ### Step 3: Setup RBAC Cache (Production)
@@ -300,12 +297,7 @@ await OrganizationMember.addMember({
 });
 
 // Assign RBAC role
-await user.assignRole(
-    adminRoleId,
-    user.id,
-    org.id,
-    null, // All apps
-);
+await user.assignRole(adminRoleId, user.id, org.id);
 ```
 
 ---
@@ -574,33 +566,26 @@ const editorRole = await Role.create({
     description: 'Can edit blog posts only',
 });
 
-// Assign specific permissions
+// Assign specific permissions (pass the permission name string)
 const permissions = ['posts:read', 'posts:write', 'posts:edit'];
 
 for (const permName of permissions) {
-    const perm = await Permission.first({ name: permName });
-    if (perm) {
-        await editorRole.assignPermission(perm.id);
-    }
+    await editorRole.addPermission(permName);
 }
 
 // Assign role to user
-await user.assignRole(
-    editorRole.id,
-    adminUser.id,
-    'org-acme',
-    'web', // Only in web app
-);
+// Note: assignRole does not accept appId; app-scoping is handled via buildAppContext
+await user.assignRole(editorRole.id, adminUser.id, 'org-acme');
 ```
 
 ### App-Specific Permissions
 
 ```typescript
-// User is admin in web app
-await user.assignRole(adminRoleId, assignerId, orgId, 'web');
+// User is admin in organization
+await user.assignRole(adminRoleId, assignerId, orgId);
 
-// User is viewer in admin dashboard
-await user.assignRole(viewerRoleId, assignerId, orgId, 'admin');
+// User is viewer in organization (app-scoping is enforced via buildAppContext appId)
+await user.assignRole(viewerRoleId, assignerId, orgId);
 
 // Check permissions in specific app
 const context = await buildAppContext({

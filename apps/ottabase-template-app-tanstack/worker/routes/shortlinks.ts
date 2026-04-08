@@ -226,28 +226,6 @@ export async function handleShortlinkFallback(context: ShortlinkContext): Promis
         return null;
     }
 
-    // Reserved SPA/app routes must never be treated as short codes.
-    const reservedPathPrefixes = [
-        '/migration-status',
-        '/demo',
-        '/docs',
-        '/login',
-        '/register',
-        '/verify-email',
-        '/reset-password',
-        '/dashboard',
-        '/shortlinks',
-        '/analytics',
-        '/referrals',
-        '/blog',
-        '/admin',
-        '/changelog',
-        '/__bootstrap__',
-    ];
-    if (reservedPathPrefixes.some((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`))) {
-        return null;
-    }
-
     if (
         !env.OBCF_D1 ||
         url.pathname.startsWith('/api/') ||
