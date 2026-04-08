@@ -124,12 +124,14 @@ export default {
                 });
             }
 
-            let response = await env.OBCF_ASSETS.fetch(request);
+            let response = await env.OBCF_ASSETS.fetch(request.clone());
 
             if (isHtmlRequest(request) && (response.status === 404 || SPA_REDIRECT_STATUSES.has(response.status))) {
                 const indexUrl = new URL(request.url);
-                indexUrl.pathname = '/index.html';
-                response = await env.OBCF_ASSETS.fetch(new Request(indexUrl.toString(), request));
+                // Fetch the root '/' instead of '/index.html' because Cloudflare Assets natively
+                // redirects '/index.html' to '/' (308), which strips the SPA path in the browser.
+                indexUrl.pathname = '/';
+                response = await env.OBCF_ASSETS.fetch(new Request(indexUrl.toString(), request.clone()));
             }
 
             if (isHtmlRequest(request) && response.ok) {
