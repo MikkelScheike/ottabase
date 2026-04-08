@@ -43,13 +43,13 @@ See [AGENTS.MD](./AGENTS.MD) for full architecture details.
 
 ### Reporting Bugs
 
-- Use the [Bug Report](https://github.com/thinkdj/ottabase/issues/new?template=bug_report.md) template
+- Use the [Bug Report form](https://github.com/thinkdj/ottabase/issues/new/choose)
 - Include steps to reproduce, expected behavior, and actual behavior
 - Include your environment details (OS, Node.js version, pnpm version)
 
 ### Suggesting Features
 
-- Use the [Feature Request](https://github.com/thinkdj/ottabase/issues/new?template=feature_request.md) template
+- Use the [Feature Request form](https://github.com/thinkdj/ottabase/issues/new/choose)
 - Explain the use case and why existing features don't solve it
 - Check existing issues to avoid duplicates
 
@@ -60,11 +60,13 @@ See [AGENTS.MD](./AGENTS.MD) for full architecture details.
 3. **Add or update tests** for any changed functionality
 4. **Update documentation** (README.md, inline comments) as needed
 5. **Run quality checks:**
+
     ```bash
     pnpm lint                              # Lint all packages
     pnpm type-check                        # TypeScript validation
     pnpm --filter=@ottabase/<package> test # Run tests for your package
     ```
+
 6. **Submit a pull request** using the PR template
 
 ### Finding Issues to Work On
@@ -108,7 +110,7 @@ Look for issues labeled:
 
 ```bash
 # Build a specific package
-pnpm --filter=@ottabase/<package> build:pkg
+pnpm --filter @ottabase/<package> build
 
 # Run tests for a specific package
 pnpm --filter=@ottabase/<package> test

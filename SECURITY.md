@@ -4,7 +4,12 @@
 
 **Please do not open public GitHub issues for security vulnerabilities.**
 
-Instead, report vulnerabilities privately by emailing **security@ottabase.com**.
+Preferred reporting channels:
+
+1. Email [security@ottabase.com](mailto:security@ottabase.com)
+2. GitHub private vulnerability reporting (Security Advisories) for this repository
+
+If email is unavailable, use GitHub private reporting to avoid public disclosure.
 
 ### What to Include
 

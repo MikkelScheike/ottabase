@@ -18,9 +18,11 @@ Durable Objects.
 
 ## Links
 
-- Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md)
+- Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md), [Releases](./RELEASES.md)
+- Project health: [Contributing](./CONTRIBUTING.md), [Code of Conduct](./CODE_OF_CONDUCT.md), [Security](./SECURITY.md),
+  [Support](./SUPPORT.md), [Maintainers](./MAINTAINERS.md)
 - Demo: demo.ottabase.com
-- Community chat: coming soon
+- Community: [GitHub Discussions](https://github.com/thinkdj/ottabase/discussions)
 
 ## Comparison
 
@@ -122,6 +124,9 @@ ottabase/
 │   └── utils/            # Timezone, string, file, URL utilities
 └── turbo.json
 ```
+
+> Note: The structure list is curated for readability; the source of truth for all publishable modules is
+> `packages/*/package.json`.
 
 ## Prerequisites
 

@@ -7,23 +7,21 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
-### Added (Planned)
+### Added (Unreleased)
 
-- YAML issue forms for bug reports, feature requests, and support questions.
-- GitHub community health files for CODEOWNERS, funding, Dependabot, and discussion templates.
-- Placeholder for post-launch features.
+- Reserved for upcoming post-1.0.0 features.
 
-### Changed (Planned)
+### Changed (Unreleased)
 
-- Placeholder for post-launch improvements.
+- Reserved for upcoming post-1.0.0 improvements.
 
-### Fixed (Planned)
+### Fixed (Unreleased)
 
-- Placeholder for post-launch bug fixes.
+- Reserved for upcoming post-1.0.0 bug fixes.
 
-### Security (Planned)
+### Security (Unreleased)
 
-- Placeholder for post-launch security updates.
+- Reserved for upcoming post-1.0.0 security updates.
 
 ## [1.0.0] - 2026-04-06
 
