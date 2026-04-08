@@ -53,20 +53,61 @@ flowchart TB
 Packages follow a strict layering model. Lower layers must never depend on higher layers.
 
 ```mermaid
-flowchart BT
-    L0["Layer 0 — Leaf (no @ottabase deps)<br/>db, cf-realtime, ui-shadcn, state, utils"]
-    L1["Layer 1 — Infrastructure<br/>cf → config | ottaorm → db"]
-    L2["Layer 2 — Domain + Auth<br/>auth → cf, email, utils, ui-shadcn<br/>queue → cf | audit → ottaorm, logger<br/>shortlinks → ottaorm | referrals → ottaorm, db"]
-    L3["Layer 3 — Higher domain<br/>rbac → ottaorm, auth, logger, cf<br/>ottablog → ottaorm, ottarenderer<br/>brand-engine → ottaorm, cf, audit, ottalayout, ottamenu, utils"]
-    L4["Layer 4 — UI composition<br/>forms → ottaorm, ottaselect, ui-datatable"]
-    L5["Layer 5 — App<br/>ottabase-template-app-tanstack<br/>Composes all layers via workspace:*"]
+flowchart TD
+    subgraph L5 [Layer 5 — App]
+        App["ottabase-template-app-tanstack"]
+    end
 
-    L0 --> L1 --> L2 --> L3 --> L4 --> L5
+    subgraph L4 [Layer 4 — UI Composition]
+        forms
+    end
+
+    subgraph L3 [Layer 3 — Higher Domain]
+        rbac
+        ottablog
+        brandEngine["brand-engine"]
+    end
+
+    subgraph L2 [Layer 2 — Domain + Auth]
+        auth
+        queue
+        audit
+        shortlinks
+        referrals
+    end
+
+    subgraph L1 [Layer 1 — Infrastructure]
+        cf
+        ottaorm
+    end
+
+    subgraph L0 [Layer 0 — Leaf]
+        db
+        cfRealtime["cf-realtime"]
+        uiShadcn["ui-shadcn"]
+        state
+        utils
+    end
+
+    App --> forms & rbac & ottablog & brandEngine
+    forms --> ottaorm
+    rbac --> ottaorm & auth
+    ottablog --> ottaorm
+    brandEngine --> ottaorm & cf & audit
+    auth --> cf
+    queue --> cf
+    audit --> ottaorm
+    shortlinks --> ottaorm
+    referrals --> ottaorm
+    ottaorm --> db
+    cf --> db
 ```
+
+**Dependency direction:** arrows point downward (from consumer to dependency). Packages may only depend on the same or a
+lower layer.
 
 **Rules:**
 
-- Packages may only depend on packages in the same or a lower layer.
 - Circular dependencies between packages are forbidden.
 - UI packages (`ui-shadcn`, `ui-mantine`, `state`) have zero `@ottabase/*` dependencies — they are leaf packages.
 - `@ottabase/db` is the lowest data layer; `@ottabase/ottaorm` depends on it, not the reverse.
