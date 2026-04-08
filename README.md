@@ -32,12 +32,12 @@ Durable Objects.
 > - **Breaking changes** - upstream releases may introduce breaking changes to internal APIs, package interfaces, or
 >   build tooling. Migration guides are provided when possible, but your customizations are your own to reconcile.
 >
-> **Recommended**: Read [ARCHITECTURE.md](./docs/ARCHITECTURE.md), [CONTRIBUTING.md](./.github/CONTRIBUTING.md), and
+> **Recommended**: Read [ARCHITECTURE.md](./ARCHITECTURE.md), [CONTRIBUTING.md](./.github/CONTRIBUTING.md), and
 > [SECURITY.md](./.github/SECURITY.md) before making structural changes.
 
 ## Links
 
-- Docs: [README](./README.md), [Architecture](./docs/ARCHITECTURE.md), [Changelog](./CHANGELOG.md),
+- Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md),
   [Releases](./docs/RELEASES.md)
 - Project health: [Contributing](./.github/CONTRIBUTING.md), [Code of Conduct](./.github/CODE_OF_CONDUCT.md),
   [Security](./.github/SECURITY.md), [Support](./.github/SUPPORT.md), [Maintainers](./.github/MAINTAINERS.md)
@@ -471,7 +471,7 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 
 ## Docs
 
-- [Architecture](./docs/ARCHITECTURE.md)
+- [Architecture](./ARCHITECTURE.md)
 - [Changelog](./CHANGELOG.md)
 - [Contributing Guide](./.github/CONTRIBUTING.md)
 - [Security Policy](./.github/SECURITY.md)

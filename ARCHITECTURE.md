@@ -273,8 +273,8 @@ automatically filtered by security context (`userId`, `organizationId`, `appId`)
 | `audit_logs`                  | Tenant-scoped (read-only) | `organizationId` |
 | `system_config`               | Admin-only                | —                |
 
-Cross-tenant writes are blocked and logged automatically. See [RBAC_MULTI_TENANT_GUIDE.md](./RBAC_MULTI_TENANT_GUIDE.md)
-for the full policy list and configuration.
+Cross-tenant writes are blocked and logged automatically. See
+[RBAC_MULTI_TENANT_GUIDE.md](./docs/RBAC_MULTI_TENANT_GUIDE.md) for the full policy list and configuration.
 
 ## Multi-Tenancy Model
 
