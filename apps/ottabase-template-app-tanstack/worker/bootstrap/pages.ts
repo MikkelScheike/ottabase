@@ -643,6 +643,13 @@ wrangler secret put MIGRATION_SECRET</pre>
           log('log-owner', 'Owner account created: ' + data.user.email + ' (role: ' + data.user.role + ')', 'success');
           if (data.organizationId) log('log-owner', 'Workspace created: ' + data.organizationId, 'success');
 
+          /* Always clear stale auth/org bootstrap storage after owner creation */
+          try {
+            localStorage.removeItem('ottabase.auth-session');
+            localStorage.removeItem('ottabase.current-org-id');
+            localStorage.removeItem('ottabase.org-id');
+          } catch (e) { /* ignore storage failures */ }
+
           /* Pre-hydrate localStorage so ProtectedRoute.hasValidStoredSession() passes
              and the app doesn't redirect to /login before the cookie-based session loads */
           try {
