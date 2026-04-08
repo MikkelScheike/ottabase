@@ -15,6 +15,7 @@ import { registerConnection } from '@ottabase/ottaorm';
 import { errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import type { CloudflareEnv } from '../../cloudflare-env';
+import { getOttabaseConfig } from '../../ottabase/config.loader';
 import kitchensinkContentTemplate from '../fixtures/kitchensink-content.json';
 import { requireAdminAccess } from '../lib/admin-guard';
 import { readJson } from '../lib/utils';
@@ -45,7 +46,11 @@ function resolveOrgId(request: Request, fallback: string | null = null): string 
 }
 
 function resolveAppId(context: BlogRouteContext): string {
-    return context.url.searchParams.get('appId') || context.request.headers.get('x-app-id') || 'web';
+    return (
+        context.url.searchParams.get('appId') ||
+        context.request.headers.get('x-app-id') ||
+        getOttabaseConfig(context.env).appId
+    );
 }
 
 /**

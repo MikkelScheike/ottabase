@@ -4,6 +4,7 @@
  * Lists all blog posts with filtering, status management, and CRUD operations.
  */
 import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { api } from '@/lib/api';
 import { CONTENT_TYPES, formatShortDate, POST_STATUSES, type ContentType, type PostStatus } from '@ottabase/ottablog';
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { ConfirmDialog } from '@ottabase/ui-components';
@@ -78,10 +79,9 @@ export function AdminBlogListPage() {
     const seedKitchensink = async () => {
         setKitchensinkState('loading');
         try {
-            const res = await fetch('/api/blog/kitchensink', { method: 'POST' });
-            const json = await res.json<{ status: string; id?: string; slug?: string }>();
+            const json = await api<{ status: string; id?: string; slug?: string }>('/api/blog/kitchensink', 'POST');
             setKitchensinkSlug(json.slug ?? null);
-            setKitchensinkState(json.status === 'exists' ? 'exists' : 'created');
+            setKitchensinkState(json.status === 'created' ? 'created' : 'exists');
         } catch {
             setKitchensinkSlug(null);
             setKitchensinkState('idle');
