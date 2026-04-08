@@ -53,7 +53,7 @@ jobs:
                       ${{ runner.os }}-turbo-
 
             - name: Run CI (Lint, Type-Check, Build, Test)
-              run: pnpm run ci:check
+              run: pnpm run lint && pnpm run type-check && pnpm run test && pnpm run build
 
             - name: Dependency audit (high severity and above)
               run: pnpm audit --audit-level=high
