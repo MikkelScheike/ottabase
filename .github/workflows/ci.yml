@@ -16,6 +16,9 @@ jobs:
         name: CI - Build & Test
         runs-on: ubuntu-latest
         timeout-minutes: 15
+        # ESLint 9 defaults to flat config; this monorepo uses root .eslintrc.js (legacy).
+        env:
+            ESLINT_USE_FLAT_CONFIG: "false"
         steps:
             - name: Checkout
               uses: actions/checkout@v4
