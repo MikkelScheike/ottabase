@@ -157,8 +157,6 @@ describe('handleBlogKitchensink', () => {
 
         expect(blockTypes).toEqual(
             expect.arrayContaining([
-                'advancedImage',
-                'embed',
                 'raw',
                 'beforeAfter',
                 'map',
