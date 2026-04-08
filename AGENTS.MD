@@ -290,9 +290,9 @@ const config = createOttabaseAuthConfig({
 Global state (Jotai).
 
 ```typescript
-import { createDefaultAppState } from '@ottabase/state';
+import { createAppState } from '@ottabase/state';
 
-const { appStateAtom, atoms } = createDefaultAppState();
+const { appStateAtom, atoms } = createAppState();
 export const { themeAtom, userAtom, scaleAtom } = atoms;
 ```
 
@@ -311,7 +311,8 @@ import { changeCase, isEmail } from '@ottabase/utils/string';
 Blog engine core logic and models.
 
 ```typescript
-import { Post, Tag } from '@ottabase/ottablog';
+import { Post } from '@ottabase/ottablog';
+import { Tag } from '@ottabase/ottaorm';
 ```
 
 ### @ottabase/ui-datatable
