@@ -16,6 +16,25 @@ Durable Objects.
 - Fat-model architecture keeps domain logic close to data instead of scattering it across controllers and services.
 - Monorepo ergonomics let you ship integrated changes across apps and packages without version skew.
 
+> **⚠️ You own the code.**
+>
+> Ottabase is a **monorepo you clone and modify**, not an npm package you install. Once you fork it, you accept full
+> responsibility for:
+>
+> - **Git history & upstream merges** - pulling upstream changes may cause merge conflicts across apps, packages,
+>   schemas, and config files. There is no `npm update`; you rebase or merge manually.
+> - **Schema & data migrations** - upstream schema changes (new columns, renamed tables, config format changes) must be
+>   reconciled with your own models and production data. Back up before migrating.
+> - **Infrastructure & costs** - you deploy to your own Cloudflare account. D1 storage, KV operations, R2 bandwidth,
+>   Workers invocations, and Queues usage are billed to you.
+> - **Security & compliance** - you are responsible for patching dependencies, securing API keys, configuring RLS
+>   correctly, and auditing access in your deployment.
+> - **Breaking changes** - upstream releases may introduce breaking changes to internal APIs, package interfaces, or
+>   build tooling. Migration guides are provided when possible, but your customizations are your own to reconcile.
+>
+> **Recommended**: Read [ARCHITECTURE.md](./ARCHITECTURE.md), [CONTRIBUTING.md](./CONTRIBUTING.md), and
+> [SECURITY.md](./SECURITY.md) before making structural changes.
+
 ## Links
 
 - Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md), [Releases](./RELEASES.md)
@@ -274,9 +293,9 @@ createTodo.mutate({ title: 'New Todo' });
 | `@ottabase/rbac`      | Role-based access control with per-org KV caching                      |
 | `@ottabase/audit`     | Audit logging with change tracking and RBAC context                    |
 | `@ottabase/logger`    | Structured logging (Console, HTTP, Sentry, Memory, Buffer transports)  |
-| `@ottabase/analytics` | Cloudflare Analytics Engine (WAE) — write events, query, funnel, top-K |
+| `@ottabase/analytics` | Cloudflare Analytics Engine (WAE) - write events, query, funnel, top-K |
 | `@ottabase/config`    | App config, env vars, storage key utilities                            |
-| `@ottabase/cron`      | Cron handlers — static code-defined and DB scheduler (Laravel-style)   |
+| `@ottabase/cron`      | Cron handlers - static code-defined and DB scheduler (Laravel-style)   |
 | `@ottabase/scripts`   | CLI tools: `cf:login`, `cf:setup`, `cf:validate`, `clean:*`, `db:*`    |
 
 ### Brand, Layout & Content
@@ -313,7 +332,7 @@ createTodo.mutate({ title: 'New Todo' });
 | ------------------------- | ------------------------------------------------------------ |
 | `@ottabase/cf-realtime`   | WebSocket pub/sub via Durable Objects (Pusher alternative)   |
 | `@ottabase/shortlinks`    | URL shortener: short codes, interstitial, expiry, WAE clicks |
-| `@ottabase/referrals`     | Referral tracking — first-touch attribution, WAE clicks      |
+| `@ottabase/referrals`     | Referral tracking - first-touch attribution, WAE clicks      |
 | `@ottabase/notifications` | Multi-channel notifications (email, WebSocket, system)       |
 
 ### Utilities & Integrations
@@ -374,7 +393,7 @@ All models include a nullable `appId` column:
 # Windows:    xcopy /E /I apps\ottabase-template-app-tanstack apps\my-new-app
 cd apps/my-new-app
 # Update package.json name
-# Delete src/pages/demo/  (optional — remove demo pages)
+# Delete src/pages/demo/  (optional - remove demo pages)
 ```
 
 **Marketing homepage** (Next.js, OpenNext, Brand Engine):
