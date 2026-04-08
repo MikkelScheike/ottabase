@@ -28,19 +28,19 @@ flowchart TB
     Packages --> UI[UI and editor packages]
     Packages --> Feature[feature packages]
 
-    Core --> OttaORM[@ottabase/ottaorm]
-    Core --> DB[@ottabase/db]
-    Core --> CF[@ottabase/cf]
-    Core --> Auth[@ottabase/auth]
+    Core --> OttaORM["@ottabase/ottaorm"]
+    Core --> DB["@ottabase/db"]
+    Core --> CF["@ottabase/cf"]
+    Core --> Auth["@ottabase/auth"]
 
-    UI --> Shadcn[@ottabase/ui-shadcn]
-    UI --> Mantine[@ottabase/ui-mantine]
-    UI --> Forms[@ottabase/forms]
+    UI --> Shadcn["@ottabase/ui-shadcn"]
+    UI --> Mantine["@ottabase/ui-mantine"]
+    UI --> Forms["@ottabase/forms"]
 
-    Feature --> Blog[@ottabase/ottablog]
-    Feature --> Shortlinks[@ottabase/shortlinks]
-    Feature --> Referrals[@ottabase/referrals]
-    Feature --> Realtime[@ottabase/cf-realtime]
+    Feature --> Blog["@ottabase/ottablog"]
+    Feature --> Shortlinks["@ottabase/shortlinks"]
+    Feature --> Referrals["@ottabase/referrals"]
+    Feature --> Realtime["@ottabase/cf-realtime"]
 
     Tooling --> PNPM[pnpm workspaces]
     Tooling --> Turbo[Turborepo]
@@ -54,25 +54,25 @@ Primary app: `apps/ottabase-template-app-tanstack`
 
 ```mermaid
 flowchart LR
-    Browser[Browser SPA\nTanStack Router + React] -->|HTTP| Worker[Cloudflare Worker\ncloudflare-worker.ts]
+    Browser["Browser SPA<br/>TanStack Router + React"] -->|HTTP| Worker["Cloudflare Worker<br/>cloudflare-worker.ts"]
 
-    Worker --> Router[API Router\nworker/routes/router.ts]
-    Worker --> Assets[OBCF_ASSETS\nstatic assets]
+    Worker --> Router["API Router<br/>worker/routes/router.ts"]
+    Worker --> Assets["OBCF_ASSETS<br/>static assets"]
     Worker --> ShortlinkFallback[Shortlink fallback resolver]
 
     Router --> Auth[Auth handlers]
-    Router --> CRUD[Generic OttaORM CRUD\n/api/ottaorm/:entity]
-    Router --> PackageRoutes[Package route handlers\n(blog/referrals/shortlinks/etc)]
-    Router --> CustomRoutes[Custom routes\nottabase/config.routes.ts]
+    Router --> CRUD["Generic OttaORM CRUD<br/>/api/ottaorm/:entity"]
+    Router --> PackageRoutes["Package route handlers<br/>blog, referrals, shortlinks, etc"]
+    Router --> CustomRoutes["Custom routes<br/>ottabase/config.routes.ts"]
 
-    Worker --> Queue[Cloudflare Queues\nqueueHandler]
-    Worker --> DO[Durable Objects\nRealtimeActor]
+    Worker --> Queue["Cloudflare Queues<br/>queueHandler"]
+    Worker --> DO["Durable Objects<br/>RealtimeActor"]
 
     CRUD --> Models[Registered OttaORM models]
     PackageRoutes --> Models
     Auth --> Models
 
-    Models --> Driver[D1 driver\n@ottabase/db]
+    Models --> Driver["D1 driver<br/>@ottabase/db"]
     Driver --> D1[(Cloudflare D1)]
 
     Models --> KV[(Cloudflare KV)]
@@ -127,12 +127,12 @@ sequenceDiagram
 
 ```mermaid
 flowchart TD
-    UI[React pages/components] --> Hooks[createModelHooks from @ottabase/ottaorm/client]
-    Hooks --> API[HTTP calls to /api/ottaorm/:entity]
-    API --> WorkerRouter[worker/routes/router.ts]
+    UI["React pages/components"] --> Hooks["createModelHooks from @ottabase/ottaorm/client"]
+    Hooks --> API["HTTP calls to /api/ottaorm/:entity"]
+    API --> WorkerRouter["worker/routes/router.ts"]
     WorkerRouter --> CrudHandler[handleOttaormCrud]
     CrudHandler --> ModelRegistry[registerModels in initDbConnection]
-    ModelRegistry --> ModelMethods[BaseModel methods + custom model methods]
+    ModelRegistry --> ModelMethods["BaseModel methods + custom model methods"]
     ModelMethods --> D1[(D1)]
 ```
 
@@ -144,10 +144,10 @@ flowchart TD
 
 ```mermaid
 flowchart LR
-    Core[Core schemas\n@ottabase/ottaorm] --> All[getAllSchemas()]
-    App[App schemas\nottabase/models/*] --> All
-    Pkg[Enabled package schemas\ngetEnabledPackageTables()] --> All
-    All --> AutoInit[autoInit()]
+    Core["Core schemas<br/>@ottabase/ottaorm"] --> All["getAllSchemas()"]
+    App["App schemas<br/>ottabase/models/*"] --> All
+    Pkg["Enabled package schemas<br/>getEnabledPackageTables()"] --> All
+    All --> AutoInit["autoInit()"]
     AutoInit --> D1[(D1 tables)]
 ```
 
@@ -155,16 +155,16 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    Config[ottabase/ottabase.config.ts\npackages + customPackages toggles] --> Registry[ottabase/config.migrations.ts\nPACKAGE_REGISTRY]
+    Config["ottabase/ottabase.config.ts<br/>packages + customPackages toggles"] --> Registry["ottabase/config.migrations.ts<br/>PACKAGE_REGISTRY"]
 
-    Registry --> Tables[getEnabledPackageTables()]
-    Registry --> Migrations[getEnabledPackageMigrations()]
+    Registry --> Tables["getEnabledPackageTables()"]
+    Registry --> Migrations["getEnabledPackageMigrations()"]
 
-    Tables --> SchemasHelper[ottabase/db/schemas-helper.ts]
-    SchemasHelper --> Init[/api/ottaorm/init]
+    Tables --> SchemasHelper["ottabase/db/schemas-helper.ts"]
+    SchemasHelper --> Init["/api/ottaorm/init"]
     Migrations --> Init
 
-    Init --> AutoInit[@ottabase/ottaorm autoInit()]
+    Init --> AutoInit["@ottabase/ottaorm autoInit()"]
     AutoInit --> D1[(D1)]
 ```
 
@@ -240,7 +240,7 @@ flowchart LR
     DevRun --> WranglerDev[Wrangler worker dev server]
 
     WranglerDev --> WorkerRuntime[Worker runtime]
-    WorkerRuntime --> Api[/api/*]
+    WorkerRuntime --> Api["/api/*"]
     WorkerRuntime --> Assets[Asset serving]
 ```
 
@@ -255,24 +255,17 @@ flowchart LR
 
 ## Architecture Decisions
 
-1. Monorepo-first distribution
+1. **Monorepo-first distribution** — The template app composes many internal packages via `workspace:*`. This keeps
+   integration changes synchronized and reduces version skew.
 
-- The template app composes many internal packages via `workspace:*`.
-- This keeps integration changes synchronized and reduces version skew.
+2. **OttaORM as the domain center** — Model classes own data behavior and relationships. Reduces service/controller
+   sprawl.
 
-1. OttaORM as the domain center
+3. **Config-driven package composition** — Package routes, tables, and migrations are enabled by configuration. Supports
+   smaller app footprints without forking core runtime.
 
-- Model classes own data behavior and relationships.
-- Reduces service/controller sprawl.
-
-1. Config-driven package composition
-
-- Package routes, tables, and migrations are enabled by configuration.
-- Supports smaller app footprints without forking core runtime.
-
-1. Edge-native primitives by default
-
-- Cloudflare capabilities are first-class, not adapters bolted onto Node-first code.
+4. **Edge-native primitives by default** — Cloudflare capabilities are first-class, not adapters bolted onto Node-first
+   code.
 
 ## Limits and Future Evolution
 
