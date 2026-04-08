@@ -32,14 +32,15 @@ Durable Objects.
 > - **Breaking changes** - upstream releases may introduce breaking changes to internal APIs, package interfaces, or
 >   build tooling. Migration guides are provided when possible, but your customizations are your own to reconcile.
 >
-> **Recommended**: Read [ARCHITECTURE.md](./ARCHITECTURE.md), [CONTRIBUTING.md](./CONTRIBUTING.md), and
-> [SECURITY.md](./SECURITY.md) before making structural changes.
+> **Recommended**: Read [ARCHITECTURE.md](./docs/ARCHITECTURE.md), [CONTRIBUTING.md](./.github/CONTRIBUTING.md), and
+> [SECURITY.md](./.github/SECURITY.md) before making structural changes.
 
 ## Links
 
-- Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md), [Releases](./RELEASES.md)
-- Project health: [Contributing](./CONTRIBUTING.md), [Code of Conduct](./CODE_OF_CONDUCT.md), [Security](./SECURITY.md),
-  [Support](./SUPPORT.md), [Maintainers](./MAINTAINERS.md)
+- Docs: [README](./README.md), [Architecture](./docs/ARCHITECTURE.md), [Changelog](./CHANGELOG.md),
+  [Releases](./docs/RELEASES.md)
+- Project health: [Contributing](./.github/CONTRIBUTING.md), [Code of Conduct](./.github/CODE_OF_CONDUCT.md),
+  [Security](./.github/SECURITY.md), [Support](./.github/SUPPORT.md), [Maintainers](./.github/MAINTAINERS.md)
 - Demo: demo.ottabase.com
 - Community: [GitHub Discussions](https://github.com/thinkdj/ottabase/discussions)
 
@@ -470,15 +471,15 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 
 ## Docs
 
-- [Architecture](./ARCHITECTURE.md)
+- [Architecture](./docs/ARCHITECTURE.md)
 - [Changelog](./CHANGELOG.md)
-- [Contributing Guide](./CONTRIBUTING.md)
-- [Security Policy](./SECURITY.md)
+- [Contributing Guide](./.github/CONTRIBUTING.md)
+- [Security Policy](./.github/SECURITY.md)
 - [Template App README](./apps/ottabase-template-app-tanstack/README.md)
 - [OttaORM README](./packages/ottaorm/README.md)
-- [Cloudflare Deploy](./CLOUDFLARE_DEPLOY.md)
-- [Cloudflare Config](./CLOUDFLARE_CONFIGURATION_GUIDE.md)
-- [Testing](./TESTING.md)
+- [Cloudflare Deploy](./docs/CLOUDFLARE_DEPLOY.md)
+- [Cloudflare Config](./docs/CLOUDFLARE_CONFIGURATION_GUIDE.md)
+- [Testing](./docs/TESTING.md)
 
 ---
 

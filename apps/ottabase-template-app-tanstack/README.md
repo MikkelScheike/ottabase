@@ -439,7 +439,7 @@ these in your repository → Settings → Secrets → Actions:
 - `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID` (PR previews)
 - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
 
-See [CLOUDFLARE_DEPLOY.md](../../CLOUDFLARE_DEPLOY.md) for the full setup guide.
+See [CLOUDFLARE_DEPLOY.md](../../docs/CLOUDFLARE_DEPLOY.md) for the full setup guide.
 
 #### 3. Analytics (optional)
 
@@ -479,5 +479,5 @@ In production apps, you can safely delete:
 
 - [OttaORM Package](../../packages/ottaorm/README.md) - Full ORM documentation
 - [Migrations Guide](./ottabase/migrations/README.md) - Database migrations
-- [Cloudflare Deploy](../../CLOUDFLARE_DEPLOY.md) - Deployment guide
-- [Cloudflare Config](../../CLOUDFLARE_CONFIGURATION_GUIDE.md) - Bindings setup
+- [Cloudflare Deploy](../../docs/CLOUDFLARE_DEPLOY.md) - Deployment guide
+- [Cloudflare Config](../../docs/CLOUDFLARE_CONFIGURATION_GUIDE.md) - Bindings setup

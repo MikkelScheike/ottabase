@@ -994,6 +994,6 @@ of users ✅ **Maintainable** - Clear architecture, easy to extend
 
 ---
 
-Built with ❤️ by solo founders, for solo founders.
+Built with ❤️ by a solo founder, for solo founders.
 
 **Now go build something amazing!** 🚀
