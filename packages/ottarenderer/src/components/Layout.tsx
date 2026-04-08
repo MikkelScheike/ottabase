@@ -1,5 +1,4 @@
-import Blocks from 'editorjs-blocks-react-renderer';
-import { RenderFn } from 'editorjs-blocks-react-renderer';
+import Blocks, { RenderFn } from 'editorjs-blocks-react-renderer';
 import { baseRenderers } from '../baseRenderers';
 import { defaultEJSRConfigs } from '../rendererConfig';
 

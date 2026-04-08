@@ -34,6 +34,20 @@ function ensureD1(env: CloudflareEnv): Response | null {
     return null;
 }
 
+function resolveOrgId(request: Request, fallback: string | null = null): string | null {
+    const fromSession = fallback?.trim();
+    if (fromSession && fromSession !== 'null' && fromSession !== 'undefined') return fromSession;
+
+    const fromHeader = request.headers.get('x-org-id')?.trim();
+    if (fromHeader && fromHeader !== 'null' && fromHeader !== 'undefined') return fromHeader;
+
+    return null;
+}
+
+function resolveAppId(context: BlogRouteContext): string {
+    return context.url.searchParams.get('appId') || context.request.headers.get('x-app-id') || 'web';
+}
+
 /**
  * Convert a Post model to a public-safe JSON object.
  * Strips privateNotes. Strips content from protected posts unless explicitly included.
@@ -342,14 +356,13 @@ export async function handleBlogPostsList(context: BlogRouteContext): Promise<Re
 }
 
 export async function handleBlogPostBySlug(context: BlogRouteContext, slug: string): Promise<Response> {
-    const { env, url } = context;
+    const { env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const appId = url.searchParams.get('appId') || null;
-    const where: Record<string, unknown> = { slug, status: 'published' };
-    if (appId) where.appId = appId;
+    const appId = resolveAppId(context);
+    const where: Record<string, unknown> = { slug, status: 'published', appId };
     const record = await Post.first(where);
     if (!record) {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
@@ -371,7 +384,7 @@ export async function handleBlogPostBySlug(context: BlogRouteContext, slug: stri
 }
 
 export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<Response> {
-    const { request, env, url } = context;
+    const { request, env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
@@ -384,9 +397,8 @@ export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<R
         return errorResponse('slug and password are required', 400, { code: 'VALIDATION_ERROR' });
     }
 
-    const appId = url.searchParams.get('appId') || null;
-    const where: Record<string, unknown> = { slug, status: 'published' };
-    if (appId) where.appId = appId;
+    const appId = resolveAppId(context);
+    const where: Record<string, unknown> = { slug, status: 'published', appId };
     const record = await Post.first(where);
     if (!record) {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
@@ -717,7 +729,11 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
 
     const kitchensinkPublishedAt = new Date().toISOString();
 
-    const existing = await Post.findBySlug('kitchensink-ottablog');
+    const currentUserId = auth.session?.user?.id ?? null;
+    const currentOrganizationId = resolveOrgId(context.request, auth.session?.user?.organizationId ?? null);
+    const currentAppId = resolveAppId(context);
+
+    const existing = await Post.findBySlug('kitchensink-ottablog', { appId: currentAppId });
     if (existing) {
         existing.set('title', 'The Kitchensink of Ottablog');
         existing.set(
@@ -728,6 +744,13 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
         existing.set('contentType', 'blog');
         existing.set('status', 'published');
         existing.set('wordCount', 200);
+        // Always reassign to the requesting user so they can edit/delete it and appear as author
+        if (currentUserId) {
+            existing.set('userId', currentUserId);
+            existing.set('authorId', currentUserId);
+        }
+        existing.set('organizationId', currentOrganizationId);
+        existing.set('appId', currentAppId);
         if (!existing.get('publishedAt')) {
             existing.set('publishedAt', kitchensinkPublishedAt);
         }
@@ -749,13 +772,17 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
             status: 'published',
             publishedAt: kitchensinkPublishedAt,
             wordCount: 200,
+            userId: currentUserId,
+            authorId: currentUserId,
+            organizationId: currentOrganizationId,
+            appId: currentAppId,
         });
     } catch (error) {
         // If a concurrent request created the same slug, upsert onto that row.
         const message = error instanceof Error ? error.message : String(error);
         const isUniqueViolation = /unique|constraint|duplicate/i.test(message);
         if (isUniqueViolation) {
-            const concurrent = await Post.findBySlug('kitchensink-ottablog');
+            const concurrent = await Post.findBySlug('kitchensink-ottablog', { appId: currentAppId });
             if (concurrent) {
                 concurrent.set('title', 'The Kitchensink of Ottablog');
                 concurrent.set(
@@ -766,6 +793,12 @@ export async function handleBlogKitchensink(context: BlogRouteContext): Promise<
                 concurrent.set('contentType', 'blog');
                 concurrent.set('status', 'published');
                 concurrent.set('wordCount', 200);
+                if (currentUserId) {
+                    concurrent.set('userId', currentUserId);
+                    concurrent.set('authorId', currentUserId);
+                }
+                concurrent.set('organizationId', currentOrganizationId);
+                concurrent.set('appId', currentAppId);
                 if (!concurrent.get('publishedAt')) {
                     concurrent.set('publishedAt', kitchensinkPublishedAt);
                 }
