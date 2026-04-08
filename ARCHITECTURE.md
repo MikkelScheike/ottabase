@@ -48,6 +48,30 @@ flowchart TB
     Tooling --> Wrangler[Wrangler]
 ```
 
+## Package Dependency Layers
+
+Packages follow a strict layering model. Lower layers must never depend on higher layers.
+
+```mermaid
+flowchart BT
+    L0["Layer 0 — Leaf (no @ottabase deps)<br/>db, cf-realtime, ui-shadcn, state, utils"]
+    L1["Layer 1 — Infrastructure<br/>cf → config | ottaorm → db"]
+    L2["Layer 2 — Domain + Auth<br/>auth → cf, email, utils, ui-shadcn<br/>queue → cf | audit → ottaorm, logger<br/>shortlinks → ottaorm | referrals → ottaorm, db"]
+    L3["Layer 3 — Higher domain<br/>rbac → ottaorm, auth, logger, cf<br/>ottablog → ottaorm, ottarenderer<br/>brand-engine → ottaorm, cf, audit, ottalayout, ottamenu, utils"]
+    L4["Layer 4 — UI composition<br/>forms → ottaorm, ottaselect, ui-datatable"]
+    L5["Layer 5 — App<br/>ottabase-template-app-tanstack<br/>Composes all layers via workspace:*"]
+
+    L0 --> L1 --> L2 --> L3 --> L4 --> L5
+```
+
+**Rules:**
+
+- Packages may only depend on packages in the same or a lower layer.
+- Circular dependencies between packages are forbidden.
+- UI packages (`ui-shadcn`, `ui-mantine`, `state`) have zero `@ottabase/*` dependencies — they are leaf packages.
+- `@ottabase/db` is the lowest data layer; `@ottabase/ottaorm` depends on it, not the reverse.
+- Feature packages (`shortlinks`, `referrals`, `ottablog`) depend on `ottaorm` for persistence but not on each other.
+
 ## Runtime Architecture (Primary App)
 
 Primary app: `apps/ottabase-template-app-tanstack`
@@ -78,6 +102,26 @@ flowchart LR
     Models --> KV[(Cloudflare KV)]
     Models --> R2[(Cloudflare R2)]
 ```
+
+## Deployment Topology
+
+```mermaid
+flowchart LR
+    Client[Browser] -->|HTTPS| Edge[Cloudflare Edge]
+
+    Edge --> Worker[Workers Runtime]
+    Worker --> D1[(D1 — SQLite)]
+    Worker --> KV[(KV — Cache + State)]
+    Worker --> R2[(R2 — Object Storage)]
+    Worker --> Queue[Queues — Async Jobs]
+    Worker --> DO[Durable Objects — Realtime]
+    Worker --> WAE[Analytics Engine — Events]
+    Worker --> Assets[Static Assets — SPA]
+```
+
+All infrastructure is Cloudflare-native. There are no external databases, Redis instances, or third-party services
+required for core operation. Binding names use the `OBCF_*` prefix (`OBCF_D1`, `OBCF_KV`, `OBCF_R2`, `OBCF_QUEUE`,
+`OBCF_REALTIME`, `OBCF_RATE_LIMITER`).
 
 ## Request Lifecycle
 
@@ -123,6 +167,98 @@ sequenceDiagram
     end
 ```
 
+## Security and Isolation
+
+### Worker-Level Gates
+
+Every request passes through two gates before reaching application logic:
+
+1. **Kill switches** — checked first via `checkKillSwitches(request, env)`:
+    - `KILLSWITCH_LOCKDOWN`: returns `503` for all requests (full lockdown).
+    - `KILLSWITCH_READONLY_MODE`: blocks `POST`, `PUT`, `PATCH`, `DELETE` with `503` (read-only mode).
+
+2. **Bootstrap gate** — `resolvePlatformState(env)` determines if the platform is `READY`:
+    - `/__bootstrap__/*` paths are always handled (init, seed, create-owner, finalize).
+    - All other requests are intercepted with a "not ready" response until bootstrap completes.
+
+### CORS
+
+CORS is centralized in the worker entry. The `Origin` header is read (defaulting to `*`), and all API responses include
+`Access-Control-Allow-Credentials: true`, allowed methods (`GET, POST, PUT, PATCH, DELETE, OPTIONS`), and
+`Vary: Origin`.
+
+### Auth Flow
+
+Authentication uses Auth.js v5 (`@ottabase/auth`) with session resolution **per route**, not globally:
+
+```mermaid
+sequenceDiagram
+    participant C as Client
+    participant W as Worker
+    participant A as Auth.js
+    participant D as D1
+
+    C->>W: API request with session cookie
+    W->>W: resolveApiRoute()
+    W->>A: getSession(request, env)
+    A->>D: Lookup session + user
+    D-->>A: Session data
+    A-->>W: User session or null
+    W->>W: getSecurityContext(session)
+    W->>W: Apply RLS context to query
+```
+
+Session cookies are `HttpOnly` and `Secure`. OAuth providers (Google, GitHub) and credentials are supported. Auth routes
+live at `/api/auth/*` and are handled by `handleAuthJsRequest`.
+
+### Row-Level Security (RLS)
+
+RLS enforces data isolation at the OttaORM layer. `initRLS()` registers policies for every model so that queries are
+automatically filtered by security context (`userId`, `organizationId`, `appId`).
+
+**Policy types:** `TenantScoped`, `UserScoped`, `AppScoped`, `PublicReadOnly`, `AdminOnly`, `PermissionBased`,
+`OwnerOnly`, `Hierarchical`, and custom filter functions.
+
+**Pre-registered policies (subset):**
+
+| Model                         | Policy                    | Filter field     |
+| ----------------------------- | ------------------------- | ---------------- |
+| `organizations`               | Custom (owner/membership) | `organizationId` |
+| `organization_members`        | Tenant-scoped             | `organizationId` |
+| `roles`, `permissions`        | Tenant-scoped             | `organizationId` |
+| `users`                       | Owner-only                | `id`             |
+| `accounts`, `sessions`        | User-scoped               | `userId`         |
+| `posts`, `tags`, `shortlinks` | App-scoped                | `appId`          |
+| `audit_logs`                  | Tenant-scoped (read-only) | `organizationId` |
+| `system_config`               | Admin-only                | —                |
+
+Cross-tenant writes are blocked and logged automatically. See [RBAC_MULTI_TENANT_GUIDE.md](./RBAC_MULTI_TENANT_GUIDE.md)
+for the full policy list and configuration.
+
+## Multi-Tenancy Model
+
+Ottabase supports both multi-tenant SaaS and single-founder modes.
+
+```mermaid
+flowchart TD
+    Req[Incoming Request] --> Extract["Extract organizationId<br/>(header / subdomain / JWT / query)"]
+    Extract --> Context["Build SecurityContext<br/>userId + organizationId + appId + roles"]
+    Context --> RLS["RLS filters all queries<br/>by organizationId automatically"]
+    RLS --> D1[(D1)]
+
+    Context --> RBAC["RBAC checks permissions<br/>scoped to org + role"]
+    RBAC --> Allow[Allow / Deny]
+```
+
+**Key properties:**
+
+- `organizationId` is extracted from `X-Org-Id` header, subdomain, JWT claim, or query parameter (priority order).
+- All tenant-scoped models include an `organizationId` column. RLS injects this filter automatically.
+- RBAC roles and permissions are scoped per organization. A user can be `admin` in one org and `member` in another.
+- Caching (`@ottabase/rbac`) uses per-org KV keys with O(1) invalidation.
+- `allowNullTenant: true` enables single-founder mode (no organization required).
+- Cross-tenant data access returns `403 Forbidden` and is logged to `audit_logs`.
+
 ## Frontend-to-Backend Integration
 
 ```mermaid
@@ -137,6 +273,32 @@ flowchart TD
 ```
 
 ## Data Architecture
+
+### Core Data Model
+
+```mermaid
+erDiagram
+    User ||--o{ Account : "has"
+    User ||--o{ Session : "has"
+    User ||--o{ OrganizationMember : "belongs to orgs"
+    User ||--o{ UserRole : "assigned roles"
+
+    Organization ||--o{ OrganizationMember : "has members"
+    Organization ||--o{ Role : "scoped roles"
+    Organization ||--o{ AuditLog : "audit trail"
+
+    Role ||--o{ UserRole : "assigned to users"
+    Role ||--o{ Permission : "grants"
+
+    Tag }o--o{ Post : "tagged"
+    Post ||--o{ Media : "attachments"
+```
+
+**Core models** (from `@ottabase/ottaorm`): `User`, `Account`, `Session`, `Authenticator`, `VerificationToken`,
+`Organization`, `OrganizationMember`, `Role`, `Permission`, `UserRole`, `AuditLog`, `ScheduledTask`, `Tag`, `Media`.
+
+**Package models** (owned by feature packages): `Post`, `Category`, `Series` (`@ottabase/ottablog`), `Shortlink`
+(`@ottabase/shortlinks`), `ReferralTracking` (`@ottabase/referrals`), `Comment` (`@ottabase/comments`).
 
 ### Schema Sources
 
@@ -177,56 +339,59 @@ Ottabase follows a fat-model design:
 - Route handlers stay thin (auth/validation/orchestration)
 - Generic CRUD API delegates behavior to registered models
 
+### BaseModel API Surface
+
 ```mermaid
 classDiagram
     class BaseModel {
-      +static entity
-      +static table
-      +save()
-      +delete()
-      +find()
-      +where()
-      +belongsTo()
-      +hasMany()
+        +static entity: string
+        +static table: SQLiteTable
+        +static find(id)
+        +static first(conditions)
+        +static where(conditions)
+        +static whereIn(field, values)
+        +static all()
+        +static create(data)
+        +static update(id, data)
+        +static delete(id)
+        +static count(conditions)
+        +static search(query, options)
+        +static paginate(options)
+        +save()
+        +destroy()
+        +refresh()
+        +fill(data)
+        +get(field)
+        +set(field, value)
+        +toJson()
     }
 
     class AppModel {
-      +customDomainMethod()
+        +customDomainMethod()
     }
 
     class PackageModel {
-      +packageSpecificMethod()
+        +packageSpecificMethod()
     }
 
-    BaseModel <|-- AppModel
-    BaseModel <|-- PackageModel
+    BaseModel <|-- AppModel : "app models in ottabase/models/"
+    BaseModel <|-- PackageModel : "package models in packages/*/src/"
 ```
 
-## Security and Isolation
+**Relationship methods** (protected, used inside model classes): `belongsTo()`, `hasMany()`, `hasOne()`,
+`belongsToMany()`. These use dynamic imports to avoid circular dependencies.
 
-### Runtime Controls
+**Additional static methods**: `withTrashed()`, `onlyTrashed()`, `forceDelete()`, `restore()`, `isUnique()`,
+`searchPaginate()`, `batch()`, `loadAll()`, `validate()`, `getFields()`.
 
-- Kill-switch checks run at the start of request handling
-- Bootstrap gate enforces platform readiness before normal traffic
-- CORS handling is centralized in worker request flow
+## Error Handling and Observability
 
-### Auth and Access Controls
-
-- Auth handlers operate through app-level routes
-- RBAC tables are part of core schema set (roles, permissions, user_roles)
-- `initRLS()` is called during DB initialization to enforce row-level rules
-- Organization-scoped access is enforced through RLS/RBAC context
-
-## Cloudflare Bindings Model
-
-The system is designed around Cloudflare-native primitives:
-
-- D1 for relational data
-- KV for caching and key-value state
-- R2 for object storage
-- Queues for async jobs
-- Durable Objects for realtime channels
-- Static asset binding for SPA delivery
+- **API errors** use `errorResponse(...)` from `@ottabase/utils/http-errors` for consistent JSON error responses with
+  status codes and error codes.
+- **Structured logging** via `@ottabase/logger` supports Console, HTTP, Sentry, Memory, and Buffer transports.
+- **Audit logging** via `@ottabase/audit` records `create`, `update`, `delete`, `auth`, `role-assign`, and `failure`
+  events with full context (userId, organizationId, appId, IP, user agent, before/after diffs).
+- **RLS violations** are logged automatically with the blocked query context.
 
 ## Build and Execution Pipeline
 
@@ -255,17 +420,61 @@ flowchart LR
 
 ## Architecture Decisions
 
-1. **Monorepo-first distribution** — The template app composes many internal packages via `workspace:*`. This keeps
-   integration changes synchronized and reduces version skew.
+### ADR-1: Monorepo-first distribution
 
-2. **OttaORM as the domain center** — Model classes own data behavior and relationships. Reduces service/controller
-   sprawl.
+**Context:** Ottabase ships as a set of tightly integrated packages (ORM, auth, RBAC, UI, blog, etc.). Publishing each
+as an independent npm package would create version skew and complex integration testing.
 
-3. **Config-driven package composition** — Package routes, tables, and migrations are enabled by configuration. Supports
-   smaller app footprints without forking core runtime.
+**Decision:** Distribute as a monorepo that consumers clone and modify. Internal packages use `workspace:*` references.
 
-4. **Edge-native primitives by default** — Cloudflare capabilities are first-class, not adapters bolted onto Node-first
-   code.
+**Consequences:** Integration changes are synchronized atomically. Consumers own their fork and are responsible for
+merging upstream changes. Trade-off: higher coupling, but version skew is eliminated.
+
+### ADR-2: OttaORM as the domain center (fat models over services)
+
+**Context:** SaaS apps accumulate business logic. The common MVC pattern scatters logic across controllers, services,
+and repositories — making it hard to find and maintain.
+
+**Decision:** All domain logic lives in `BaseModel` subclasses (Active Record pattern). Route handlers stay thin (auth +
+validation + orchestration). There is no service layer.
+
+**Consequences:** Models are self-contained and testable. Complex cross-model orchestration may bloat individual models
+over time. Mitigation: use model composition and keep methods focused on single-entity behavior.
+
+### ADR-3: Config-driven package composition
+
+**Context:** Different apps need different feature sets. A blog app doesn't need shortlinks; an analytics dashboard
+doesn't need the blog.
+
+**Decision:** Package tables, routes, and migrations are toggled via `ottabase.config.ts` (`packages` and
+`customPackages`). `PACKAGE_REGISTRY` in `config.migrations.ts` maps enabled packages to their schemas and migrations.
+
+**Consequences:** Smaller app footprints without forking the runtime. Adding a new package requires registration in
+config + registry + model registry (`db-utils.ts`), not code changes to the core framework.
+
+### ADR-4: Edge-native primitives by default
+
+**Context:** Traditional SaaS stacks use Node.js servers with external databases (Postgres, Redis, S3). This requires
+managing servers, connection pools, and multi-region replication.
+
+**Decision:** Build on Cloudflare Workers with D1 (SQLite), KV, R2, Queues, and Durable Objects as first-class
+primitives. No Node.js-only APIs in app/package code.
+
+**Consequences:** Global edge execution with minimal cold starts. Cost-predictable infrastructure. Trade-off: vendor
+lock-in to Cloudflare (acknowledged in README). D1 is SQLite-based, so some Postgres features (e.g., JSONB operators,
+full-text search) are unavailable.
+
+### ADR-5: Row-Level Security at the ORM layer
+
+**Context:** Multi-tenant apps must prevent cross-tenant data leaks. Manual `WHERE organizationId = ?` filtering in
+every query is error-prone and easy to forget.
+
+**Decision:** Implement RLS as an OttaORM middleware that automatically injects tenant/user/app filters into all queries
+based on a `SecurityContext`. Policies are registered per model via `registerPolicy()` and activated by `initRLS()`.
+
+**Consequences:** Data isolation is enforced by default — developers cannot accidentally query across tenants.
+Violations are blocked and logged. Trade-off: every query incurs a small overhead for policy evaluation. Custom queries
+that bypass OttaORM (raw SQL) are not protected by RLS.
 
 ## Limits and Future Evolution
 
@@ -274,6 +483,8 @@ Current constraints to keep in mind:
 - Feature enablement is app-config driven; package interoperability testing must remain strong.
 - Some package domains are tightly coupled to Cloudflare bindings.
 - Cross-package release management is simpler in-monorepo but requires strong CI discipline.
+- D1 is SQLite-based: no stored procedures, limited concurrent write throughput, no native full-text search.
+- Raw Drizzle queries bypass RLS — use BaseModel methods for all tenant-scoped data access.
 
 Potential evolutions:
 
