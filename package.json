@@ -53,6 +53,7 @@
         "clean:reset": "pnpm --filter @ottabase/scripts run clean-reset",
         "clean:db": "pnpm --filter @ottabase/scripts run clean-db",
         "clean:kv": "pnpm --filter @ottabase/scripts run clean-kv",
+        "clean:cf": "pnpm clean:db && pnpm clean:kv",
         "test": "turbo test -- --run",
         "test:all": "turbo test --filter=./packages/* --filter=./apps/*",
         "test:packages": "turbo test --filter=./packages/*",
