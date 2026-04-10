@@ -1,7 +1,8 @@
 /**
- * Admin Blog List Page
+ * Admin Content List Page
  *
- * Lists all blog posts with filtering, status management, and CRUD operations.
+ * Unified content management for all content types (blog, changelog, docs, news, announcements).
+ * Lists all posts with filtering, status management, and CRUD operations.
  */
 import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
 import { api } from '@/lib/api';
@@ -23,10 +24,15 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
     Input,
 } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import {
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Clock,
@@ -40,8 +46,11 @@ import {
     Star,
     Trash2,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BlogAdminNav } from './BlogAdminNav';
+
+/** Debounce delay for search input (ms) */
+const SEARCH_DEBOUNCE_MS = 300;
 
 interface BlogPost {
     id: string;
@@ -62,8 +71,31 @@ const blogPostHooks = createModelHooks<BlogPost>({ entityName: 'posts' });
 
 const POSTS_PER_PAGE = 20;
 
+/** Get the correct public URL for a post based on its content type */
+function getPublicUrl(slug: string, contentType: ContentType): string {
+    switch (contentType) {
+        case 'changelog':
+            return `/changelog/${slug}`;
+        case 'docs':
+            return `/docs/${slug}`;
+        default:
+            return `/blog/${slug}`;
+    }
+}
+
+/** Content type tabs - all singular for consistency */
+const CONTENT_TYPE_TABS: Array<{ value: ContentType | 'all'; label: string }> = [
+    { value: 'all', label: 'All' },
+    { value: 'blog', label: 'Blog Post' },
+    { value: 'changelog', label: 'Changelog' },
+    { value: 'docs', label: 'Doc' },
+    { value: 'news', label: 'News' },
+    { value: 'announcement', label: 'Announcement' },
+];
+
 export function AdminBlogListPage() {
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchInput, setSearchInput] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<PostStatus | 'all'>('all');
     const [contentTypeFilter, setContentTypeFilter] = useState<ContentType | 'all'>('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -73,6 +105,16 @@ export function AdminBlogListPage() {
         title: '',
         message: '',
     });
+
+    // Debounce search input to reduce API calls
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchInput.trim());
+            setCurrentPage(1); // Reset to page 1 when search changes
+        }, SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(timer);
+    }, [searchInput]);
+
     const [kitchensinkState, setKitchensinkState] = useState<'idle' | 'loading' | 'created' | 'exists'>('idle');
     const [kitchensinkSlug, setKitchensinkSlug] = useState<string | null>(null);
 
@@ -97,7 +139,7 @@ export function AdminBlogListPage() {
         whereClause.contentType = contentTypeFilter;
     }
 
-    // Fetch posts with pagination and server-side filtering
+    // Fetch posts with pagination and server-side filtering + search
     const {
         data: postsResponse,
         isLoading,
@@ -105,6 +147,7 @@ export function AdminBlogListPage() {
     } = blogPostHooks.useList(
         {
             where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
+            search: debouncedSearch || undefined,
             orderBy: 'updatedAt',
             orderDirection: 'desc',
             limit: POSTS_PER_PAGE,
@@ -115,16 +158,13 @@ export function AdminBlogListPage() {
 
     const posts = postsResponse || [];
 
+    const updatePost = blogPostHooks.useUpdate();
     const deletePost = blogPostHooks.useDelete();
 
-    // Client-side search filter (only for search query, other filters are server-side)
-    const filteredPosts = searchQuery
-        ? posts.filter(
-              (post) =>
-                  post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                  post.slug.toLowerCase().includes(searchQuery.toLowerCase()),
-          )
-        : posts;
+    // Toggle highlight/featured status
+    const handleToggleFeatured = (id: string, currentValue: boolean) => {
+        updatePost.mutate({ id, data: { isFeatured: !currentValue } });
+    };
 
     // Reset to page 1 when filters change
     const handleFilterChange = (callback: () => void) => {
@@ -179,8 +219,10 @@ export function AdminBlogListPage() {
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Blog Posts</h1>
-                    <p className="text-muted-foreground mt-1">Manage your blog posts, changelogs, and documentation.</p>
+                    <h1 className="text-3xl font-bold tracking-tight">Content</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Manage blog posts, changelogs, documentation, news, and announcements.
+                    </p>
                 </div>
                 <div className="flex items-center gap-2">
                     {/* Seed Kitchensink: creates a demo post with all block types */}
@@ -207,15 +249,44 @@ export function AdminBlogListPage() {
                         ) : (
                             <FileText className="mr-2 h-4 w-4" />
                         )}
-                        Seed Kitchensink
+                        Seed Demo
                     </Button>
-                    <Button asChild>
-                        <Link to="/admin/blog/new">
-                            <Plus className="mr-2 h-4 w-4" />
-                            New Post
-                        </Link>
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button>
+                                <Plus className="mr-2 h-4 w-4" />
+                                New
+                                <ChevronDown className="ml-1 h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {Object.entries(CONTENT_TYPES).map(([value, { label }]) => (
+                                <DropdownMenuItem key={value} asChild>
+                                    <Link to="/admin/blog/new" search={{ contentType: value }}>
+                                        {label}
+                                    </Link>
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
+            </div>
+
+            {/* Content Type Tabs */}
+            <div className="flex items-center gap-1 border-b">
+                {CONTENT_TYPE_TABS.map(({ value, label }) => (
+                    <button
+                        key={value}
+                        onClick={() => handleFilterChange(() => setContentTypeFilter(value))}
+                        className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                            contentTypeFilter === value
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-muted-foreground/30'
+                        }`}
+                    >
+                        {label}
+                    </button>
+                ))}
             </div>
 
             {/* Filters */}
@@ -226,11 +297,14 @@ export function AdminBlogListPage() {
                         <div className="relative flex-1">
                             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                             <Input
-                                placeholder="Search posts..."
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
+                                placeholder="Search by title, slug, or excerpt..."
+                                value={searchInput}
+                                onChange={(e) => setSearchInput(e.target.value)}
                                 className="pl-9"
                             />
+                            {isLoading && debouncedSearch && (
+                                <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />
+                            )}
                         </div>
 
                         {/* Status Filter */}
@@ -252,23 +326,6 @@ export function AdminBlogListPage() {
                                 ))}
                             </select>
                         </div>
-
-                        {/* Content Type Filter */}
-                        <select
-                            value={contentTypeFilter}
-                            onChange={(e) =>
-                                handleFilterChange(() => setContentTypeFilter(e.target.value as ContentType | 'all'))
-                            }
-                            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-                            aria-label="Filter by content type"
-                        >
-                            <option value="all">All Types</option>
-                            {Object.entries(CONTENT_TYPES).map(([value, { label }]) => (
-                                <option key={value} value={value}>
-                                    {label}
-                                </option>
-                            ))}
-                        </select>
                     </div>
                 </CardContent>
             </Card>
@@ -286,15 +343,15 @@ export function AdminBlogListPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
-                        <span>Posts</span>
+                        <span>{CONTENT_TYPE_TABS.find((t) => t.value === contentTypeFilter)?.label || 'Content'}</span>
                         {isLoading && <span className="text-sm font-normal text-muted-foreground">Loading...</span>}
                     </CardTitle>
                     <CardDescription>
-                        {filteredPosts.length} post{filteredPosts.length !== 1 ? 's' : ''} found
+                        {posts.length} item{posts.length !== 1 ? 's' : ''}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {filteredPosts.length === 0 ? (
+                    {posts.length === 0 ? (
                         <div className="text-center py-12">
                             <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                             <h3 className="mt-4 text-lg font-semibold">No posts found</h3>
@@ -314,16 +371,26 @@ export function AdminBlogListPage() {
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {filteredPosts.map((post) => (
+                            {posts.map((post) => (
                                 <div
                                     key={post.id}
                                     className="flex items-start justify-between gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
                                 >
                                     <div className="flex-1 space-y-2">
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            {post.isFeatured && (
-                                                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                                            )}
+                                            <button
+                                                type="button"
+                                                title={post.isFeatured ? 'Remove highlight' : 'Highlight this post'}
+                                                className="shrink-0 text-muted-foreground hover:text-yellow-500 transition-colors"
+                                                onClick={() => handleToggleFeatured(post.id, post.isFeatured)}
+                                                disabled={updatePost.isPending}
+                                            >
+                                                {post.isFeatured ? (
+                                                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                                ) : (
+                                                    <Star className="h-4 w-4" />
+                                                )}
+                                            </button>
                                             <Link
                                                 to="/admin/blog/$postId/edit"
                                                 params={{ postId: post.id }}
@@ -356,10 +423,10 @@ export function AdminBlogListPage() {
                                     <div className="flex items-center gap-2">
                                         <Button variant="ghost" size="icon" asChild>
                                             <a
-                                                href={`/blog/${post.slug}`}
+                                                href={getPublicUrl(post.slug, post.contentType)}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                aria-label="View post"
+                                                aria-label="View"
                                             >
                                                 <Eye className="h-4 w-4" />
                                             </a>
@@ -386,11 +453,11 @@ export function AdminBlogListPage() {
             </Card>
 
             {/* Pagination Controls */}
-            {!isLoading && filteredPosts.length > 0 && (
+            {!isLoading && posts.length > 0 && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Showing {Math.min((currentPage - 1) * POSTS_PER_PAGE + 1, filteredPosts.length)} to{' '}
-                        {Math.min(currentPage * POSTS_PER_PAGE, filteredPosts.length)} results
+                        Showing {Math.min((currentPage - 1) * POSTS_PER_PAGE + 1, posts.length)} to{' '}
+                        {Math.min(currentPage * POSTS_PER_PAGE, posts.length)} results
                     </p>
                     <div className="flex items-center gap-2">
                         <Button

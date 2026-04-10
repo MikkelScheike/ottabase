@@ -23,8 +23,8 @@ import {
 
 // brandEngine is core — BrandEngine/Theme Generator always shown
 const PACKAGE_LINK_KEYS: Record<string, keyof typeof PACKAGES_ENABLED> = {
-    'Blog Management': 'ottablog',
-    'Blog Studio': 'ottablog',
+    Content: 'ottablog',
+    'Content Theme': 'ottablog',
     'Referral Tracking': 'referrals',
 };
 
@@ -70,22 +70,16 @@ const ADMIN_CATEGORIES: AdminCategory[] = [
         label: 'Content',
         links: [
             {
-                title: 'Blog Management',
-                description: 'Create and manage blog posts, changelogs, and documentation.',
+                title: 'Content Management',
+                description: 'Create and manage blog posts, changelogs, docs, news, and announcements.',
                 href: '/admin/blog',
                 icon: FileText,
             },
             {
-                title: 'Blog Studio',
-                description: 'Manage blog themes and plugins (activate theme, enable/disable plugins).',
+                title: 'Content Theme',
+                description: 'Manage content themes and plugins (activate theme, enable/disable plugins).',
                 href: '/admin/blog/studio',
                 icon: Palette,
-            },
-            {
-                title: 'Changelog',
-                description: 'Product updates at /changelog.',
-                href: '/admin/changelog',
-                icon: FileText,
             },
             ...(MEDIA_LIBRARY_ENABLED
                 ? [

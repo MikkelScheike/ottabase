@@ -209,8 +209,8 @@ export function AdminBlogStudioPage() {
             <BlogAdminNav />
 
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Blog Studio</h1>
-                <p className="text-muted-foreground mt-1">Manage themes and plugins for your blog.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Content Theme</h1>
+                <p className="text-muted-foreground mt-1">Manage themes and plugins for your content.</p>
             </div>
 
             {isLoading ? (

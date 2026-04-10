@@ -9,11 +9,11 @@ import { Link, useLocation } from '@tanstack/react-router';
 import { FileText, FolderTree, Layers, Palette, Tag } from 'lucide-react';
 
 const NAV_ITEMS = [
-    { to: '/admin/blog', label: 'Posts', icon: FileText, exact: true },
-    { to: '/admin/blog/tags', label: 'Tags', icon: Tag },
-    { to: '/admin/blog/categories', label: 'Categories', icon: FolderTree },
+    { to: '/admin/blog', label: 'Content', icon: FileText, exact: true },
+    { to: '/admin/blog/tags', label: 'Tag', icon: Tag },
+    { to: '/admin/blog/categories', label: 'Category', icon: FolderTree },
     { to: '/admin/blog/series', label: 'Series', icon: Layers },
-    { to: '/admin/blog/studio', label: 'Studio', icon: Palette },
+    { to: '/admin/blog/studio', label: 'Theme', icon: Palette },
 ] as const;
 
 export function BlogAdminNav() {
