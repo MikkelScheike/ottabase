@@ -12,6 +12,7 @@ import {
     createBrowserHistory,
     lazyRouteComponent,
     Link,
+    Navigate,
     Outlet,
     RootRoute,
     Route,
@@ -825,6 +826,9 @@ const adminBlogRoute = new Route({
 const adminBlogNewRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/admin/blog/new',
+    validateSearch: (search: Record<string, unknown>) => ({
+        contentType: typeof search.contentType === 'string' ? search.contentType : undefined,
+    }),
     component: lazyRouteComponent(() =>
         import('@/pages/admin/blog/AdminBlogEditorPage').then((m) => ({
             default: () => renderAdminRoute(<m.AdminBlogEditorPage />),
@@ -990,24 +994,22 @@ const adminChangelogRoute = new Route({
     ),
 });
 
+// Admin changelog new/edit routes redirect to blog editor with contentType=changelog
 const adminChangelogNewRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/admin/changelog/new',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/changelog/AdminChangelogEditorPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminChangelogEditorPage />),
-        })),
-    ),
+    component: () => <Navigate to="/admin/blog/new" search={{ contentType: 'changelog' }} />,
 });
 
 const adminChangelogEditRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/admin/changelog/$entryId/edit',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/changelog/AdminChangelogEditorPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminChangelogEditorPage />),
-        })),
-    ),
+    component: () => {
+        // Read entryId at render time and redirect to blog edit
+        const params = window.location.pathname.match(/\/admin\/changelog\/([^/]+)\/edit/);
+        const entryId = params?.[1] ?? '';
+        return <Navigate to="/admin/blog/$postId/edit" params={{ postId: entryId }} />;
+    },
 });
 
 // Organizations routes

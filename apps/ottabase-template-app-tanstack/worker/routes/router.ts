@@ -38,18 +38,18 @@ import {
     handleAdminRolesList,
 } from './admin-roles';
 import { handleAdminUserById, handleAdminUsers } from './admin-users';
+import { handleAuditLogs } from './audit';
 import {
     handleAuthConfig,
     handleAuthJsRequest,
-    handlePasswordChange,
     handleAuthRegister,
+    handlePasswordChange,
     handlePasswordResetConfirm,
     handlePasswordResetRequest,
     handleUserProfile,
     handleVerifyEmail,
     handleVerifyEmailResend,
 } from './auth';
-import { handleAuditLogs } from './audit';
 import {
     handleBlogCategoryBySlug,
     handleBlogKitchensink,
@@ -67,7 +67,6 @@ import {
     handleBlogStudioState,
     handleBlogTagBySlug,
 } from './blog';
-import { handleChangelogEntriesList, handleChangelogEntryBySlug } from './changelog';
 import { handleBrandApi } from './brand';
 import {
     handleAIChat,
@@ -171,15 +170,6 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
             name: 'ottabase-template-app-tanstack',
             timestamp: Date.now(),
         });
-    }
-
-    if (route === '/api/changelog/entries') {
-        return handleChangelogEntriesList(context);
-    }
-    const changelogBySlugMatch = route.match(/^\/api\/changelog\/entries\/by-slug\/([^/]+)$/);
-    if (changelogBySlugMatch) {
-        const slug = decodeURIComponent(changelogBySlugMatch[1]);
-        return handleChangelogEntryBySlug(context, slug);
     }
 
     if (route === '/api/system/kill-switches') {

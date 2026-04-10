@@ -83,7 +83,7 @@ const ADMIN_CATEGORIES: AdminCategory[] = [
             },
             {
                 title: 'Changelog',
-                description: 'Product updates for the public /changelog page (OttaEditor + hero media).',
+                description: 'Product updates at /changelog.',
                 href: '/admin/changelog',
                 icon: FileText,
             },

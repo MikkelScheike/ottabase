@@ -267,7 +267,7 @@ export async function handleBlogPostsList(context: BlogRouteContext): Promise<Re
     if (contentType) {
         where.contentType = contentType;
     } else {
-        // Dedicated changelog lives at /changelog (changelog_entries); keep blog list blog-only
+        // By default, exclude changelog posts from the blog list (changelog has its own UI at /changelog)
         where.contentType = { $ne: 'changelog' };
     }
     if (seriesId) where.seriesId = seriesId;
@@ -361,19 +361,28 @@ export async function handleBlogPostsList(context: BlogRouteContext): Promise<Re
 }
 
 export async function handleBlogPostBySlug(context: BlogRouteContext, slug: string): Promise<Response> {
-    const { env } = context;
+    const { env, url } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
     const appId = resolveAppId(context);
+    const contentTypeParam = url.searchParams.get('contentType') || null;
     const where: Record<string, unknown> = { slug, status: 'published', appId };
+
+    // Add contentType filter if provided
+    if (contentTypeParam) {
+        where.contentType = contentTypeParam;
+    }
+
     const record = await Post.first(where);
     if (!record) {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
     }
 
-    if (record.get('contentType') === 'changelog') {
+    // Changelogs require explicit opt-in via contentType=changelog parameter.
+    // Without it, changelog posts are hidden from the regular blog API.
+    if (!contentTypeParam && record.get('contentType') === 'changelog') {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
     }
 
@@ -389,7 +398,7 @@ export async function handleBlogPostBySlug(context: BlogRouteContext, slug: stri
 }
 
 export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<Response> {
-    const { request, env } = context;
+    const { request, env, url } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
@@ -403,13 +412,22 @@ export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<R
     }
 
     const appId = resolveAppId(context);
+    const contentTypeParam = url.searchParams.get('contentType') || null;
     const where: Record<string, unknown> = { slug, status: 'published', appId };
+
+    // Add contentType filter if provided
+    if (contentTypeParam) {
+        where.contentType = contentTypeParam;
+    }
+
     const record = await Post.first(where);
     if (!record) {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
     }
 
-    if (record.get('contentType') === 'changelog') {
+    // Changelogs require explicit opt-in via contentType=changelog parameter.
+    // Without it, changelog posts are hidden from the regular blog API.
+    if (!contentTypeParam && record.get('contentType') === 'changelog') {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
     }
 

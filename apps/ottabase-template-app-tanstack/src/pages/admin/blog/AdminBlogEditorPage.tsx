@@ -63,7 +63,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { useQueryClient } from '@tanstack/react-query';
 import { UnsavedChangesDialog } from '@/components/editor/UnsavedChangesDialog';
 import { useEditorLeaveGuard } from '@/hooks/useEditorLeaveGuard';
-import { Link, useNavigate, useParams } from '@tanstack/react-router';
+import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import * as Diff from 'diff';
 import {
     ArrowLeft,
@@ -217,7 +217,10 @@ const getEditorConfig = (placeholder: string) => ({
 // Wrapper component that handles data loading
 export function AdminBlogEditorPage() {
     const params = useParams({ strict: false });
+    const search = useSearch({ strict: false }) as { contentType?: string };
     const postId = (params as { postId?: string }).postId;
+    // For new posts, use contentType from URL search params (e.g., ?contentType=changelog)
+    const defaultContentType = search.contentType as ContentType | undefined;
     const isEditMode = Boolean(postId);
 
     // Fetch data in the wrapper
@@ -233,7 +236,14 @@ export function AdminBlogEditorPage() {
     }
 
     // Render the form only when data is ready
-    return <BlogEditorForm postId={postId} isEditMode={isEditMode} initialData={existingPost ?? undefined} />;
+    return (
+        <BlogEditorForm
+            postId={postId}
+            isEditMode={isEditMode}
+            initialData={existingPost ?? undefined}
+            defaultContentType={defaultContentType}
+        />
+    );
 }
 
 // Inner component that uses the editor hook - only mounted when data is ready
@@ -241,9 +251,10 @@ interface BlogEditorFormProps {
     postId?: string;
     isEditMode: boolean;
     initialData?: BlogPost;
+    defaultContentType?: ContentType;
 }
 
-function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps) {
+function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }: BlogEditorFormProps) {
     const navigate = useNavigate();
     const { user } = useSession({ skipAutoSync: true });
 
@@ -251,7 +262,9 @@ function BlogEditorForm({ postId, isEditMode, initialData }: BlogEditorFormProps
     const [title, setTitle] = useState(initialData?.title || '');
     const [slug, setSlug] = useState(initialData?.slug || '');
     const [excerpt, setExcerpt] = useState(initialData?.excerpt || '');
-    const [contentType, setContentType] = useState<ContentType>(initialData?.contentType || 'blog');
+    const [contentType, setContentType] = useState<ContentType>(
+        initialData?.contentType || defaultContentType || 'blog',
+    );
     const [status, setStatus] = useState<PostStatus>(initialData?.status || 'draft');
     const [authorName, setAuthorName] = useState(initialData?.authorName ?? (isEditMode ? '' : (user?.name ?? '')));
     const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured || false);
