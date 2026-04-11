@@ -13,7 +13,10 @@ export function DemoLayout() {
 
     useEffect(() => {
         // Keep demo navigation predictable: every /demo/* page starts at top.
-        contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+        // Scroll both the <main> element and the window since the actual scroll
+        // container depends on the parent layout (ottalayout may use window scroll).
+        contentRef.current?.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, left: 0, behavior: 'smooth' });
     }, [location.pathname]);
 
     const filteredItems = useMemo(() => {
