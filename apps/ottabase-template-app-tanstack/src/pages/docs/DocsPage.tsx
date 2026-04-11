@@ -1,5 +1,6 @@
 import { DocsLayout, buildPageSlug } from '@ottabase/docs';
 import '@ottabase/docs/styles.css';
+import { useLayoutMeta } from '@ottabase/ottalayout/react';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect } from 'react';
 import { docsConfig } from './docs.config';
@@ -7,6 +8,9 @@ import { docsConfig } from './docs.config';
 const BASE_PATH = '/docs';
 
 export function DocsPage() {
+    // Full-bleed docs layout: remove shell padding/max-width so docs manages its own sizing
+    useLayoutMeta({ contentWidth: 'full', containerPadding: 'none', density: 'compact', footer: false });
+
     const location = useLocation();
     const navigate = useNavigate();
     const isOnDocsRoute = location.pathname === BASE_PATH || location.pathname.startsWith(`${BASE_PATH}/`);

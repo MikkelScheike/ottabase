@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
 import { DocsLayout } from '../components/DocsLayout';
 
 const mockConfig = {
@@ -48,5 +48,32 @@ describe('DocsLayout', () => {
         expect(setItem).toHaveBeenCalledWith('ottabase.docs.theme', 'compact');
 
         setItem.mockRestore();
+    });
+
+    it('toggles mobile nav and closes on Escape', () => {
+        const { container } = render(<DocsLayout config={mockConfig} activeSlug="guides/intro" />);
+
+        const toggle = screen.getByRole('button', { name: /toggle navigation/i });
+        const sidebar = container.querySelector('aside.otta-docs-sidebar');
+        expect(sidebar).not.toHaveClass('otta-docs-sidebar-open');
+
+        fireEvent.click(toggle);
+        expect(sidebar).toHaveClass('otta-docs-sidebar-open');
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+        expect(sidebar).not.toHaveClass('otta-docs-sidebar-open');
+    });
+
+    it('locks body scroll while mobile nav is open', () => {
+        render(<DocsLayout config={mockConfig} activeSlug="guides/intro" />);
+
+        const toggle = screen.getByRole('button', { name: /toggle navigation/i });
+        expect(document.body.style.overflow).toBe('');
+
+        fireEvent.click(toggle);
+        expect(document.body.style.overflow).toBe('hidden');
+
+        fireEvent.click(toggle);
+        expect(document.body.style.overflow).toBe('');
     });
 });

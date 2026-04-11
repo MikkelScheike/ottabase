@@ -33,12 +33,30 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
     const mode = codeRenderMode ?? DEFAULT_CODE_MODE;
     const useCodeBlocks = mode === 'simple' || mode === 'ui-code-highlight';
 
+    // Intercept clicks on hash links so TanStack Router doesn't treat them as route navigations
+    const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        const target = (e.target as HTMLElement).closest('a');
+        if (!target) return;
+        const href = target.getAttribute('href');
+        if (href && href.startsWith('#')) {
+            e.preventDefault();
+            const el = document.getElementById(href.slice(1));
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, []);
+
     if (!useCodeBlocks || codeBlocks.length === 0) {
-        return <div className={`otta-docs-content ${className}`} dangerouslySetInnerHTML={{ __html: html }} />;
+        return (
+            <div
+                className={`otta-docs-content ${className}`}
+                dangerouslySetInnerHTML={{ __html: html }}
+                onClick={handleClick}
+            />
+        );
     }
 
     return (
-        <div className={`otta-docs-content ${className}`}>
+        <div className={`otta-docs-content ${className}`} onClick={handleClick}>
             <MarkdownWithCodeBlocks html={html} codeBlocks={codeBlocks} codeRenderMode={mode} />
         </div>
     );
@@ -199,19 +217,23 @@ export const TableOfContents = memo(function TableOfContents({
             <ul className="otta-docs-toc-list">
                 {toc.map((item, index) => (
                     <li key={`${item.id}-${index}`} className="otta-docs-toc-item" data-level={item.level}>
-                        <a
-                            href={`#${item.id}`}
+                        {/* Use button to prevent router from intercepting #anchor clicks */}
+                        <button
+                            type="button"
                             className={`otta-docs-toc-link ${activeId === item.id ? 'otta-docs-toc-active' : ''}`}
-                            style={{ paddingLeft: `${(item.level - 2) * 12 + 8}px` }}
-                            onClick={(e) => {
+                            style={{ paddingLeft: `${(item.level - 2) * 12 + 12}px` }}
+                            onClick={() => {
                                 if (onItemClick) {
-                                    e.preventDefault();
                                     onItemClick(item.id);
+                                } else {
+                                    document
+                                        .getElementById(item.id)
+                                        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                 }
                             }}
                         >
                             {item.text}
-                        </a>
+                        </button>
                     </li>
                 ))}
             </ul>
@@ -235,7 +257,11 @@ function renderInline(text: string): string {
     // Links
     result = result.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_match, linkText: string, href: string) => {
         if (/^\s*javascript:/i.test(href)) return linkText;
-        return `<a href="${href}" class="otta-docs-link" target="_blank" rel="noopener noreferrer">${linkText}</a>`;
+        // Hash-only links scroll within the page; external links open a new tab
+        const isHash = href.startsWith('#');
+        const isExternal = !isHash && /^https?:\/\//i.test(href);
+        const targetAttr = isExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
+        return `<a href="${href}" class="otta-docs-link"${targetAttr}>${linkText}</a>`;
     });
     // Bold + italic
     result = result.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
@@ -298,7 +324,8 @@ function renderMarkdownWithBlocks(md: string): { html: string; codeBlocks: CodeB
             let id = text
                 .toLowerCase()
                 .replace(/[^a-z0-9\s-]/g, '')
-                .replace(/\s+/g, '-');
+                .replace(/\s+/g, '-')
+                .replace(/^-+|-+$/g, ''); // strip leading/trailing dashes (e.g. from emoji prefixes)
             // Deduplicate IDs for repeated headings
             const count = usedIds.get(id) || 0;
             usedIds.set(id, count + 1);

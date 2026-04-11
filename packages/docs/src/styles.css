@@ -30,8 +30,17 @@
     --otta-docs-color-code-border: hsl(var(--border, 214.3 31.8% 91.4%));
     --otta-docs-color-blockquote-border: hsl(var(--primary, 222.2 47.4% 11.2%));
     --otta-docs-color-blockquote-bg: hsl(var(--primary, 222.2 47.4% 11.2%) / 0.04);
+    /* Header offset — adjust if app header height changes */
+    --otta-docs-header-height: 3.5rem;
+    /* Container queries: breakpoints respond to this element's width, not viewport */
+    container-type: inline-size;
     display: flex;
-    min-height: calc(100vh - 3.5rem);
+    width: 100%;
+    max-width: 1600px;
+    margin-left: auto;
+    margin-right: auto;
+    min-width: 0;
+    min-height: calc(100vh - var(--otta-docs-header-height));
     font-family: var(--otta-docs-font);
     color: var(--otta-docs-color-text);
     background: var(--otta-docs-color-bg);
@@ -48,8 +57,8 @@
     background: var(--otta-docs-color-bg-subtle);
     border-radius: var(--otta-docs-radius);
     position: sticky;
-    top: 0;
-    height: 100vh;
+    top: var(--otta-docs-header-height);
+    height: calc(100vh - var(--otta-docs-header-height));
     overflow-y: auto;
     z-index: 20;
 }
@@ -62,9 +71,15 @@
     z-index: 1;
 }
 
+.otta-docs-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
 .otta-docs-search-input {
     width: 100%;
-    padding: 8px 12px;
+    padding: 8px 30px 8px 12px;
     border: 1px solid var(--otta-docs-color-border);
     border-radius: var(--otta-docs-radius);
     background: var(--otta-docs-color-bg);
@@ -81,6 +96,29 @@
 
 .otta-docs-search-input::placeholder {
     color: var(--otta-docs-color-primary);
+}
+
+.otta-docs-search-clear {
+    position: absolute;
+    right: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: var(--otta-docs-color-text-muted);
+    color: var(--otta-docs-color-bg);
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.otta-docs-search-clear:hover {
+    opacity: 1;
 }
 
 .otta-docs-sidebar-nav {
@@ -183,29 +221,40 @@
 
 /* --- Main content area --- */
 .otta-docs-main {
-    flex: 1;
-    display: flex;
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--otta-docs-toc-width);
     min-width: 0;
-    justify-content: center;
+    overflow: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.otta-docs-main-loading {
+    opacity: 0.25;
+    pointer-events: none;
 }
 
 .otta-docs-article {
-    flex: 1;
-    max-width: var(--otta-docs-content-max-width);
+    width: min(100%, var(--otta-docs-content-max-width));
     padding: 40px 48px 80px;
+    box-sizing: border-box;
     min-width: 0;
+    margin: 0 auto;
 }
 
 /* --- Right TOC sidebar --- */
 .otta-docs-toc-sidebar {
-    width: var(--otta-docs-toc-width);
+    width: 100%;
     flex-shrink: 0;
     position: sticky;
-    top: 0;
-    height: 100vh;
+    top: var(--otta-docs-header-height);
+    height: calc(96vh - var(--otta-docs-header-height));
     overflow-y: auto;
-    padding: 40px 16px 24px 0;
-    border-left: 1px solid var(--otta-docs-color-border);
+    padding: 40px 16px 24px 0px;
+    /* border-left: 1px solid var(--otta-docs-color-border); */
+    margin-top: 24px;
 }
 
 .otta-docs-toc-title {
@@ -226,12 +275,18 @@
 
 .otta-docs-toc-link {
     display: block;
+    width: 100%;
     font-size: 12px;
     line-height: 1.5;
     padding: 3px 8px;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 0;
+    background: transparent;
     color: var(--otta-docs-color-text-dimmed);
+    text-align: left;
     text-decoration: none;
-    border-left: 2px solid transparent;
+    cursor: pointer;
     transition: all 0.15s;
 }
 
@@ -248,6 +303,17 @@
 .otta-docs-content {
     line-height: 1.7;
     word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: normal;
+}
+
+.otta-docs-content h1,
+.otta-docs-content h2,
+.otta-docs-content h3,
+.otta-docs-content h4,
+.otta-docs-content .otta-docs-p {
+    word-break: normal;
+    overflow-wrap: normal;
 }
 
 .otta-docs-content h1 {
@@ -540,17 +606,46 @@
     z-index: 19;
 }
 
-@media (max-width: 1100px) {
+/* Hide TOC when docs layout is narrower than 1100px */
+@container (max-width: 1100px) {
     .otta-docs-toc-sidebar {
         display: none;
     }
+
+    .otta-docs-main {
+        grid-template-columns: minmax(0, 1fr);
+    }
 }
 
-@media (max-width: 768px) {
+/* Reduce article padding at mid-width */
+@container (max-width: 900px) {
+    .otta-docs-article {
+        padding: 28px 24px 72px;
+    }
+
+    .otta-docs-content h1 {
+        font-size: clamp(1.75rem, 4cqi, 2.3rem);
+    }
+
+    .otta-docs-content h2 {
+        font-size: clamp(1.35rem, 2.8cqi, 1.6rem);
+    }
+}
+
+/* Mobile: sidebar becomes a drawer when docs layout is narrow */
+@container (max-width: 680px) {
+    .otta-docs-layout {
+        min-height: calc(100dvh - var(--otta-docs-header-height));
+    }
+
     .otta-docs-sidebar {
         position: fixed;
         left: 0;
-        top: 0;
+        top: var(--otta-docs-header-height);
+        height: calc(100dvh - var(--otta-docs-header-height));
+        width: min(84cqi, 320px);
+        max-width: 100%;
+        border-radius: 0;
         transform: translateX(-100%);
         transition: transform 0.2s ease;
         box-shadow: 2px 0 12px rgba(0, 0, 0, 0.1);
@@ -570,5 +665,31 @@
 
     .otta-docs-article {
         padding: 24px 16px 80px;
+    }
+
+    .otta-docs-content h1 {
+        font-size: clamp(1.6rem, 6cqi, 2.1rem);
+    }
+
+    .otta-docs-content h2 {
+        font-size: clamp(1.2rem, 4cqi, 1.5rem);
+    }
+
+    .otta-docs-content h3 {
+        font-size: clamp(1.05rem, 3.5cqi, 1.3rem);
+    }
+
+    .otta-docs-pagination {
+        flex-direction: column;
+    }
+
+    .otta-docs-pagination-btn {
+        max-width: 100%;
+        width: 100%;
+    }
+
+    .otta-docs-pagination-next {
+        margin-left: 0;
+        align-items: flex-start;
     }
 }

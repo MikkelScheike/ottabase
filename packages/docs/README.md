@@ -102,6 +102,20 @@ Set via config: `{ theme: 'standard' }` (default before user choice). A subtle s
 sidebar lets users change layout at runtime; selection persists in `localStorage` under `ottabase.docs.theme`. Colors
 use `--background`, `--primary`, `--muted`, etc. from Brand Kit.
 
+## Responsive Behavior
+
+- Desktop: left sidebar + content + right TOC (when available)
+- Tablet (`<=1100px`): TOC is hidden; content area remains fluid with reduced heading scale
+- Mobile (`<=768px`): sidebar becomes a drawer below the app header, opened via the Menu button
+
+The layout uses `--otta-docs-header-height` (default `3.5rem`) to offset sticky sidebars and mobile drawer height:
+
+```css
+--otta-docs-header-height: 3.5rem;
+```
+
+Override this variable when integrating into apps with a different header height.
+
 ## Code Render Modes
 
 | Mode                          | Description                                                                |

@@ -54,14 +54,33 @@ export const DocsSidebar = memo(function DocsSidebar({
         <aside className={`otta-docs-sidebar ${className}`}>
             {/* Search */}
             <div className="otta-docs-sidebar-search">
-                <input
-                    type="text"
-                    placeholder="Search docs..."
-                    aria-label="Search documentation"
-                    value={searchQuery}
-                    onChange={(e) => onSearchChange(e.target.value)}
-                    className="otta-docs-search-input"
-                />
+                <div className="otta-docs-search-wrap">
+                    <input
+                        type="text"
+                        placeholder="Search docs..."
+                        aria-label="Search documentation"
+                        value={searchQuery}
+                        onChange={(e) => onSearchChange(e.target.value)}
+                        className="otta-docs-search-input"
+                    />
+                    {searchQuery && (
+                        <button
+                            type="button"
+                            className="otta-docs-search-clear"
+                            aria-label="Clear search"
+                            onClick={() => onSearchChange('')}
+                        >
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                                <path
+                                    d="M1 1l10 10M11 1L1 11"
+                                    stroke="currentColor"
+                                    strokeWidth="1.75"
+                                    strokeLinecap="round"
+                                />
+                            </svg>
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Navigation groups */}

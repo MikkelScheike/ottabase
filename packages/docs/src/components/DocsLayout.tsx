@@ -45,6 +45,10 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
     const effectiveTheme: DocsTheme = themeOverride ?? config.theme ?? 'standard';
     const themeClass = getThemeClass(effectiveTheme);
 
+    const closeMobileNav = useCallback(() => {
+        setMobileNavOpen(false);
+    }, []);
+
     useEffect(() => {
         const stored = window.localStorage.getItem(STORAGE_KEY) as DocsTheme | null;
         if (stored && ['compact', 'standard', 'spacious'].includes(stored)) setThemeOverride(stored);
@@ -59,6 +63,11 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
         () => (activeSlug ? findPageBySlug(config.sources, activeSlug) : config.sources[0]?.pages[0]),
         [config.sources, activeSlug],
     );
+
+    // Scroll to top when switching between pages
+    useEffect(() => {
+        if (activePage) window.scrollTo({ top: 0, behavior: 'instant' });
+    }, [activePage]);
 
     useEffect(() => {
         if (!activePage) {
@@ -100,11 +109,11 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
 
     const handleNavigate = useCallback(
         (slug: string) => {
-            setMobileNavOpen(false);
+            closeMobileNav();
             setActiveTocId('');
             onNavigate?.(slug);
         },
-        [onNavigate],
+        [closeMobileNav, onNavigate],
     );
 
     const handleTocClick = useCallback((id: string) => {
@@ -138,6 +147,30 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
         return () => observer.disconnect();
     }, [activePage]);
 
+    useEffect(() => {
+        if (!mobileNavOpen) return;
+
+        const onKeyDown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') closeMobileNav();
+        };
+
+        const onResize = () => {
+            if (window.innerWidth > 768) closeMobileNav();
+        };
+
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+
+        window.addEventListener('keydown', onKeyDown);
+        window.addEventListener('resize', onResize);
+
+        return () => {
+            document.body.style.overflow = previousOverflow;
+            window.removeEventListener('keydown', onKeyDown);
+            window.removeEventListener('resize', onResize);
+        };
+    }, [mobileNavOpen, closeMobileNav]);
+
     return (
         <div className={`otta-docs-layout ${themeClass} ${className}`.trim()}>
             {/* Mobile nav toggle */}
@@ -154,7 +187,7 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
             </button>
 
             {/* Mobile nav overlay */}
-            {mobileNavOpen && <div className="otta-docs-mobile-overlay" onClick={() => setMobileNavOpen(false)} />}
+            {mobileNavOpen && <div className="otta-docs-mobile-overlay" onClick={closeMobileNav} />}
 
             {/* Left sidebar */}
             <DocsSidebar
@@ -169,14 +202,7 @@ export function DocsLayout({ config, activeSlug, onNavigate, className = '' }: D
             />
 
             {/* Main content */}
-            <main
-                className="otta-docs-main"
-                style={{
-                    opacity: isLoadingContent ? 0.25 : 1,
-                    transition: 'opacity 0.2s ease-in-out',
-                    pointerEvents: isLoadingContent ? 'none' : 'auto',
-                }}
-            >
+            <main className={`otta-docs-main ${isLoadingContent ? 'otta-docs-main-loading' : ''}`.trim()}>
                 {activePage && resolvedContent ? (
                     <>
                         <article className="otta-docs-article">

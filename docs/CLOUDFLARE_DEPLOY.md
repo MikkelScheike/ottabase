@@ -28,6 +28,8 @@ pnpm cf:setup   # Interactive: select D1, KV, R2, Queue (use --force for all)
 pnpm cf:validate
 ```
 
+---
+
 **What cf:setup creates:**
 
 - D1 Database: `ottabase-db`

@@ -47,7 +47,8 @@ export function extractToc(content: string): TocItem[] {
             let id = text
                 .toLowerCase()
                 .replace(/[^a-z0-9\s-]/g, '')
-                .replace(/\s+/g, '-');
+                .replace(/\s+/g, '-')
+                .replace(/^-+|-+$/g, ''); // strip leading/trailing dashes (e.g. from emoji prefixes)
             // Deduplicate IDs for repeated headings (must match renderMarkdown logic)
             const count = usedIds.get(id) || 0;
             usedIds.set(id, count + 1);
