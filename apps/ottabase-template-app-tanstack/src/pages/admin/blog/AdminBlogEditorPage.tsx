@@ -4,8 +4,10 @@
  * Full-featured blog post editor with OttaEditor integration,
  * hero image upload, SEO settings, and all post fields.
  */
-import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
+import { UnsavedChangesDialog } from '@/components/editor/UnsavedChangesDialog';
 import { MediaLibraryBrowser } from '@/components/media-library/MediaLibraryBrowser';
+import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
+import { useEditorLeaveGuard } from '@/hooks/useEditorLeaveGuard';
 import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { MediaLightboxProvider } from '@ottabase/medialibrary';
@@ -51,6 +53,10 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
     Input,
     Label,
     Tabs,
@@ -59,15 +65,13 @@ import {
     TabsTrigger,
     Textarea,
 } from '@ottabase/ui-shadcn';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@ottabase/ui-shadcn';
 import { useQueryClient } from '@tanstack/react-query';
-import { UnsavedChangesDialog } from '@/components/editor/UnsavedChangesDialog';
-import { useEditorLeaveGuard } from '@/hooks/useEditorLeaveGuard';
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router';
 import * as Diff from 'diff';
 import {
     ArrowLeft,
     Calendar,
+    Download,
     FileText,
     FolderTree,
     History,
@@ -76,6 +80,7 @@ import {
     Layers,
     Loader2,
     Plus,
+    Redo2,
     Save,
     Search,
     Send,
@@ -85,8 +90,6 @@ import {
     Tag,
     Trash2,
     Undo2,
-    Redo2,
-    Download,
     User,
     X,
 } from 'lucide-react';
@@ -742,16 +745,12 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
             params.set('uniqueField', 'slug');
             params.set('uniqueValue', toCheck);
             if (postId) params.set('uniqueIgnoreId', postId);
-            if (postId) params.set('uniqueIgnoreId', postId);
 
-            // If we have an appId, check within that app scope.
-            // If we DON'T have an appId (null/undefined), explicitly check for null to match the partial index.
-            // The default generic uniqueness check might ignore nulls or check `appId = null` differently depending on the backend,
-            // so we pass an explicit where clause to be safe.
+            // Server: GET /api/ottaorm/posts/unique applies RLS (org + app from security context).
+            // For posts, userId is omitted on the server so slug is unique per organization + app (matches DB).
+            // Optional where appId for edit mode aligns with the saved row when client context matches.
             if (initialData?.appId) {
                 params.set('where', JSON.stringify({ appId: initialData.appId }));
-            } else {
-                params.set('where', JSON.stringify({ appId: null }));
             }
 
             fetch(`/api/ottaorm/posts/unique?${params.toString()}`)

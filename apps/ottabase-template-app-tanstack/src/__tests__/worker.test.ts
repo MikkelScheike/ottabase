@@ -3,6 +3,7 @@ import { Account, User } from '@ottabase/ottaorm';
 import { Shortlink } from '@ottabase/shortlinks';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import worker from '../../cloudflare-worker';
+import { APP_ID } from '../../ottabase/config.loader';
 
 vi.mock('@ottabase/auth/backend', async () => {
     const actual = await vi.importActual<any>('@ottabase/auth/backend');
@@ -234,7 +235,7 @@ describe('Cloudflare Worker API', () => {
             // Response should be the object directly, not wrapped
             expect(data.shortCode).toBe('test-code');
             expect(data.id).toBe('test-1');
-            expect(firstSpy).toHaveBeenCalledWith({ shortCode: 'test-code', appId: 'web' });
+            expect(firstSpy).toHaveBeenCalledWith({ shortCode: 'test-code', appId: APP_ID });
 
             firstSpy.mockRestore();
         });
@@ -250,7 +251,7 @@ describe('Cloudflare Worker API', () => {
             expect(resp.status).toBe(404);
             const data = (await resp.json()) as any;
             expect(data.error).toContain('not found');
-            expect(firstSpy).toHaveBeenCalledWith({ shortCode: 'non-existent', appId: 'web' });
+            expect(firstSpy).toHaveBeenCalledWith({ shortCode: 'non-existent', appId: APP_ID });
 
             firstSpy.mockRestore();
         });

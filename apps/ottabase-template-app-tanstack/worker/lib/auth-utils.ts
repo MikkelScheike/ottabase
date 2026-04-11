@@ -2,6 +2,7 @@ import { CreateAuthConfigOptions } from '@ottabase/auth/backend';
 import { invalidateCacheByPrefix } from '@ottabase/cf/kv-cache';
 import { SecurityContext } from '@ottabase/ottaorm';
 import { Account, Organization, OrganizationMember, VerificationToken } from '@ottabase/ottaorm/models';
+import { getOttabaseConfig } from '../../ottabase/config.loader';
 import type { CloudflareEnv } from '../cloudflare-env';
 import { resolveAppMailer } from './email-provider';
 import { createSecureToken } from './utils';
@@ -76,7 +77,11 @@ export function getAuthOptions(env: CloudflareEnv): CreateAuthConfigOptions {
     return options;
 }
 
-export async function getSecurityContext(request: Request, session: any | null): Promise<SecurityContext> {
+export async function getSecurityContext(
+    request: Request,
+    session: any | null,
+    env?: CloudflareEnv,
+): Promise<SecurityContext> {
     const url = new URL(request.url);
 
     const userId = session?.user?.id;
@@ -109,7 +114,9 @@ export async function getSecurityContext(request: Request, session: any | null):
         }
     }
 
-    const appId = request.headers.get('x-app-id') || 'web';
+    // Resolve appId: header > config > fallback
+    const configAppId = env ? getOttabaseConfig(env).appId : undefined;
+    const appId = request.headers.get('x-app-id') || configAppId || 'web';
     const roles = session?.user?.roles as string[] | undefined;
     const permissions = session?.user?.permissions as string[] | undefined;
 

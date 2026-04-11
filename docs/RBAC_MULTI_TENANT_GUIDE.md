@@ -742,6 +742,7 @@ The TanStack app worker (`cloudflare-worker.ts`) automatically integrates auth w
 ```typescript
 import { getSession, handleAuthRequest } from '@ottabase/auth/backend';
 import { initRLS, secureCrud, type SecurityContext } from '@ottabase/ottaorm';
+import { getOttabaseConfig } from './ottabase/config.loader'; // TanStack template; replace in other apps
 
 // 1. Initialize RLS on startup
 function initDbConnection(env: CloudflareEnv): void {
@@ -755,7 +756,12 @@ function initDbConnection(env: CloudflareEnv): void {
 }
 
 // 2. Extract security context from auth session
-async function getSecurityContext(request: Request, session: any | null): Promise<SecurityContext> {
+// Optional `env` lets you default appId from app config (e.g. Ottabase template: getOttabaseConfig(env).appId).
+async function getSecurityContext(
+    request: Request,
+    session: any | null,
+    env?: CloudflareEnv,
+): Promise<SecurityContext> {
     const userId = session?.user?.id;
 
     // Extract organizationId from multiple sources (priority order):
@@ -765,10 +771,12 @@ async function getSecurityContext(request: Request, session: any | null): Promis
         extractFromSubdomain(request) || // From subdomain
         request.searchParams.get('organizationId'); // From query
 
+    const configAppId = env ? getOttabaseConfig(env).appId : undefined;
+
     return {
         userId,
         organizationId,
-        appId: request.headers.get('x-app-id') || 'web',
+        appId: request.headers.get('x-app-id') || configAppId || 'web',
         roles: session?.user?.roles,
         permissions: session?.user?.permissions,
     };
@@ -780,7 +788,7 @@ if (url.pathname.startsWith('/api/ottaorm/')) {
     const session = await getSession(request, env);
 
     // Extract security context
-    const securityContext = await getSecurityContext(request, session);
+    const securityContext = await getSecurityContext(request, session, env);
 
     // Handle CRUD with automatic RLS enforcement
     const result = await secureCrud(crudRequest, securityContext);

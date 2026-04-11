@@ -17,7 +17,7 @@ import type { ApiRouteContext } from './router';
 async function getResolvedMediaSecurityContext(request: Request, env: CloudflareEnv) {
     const session = await getSession(request, env as any, getAuthOptions(env));
     const config = getOttabaseConfig(env as Record<string, unknown>);
-    const securityContext = await getSecurityContext(request, session);
+    const securityContext = await getSecurityContext(request, session, env);
 
     // Prefer explicit header, then configured appId, then the generic default.
     // config.appId takes precedence over securityContext.appId ('web') so that

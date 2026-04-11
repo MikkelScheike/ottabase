@@ -246,4 +246,40 @@ describe('blog post app scoping by slug', () => {
             appId: 'site-b',
         });
     });
+
+    it('after primary appId miss, tries legacy published row with appId null only', async () => {
+        mocks.firstMock.mockResolvedValueOnce(null).mockResolvedValueOnce({
+            get: (key: string) => (key === 'contentType' ? 'blog' : null),
+            toJson: () => ({
+                id: 'legacy-post',
+                slug: 'legacy-slug',
+                title: 'Legacy',
+                isProtected: false,
+                content: { blocks: [] },
+                footnotes: null,
+            }),
+        });
+
+        const context = {
+            request: new Request('http://localhost/api/blog/posts/by-slug/legacy-slug', {
+                headers: { 'x-app-id': 'site-a' },
+            }),
+            url: new URL('http://localhost/api/blog/posts/by-slug/legacy-slug'),
+            env: { OBCF_D1: {} },
+        } as any;
+
+        const res = await handleBlogPostBySlug(context, 'legacy-slug');
+
+        expect(res.status).toBe(200);
+        expect(mocks.firstMock).toHaveBeenNthCalledWith(1, {
+            slug: 'legacy-slug',
+            status: 'published',
+            appId: 'site-a',
+        });
+        expect(mocks.firstMock).toHaveBeenNthCalledWith(2, {
+            slug: 'legacy-slug',
+            status: 'published',
+            appId: null,
+        });
+    });
 });

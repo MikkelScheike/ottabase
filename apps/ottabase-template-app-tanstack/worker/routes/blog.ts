@@ -54,6 +54,27 @@ function resolveAppId(context: BlogRouteContext): string {
 }
 
 /**
+ * Public blog lookup by slug: always discriminates by appId.
+ * Tries the resolved app first, then legacy rows with app_id IS NULL only.
+ * Never queries by slug alone — the same slug can exist for NULL vs non-NULL appId (see Post schema indexes).
+ */
+async function findPublishedPostBySlug(
+    slug: string,
+    appId: string,
+    contentTypeParam: string | null,
+): Promise<Post | null> {
+    const primary: Record<string, unknown> = { slug, status: 'published', appId };
+    if (contentTypeParam) primary.contentType = contentTypeParam;
+    let record = await Post.first(primary);
+    if (record) return record;
+
+    const legacyNullApp: Record<string, unknown> = { slug, status: 'published', appId: null };
+    if (contentTypeParam) legacyNullApp.contentType = contentTypeParam;
+    record = await Post.first(legacyNullApp);
+    return record;
+}
+
+/**
  * Convert a Post model to a public-safe JSON object.
  * Strips privateNotes. Strips content from protected posts unless explicitly included.
  * Optionally enriches with tags and category name.
@@ -368,14 +389,8 @@ export async function handleBlogPostBySlug(context: BlogRouteContext, slug: stri
 
     const appId = resolveAppId(context);
     const contentTypeParam = url.searchParams.get('contentType') || null;
-    const where: Record<string, unknown> = { slug, status: 'published', appId };
+    const record = await findPublishedPostBySlug(slug, appId, contentTypeParam);
 
-    // Add contentType filter if provided
-    if (contentTypeParam) {
-        where.contentType = contentTypeParam;
-    }
-
-    const record = await Post.first(where);
     if (!record) {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
     }
@@ -413,14 +428,7 @@ export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<R
 
     const appId = resolveAppId(context);
     const contentTypeParam = url.searchParams.get('contentType') || null;
-    const where: Record<string, unknown> = { slug, status: 'published', appId };
-
-    // Add contentType filter if provided
-    if (contentTypeParam) {
-        where.contentType = contentTypeParam;
-    }
-
-    const record = await Post.first(where);
+    const record = await findPublishedPostBySlug(slug, appId, contentTypeParam);
     if (!record) {
         return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
     }

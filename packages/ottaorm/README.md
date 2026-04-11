@@ -933,6 +933,18 @@ filter: (context) => ({
 });
 ```
 
+### Slug uniqueness (`GET /api/ottaorm/posts/unique`)
+
+The `posts` model uses **Hierarchical** RLS (`organizationId` + `userId` + `appId`). For `GET …/unique`, user-scoped
+reads would make slug checks see only the current author’s rows. **Secure CRUD** therefore drops `userId` from the
+merged `where` for `model === 'posts'` and `id === 'unique'` only, so `BaseModel.isUnique` matches **organization +
+app** scope (aligned with composite unique indexes on posts).
+
+### SQLite `UNIQUE` errors
+
+`executeSecureCrudRequest` maps `UNIQUE constraint failed` (including **composite** indexes) to HTTP **409** with
+`fieldErrors`. `parseSqliteUniqueConstraintForApi()` prefers meaningful columns (e.g. `slug`) when SQLite lists several.
+
 ### SecurityContext
 
 The security context is passed to all RLS operations:

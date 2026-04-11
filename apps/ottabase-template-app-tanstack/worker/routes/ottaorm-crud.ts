@@ -27,7 +27,7 @@ export async function handleOttaormCrud(context: OttaormCrudContext): Promise<Re
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
     const session = await getSession(request, env as any, getAuthOptions(env));
-    const securityContext = await getSecurityContext(request, session);
+    const securityContext = await getSecurityContext(request, session, env);
     const crudRequest = await parseCrudRequest(request, url, '/api/ottaorm');
 
     if (!crudRequest) {
