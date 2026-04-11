@@ -38,6 +38,12 @@ export default defineConfig({
     },
     resolve: {
         alias: {
+            // Subpaths before bare package — @ottabase/cf-ai ships dist-only exports; tests run without a prior build.
+            '@ottabase/cf-ai/gateway': path.resolve(__dirname, '../../packages/cf-ai/src/gateway.ts'),
+            '@ottabase/cf-ai/workers-ai': path.resolve(__dirname, '../../packages/cf-ai/src/workers-ai.ts'),
+            '@ottabase/cf-ai/universal': path.resolve(__dirname, '../../packages/cf-ai/src/universal.ts'),
+            '@ottabase/cf-ai/providers': path.resolve(__dirname, '../../packages/cf-ai/src/providers.ts'),
+            '@ottabase/cf-ai': path.resolve(__dirname, '../../packages/cf-ai/src/index.ts'),
             '@ottabase/cf-realtime/server': path.resolve(__dirname, './src/test-mocks/cf-realtime-server.ts'),
             '@ottabase/ottaorm/models': path.resolve(__dirname, '../../packages/ottaorm/src/models'),
             '@ottabase/auth/backend': path.resolve(__dirname, '../../packages/auth/src/backend-handler'),

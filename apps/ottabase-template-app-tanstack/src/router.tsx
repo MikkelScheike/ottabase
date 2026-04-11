@@ -570,6 +570,66 @@ const commentsDemoRoute = new Route({
     ),
 });
 
+const demoCronRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'cron',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/cron/CronDemoPage').then((m) => ({
+            default: m.CronDemoPage,
+        })),
+    ),
+});
+
+const demoUiTailwindRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'ui-tailwind',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/ui-tailwind/UiTailwindDemoPage').then((m) => ({
+            default: m.UiTailwindDemoPage,
+        })),
+    ),
+});
+
+const demoUiComponentsRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'ui-components',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/ui-components/UiComponentsDemoPage').then((m) => ({
+            default: m.UiComponentsDemoPage,
+        })),
+    ),
+});
+
+const demoUiBaseRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'ui-base',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/ui-base/UiBaseDemoPage').then((m) => ({
+            default: m.UiBaseDemoPage,
+        })),
+    ),
+});
+
+const demoScriptsRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'scripts',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/scripts/ScriptsDemoPage').then((m) => ({
+            default: m.ScriptsDemoPage,
+        })),
+    ),
+});
+
+const demoConfigRoute = new Route({
+    getParentRoute: () => demoLayoutRoute,
+    path: 'config',
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/config/ConfigDemoPage').then((m) => ({
+            default: m.ConfigDemoPage,
+        })),
+    ),
+});
+
 // Auth routes
 const loginRoute = new Route({
     getParentRoute: () => rootRoute,
@@ -1206,6 +1266,12 @@ demoLayoutRoute.addChildren([
     demoBrandEngineRoute,
     demoLayoutSystemRoute,
     commentsDemoRoute,
+    demoCronRoute,
+    demoUiTailwindRoute,
+    demoUiComponentsRoute,
+    demoUiBaseRoute,
+    demoScriptsRoute,
+    demoConfigRoute,
 ]);
 
 // Package-gated routes (SSOT from ottabase.config.ts). brandEngine is core — always included.

@@ -17,6 +17,7 @@ import {
     FileText,
     Highlighter,
     Languages,
+    Layers,
     Layout,
     List,
     Mail,
@@ -28,8 +29,11 @@ import {
     Settings,
     ShieldCheck,
     SplitSquareHorizontal,
+    Terminal,
+    Timer,
     Type,
     Upload,
+    Wind,
     Zap,
 } from 'lucide-react';
 import type { ElementType } from 'react';
@@ -75,7 +79,7 @@ export const DEMO_ITEMS: DemoItem[] = [
     {
         to: '/demo/ui-cropper',
         icon: Crop,
-        label: 'UI Cropper',
+        label: 'Image Cropper',
         title: 'Image Cropper',
         description:
             'Vanilla image cropper: crop, flip, rotate. Square/rect/circle viewfinder. PNG/JPEG. Zero React. ~2–3 KB gzipped.',
@@ -314,6 +318,58 @@ export const DEMO_ITEMS: DemoItem[] = [
         label: 'shadcn/ui',
         title: 'shadcn/ui Demo',
         description: 'Explore shadcn/ui primitives with Tailwind utilities and shared theme providers',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/cron',
+        icon: Timer,
+        label: 'Cron Scheduler',
+        title: 'Cron Scheduler',
+        description:
+            'Laravel-style cron scheduler with expression parser, presets, and next-run calculation via @ottabase/cron.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/ui-tailwind',
+        icon: Wind,
+        label: 'Tailwind (Preset)',
+        title: 'Tailwind (Preset)',
+        description:
+            'Shared Tailwind CSS preset mapping HSL CSS variables to utilities. Live token swatches and dark mode preview.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/ui-components',
+        icon: Blocks,
+        label: 'UI Components',
+        title: 'UI Components',
+        description: 'Shared React components: ConfirmDialog, MessageBox, Logo, DarkModeToggle, and BlogPagination.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/ui-base',
+        icon: Layers,
+        label: 'UI Base',
+        title: 'UI Base',
+        description:
+            'Framework-agnostic CSS foundation: reset, base styles, animations, and the ProviderUIBase provider.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/scripts',
+        icon: Terminal,
+        label: 'Scripts (CLI)',
+        title: 'Scripts (CLI)',
+        description: 'CLI tools for Cloudflare setup, schema generation, cache management, and database cleanup.',
+        buttonVariant: 'outline',
+    },
+    {
+        to: '/demo/config',
+        icon: Settings,
+        label: 'Config',
+        title: 'Config',
+        description:
+            'Centralized app configuration: createAppConfig, defineOttabaseConfig, package gating, and env resolution.',
         buttonVariant: 'outline',
     },
 ];

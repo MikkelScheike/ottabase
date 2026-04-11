@@ -1,550 +1,275 @@
-# Referral System Documentation
+# Referral system
+
+Documentation for inbound referral tracking, first-touch attribution, and signup conversion in the Ottabase monorepo.
+
+## Table of contents
+
+1. [Overview](#overview)
+2. [Architecture](#architecture)
+3. [Repository layout](#repository-layout)
+4. [Database schema](#database-schema)
+5. [API endpoints](#api-endpoints)
+6. [Configuration](#configuration)
+7. [Client implementation](#client-implementation)
+8. [Server implementation](#server-implementation)
+9. [Signup integration](#signup-integration)
+10. [Validation rules](#validation-rules)
+11. [Browser storage](#browser-storage)
+12. [Behavior](#behavior)
+13. [Testing checklist](#testing-checklist)
+14. [Production considerations](#production-considerations)
+15. [Deployment](#deployment)
+16. [Troubleshooting](#troubleshooting)
+17. [Future enhancements](#future-enhancements)
+
+---
 
 ## Overview
 
-The referral system for Ottabase is a complete, framework-agnostic solution that tracks inbound referral links, stores
-the first referrer for a visitor, tracks referral clicks, and attributes new signups to referrers. It provides stats,
-tracking logs, and user-managed referral usernames.
+The referral system is framework-agnostic at the package level: it tracks referral links, stores the first valid
+referrer for a visitor, records clicks (optional), and attributes new accounts to referrers. It exposes REST handlers,
+an OttaORM model, and template-app UI (tracker, dashboard, registration).
 
-**Key Features:**
+**Capabilities**
 
-- ✅ First-touch attribution (first valid referral code wins)
-- ✅ 90-day expiry window for stored referral codes
-- ✅ Click tracking with metadata (IP, user agent, UTM params, referrer)
-- ✅ Conversion tracking (pending → completed on signup)
-- ✅ User-managed referral usernames
-- ✅ Comprehensive dashboard with stats and activity feed
-- ✅ RESTful API for all referral operations
+- First-touch attribution (first valid referral code wins for the configured window)
+- Configurable expiry for stored referral codes (default: 90 days)
+- Click tracking with request metadata (IP, user agent, UTM, referer) when enabled
+- Conversion path from pending tracking to completed on signup
+- User-managed referral usernames
+- Dashboard with stats and activity
+- REST API for tracking, stats, username updates, and listing records
+
+---
 
 ## Architecture
 
-### Simple Flow Overview
+End-to-end flow:
+
+```mermaid
+flowchart TD
+    A["Visitor opens site with ?ref=username"] --> B["ReferralTracker (client)"]
+    B --> C["Validate code / optional POST /api/referrals/track"]
+    C --> D["Store code + timestamp in localStorage"]
+    D --> E["Strip ref from URL"]
+    E --> F["User registers"]
+    F --> G["POST credentials + referralCode from storage"]
+    G --> H["worker/routes/auth.ts"]
+    H --> I["processReferralAttribution"]
+    I --> J[Update user referredById and mark tracking completed]
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│ 1. User clicks: example.com?ref=johndoe                        │
-│    ↓                                                            │
-│ 2. ReferralTracker (client):                                   │
-│    - Stores "johndoe" in localStorage                          │
-│    - Calls /api/referrals/track → creates DB record (pending)  │
-│    - Cleans URL (removes ?ref= param)                          │
-│    ↓                                                            │
-│ 3. User registers:                                             │
-│    - Client sends referralCode from localStorage                │
-│    - POST /api/auth/register { email, password, referralCode } │
-│    ↓                                                            │
-│ 4. Server (processReferralAttribution):                        │
-│    - Looks up User by referralUsername                         │
-│    - Sets new user's referredById                              │
-│    - Creates ReferralTracking record (completed) + full context │
-│    ↓                                                            │
-│ 5. Done! ✅                                                     │
-└─────────────────────────────────────────────────────────────────┘
 
-🎯 Key Point: Everything lives in D1 database + client localStorage
-             No KV, no external dependencies!
-```
+**Storage model**
 
-### Package Structure
+- **D1**: users (referral fields), `referral_tracking` rows for clicks and conversions
+- **localStorage**: short-lived referral code and timestamp (no KV required for the default template)
 
-```
-packages/referrals/              # @ottabase/referrals package
-├── src/
-│   ├── schema.ts               # Drizzle schema for referral_tracking table
-│   ├── validation.ts           # Username validation utilities
-│   └── index.ts                # Package exports
-└── README.md
+---
 
-apps/ottabase-template-app-tanstack/
-├── ottabase/
-│   ├── models/
-│   │   └── ReferralTracking.ts # OttaORM model for referral tracking
-│   └── helpers/
-│       └── referral-attribution.ts # Server-side attribution helper
-├── src/
-│   ├── components/
-│   │   ├── ReferralTracker.tsx  # Auto-tracking component
-│   │   └── ReferralDashboard.tsx # Dashboard UI
-│   ├── lib/
-│   │   └── referrals.ts         # Client-side utilities
-│   └── pages/
-│       ├── referrals/
-│       │   └── ReferralsPage.tsx # Dashboard page
-│       └── auth/
-│           └── RegisterPage.tsx  # Enhanced with referral support
-└── cloudflare-worker.ts         # API routes
-```
+## Repository layout
 
-## Database Schema
+| Area                                | Path                                                                                                            |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Package (schema, model, validation) | `packages/referrals/`                                                                                           |
+| Worker API                          | `apps/ottabase-template-app-tanstack/worker/routes/referrals.ts`                                                |
+| Router wiring                       | `apps/ottabase-template-app-tanstack/worker/routes/router.ts`                                                   |
+| Signup attribution                  | `apps/ottabase-template-app-tanstack/worker/routes/auth.ts` (calls `processReferralAttribution`)                |
+| Attribution helper                  | `apps/ottabase-template-app-tanstack/ottabase/helpers/referral-attribution.ts`                                  |
+| Client utilities                    | `apps/ottabase-template-app-tanstack/src/lib/referrals.ts`                                                      |
+| Tracker component                   | `apps/ottabase-template-app-tanstack/src/components/ReferralTracker.tsx`                                        |
+| Layout mount                        | `ConfigurableLayout` / `BrandLayout` (renders `ReferralTracker` when `PACKAGES_ENABLED.referrals`)              |
+| Dashboard page                      | `apps/ottabase-template-app-tanstack/src/pages/referrals/ReferralsPage.tsx`                                     |
+| Dashboard UI                        | `apps/ottabase-template-app-tanstack/src/components/ReferralDashboard.tsx`                                      |
+| App config                          | `apps/ottabase-template-app-tanstack/ottabase/ottabase.config.ts` (`features.referrals`, `packages.referrals`)  |
+| Resolved client config              | `apps/ottabase-template-app-tanstack/ottabase/config.loader.ts` (`REFERRALS_CONFIG`)                            |
+| Model registration                  | `apps/ottabase-template-app-tanstack/worker/lib/db-utils.ts` (includes `ReferralTracking` when package enabled) |
 
-### User Model Updates
+---
 
-Added to `packages/ottaorm/src/models/User.ts`:
+## Database schema
 
-```typescript
+### `User` (OttaORM core)
+
+Referral-related columns (see `packages/ottaorm` user model):
+
+- `referralUsername` — unique public handle used in links
+- `referredById` — optional FK-style id of the referring user
+
+Typical helpers: find by referral username, load referrer / referred users (see model API in-repo).
+
+### `referral_tracking`
+
+Defined in `packages/referrals/src/schema.ts` and used by the `ReferralTracking` model from `@ottabase/referrals`.
+
+Conceptual fields:
+
+| Field                               | Role                                       |
+| ----------------------------------- | ------------------------------------------ |
+| `id`                                | Primary key                                |
+| `userId`                            | Referrer (owner of the code at click time) |
+| `referralCode`                      | Username / code at time of click           |
+| `referredUserId`                    | Set when conversion completes              |
+| `status`                            | `pending`, `completed`, or `invalid`       |
+| `ipAddress`, `userAgent`, `referer` | Request context                            |
+| `meta`                              | JSON (e.g. UTM payload)                    |
+| `createdAt`                         | Click time                                 |
+| `conversionAt`                      | Set on successful signup attribution       |
+
+Indexes should support lookups by `userId`, `referralCode`, `status`, and `referredUserId` (see package schema for exact
+definitions).
+
+---
+
+## API endpoints
+
+Handlers live under the template app worker; paths below are relative to the worker origin.
+
+### `POST /api/referrals/track`
+
+Records a click when click tracking is enabled.
+
+**Request body (JSON)**
+
+```json
 {
-  referralUsername: text("referral_username").unique(),
-  referredById: text("referred_by_id"),
-}
-```
-
-**New Methods:**
-
-- `findByReferralUsername(username: string)` - Find user by referral username
-- `referrer()` - Get the user who referred this user
-- `referrals()` - Get users referred by this user
-
-### ReferralTracking Table
-
-Defined in `packages/referrals/src/schema.ts`:
-
-```typescript
-{
-  id: UUID (primary key)
-  userId: User ID (referrer)
-  referralCode: Referral username at time of click
-  referredUserId: User ID of converted user (null until signup)
-  status: 'pending' | 'completed' | 'invalid'
-  ipAddress: IP address of click
-  userAgent: Browser user agent
-  referer: HTTP referer header
-  meta: JSON (UTM params, headers, etc.)
-  createdAt: Click timestamp
-  conversionAt: Conversion timestamp (null until signup)
-}
-```
-
-**Indexes:**
-
-- userId
-- referredUserId
-- referralCode
-- status
-
-## API Endpoints
-
-All endpoints are implemented in `cloudflare-worker.ts`:
-
-### Track Referral Click
-
-```
-POST /api/referrals/track
-Content-Type: application/json
-
-{
-  "referralCode": "johndoe",
-  "referer": "https://twitter.com/...",
-  "meta": {
-    "utm": {
-      "source": "twitter",
-      "campaign": "launch"
+    "referralCode": "johndoe",
+    "referer": "https://twitter.com/...",
+    "meta": {
+        "utm": {
+            "source": "twitter",
+            "campaign": "launch"
+        }
     }
-  }
-}
-
-Response: 200
-{
-  "success": true,
-  "tracking": { ... }
 }
 ```
 
-**Behavior:**
+**Responses**
 
-- Validates referral code exists
-- Extracts IP, user agent from headers
-- Creates tracking record with status 'pending'
-- Returns 404 if referral code is invalid
+- `200` — tracking row created
+- `404` — unknown referral username (no row created)
 
-### Get Referral Stats
+Server enriches IP and user agent from the incoming request where applicable.
 
-```
-GET /api/referrals/stats?userId={userId}
+### `GET /api/referrals/stats?userId={userId}`
 
-Response: 200
-{
-  "total": 42,
-  "completed": 15,
-  "pending": 27
-}
-```
+Returns aggregate counts (e.g. total / completed / pending) for the referrer.
 
-### Get User Referral Data
+### `GET /api/referrals/user?userId={userId}`
 
-```
-GET /api/referrals/user?userId={userId}
+Returns user profile slice, stats, and tracking rows for the dashboard.
 
-Response: 200
-{
-  "user": {
-    "id": "...",
-    "name": "John Doe",
-    "email": "john@example.com",
-    "referralUsername": "johndoe",
-    "referredById": "..."
-  },
-  "stats": {
-    "total": 42,
-    "completed": 15,
-    "pending": 27
-  },
-  "tracking": [ ... ]
-}
-```
+### `PUT /api/referrals/username`
 
-### Update Referral Username
+Updates the caller’s referral username with validation (length, charset, uniqueness).
 
-```
-PUT /api/referrals/username
-Content-Type: application/json
+### `GET /api/referrals/tracking?userId={userId}&status=&page=&perPage=`
 
-{
-  "userId": "user-123",
-  "referralUsername": "newusername"
-}
+Paginated list of tracking rows with optional `status` filter.
 
-Response: 200
-{
-  "success": true,
-  "user": { ... }
-}
-```
+### Registration and attribution
 
-**Validation:**
+Credential registration is handled in `worker/routes/auth.ts`. The client sends `referralCode` when present; the worker
+runs `processReferralAttribution` after the user is created. Response may include an `referralAttribution` summary (see
+route implementation for the exact shape).
 
-- 3-20 characters
-- Letters, numbers, underscores only
-- Must be unique
-- Returns 400 with error if validation fails
-
-### Register with Referral Attribution
-
-```
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "email": "user@example.com",
-  "password": "password123",
-  "name": "John Doe",
-  "referralCode": "johndoe"
-}
-
-Response: 200
-{
-  "success": true,
-  "user": { ... },
-  "referralAttribution": {
-    "attributed": true,
-    "referrerId": "...",
-    "trackingRecordsUpdated": 1
-  }
-}
-```
-
-**Note:** This is a demo endpoint. In production, integrate `processReferralAttribution()` into your Auth.js callbacks.
-
-### List Tracking Records
-
-```
-GET /api/referrals/tracking?userId={userId}&status=pending&page=1&perPage=20
-
-Response: 200
-{
-  "data": [ ... ],
-  "total": 42,
-  "page": 1,
-  "perPage": 20,
-  "totalPages": 3
-}
-```
-
-**Filters:**
-
-- `status` - pending | completed | invalid
-- `page` - Page number (default: 1)
-- `perPage` - Items per page (default: 20)
+---
 
 ## Configuration
 
-The referral system can be configured per app via `src/ottabase/config/app.config.ts`:
+Referral behavior is controlled in **`apps/ottabase-template-app-tanstack/ottabase/ottabase.config.ts`**.
+
+1. **Package gate** — `packages.referrals: true | false` controls whether referral routes and the `ReferralTracking`
+   model are registered.
+2. **Feature flags** — `features.referrals`:
 
 ```typescript
 features: {
-  referrals: {
-    enabled: true,        // Enable/disable entire referral system
-    trackClicks: true,    // Enable/disable click tracking (still tracks conversions)
-    expiryDays: 90,       // How long stored referral codes are valid (days)
-  },
-}
+    referrals: {
+        enabled: true,       // Master switch (tracker + client storage behavior)
+        trackClicks: true,   // POST /api/referrals/track on visit
+        expiryDays: 90,      // localStorage validity window
+    },
+},
 ```
 
-### Configuration Options
-
-#### `enabled` (default: `true`)
-
-- **Type:** `boolean`
-- **Description:** Master switch for the entire referral system
-- **When disabled:**
-    - ReferralTracker component won't run
-    - No referral codes stored in localStorage
-    - No click tracking
-    - Conversions still work if referralCode is manually passed to server
-
-#### `trackClicks` (default: `true`)
-
-- **Type:** `boolean`
-- **Description:** Controls whether referral clicks are tracked in the database
-- **When disabled:**
-    - Referral codes still stored in localStorage (for attribution)
-    - No `/api/referrals/track` API calls made
-    - No `ReferralTracking` records created with status `pending`
-    - Conversions still tracked when users sign up
-    - **Use case:** Reduce database writes, only care about final conversions
+| Option        | Type      | Default | Purpose                                                                       |
+| ------------- | --------- | ------- | ----------------------------------------------------------------------------- |
+| `enabled`     | `boolean` | `true`  | Disables tracker and storage when `false`                                     |
+| `trackClicks` | `boolean` | `true`  | When `false`, skips click API calls; code may still be stored for attribution |
+| `expiryDays`  | `number`  | `90`    | Expired codes are cleared client-side                                         |
 
-#### `expiryDays` (default: `90`)
+The client reads **`REFERRALS_CONFIG`** from `ottabase/config.loader.ts` (derived from the same file).
 
-- **Type:** `number`
-- **Description:** Number of days a stored referral code remains valid
-- **Behavior:** Expired codes are automatically cleared from localStorage
-- **Common values:** 30, 60, 90, 180, 365
+---
 
-### Example Configurations
+## Client implementation
 
-**Minimal tracking (conversions only):**
+### Automatic tracking
 
-```typescript
-referrals: {
-  enabled: true,
-  trackClicks: false,  // No click tracking
-  expiryDays: 90,
-}
-```
+`ReferralTracker` is mounted from **`ConfigurableLayout`** / **`BrandLayout`** when `PACKAGES_ENABLED.referrals` is
+true. It:
 
-**Extended attribution window:**
+1. Respects `features.referrals.enabled`
+2. Reads `?ref=` from the URL
+3. Applies first-touch rules and expiry
+4. Optionally calls `/api/referrals/track` when `trackClicks` is true
+5. Normalizes the URL (removes `ref`)
 
-```typescript
-referrals: {
-  enabled: true,
-  trackClicks: true,
-  expiryDays: 180,  // 6 months
-}
-```
+You normally do **not** add the tracker to `router.tsx` manually unless you use a custom layout.
 
-**Disabled:**
+### Dashboard
 
-```typescript
-referrals: {
-  enabled: false,
-  trackClicks: false,
-  expiryDays: 90,
-}
-```
+Protected UI: `ReferralDashboard` on `ReferralsPage` (`/referrals`). Shows stats, username editor, share link, and
+recent activity.
 
-## Client-Side Implementation
+### Utilities (`src/lib/referrals.ts`)
 
-### Automatic Tracking
+- `getStoredReferralCode()` / `storeReferralCode` / `clearStoredReferralCode`
+- `trackReferralClick`, `extractUtmParams`, `cleanReferralFromUrl`
+- `getReferralExpiryInfo()` for UI countdowns
 
-Place `<ReferralTracker />` in your root layout to enable automatic referral tracking:
+---
 
-```tsx
-// src/router.tsx
-import { ReferralTracker } from '@/components/ReferralTracker';
+## Server implementation
 
-function RootLayout() {
-    return (
-        <div>
-            <ReferralTracker />
-            {/* ... rest of layout */}
-        </div>
-    );
-}
-```
+### `processReferralAttribution`
 
-**Behavior:**
+Import from `ottabase/helpers/referral-attribution.ts`. The template wires it from **`worker/routes/auth.ts`** after
+registration.
 
-1. Checks if referral system is enabled in config
-2. Checks URL for `?ref=` parameter
-3. Validates and stores referral code in localStorage (if not already stored)
-4. Optionally sends tracking request to API (if `trackClicks` is enabled)
-5. Cleans URL (removes `?ref=` parameter)
-6. Respects first-touch attribution
+Typical inputs: `newUserId`, `referralCode`, `ipAddress`, `userAgent`, `referer`, `meta`.
 
-### Referral Dashboard
+Responsibilities:
 
-The dashboard is a protected page that shows:
+1. Ignore empty or invalid codes
+2. Resolve referrer by `referralUsername`
+3. Set `referredById` on the new user
+4. Create or update `ReferralTracking` as **completed** with full context
+5. Reject self-referral
 
-- Referral stats (total, completed, pending)
-- Username management
-- Referral link with copy button
-- Stored referral info (if user arrived via referral)
-- Recent activity table
+### `ReferralTracking` model (`@ottabase/referrals`)
 
-```tsx
-// Usage
-import { ReferralDashboard } from '@/components/ReferralDashboard';
+Use package methods for queries and stats (`forUser`, `getStats`, `findPendingByCode`, `recentConversions`, instance
+helpers such as `markCompleted` / `markInvalid`, etc.). See package source and tests for signatures.
 
-<ReferralDashboard userId={user.id} />;
-```
+---
 
-### Utility Functions
+## Signup integration
 
-Defined in `src/lib/referrals.ts`:
+`RegisterPage` loads the stored code, shows referrer messaging and expiry, and posts `referralCode` with the
+registration payload. Server-side attribution is already integrated in the template’s auth route; for other auth flows,
+call `processReferralAttribution` in the same way with data from the client or session.
 
-```typescript
-// Get stored referral code (validates expiry)
-const code = getStoredReferralCode();
+---
 
-// Store referral code (first-touch wins)
-storeReferralCode("johndoe");
+## Validation rules
 
-// Clear stored referral code
-clearStoredReferralCode();
+Usernames are validated in `@ottabase/referrals` (see `validation.ts`):
 
-// Track referral click
-await trackReferralClick("johndoe", { utm: { ... } });
-
-// Extract UTM params from URL
-const utm = extractUtmParams();
-
-// Clean referral from URL
-cleanReferralFromUrl();
-
-// Get referral expiry info
-const { expiresAt, daysRemaining, isExpired } = getReferralExpiryInfo();
-```
-
-## Server-Side Implementation
-
-### Referral Attribution Helper
-
-Use during user creation to handle referral attribution:
-
-```typescript
-import { processReferralAttribution } from '@/ottabase/helpers/referral-attribution';
-import { getStoredReferralCode } from '@/lib/referrals';
-
-// In Auth.js callback or registration endpoint
-// Get referral code from client (passed during registration)
-const referralCode = getStoredReferralCode(); // Or from registration form data
-
-const result = await processReferralAttribution({
-    newUserId: user.id,
-    referralCode: referralCode,
-    ipAddress: getClientIpAddress(request),
-    userAgent: request.headers.get('user-agent'),
-    referer: request.headers.get('referer'),
-    meta: { utm: { source: body.utm_source, ... }, headers: { ... } },
-});
-
-if (result.attributed) {
-    console.log(`User referred by ${result.referrerId}`);
-    console.log(`Created ${result.trackingRecordsUpdated} conversion record(s)`);
-}
-```
-
-**Options:** `ipAddress`, `userAgent`, `referer`, `meta` — passed from request at signup for full conversion context.
-
-**What it does:**
-
-1. Validates referralCode is provided
-2. Looks up referrer by referralUsername
-3. Sets new user's `referredById` field
-4. Creates ReferralTracking record (status `completed`) with ipAddress, userAgent, referer, meta
-5. Prevents self-referral
-
-### Model Methods
-
-**ReferralTracking Model:**
-
-```typescript
-// Get tracking records for a user
-const records = await ReferralTracking.forUser(userId, {
-    status: 'completed',
-    limit: 10,
-});
-
-// Get stats
-const stats = await ReferralTracking.getStats(userId);
-
-// Find pending records by code
-const pending = await ReferralTracking.findPendingByCode('johndoe');
-
-// Recent conversions
-const recent = await ReferralTracking.recentConversions(10);
-
-// Instance methods
-await tracking.markCompleted(referredUserId);
-await tracking.markInvalid();
-const isConverted = tracking.isConverted();
-const utmParams = tracking.getUtmParams();
-const browserInfo = tracking.getBrowserInfo();
-```
-
-## Integration with Signup Flow
-
-The `RegisterPage` has been enhanced to:
-
-1. **Display referral info** - Shows who referred the user
-2. **Handle attribution** - Passes referral code during registration
-3. **Visual feedback** - Shows expiry countdown
-
-For production Auth.js integration, you have two options:
-
-**Option 1: Pass referral code from client during registration**
-
-```typescript
-// In your registration form
-import { extractUtmParams, getStoredReferralCode } from '@/lib/referrals';
-
-const referralCode = getStoredReferralCode();
-
-// Send to server (include UTM params from URL for conversion context)
-const utm = extractUtmParams();
-await fetch('/api/auth/register', {
-    method: 'POST',
-    body: JSON.stringify({
-        email,
-        password,
-        referralCode, // Pass from localStorage
-        ...utm, // utm_source, utm_medium, utm_campaign, etc.
-    }),
-});
-```
-
-**Option 2: Custom Auth.js callback**
-
-```typescript
-// In auth.config.ts or similar
-callbacks: {
-  async signIn({ user, account, profile }, request) {
-    const referralCode = /* extract from request */;
-
-    if (user.id && referralCode) {
-      await processReferralAttribution({
-        newUserId: user.id,
-        referralCode,
-        ipAddress: getClientIpAddress(request),
-        userAgent: request.headers?.get?.('user-agent'),
-        referer: request.headers?.get?.('referer'),
-        meta: { utm: {...}, headers: {...} }, // optional
-      });
-    }
-    return true;
-  },
-}
-```
-
-## Validation Rules
-
-Referral usernames must follow these rules (enforced in `@ottabase/referrals/validation`):
-
-- **Length:** 3-20 characters
-- **Characters:** Letters, numbers, underscores only (a-z, A-Z, 0-9, \_)
-- **Uniqueness:** Must be unique across all users
-- **No special chars:** No spaces, hyphens, or special characters
-
-Example validation:
+- Length: 3–20 characters
+- Charset: letters, digits, underscore (`a-z`, `A-Z`, `0-9`, `_`)
+- Uniqueness enforced at update time
 
 ```typescript
 import { validateReferralUsername } from '@ottabase/referrals';
@@ -555,161 +280,114 @@ if (!result.valid) {
 }
 ```
 
-## Local Storage
+---
 
-The system uses browser localStorage as the **only temporary storage** for referral codes (no KV, no external
-dependencies):
+## Browser storage
 
-- `ottabase_referralCode` - Stored referral code
-- `ottabase_referralTimestamp` - Timestamp when code was stored
+Keys used by the template client (`src/lib/referrals.ts`):
 
-**Expiry:** Configurable via `referrals.expiryDays` in app config (default: 90 days)
+| Key                           | Purpose                         |
+| ----------------------------- | ------------------------------- |
+| `ottabase.referral-code`      | Active referral code            |
+| `ottabase.referral-timestamp` | Stored at write time for expiry |
 
-**Why localStorage?**
+Values honor `features.referrals.expiryDays`. Clearing or private browsing behaves like any other `localStorage`
+feature.
 
-- Simple, no backend dependencies for temporary storage
-- Persists across sessions until conversion or expiry
-- Client-side first-touch attribution
-- Referral code is passed directly to server during registration
-- Works even when `trackClicks` is disabled
+---
 
-## Key Behaviors
+## Behavior
 
-### First-Touch Attribution
+### First-touch
 
-Once a referral code is stored, subsequent referral links are ignored (for 90 days). This ensures fair attribution to
-the first referrer who brought the visitor.
+After a valid code is stored, later `?ref=` values are ignored until expiry or manual clear.
 
-### Expiry Enforcement
+### Expiry
 
-Stored referral codes automatically expire after 90 days. Expired codes are:
+Expired entries are removed client-side and are not returned from `getStoredReferralCode()`.
 
-- Cleared from localStorage
-- Not used for attribution
-- Not returned by `getStoredReferralCode()`
+### Invalid `?ref=`
 
-### Invalid Codes
+Invalid codes do not persist; the track endpoint returns an error and nothing is written to storage.
 
-If a user visits with an invalid referral code:
+### Username changes
 
-- API returns 404 error
-- No tracking record is created
-- Code is not stored in localStorage
+Old links stop resolving to the user; pending rows tied to the old code may not convert. Completed rows keep historical
+data. The dashboard should warn when changing username.
 
-### Username Changes
+---
 
-When a user changes their referral username:
+## Testing checklist
 
-- Old referral links stop working
-- Pending referrals with old code may not convert
-- A warning is shown in the UI
-- Completed conversions remain linked
+**Core flow**
 
-## Testing Checklist
+- [ ] Visit with `?ref=` valid username → code stored, URL cleaned
+- [ ] Second visit with different `?ref=` → first code still wins
+- [ ] Confirm localStorage keys and timestamps
+- [ ] With `trackClicks: true`, pending row in D1
+- [ ] Register → `referredById` set, tracking row completed
+- [ ] Dashboard stats and list match expectations
+- [ ] Username update validates and persists
+- [ ] Invalid code → no storage / API error as designed
+- [ ] Expired timestamp path clears storage
 
-**Basic Flow:**
+**Configuration**
 
-- [ ] Visit site with `?ref=validcode` - code should be stored
-- [ ] Visit again with `?ref=differentcode` - first code should remain
-- [ ] Check localStorage for stored code
-- [ ] Verify tracking record created in database
-- [ ] Register new account - referral should be attributed
-- [ ] Check `referredById` field is set
-- [ ] Check tracking record status changed to `completed`
-- [ ] View referral dashboard - stats should show correctly
-- [ ] Update referral username - should validate and save
-- [ ] Copy referral link - should include new username
-- [ ] Test with invalid code - should return 404
-- [ ] Test with expired code (mock timestamp) - should be cleared
+- [ ] `enabled: false` → tracker inert
+- [ ] `trackClicks: false` → no track POST; signup attribution still works if code present
+- [ ] Custom `expiryDays` honored in UI and storage
 
-**Configuration Testing:**
+---
 
-- [ ] Set `enabled: false` - ReferralTracker should not run
-- [ ] Set `trackClicks: false` - Code stored but no API call made
-- [ ] Set `expiryDays: 30` - Code expires after 30 days
-- [ ] Verify conversions still work with `trackClicks: false`
+## Production considerations
 
-## Production Considerations
+1. **Rate limiting** on `/api/referrals/track` to reduce abuse
+2. **Auth hardening** — keep attribution server-side; never trust client-only flags
+3. **Fraud** — optional IP / device heuristics beyond the template
+4. **Observability** — log attribution failures with safe metadata
+5. **Multi-tenant** — ensure RLS / `organizationId` rules include referral tables if you extend tenancy
+6. **Indexes** — confirm hot queries are covered (package migrations + D1)
 
-1. **Auth.js Integration** - Add `processReferralAttribution()` to sign-in callback or pass referralCode from client
-2. **Rate Limiting** - Add rate limiting to tracking endpoint to prevent abuse
-3. **Analytics** - Consider adding analytics events for referral conversions
-4. **Fraud Prevention** - Implement IP-based duplicate detection
-5. **Email Notifications** - Notify referrers when someone signs up
-6. **Rewards** - Add reward logic for successful referrals
-7. **Multi-tenancy** - Add `appName` field if using multi-tenant setup
-8. **Database Indexes** - Ensure proper indexes on `userId`, `referralCode`, and `status` fields for performance
+---
 
-## Deployment Steps
+## Deployment
 
-1. **Run migrations:**
+1. Enable `packages.referrals` and `features.referrals` in `ottabase/ottabase.config.ts`.
+2. Apply database schema (template: Drizzle push or your migration pipeline), e.g. from the app directory:
 
     ```bash
     pnpm db:push
     ```
 
-2. **Verify tables created:**
-    - `users` table has `referral_username` and `referred_by_id` columns
-    - `referral_tracking` table exists with all columns
+    Or use the Ottabase migration/init flow your project standardizes on (`POST /api/ottaorm/init` where applicable).
 
-3. **Test locally:**
+3. Deploy the worker so `worker/routes/referrals.ts` routes are live.
+4. Smoke-test: `/referrals` logged-in, set username, hit `?ref=`, register a test user, verify D1 rows.
 
-    ```bash
-    pnpm dev
-    ```
-
-4. **Deploy to Cloudflare:**
-
-    ```bash
-    pnpm deploy
-    ```
-
-5. **Test in production:**
-    - Visit `/referrals` while logged in
-    - Set your referral username
-    - Share your referral link
-    - Register a test account via referral link
+---
 
 ## Troubleshooting
 
-**Referral code not being stored:**
+| Symptom           | Things to check                                                                                                       |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Code never stored | `features.referrals.enabled`, package flag, `ReferralTracker` mounted, browser storage blocked                        |
+| Track API 404     | Username does not exist on a user; worker package gate                                                                |
+| No attribution    | Registration payload includes `referralCode`; `processReferralAttribution` path in `auth.ts`; RLS / DB errors in logs |
+| Validation errors | Length and charset rules; uniqueness                                                                                  |
 
-- Check browser localStorage is enabled
-- Verify ReferralTracker component is mounted
-- Check browser console for errors
+---
 
-**Tracking API returns 404:**
+## Future enhancements
 
-- Verify referral username exists in database
-- Check user has set their referral username
-- Verify API routes are deployed
+- Email notifications on conversion
+- Reward tiers
+- Admin analytics / leaderboard
+- Pretty paths (e.g. `/r/{username}`)
+- Multi-level referrals
+- Export and webhooks
 
-**Attribution not working:**
-
-- Check `processReferralAttribution()` is called during signup
-- Verify referralCode is passed from client to server
-- Check database for pending tracking records
-- Verify the referral code matches a user's `referralUsername`
-- Check browser localStorage for stored referral code
-
-**Username validation failing:**
-
-- Must be 3-20 characters
-- Only letters, numbers, underscores
-- Check for uniqueness conflicts
-
-## Future Enhancements
-
-- [ ] Email notifications for conversions
-- [ ] Reward/incentive system
-- [ ] Admin analytics dashboard
-- [ ] Referral leaderboard
-- [ ] Custom referral link URLs (e.g., `/r/{username}`)
-- [ ] Multi-level referrals (referral of referral)
-- [ ] Export referral data (CSV/JSON)
-- [ ] Webhook notifications for conversions
-- [ ] A/B testing for referral campaigns
+---
 
 ## License
 
-Part of the Ottabase monorepo. See main LICENSE file.
+Part of the Ottabase monorepo; see the repository root `LICENSE`.
