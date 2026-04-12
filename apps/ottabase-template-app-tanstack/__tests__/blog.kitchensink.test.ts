@@ -4,6 +4,9 @@ const mocks = vi.hoisted(() => ({
     findBySlugMock: vi.fn(),
     firstMock: vi.fn(),
     createMock: vi.fn(),
+    postTagFindBySlugMock: vi.fn(),
+    postCategoryFindBySlugMock: vi.fn(),
+    postSeriesFindBySlugMock: vi.fn(),
     requireAdminAccessMock: vi.fn(),
 }));
 
@@ -22,10 +25,16 @@ vi.mock('@ottabase/ottaorm', () => ({
 vi.mock('@ottabase/ottablog', () => ({
     OttablogPlugin: class {},
     OttablogTheme: class {},
-    PostCategory: class {},
+    PostCategory: {
+        findBySlug: mocks.postCategoryFindBySlugMock,
+    },
     PostCategoryLink: class {},
-    PostSeries: class {},
-    PostTag: class {},
+    PostSeries: {
+        findBySlug: mocks.postSeriesFindBySlugMock,
+    },
+    PostTag: {
+        findBySlug: mocks.postTagFindBySlugMock,
+    },
     PostTagLink: class {},
     StudioManager: class {},
     Post: {
@@ -35,7 +44,14 @@ vi.mock('@ottabase/ottablog', () => ({
     },
 }));
 
-import { handleBlogKitchensink, handleBlogPostBySlug, handleBlogPostUnlock } from '../worker/routes/blog';
+import {
+    handleBlogCategoryBySlug,
+    handleBlogKitchensink,
+    handleBlogPostBySlug,
+    handleBlogPostUnlock,
+    handleBlogSeriesBySlug,
+    handleBlogTagBySlug,
+} from '../worker/routes/blog';
 
 function makeContext(headers?: Record<string, string>) {
     return {
@@ -281,5 +297,68 @@ describe('blog post app scoping by slug', () => {
             status: 'published',
             appId: null,
         });
+    });
+});
+
+describe('blog archive slug handlers', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
+
+    it('scopes tag slug lookup by appId header and default type', async () => {
+        mocks.postTagFindBySlugMock.mockResolvedValueOnce({
+            toJson: () => ({ id: 'tag-1', name: 'React', slug: 'react', type: 'post' }),
+        });
+
+        const context = {
+            request: new Request('http://localhost/api/blog/tags/by-slug/react', {
+                headers: { 'x-app-id': 'site-a' },
+            }),
+            url: new URL('http://localhost/api/blog/tags/by-slug/react'),
+            env: { OBCF_D1: {} },
+        } as any;
+
+        const res = await handleBlogTagBySlug(context, 'react');
+
+        expect(res.status).toBe(200);
+        expect(mocks.postTagFindBySlugMock).toHaveBeenCalledWith('react', { appId: 'site-a', type: 'post' });
+    });
+
+    it('scopes category slug lookup by appId and explicit type', async () => {
+        mocks.postCategoryFindBySlugMock.mockResolvedValueOnce({
+            toJson: () => ({ id: 'cat-1', name: 'Docs', slug: 'docs', type: 'docs' }),
+        });
+
+        const context = {
+            request: new Request('http://localhost/api/blog/categories/by-slug/docs?type=docs', {
+                headers: { 'x-app-id': 'site-b' },
+            }),
+            url: new URL('http://localhost/api/blog/categories/by-slug/docs?type=docs'),
+            env: { OBCF_D1: {} },
+        } as any;
+
+        const res = await handleBlogCategoryBySlug(context, 'docs');
+
+        expect(res.status).toBe(200);
+        expect(mocks.postCategoryFindBySlugMock).toHaveBeenCalledWith('docs', { appId: 'site-b', type: 'docs' });
+    });
+
+    it('scopes series slug lookup by appId query param before header', async () => {
+        mocks.postSeriesFindBySlugMock.mockResolvedValueOnce({
+            toJson: () => ({ id: 'series-1', title: 'Learning React', slug: 'learning-react' }),
+        });
+
+        const context = {
+            request: new Request('http://localhost/api/blog/series/by-slug/learning-react?appId=site-b', {
+                headers: { 'x-app-id': 'site-a' },
+            }),
+            url: new URL('http://localhost/api/blog/series/by-slug/learning-react?appId=site-b'),
+            env: { OBCF_D1: {} },
+        } as any;
+
+        const res = await handleBlogSeriesBySlug(context, 'learning-react');
+
+        expect(res.status).toBe(200);
+        expect(mocks.postSeriesFindBySlugMock).toHaveBeenCalledWith('learning-react', { appId: 'site-b' });
     });
 });

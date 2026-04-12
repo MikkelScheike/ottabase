@@ -35,23 +35,23 @@
 
 // Models + schema exports (fat models)
 export {
+    categoriesTable,
     OttablogPlugin,
+    ottablogPluginsTable,
     OttablogTheme,
+    ottablogThemesTable,
     Post,
     PostCategory,
     PostCategoryLink,
+    postCategoryLinksTable,
     PostSeries,
+    postsTable,
     PostTag,
     PostTagLink,
-    PostVersion,
-    categoriesTable,
-    ottablogPluginsTable,
-    ottablogThemesTable,
-    postCategoryLinksTable,
     postTagLinksTable,
     postTagsTable,
+    PostVersion,
     postVersionsTable,
-    postsTable,
     seriesTable,
 } from './ottaorm-models';
 
@@ -92,15 +92,19 @@ export type { Author, ContentType, EditorJSData, HeroImage, PostStatus, ReadingT
 
 // Constants and helpers
 export {
+    calculateReadingTime,
     CONTENT_TYPES,
     DEFAULT_SEO_META,
-    POST_STATUSES,
-    calculateReadingTime,
     extractExcerpt,
     formatDate,
     formatShortDate,
     generateSlug,
+    POST_STATUSES,
 } from './types';
+
+// Slug utilities (shared across models)
+export { normalizeSlugInput, resolveUniqueSlug } from './slug-utils';
+export type { SlugLifecycleConfig, SlugScope } from './slug-utils';
 
 // Components (React)
 export { BlogExcerptCard, BlogRenderer } from './components/BlogRenderer';

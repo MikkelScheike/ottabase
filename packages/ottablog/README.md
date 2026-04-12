@@ -60,6 +60,7 @@ const tag = await PostTag.create({
     slug: 'javascript',
     color: '#f7df1e',
     type: 'post',
+    appId: 'app-123',
 });
 
 // Get tags for a post
@@ -181,11 +182,12 @@ const category = await PostCategory.create({
     parentId: null, // null for root categories
     type: 'post', // post, news, docs, etc.
     sortOrder: 1,
+    appId: 'app-123',
 });
 
 // Query methods
 await PostCategory.roots({ appId: 'app-123' });
-await PostCategory.children('parent-cat-123');
+await PostCategory.children('parent-cat-123', { appId: 'app-123' });
 await PostCategory.findBySlug('technology', { appId: 'app-123' });
 
 // Instance methods
@@ -196,12 +198,12 @@ category.generateSlug();
 
 - `id` - Unique identifier
 - `name` - Category name
-- `slug` - URL-friendly identifier
+- `slug` - URL-friendly identifier (unique per `appId` + `type`)
 - `description` - Category description
 - `parentId` - Parent category for hierarchy
 - `sortOrder` - Display order
 - `type` - Content type (post, news, docs, etc.) - **NEW: Enables reuse for multiple content types**
-- `appId` - Multi-app identifier
+- `appId` - Multi-app identifier (required)
 
 ### PostTag
 
@@ -213,6 +215,7 @@ const tag = await PostTag.create({
     slug: 'react',
     color: '#61dafb',
     type: 'post', // post, news, docs, etc.
+    appId: 'app-123',
 });
 
 // Query methods
@@ -228,10 +231,10 @@ const style = tag.getStyle(); // { backgroundColor, color } for contrast
 
 - `id` - Unique identifier
 - `name` - Tag name
-- `slug` - URL-friendly identifier
+- `slug` - URL-friendly identifier (unique per `appId` + `type`)
 - `color` - Hex color code
 - `type` - Content type (post, news, docs, etc.) - **NEW: Enables reuse for multiple content types**
-- `appId` - Multi-app identifier
+- `appId` - Multi-app identifier (required)
 
 ### PostTagLink
 
@@ -319,6 +322,7 @@ const series = await PostSeries.create({
     coverImage: { url: '...', alt: '...' },
     isComplete: false,
     sortOrder: 1,
+    appId: 'app-123',
 });
 
 // Query methods
@@ -331,12 +335,32 @@ await PostSeries.findBySlug('learning-react', { appId: 'app-123' });
 
 - `id` - Unique identifier
 - `title` - Series title
-- `slug` - URL-friendly identifier
+- `slug` - URL-friendly identifier (unique per `appId`)
 - `description` - Series description
 - `coverImage` - Series cover image
 - `isComplete` - Mark as complete
 - `sortOrder` - Display order
-- `appId` - Multi-app identifier
+- `appId` - Multi-app identifier (required)
+
+## Slug Utilities
+
+PostTag, PostCategory, and PostSeries auto-generate unique slugs on `create()` and `update()`. The shared utilities are
+also exported for custom models:
+
+```typescript
+import { normalizeSlugInput, resolveUniqueSlug } from '@ottabase/ottablog';
+
+// Normalize any input to a valid slug, with fallback and prefix
+normalizeSlugInput('Hello World', 'fallback', 'tag'); // → 'hello-world'
+normalizeSlugInput('', '', 'tag'); // → 'tag-a1b2c3d4'
+
+// Resolve a unique slug within a scope (queries DB for collisions)
+const slug = await resolveUniqueSlug(PostTag, 'hello-world', {
+    appId: 'app-123',
+    type: 'post', // optional scope
+});
+// → 'hello-world' or 'hello-world-1', 'hello-world-2', etc.
+```
 
 ## Content Types
 
@@ -492,7 +516,7 @@ When integrated with the app's worker routes, the blog system provides these pub
 
 ### List Posts
 
-```
+```http
 GET /api/blog/posts?page=1&perPage=10&contentType=blog&categoryId=xyz&tagId=abc&search=keyword&orderBy=publishedAt&orderDirection=desc
 ```
 
@@ -501,7 +525,7 @@ category, and series data.
 
 ### Post by Slug
 
-```
+```http
 GET /api/blog/posts/by-slug/{slug}
 ```
 
@@ -510,7 +534,7 @@ Returns a single post with tags, categories (via junction), and series title. Vi
 
 ### Related Posts
 
-```
+```http
 GET /api/blog/posts/{id}/related?limit=4
 ```
 
@@ -519,31 +543,34 @@ to legacy `categoryId`, then to content type.
 
 ### Tag by Slug
 
-```
+```http
 GET /api/blog/tags/by-slug/{slug}
 ```
 
-Returns tag metadata (id, name, slug, color, type).
+Returns tag metadata (id, name, slug, color, type). Supports query params: `appId` (optional, otherwise
+`X-App-Id`/config is used) and `type` (defaults to `post`).
 
 ### Category by Slug
 
-```
+```http
 GET /api/blog/categories/by-slug/{slug}
 ```
 
-Returns category metadata (id, name, slug, description).
+Returns category metadata (id, name, slug, description). Supports query params: `appId` (optional, otherwise
+`X-App-Id`/config is used) and `type` (defaults to `post`).
 
 ### Series by Slug
 
-```
+```http
 GET /api/blog/series/by-slug/{slug}
 ```
 
-Returns series metadata (id, title, slug, description, status).
+Returns series metadata (id, title, slug, description, status). Supports query param: `appId` (optional, otherwise
+`X-App-Id`/config is used).
 
 ### RSS Feed
 
-```
+```http
 GET /api/blog/rss?title=My+Blog&description=Latest+posts&contentType=blog&limit=25
 ```
 
@@ -552,7 +579,7 @@ query parameters.
 
 ### Sitemap
 
-```
+```http
 GET /api/blog/sitemap.xml?appId=xyz
 ```
 
@@ -560,7 +587,7 @@ Returns an XML sitemap of all published posts for SEO.
 
 ### Scheduled Publishing
 
-```
+```http
 POST /api/blog/publish-scheduled?appId=xyz
 ```
 

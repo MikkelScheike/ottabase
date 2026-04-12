@@ -474,12 +474,14 @@ export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<R
  * Returns tag details by slug.
  */
 export async function handleBlogTagBySlug(context: BlogRouteContext, slug: string): Promise<Response> {
-    const { env } = context;
+    const { env, url } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const tag = await PostTag.first({ slug });
+    const appId = resolveAppId(context);
+    const type = url.searchParams.get('type') || 'post';
+    const tag = await PostTag.findBySlug(slug, { appId, type });
     if (!tag) {
         return errorResponse('Tag not found', 404, { code: 'NOT_FOUND' });
     }
@@ -491,12 +493,14 @@ export async function handleBlogTagBySlug(context: BlogRouteContext, slug: strin
  * Returns category details by slug.
  */
 export async function handleBlogCategoryBySlug(context: BlogRouteContext, slug: string): Promise<Response> {
-    const { env } = context;
+    const { env, url } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const category = await PostCategory.first({ slug });
+    const appId = resolveAppId(context);
+    const type = url.searchParams.get('type') || 'post';
+    const category = await PostCategory.findBySlug(slug, { appId, type });
     if (!category) {
         return errorResponse('Category not found', 404, { code: 'NOT_FOUND' });
     }
@@ -513,7 +517,8 @@ export async function handleBlogSeriesBySlug(context: BlogRouteContext, slug: st
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const series = await PostSeries.first({ slug });
+    const appId = resolveAppId(context);
+    const series = await PostSeries.findBySlug(slug, { appId });
     if (!series) {
         return errorResponse('Series not found', 404, { code: 'NOT_FOUND' });
     }

@@ -93,6 +93,11 @@ describe('ottablog models', () => {
             expect(fields.name.editable).toBe(true);
             expect(fields.name.searchable).toBe(true);
         });
+
+        it('should mark slug as unique', () => {
+            const fields = PostCategory.getFields();
+            expect(fields.slug.unique).toBe(true);
+        });
     });
 
     describe('PostTag model', () => {
@@ -119,6 +124,11 @@ describe('ottablog models', () => {
             expect(fields).toHaveProperty('color');
             expect(fields.color.type).toBe('string');
             expect(fields.color.editable).toBe(true);
+        });
+
+        it('should mark slug as unique', () => {
+            const fields = PostTag.getFields();
+            expect(fields.slug.unique).toBe(true);
         });
 
         it('should have validation rules for name', () => {
@@ -265,6 +275,11 @@ describe('ottablog models', () => {
             expect(fields).toHaveProperty('slug');
             expect(fields).toHaveProperty('isComplete');
             expect(fields).toHaveProperty('sortOrder');
+        });
+
+        it('should mark slug as unique', () => {
+            const fields = PostSeries.getFields();
+            expect(fields.slug.unique).toBe(true);
         });
     });
 
