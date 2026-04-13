@@ -6,6 +6,9 @@
 [![pnpm](https://img.shields.io/badge/pnpm-10.27.0-F69220?logo=pnpm&logoColor=white)](https://pnpm.io/)
 [![CI - Build & Test](https://github.com/thinkdj/ottabase/actions/workflows/ci.yml/badge.svg)](https://github.com/thinkdj/ottabase/actions/workflows/ci.yml)
 
+> ✨ **[Get Started in 5 Minutes →](./QUICKSTART.md)** - Clone, install, bootstrap via GUI, and ship. Full setup from
+> zero to running.
+
 Modern full-stack monorepo with pnpm workspaces and Turborepo. Deploy to Cloudflare Workers with D1, KV, R2, Queues, and
 Durable Objects.
 
@@ -37,8 +40,8 @@ Durable Objects.
 
 ## Links
 
-- Docs: [README](./README.md), [Architecture](./ARCHITECTURE.md), [Changelog](./CHANGELOG.md),
-  [Releases](./docs/RELEASES.md)
+- Docs: [Quick Start](./QUICKSTART.md), [README](./README.md), [Architecture](./ARCHITECTURE.md),
+  [Changelog](./CHANGELOG.md), [Releases](./docs/RELEASES.md)
 - Project health: [Contributing](./.github/CONTRIBUTING.md), [Code of Conduct](./.github/CODE_OF_CONDUCT.md),
   [Security](./.github/SECURITY.md), [Support](./.github/SUPPORT.md), [Maintainers](./.github/MAINTAINERS.md)
 - Demo: demo.ottabase.com

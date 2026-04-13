@@ -23,7 +23,7 @@ pnpm dev
 
 ## Structure
 
-```
+```text
 app/
 ├── page.tsx                    # Homepage (uses SlotRenderer for each section)
 ├── about/page.tsx              # About
@@ -88,7 +88,7 @@ accept the same data props — you write your content data once and switch the v
 
 ### Architecture
 
-```
+```text
                                 ┌──────────────────────┐
    lib/homepage-config.ts ─────▶│    SLOT_REGISTRY     │
    (slot definitions,           │  navbar: 3 variants  │
