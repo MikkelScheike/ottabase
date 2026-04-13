@@ -8,6 +8,10 @@ and live switching, plus an **extensible slot framework** for hot-swappable home
 > no API call; the preset is set in `config/brand.config.ts` and resolved at request time. Both apps use the same
 > underlying `@ottabase/brand-engine` presets, so to keep them visually in sync just match `themePreset` here to
 > whatever preset is active in the TanStack app.
+>
+> `@ottabase/homepage-contract` is a separate package for homepage/page payload schemas. It is _not_ the theming layer
+> for this app. Theme resolution here is handled directly by `@ottabase/brand-engine` and
+> `@ottabase/brand-engine-react`.
 
 ## Quick Start
 
@@ -219,6 +223,9 @@ The new variant immediately appears in the config page and can be selected.
 ## Brand Engine Integration
 
 This app is fully wired to `@ottabase/brand-engine` for SSR-safe theming without a database or API call.
+
+`@ottabase/homepage-contract` is adjacent to this architecture, not part of the theme runtime. Use it for validating
+homepage or page payloads; use brand-engine for tokens, CSS variables, and `BrandProvider`-driven theme behavior.
 
 ### How it works (end-to-end)
 

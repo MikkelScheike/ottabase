@@ -313,7 +313,15 @@
 .otta-docs-content h4,
 .otta-docs-content .otta-docs-p {
     word-break: normal;
-    overflow-wrap: normal;
+    overflow-wrap: anywhere;
+}
+
+.otta-docs-content h1,
+.otta-docs-content h2,
+.otta-docs-content h3,
+.otta-docs-content h4 {
+    text-wrap: balance;
+    hyphens: auto;
 }
 
 .otta-docs-content h1 {
