@@ -87,7 +87,7 @@ wrangler secret put MIGRATION_SECRET
 wrangler secret put BOOTSTRAP_OWNER_SECRET
 ```
 
-Why they matter in production:
+👉 Or use the **Cloudflare dashboard** to add them as the Worker's secrets.
 
 - `BOOTSTRAP_OWNER_SECRET` protects the bootstrap wizard and bootstrap API endpoints.
 - `MIGRATION_SECRET` is required for migration endpoints such as Admin → Migrate (`/api/ottaorm/init`).
@@ -127,6 +127,8 @@ set CLOUDFLARE_API_TOKEN=your_real_token_here
 # Windows PowerShell
 $env:CLOUDFLARE_API_TOKEN='your_real_token_here'
 ```
+
+(You can add them to `.env.local` which is gitignored)
 
 If you also need your account ID, get it from `wrangler whoami` or the Cloudflare dashboard.
 
@@ -206,7 +208,7 @@ curl -s -X POST http://localhost:3004/__bootstrap__/api/seed \
 curl -s -X POST http://localhost:3004/__bootstrap__/api/create-owner \
   -H "X-Bootstrap-Secret: $BOOTSTRAP_SECRET" \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin@ottabase.dev","password":"Admin@12345","name":"Admin"}'
+  -d '{"email":"admin@example.com","password":"<your-secure-password>","name":"Admin"}'
 
 curl -s -X POST http://localhost:3004/__bootstrap__/api/finalize \
   -H "X-Bootstrap-Secret: $BOOTSTRAP_SECRET"
@@ -244,18 +246,16 @@ Open your browser:
 http://localhost:3003
 ```
 
-**Login with:**
-
-- Email: `admin@ottabase.dev`
-- Password: `Admin@12345`
+Login with the _owner_ account you created during bootstrap. _This account has full admin privileges_. You can create
+additional users and organizations from the Admin panel.
 
 You're now inside a fully functional multi-tenant SaaS app with:
 
-- ✅ User authentication (Auth.js)
-- ✅ Organizations (multi-tenancy)
-- ✅ Role-based access control (RBAC)
-- ✅ Audit logging
-- ✅ Database connected (Cloudflare D1)
+- User authentication (Auth.js)
+- Organizations (multi-tenancy)
+- Role-based access control (RBAC)
+- Audit logging
+- Database connected (Cloudflare D1)
 
 From here, you can also use the admin UI to manage migrations through Admin → Migrate for any future schema changes.
 
