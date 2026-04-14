@@ -6,7 +6,7 @@ function ensureDir(dirPath) {
 }
 
 function main() {
-    // Run from apps/ottabase-template-app
+    // Run from apps/otta-landing to ensure correct paths
     const appFolder = path.basename(process.cwd());
 
     // OpenNext (via @opennextjs/aws copyTracedFiles) expects this folder to exist

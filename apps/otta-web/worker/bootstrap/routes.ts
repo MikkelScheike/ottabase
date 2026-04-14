@@ -407,7 +407,7 @@ async function handleSeed(context: BootstrapContext): Promise<Response> {
         ensureOrmConnection(env);
 
         // Seed default brand kit + route mappings for current app (brand kits are always app-scoped)
-        const appId = (env as { APP_ID?: string }).APP_ID ?? 'ottabase-template-app';
+        const appId = (env as { APP_ID?: string }).APP_ID ?? 'otta-web';
         await ensureAppBrandDefaults('Ottabase', appId);
 
         // Seed default roles (owner, admin, editor, viewer, member)
@@ -515,7 +515,7 @@ async function handleCreateOwner(context: BootstrapContext): Promise<Response> {
                 organizationRole: 'owner',
                 assignedBy: 'system',
                 roleFallbacks: ['owner'],
-                appId: (env as { APP_ID?: string }).APP_ID ?? 'ottabase-template-app',
+                appId: (env as { APP_ID?: string }).APP_ID ?? 'otta-web',
             });
             organizationId = provisioned.organizationId;
             assignedRole = provisioned.assignedRole;

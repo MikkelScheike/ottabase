@@ -105,7 +105,7 @@ Durable Objects.
 ottabase/
 ├── apps/
 │   ├── otta-web/       # TanStack Router + Vite + Workers (primary)
-│   └── ottabase-template-app-nextjs-homepage/ # Next.js + OpenNext (homepage/landing)
+│   └── otta-landing/ # Next.js + OpenNext (homepage/landing)
 ├── packages/
 │   ├── ottaorm/          # Fat models, auto-migrations, CRUD, RLS
 │   ├── db/               # Drizzle D1 driver
@@ -375,10 +375,10 @@ const config = createAppConfig({
 
 ### Environment Variables
 
-| Variable          | Default                   | Description                 |
-| ----------------- | ------------------------- | --------------------------- |
-| `APP_ID`          | `"ottabase-template-app"` | Unique app identifier       |
-| `SCOPE_BY_APP_ID` | `"false"`                 | Enable appId scoping for DB |
+| Variable          | Default      | Description                 |
+| ----------------- | ------------ | --------------------------- |
+| `APP_ID`          | `"otta-web"` | Unique app identifier       |
+| `SCOPE_BY_APP_ID` | `"false"`    | Enable appId scoping for DB |
 
 ### Schema Support
 
@@ -403,8 +403,8 @@ cd apps/my-new-app
 **Marketing homepage** (Next.js, OpenNext, Brand Engine):
 
 ```bash
-# Unix/macOS: cp -r apps/ottabase-template-app-nextjs-homepage apps/my-new-homepage
-# Windows:    xcopy /E /I apps\ottabase-template-app-nextjs-homepage apps\my-new-homepage
+# Unix/macOS: cp -r apps/otta-landing apps/my-new-homepage
+# Windows:    xcopy /E /I apps\otta-landing apps\my-new-homepage
 cd apps/my-new-homepage
 # Update package.json name
 # Edit config/brand.config.ts to customize theme

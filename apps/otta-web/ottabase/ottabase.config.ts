@@ -15,7 +15,7 @@ import { defineOttabaseConfig } from '@ottabase/config';
 
 export default defineOttabaseConfig({
     // ── App Identity ──────────────────────────────────────────
-    appId: 'ottabase-template-app',
+    appId: 'otta-web',
     appName: 'Ottabase Template App',
 
     // ── App Metadata (SEO, copyright, social) ─────────────────

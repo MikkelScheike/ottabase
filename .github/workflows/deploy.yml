@@ -89,7 +89,7 @@ jobs:
                   # inside that app, then set the APPS_TO_DEPLOY secret - no yml editing needed.
                   APPS_TO_DEPLOY="${{ secrets.APPS_TO_DEPLOY }}"
                   if [ -z "$APPS_TO_DEPLOY" ]; then
-                    APPS_TO_DEPLOY="otta-web,ottabase-template-app-nextjs-homepage"
+                    APPS_TO_DEPLOY="otta-web,otta-landing"
                     echo "📋 Using default apps: ${APPS_TO_DEPLOY}"
                   else
                     echo "📋 Apps from secret: ${APPS_TO_DEPLOY}"

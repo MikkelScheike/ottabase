@@ -2,7 +2,7 @@
     "$schema": "../../schemas/cloudflare-config.schema.json",
     "deployable": true,
     "appType": "nextjs",
-    "workerName": "ottabase-template-app-nextjs-homepage",
+    "workerName": "otta-landing",
     "buildCommand": "build",
     "workerBuildCommand": "build:worker",
     "outputDirectory": ".open-next",

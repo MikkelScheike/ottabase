@@ -1,5 +1,5 @@
 {
-    "name": "@ottabase/ottabase-template-app-nextjs-homepage",
+    "name": "@ottabase/otta-landing",
     "version": "1.0.0",
     "private": true,
     "scripts": {
@@ -60,10 +60,10 @@
     "repository": {
         "type": "git",
         "url": "git+https://github.com/thinkdj/ottabase.git",
-        "directory": "apps/ottabase-template-app-nextjs-homepage"
+        "directory": "apps/otta-landing"
     },
     "bugs": {
         "url": "https://github.com/thinkdj/ottabase/issues"
     },
-    "homepage": "https://github.com/thinkdj/ottabase/tree/main/apps/ottabase-template-app-nextjs-homepage#readme"
+    "homepage": "https://github.com/thinkdj/ottabase/tree/main/apps/otta-landing#readme"
 }

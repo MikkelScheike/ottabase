@@ -51,7 +51,7 @@ describe('mediaLibraryPolicy', () => {
  *
  * Previously, the order was headerAppId || securityContextAppId || configAppId,
  * which caused uploads via raw fetch/XHR (no X-App-Id header) to store
- * appId='web' while the listing client sent X-App-Id='ottabase-template-app'.
+ * appId='web' while the listing client sent X-App-Id='app-id'.
  */
 describe('media appId resolution (regression)', () => {
     // Mirrors the expression in getResolvedMediaSecurityContext
@@ -60,13 +60,13 @@ describe('media appId resolution (regression)', () => {
     }
 
     it('prefers explicit X-App-Id header when present', () => {
-        expect(resolveAppId('custom-app', 'ottabase-template-app', 'web')).toBe('custom-app');
+        expect(resolveAppId('custom-app', 'otta-web', 'web')).toBe('custom-app');
     });
 
     it('falls back to config.appId when header is absent', () => {
         // This is the core regression case: uploads without X-App-Id header
         // must get config.appId, NOT the generic 'web' default.
-        expect(resolveAppId(null, 'ottabase-template-app', 'web')).toBe('ottabase-template-app');
+        expect(resolveAppId(null, 'otta-web', 'web')).toBe('otta-web');
     });
 
     it('falls back to securityContext.appId when both header and config are empty', () => {

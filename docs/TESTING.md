@@ -73,8 +73,8 @@ Each package has its own `vitest.config.ts`:
 
 - `apps/otta-web/vitest.config.ts` - Vitest config with Cloudflare mocks
 - `apps/otta-web/vitest.setup.ts` - Setup with all CF bindings mocked
-- `apps/ottabase-template-app/vitest.config.ts` - Next.js app Vitest config
-- `apps/ottabase-template-app/vitest.setup.ts` - Next.js mocks + CF bindings
+- `apps/otta-landing/vitest.config.ts` - Next.js app Vitest config
+- `apps/otta-landing/vitest.setup.ts` - Next.js mocks + CF bindings
 
 ## Writing Tests
 

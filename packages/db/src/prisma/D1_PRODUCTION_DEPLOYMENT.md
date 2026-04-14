@@ -26,7 +26,7 @@ steps.
 
 ### Local vs Production Configuration
 
-Your app uses [wrangler.jsonc](../apps/ottabase-template-app/wrangler.jsonc) with environment-specific overrides:
+Your app uses [wrangler.jsonc](../apps/otta-web/wrangler.jsonc) with environment-specific overrides:
 
 ```jsonc
 {
@@ -304,20 +304,20 @@ jobs:
 
             - name: Build app
               run: |
-                  cd apps/ottabase-template-app
+                  cd apps/your-app
                   pnpm build
                   pnpm build:worker
 
             - name: Deploy to Cloudflare
               run: |
-                  cd apps/ottabase-template-app
+                  cd apps/your-app
                   pnpm wrangler deploy --env production
               env:
                   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
 
             - name: Apply migrations
               run: |
-                  cd apps/ottabase-template-app
+                  cd apps/your-app
                   # Find latest migration
                   MIGRATION=$(ls -t prisma/migrations/ | head -1)
                   pnpm wrangler d1 execute ottabase-db \

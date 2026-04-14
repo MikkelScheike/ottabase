@@ -41,7 +41,7 @@ import type { SupportedUIFramework, ThemeColors } from './types';
 
 // Export constants and defaults
 export const DEFAULT_UI_FRAMEWORK: SupportedUIFramework = 'mantine';
-export const DEFAULT_APP_ID = 'ottabase-template-app';
+export const DEFAULT_APP_ID = 'otta-web';
 
 export const DEFAULT_THEME_COLORS: ThemeColors = {
     primary: [

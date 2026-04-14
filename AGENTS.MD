@@ -670,5 +670,6 @@ See `README.md` and `AGENTS.MD` above for full command reference. Key commands:
 
 #### Misc
 
-- Template apps were previously named `ottabase-template-app-tanstack` and were later renamed to `otta-web` for clarity.
-  If old references appear in docs or code, they can generally be ignored or updated to `otta-web`.
+- Template apps were previously named `ottabase-template-app-tanstack`, `ottabase-template-app-nextjs-homepage` and were
+  later renamed to `otta-web` and `otta-landing` for clarity. If old references appear in docs or code, they can
+  generally be ignored or updated to `otta-web` or `otta-landing`.

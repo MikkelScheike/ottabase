@@ -298,7 +298,7 @@ Avoid Node.js APIs like `fs`, `child_process`, `os`. Use Cloudflare bindings ins
 
 - **`apps/`** — Full-stack applications
     - `otta-web/` — Main TanStack Router + Vite + Wrangler app
-    - `ottabase-template-app-nextjs-homepage/` — Marketing site (Next.js)
+    - `otta-landing/` — Marketing site (Next.js)
 - **`packages/`** — 47 shared packages
     - `@ottabase/ottaorm` — Fat model ORM (core)
     - `@ottabase/auth` — Auth.js integration

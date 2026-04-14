@@ -21,8 +21,8 @@ flowchart TB
     Root --> Packages[packages]
     Root --> Tooling[tooling and CI]
 
-    Apps --> TanStack[otta-web]
-    Apps --> Homepage[ottabase-template-app-nextjs-homepage]
+    Apps --> Web App Template[otta-web]
+    Apps --> Homepage Template[otta-landing]
 
     Packages --> Core[core platform packages]
     Packages --> UI[UI and editor packages]

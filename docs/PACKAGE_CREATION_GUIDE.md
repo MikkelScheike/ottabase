@@ -6,8 +6,7 @@ Quick reference for creating packages in the Ottabase Turborepo monorepo.
 
 - **Keep packages generic** - Reusable across different apps
 - **React dependencies allowed** - Packages can use React/React DOM as peer dependencies
-- **No Next.js specifics** - Next.js-specific code belongs in app directories (e.g.
-  `apps/ottabase-template-app-nextjs-homepage`)
+- **No Next.js specifics** - Next.js-specific code belongs in app directories (e.g. `apps/otta-landing`)
 
 ## Package Structure
 

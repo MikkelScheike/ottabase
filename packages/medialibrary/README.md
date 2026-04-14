@@ -33,7 +33,7 @@ const record = createMediaLibraryRecordInput({
     fileName: 'cover.webp',
     mimeType: 'image/webp',
     fileSize: 248102,
-    appId: 'ottabase-template-app',
+    appId: 'otta-web',
     userId: 'user-123',
 });
 ```

@@ -61,7 +61,7 @@ export async function handleOttaormInit(context: OttaormInitContext): Promise<Re
     // Seed default brand kit + route mappings for current app (brand kits are always app-scoped)
     if (result.success) {
         initDbConnection(env);
-        const appId = (env as { APP_ID?: string }).APP_ID ?? 'ottabase-template-app';
+        const appId = (env as { APP_ID?: string }).APP_ID ?? 'otta-web';
         await ensureAppBrandDefaults('Ottabase', appId);
     }
 
