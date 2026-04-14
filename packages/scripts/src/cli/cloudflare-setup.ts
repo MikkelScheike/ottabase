@@ -335,6 +335,17 @@ async function main() {
     log('Preview (GitHub Secrets for PR preview deploy):', YELLOW);
     if (d1PreviewId) log(`  D1_PREVIEW_DATABASE_ID=${d1PreviewId}`);
     if (kvPreviewId) log(`  KV_PREVIEW_NAMESPACE_ID=${kvPreviewId}`);
+
+    // Regenerate cloudflare-env.d.ts so TypeScript types reflect the new/updated bindings
+    log('', NC);
+    log('Generating cloudflare-env.d.ts (wrangler types)...', YELLOW);
+    try {
+        runCommand(`${wranglerCmd} types`);
+        log('cloudflare-env.d.ts updated.', GREEN);
+    } catch (e) {
+        log(`Warning: could not generate cloudflare-env.d.ts: ${e instanceof Error ? e.message : String(e)}`, YELLOW);
+        log('Run manually: cd apps/otta-web && npx wrangler types', YELLOW);
+    }
 }
 
 main().catch((err) => {
