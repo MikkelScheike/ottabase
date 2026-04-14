@@ -3,11 +3,10 @@
 Next.js 16 homepage template deployed to Cloudflare Workers via OpenNext. Uses Brand Engine for theming with 8 presets
 and live switching, plus an **extensible slot framework** for hot-swappable homepage sections.
 
-> **Monorepo note:** The main TanStack app (`ottabase-template-app-tanstack`) drives its brand config from a D1
-> database, editable via the admin UI at `/admin/brand-engine`. This homepage is intentionally **config-first** — no DB,
-> no API call; the preset is set in `config/brand.config.ts` and resolved at request time. Both apps use the same
-> underlying `@ottabase/brand-engine` presets, so to keep them visually in sync just match `themePreset` here to
-> whatever preset is active in the TanStack app.
+> **Monorepo note:** The main Vite app (`otta-web`) drives its brand config from a D1 database, editable via the admin
+> UI at `/admin/brand-engine`. This homepage is intentionally **config-first** — no DB, no API call; the preset is set
+> in `config/brand.config.ts` and resolved at request time. Both apps use the same underlying `@ottabase/brand-engine`
+> presets, so to keep them visually in sync just match `themePreset` here to whatever preset is active in the Vite app.
 >
 > `@ottabase/homepage-contract` is a separate package for homepage/page payload schemas. It is _not_ the theming layer
 > for this app. Theme resolution here is handled directly by `@ottabase/brand-engine` and

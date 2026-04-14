@@ -106,7 +106,7 @@ async function main() {
     log('', NC);
 
     // Check wrangler and auth first (fail fast before any prompts)
-    const wranglerCmd = 'pnpm --filter @ottabase/ottabase-template-app-tanstack exec wrangler';
+    const wranglerCmd = 'pnpm --filter @ottabase/otta-web exec wrangler';
     try {
         runCommand(`${wranglerCmd} --version`);
     } catch (e) {

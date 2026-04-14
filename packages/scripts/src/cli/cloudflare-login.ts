@@ -24,7 +24,7 @@ function isAuthenticated(wranglerCmd: string): boolean {
 }
 
 function main() {
-    const wranglerCmd = 'pnpm --filter @ottabase/ottabase-template-app-tanstack exec wrangler';
+    const wranglerCmd = 'pnpm --filter @ottabase/otta-web exec wrangler';
 
     try {
         runCommand(`${wranglerCmd} --version`);

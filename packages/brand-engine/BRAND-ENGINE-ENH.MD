@@ -254,7 +254,7 @@ The core architecture is solid. The main gap is that it's built for "one org, on
 "multi-tenant, per-route, per-org" flexibility. The inheritance chain and route-level overrides are what bridge that
 gap. Everything else is polish.
 
-## TO ENSURE (brand-engine, ottalayout and their deep integration into tanstack template app)
+## TO ENSURE (brand-engine, ottalayout and their deep integration into the Vite template app)
 
 - Only one default brand kit per org
 - Inherited Brand Kits have enable/disable for each section and it saves only the diff.

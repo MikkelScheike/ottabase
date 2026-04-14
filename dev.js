@@ -6,6 +6,7 @@
  */
 
 const { spawn } = require('child_process');
+const fs = require('fs');
 const path = require('path');
 
 // ANSI color codes for better terminal output
@@ -32,7 +33,31 @@ const shell = isWindows ? 'powershell.exe' : '/bin/sh';
 const shellArgs = isWindows ? ['-Command'] : ['-c'];
 
 // App directory
-const appDir = path.join(__dirname, 'apps/ottabase-template-app-tanstack');
+const appDir = path.join(__dirname, 'apps/otta-web');
+
+function ensureDistDirectory() {
+    const distDir = path.join(appDir, 'dist');
+    const indexHtmlPath = path.join(distDir, 'index.html');
+
+    try {
+        if (!fs.existsSync(distDir)) {
+            fs.mkdirSync(distDir, { recursive: true });
+            log.info(`Created missing dist directory: ${distDir}`);
+        }
+
+        if (!fs.existsSync(indexHtmlPath)) {
+            fs.writeFileSync(
+                indexHtmlPath,
+                '<html>created by dev.js as placeholder for wrangler in development mode</html>\n',
+                'utf-8',
+            );
+            log.info('Created missing dist/index.html placeholder for Wrangler');
+        }
+    } catch (error) {
+        log.error(`Failed to prepare dist directory: ${error.message}`);
+        process.exit(1);
+    }
+}
 
 // Default ports
 const PORT_FE = process.env.PORT_FE || 3003;
@@ -41,7 +66,9 @@ const PORT_BE = process.env.PORT_BE || 3004;
 // Check for --noopen flag
 const noOpen = process.argv.includes('--noopen');
 
-log.info('Starting TanStack app in development mode...');
+ensureDistDirectory();
+
+log.info('Starting Vite app in development mode...');
 log.info(`Platform: ${process.platform}`);
 log.info(`App directory: ${appDir}`);
 log.info(`Frontend Port: ${PORT_FE}`);

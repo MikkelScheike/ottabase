@@ -32,9 +32,9 @@ Located in `packages/shortlinks/`, this package provides the core schema and typ
 }
 ```
 
-### 2. TanStack App Implementation
+### 2. Vite App Implementation
 
-Located in `apps/ottabase-template-app-tanstack/`, this provides a working reference implementation.
+Located in `apps/otta-web/`, this provides a working reference implementation.
 
 **Components:**
 

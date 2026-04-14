@@ -19,8 +19,7 @@ This guide covers setup and usage of all Cloudflare Worker bindings:
 
 ### 1. Install Dependencies
 
-The `@ottabase/cf` package and required dependencies are already configured in
-`apps/ottabase-template-app-tanstack/package.json`.
+The `@ottabase/cf` package and required dependencies are already configured in `apps/otta-web/package.json`.
 
 ```bash
 pnpm install
@@ -31,12 +30,12 @@ pnpm install
 **Recommended:** Run `pnpm cf:login` then `pnpm cf:setup` to create all resources. cf:setup outputs IDs for GitHub
 Secrets; it does not modify wrangler.jsonc (which stays as a template).
 
-**Manual setup:** Edit `apps/ottabase-template-app-tanstack/wrangler.jsonc` and create resources below.
+**Manual setup:** Edit `apps/otta-web/wrangler.jsonc` and create resources below.
 
 #### Create D1 Database
 
 ```bash
-cd apps/ottabase-template-app-tanstack
+cd apps/otta-web
 pnpm wrangler d1 create ottabase-db
 ```
 
@@ -141,7 +140,7 @@ pnpm wrangler secret put CF_API_TOKEN
 ### Local Development (with HMR)
 
 ```bash
-cd apps/ottabase-template-app-tanstack
+cd apps/otta-web
 pnpm dev
 ```
 

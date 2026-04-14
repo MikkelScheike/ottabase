@@ -99,7 +99,7 @@ import {
 3. **Click tracking** — write to WAE on each referral link visit (via `@ottabase/analytics`)
 4. **Frontend** — display referral link (`/{username}`), show conversion stats
 
-See the TanStack app implementation (`/api/referrals/*`) for a full example.
+See the Vite app implementation (`/api/referrals/*`) for a full example.
 
 ## License
 

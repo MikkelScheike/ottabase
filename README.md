@@ -104,7 +104,7 @@ Durable Objects.
 ```text
 ottabase/
 ├── apps/
-│   ├── ottabase-template-app-tanstack/       # TanStack Router + Vite + Workers (primary)
+│   ├── otta-web/       # TanStack Router + Vite + Workers (primary)
 │   └── ottabase-template-app-nextjs-homepage/ # Next.js + OpenNext (homepage/landing)
 ├── packages/
 │   ├── ottaorm/          # Fat models, auto-migrations, CRUD, RLS
@@ -393,8 +393,8 @@ All models include a nullable `appId` column:
 **Full-stack SPA** (TanStack Router, OttaORM, Auth, RBAC, all CF bindings):
 
 ```bash
-# Unix/macOS: cp -r apps/ottabase-template-app-tanstack apps/my-new-app
-# Windows:    xcopy /E /I apps\ottabase-template-app-tanstack apps\my-new-app
+# Unix/macOS: cp -r apps/otta-web apps/my-new-app
+# Windows:    xcopy /E /I apps\otta-web apps\my-new-app
 cd apps/my-new-app
 # Update package.json name
 # Delete src/pages/demo/  (optional - remove demo pages)
@@ -463,7 +463,7 @@ pnpm storybook        # Component docs
 ## Cloudflare Deployment
 
 ```bash
-cd apps/ottabase-template-app-tanstack
+cd apps/otta-web
 pnpm wrangler login
 pnpm deploy
 
@@ -478,7 +478,7 @@ curl -X POST https://your-app.workers.dev/api/ottaorm/init \
 - [Changelog](./CHANGELOG.md)
 - [Contributing Guide](./.github/CONTRIBUTING.md)
 - [Security Policy](./.github/SECURITY.md)
-- [Template App README](./apps/ottabase-template-app-tanstack/README.md)
+- [Template App README](./apps/otta-web/README.md)
 - [OttaORM README](./packages/ottaorm/README.md)
 - [Cloudflare Deploy](./docs/CLOUDFLARE_DEPLOY.md)
 - [Cloudflare Config](./docs/CLOUDFLARE_CONFIGURATION_GUIDE.md)

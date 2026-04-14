@@ -24,7 +24,7 @@ URLs use an explicit `--name` override (for example `my-app-pr-1234`) so no `-pr
 ```json
 {
     "deployable": true,
-    "appType": "tanstack"
+    "appType": "vite"
 }
 ```
 
@@ -62,10 +62,10 @@ PR preview uses isolated preview D1/KV/R2 so production data is never touched.
 
 ### Optional
 
-| Secret                | Default                                                                | Purpose                                                                              |
-| --------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| `APPS_TO_DEPLOY`      | `ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage` | Comma-separated app names or folder names to deploy (production and PR preview)      |
-| `CF_WORKER_SUBDOMAIN` | `apiary`                                                               | Subdomain in `*.workers.dev` (for example `apiary` → `my-worker.apiary.workers.dev`) |
+| Secret                | Default                                          | Purpose                                                                              |
+| --------------------- | ------------------------------------------------ | ------------------------------------------------------------------------------------ |
+| `APPS_TO_DEPLOY`      | `otta-web,ottabase-template-app-nextjs-homepage` | Comma-separated app names or folder names to deploy (production and PR preview)      |
+| `CF_WORKER_SUBDOMAIN` | `apiary`                                         | Subdomain in `*.workers.dev` (for example `apiary` → `my-worker.apiary.workers.dev`) |
 
 ## Production Deploy
 
@@ -105,20 +105,20 @@ Use markers so PR preview or production deploy do not run when not needed, such 
 
 ## Configuration Properties
 
-| Property             | Type     | Default                            | Description                                                              |
-| -------------------- | -------- | ---------------------------------- | ------------------------------------------------------------------------ |
-| `deployable`         | boolean  | `true`                             | Whether to deploy this app                                               |
-| `appType`            | string   | `"tanstack"`                       | App framework (`tanstack`, `nextjs`, `react`, `remix`, `vite`, `custom`) |
-| `workerName`         | string   | package name                       | Cloudflare Worker name                                                   |
-| `buildCommand`       | string   | `"build"`                          | pnpm script to build app                                                 |
-| `workerBuildCommand` | string   | `null`                             | pnpm script to build Worker bundle (null for TanStack)                   |
-| `outputDirectory`    | string   | `"dist"`                           | Worker output directory                                                  |
-| `assetsDirectory`    | string   | -                                  | Static assets directory                                                  |
-| `verifyPaths`        | string[] | `["dist", "cloudflare-worker.ts"]` | Paths to verify after build                                              |
-| `wranglerConfig`     | string   | `"wrangler.jsonc"`                 | Wrangler config file path                                                |
-| `wranglerEnv`        | string   | `"production"`                     | Wrangler environment                                                     |
-| `healthCheckPath`    | string   | `"/"`                              | Path for health check                                                    |
-| `requiresSecrets`    | string[] | `[]`                               | _(Optional)_ Extra secrets not in wrangler.jsonc (e.g. build-time)       |
+| Property             | Type     | Default                            | Description                                                        |
+| -------------------- | -------- | ---------------------------------- | ------------------------------------------------------------------ |
+| `deployable`         | boolean  | `true`                             | Whether to deploy this app                                         |
+| `appType`            | string   | `"vite"`                           | App framework (`vite`, `nextjs`, `react`, `remix`, `custom`)       |
+| `workerName`         | string   | package name                       | Cloudflare Worker name                                             |
+| `buildCommand`       | string   | `"build"`                          | pnpm script to build app                                           |
+| `workerBuildCommand` | string   | `null`                             | pnpm script to build Worker bundle (null for Vite)                 |
+| `outputDirectory`    | string   | `"dist"`                           | Worker output directory                                            |
+| `assetsDirectory`    | string   | -                                  | Static assets directory                                            |
+| `verifyPaths`        | string[] | `["dist", "cloudflare-worker.ts"]` | Paths to verify after build                                        |
+| `wranglerConfig`     | string   | `"wrangler.jsonc"`                 | Wrangler config file path                                          |
+| `wranglerEnv`        | string   | `"production"`                     | Wrangler environment                                               |
+| `healthCheckPath`    | string   | `"/"`                              | Path for health check                                              |
+| `requiresSecrets`    | string[] | `[]`                               | _(Optional)_ Extra secrets not in wrangler.jsonc (e.g. build-time) |
 
 > **SSOT:** `wrangler.jsonc` is the single source of truth for resource secrets. Placeholders in `env.production` /
 > `env.preview` are auto-detected by the substitution script. `requiresSecrets` is optional and additive — only needed
@@ -127,7 +127,7 @@ Use markers so PR preview or production deploy do not run when not needed, such 
 
 ## Framework Examples
 
-### TanStack (Default)
+### Vite (Default)
 
 **package.json:**
 
@@ -144,8 +144,8 @@ Use markers so PR preview or production deploy do not run when not needed, such 
 ```json
 {
     "deployable": true,
-    "appType": "tanstack",
-    "workerName": "my-tanstack-app",
+    "appType": "vite",
+    "workerName": "my-neo-app",
     "buildCommand": "build",
     "workerBuildCommand": null,
     "outputDirectory": "dist",

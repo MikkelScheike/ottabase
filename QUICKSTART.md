@@ -65,7 +65,7 @@ already installed and built.
 
 ```bash
 # Copy the environment template
-cp apps/ottabase-template-app-tanstack/.env.example apps/ottabase-template-app-tanstack/.env.local
+cp apps/otta-web/.env.example apps/otta-web/.env.local
 
 # Generate secrets (choose one method)
 
@@ -149,11 +149,11 @@ pnpm dev:full
 # Option B: Manually in two terminals if Option A doesn't work
 
 # Terminal 1 — Vite frontend (port 3003)
-cd apps/ottabase-template-app-tanstack
+cd apps/otta-web
 npx vite --port 3003
 
 # Terminal 2 — Wrangler backend (port 3004)
-cd apps/ottabase-template-app-tanstack
+cd apps/otta-web
 export CLOUDFLARE_API_TOKEN=dummy-local-dev  # Windows: set CLOUDFLARE_API_TOKEN=dummy-local-dev
 npx wrangler dev --port 3004 --local
 ```
@@ -196,7 +196,7 @@ If you prefer API/terminal bootstrap (or need automation), use this sequence:
 
 ```bash
 # Get your BOOTSTRAP_OWNER_SECRET from .env.local
-BOOTSTRAP_SECRET=$(grep BOOTSTRAP_OWNER_SECRET apps/ottabase-template-app-tanstack/.env.local | cut -d= -f2)
+BOOTSTRAP_SECRET=$(grep BOOTSTRAP_OWNER_SECRET apps/otta-web/.env.local | cut -d= -f2)
 
 # Run bootstrap sequence (4 API calls)
 curl -s -X POST http://localhost:3004/__bootstrap__/api/init \
@@ -217,7 +217,7 @@ curl -s -X POST http://localhost:3004/__bootstrap__/api/finalize \
 **Windows (Command Prompt)**: Use `findstr` instead of `grep`:
 
 ```cmd
-for /f "tokens=2 delims==" %i in ('findstr BOOTSTRAP_OWNER_SECRET apps\ottabase-template-app-tanstack\.env.local') do set BOOTSTRAP_SECRET=%i
+for /f "tokens=2 delims==" %i in ('findstr BOOTSTRAP_OWNER_SECRET apps\otta-web\.env.local') do set BOOTSTRAP_SECRET=%i
 ```
 
 Or copy the secret manually from `.env.local` and use it directly in the curl commands.
@@ -297,7 +297,7 @@ Avoid Node.js APIs like `fs`, `child_process`, `os`. Use Cloudflare bindings ins
 ### 3. **Monorepo Structure**
 
 - **`apps/`** — Full-stack applications
-    - `ottabase-template-app-tanstack/` — Main TanStack Router + Vite + Wrangler app
+    - `otta-web/` — Main TanStack Router + Vite + Wrangler app
     - `ottabase-template-app-nextjs-homepage/` — Marketing site (Next.js)
 - **`packages/`** — 47 shared packages
     - `@ottabase/ottaorm` — Fat model ORM (core)

@@ -143,10 +143,10 @@ pnpm dev  # Watch mode
 
 ## Testing
 
-Test components in the primary app (`apps/ottabase-template-app-tanstack`):
+Test components in the primary app (`apps/otta-web`):
 
 ```typescript
-// apps/ottabase-template-app-tanstack/src/pages/test-page.tsx
+// apps/otta-web/src/pages/test-page.tsx
 import { ComponentName } from '@ottabase/package-name/component-name';
 
 <ComponentName prop1="value" />
@@ -155,6 +155,6 @@ import { ComponentName } from '@ottabase/package-name/component-name';
 ## Key Reminders
 
 - Packages should be **framework-agnostic** as much as possible
-- App-specific code goes in the relevant app directory (primary: `apps/ottabase-template-app-tanstack`)
+- App-specific code goes in the relevant app directory (primary: `apps/otta-web`)
 - Remove `rootDir` from tsconfig, use `skipLibCheck: true`
 - Include package sources in consumer app Tailwind config

@@ -18,7 +18,7 @@ The testing infrastructure includes:
 ### Run All Tests
 
 ```bash
-pnpm test                 # Run all tests in monorepo
+pnpm test                # Run all tests in monorepo
 pnpm test:all            # Same as above, explicit
 pnpm test:packages       # Run only package tests
 pnpm test:apps           # Run only app tests
@@ -27,8 +27,8 @@ pnpm test:apps           # Run only app tests
 ### Run Tests for Specific Targets
 
 ```bash
-pnpm test:tanstack       # Test TanStack template app
-pnpm test:next           # Test Next.js template app
+pnpm test:vite       # Test Vite template app
+pnpm test:next       # Test Next.js template app
 turbo test --filter=@ottabase/utils  # Test specific package
 ```
 
@@ -71,8 +71,8 @@ Each package has its own `vitest.config.ts`:
 
 ### App-Level Configs
 
-- `apps/ottabase-template-app-tanstack/vitest.config.ts` - Vitest config with Cloudflare mocks
-- `apps/ottabase-template-app-tanstack/vitest.setup.ts` - Setup with all CF bindings mocked
+- `apps/otta-web/vitest.config.ts` - Vitest config with Cloudflare mocks
+- `apps/otta-web/vitest.setup.ts` - Setup with all CF bindings mocked
 - `apps/ottabase-template-app/vitest.config.ts` - Next.js app Vitest config
 - `apps/ottabase-template-app/vitest.setup.ts` - Next.js mocks + CF bindings
 
@@ -123,7 +123,7 @@ describe('Button Component', () => {
 The apps have all Cloudflare bindings mocked via `vitest.setup.ts`:
 
 ```typescript
-// apps/ottabase-template-app-tanstack/src/__tests__/database.test.ts
+// apps/otta-web/src/__tests__/database.test.ts
 describe('Cloudflare D1 Integration', () => {
     it('should have D1 mock available', () => {
         expect((global as any).OBCF_D1).toBeDefined();
@@ -225,7 +225,7 @@ Each package and app includes test scripts:
 | `test:all`               | Explicit: test packages + apps |
 | `test:packages`          | Test all packages only         |
 | `test:apps`              | Test all apps only             |
-| `test:tanstack`          | Test TanStack app              |
+| `test:vite`              | Test Vite app                  |
 | `test:next`              | Test Next.js app               |
 | `test:coverage`          | All tests with coverage        |
 | `test:coverage:packages` | Packages with coverage         |

@@ -696,7 +696,7 @@ status: text('status').notNull();
 ```
 
 For complex schema changes, use custom migrations. See
-[Migration README](../../apps/ottabase-template-app-tanstack/ottabase/migrations/README.md) for examples.
+[Migration README](../../apps/otta-web/ottabase/migrations/README.md) for examples.
 
 ## Type Casting
 

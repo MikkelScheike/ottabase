@@ -1,7 +1,7 @@
 <INSTRUCTIONS>
 # Agents & Architecture
 
-Monorepo using **pnpm workspaces** + **Turborepo**. TanStack Router + Vite app with Cloudflare Workers deployment.
+Monorepo using **pnpm workspaces** + **Turborepo**. Vite app with Cloudflare Workers deployment.
 
 ## AI Guidelines (MUST FOLLOW)
 
@@ -9,8 +9,8 @@ Monorepo using **pnpm workspaces** + **Turborepo**. TanStack Router + Vite app w
    unless absolutely necessary for performance. Logic belongs in the Model class, not in "Controllers" or "Services".
 2. **Schema Integrity**: Drizzle schema lives in `apps/*/ottabase/db/schema.ts`. Export all tables there. Package tables
    come from package schemas (e.g. `@ottabase/shortlinks/schema`) and are wired via `config.migrations.ts`
-   PACKAGE_REGISTRY and `schemas-helper.ts`. The TanStack app uses Drizzle + OttaORM as primary; Prisma exists
-   optionally in @ottabase/db.
+   PACKAGE_REGISTRY and `schemas-helper.ts`. The Vite app uses Drizzle + OttaORM as primary; Prisma exists optionally in
+   @ottabase/db.
 3. **Workspace Protocol**: Always use `workspace:*` for internal package dependencies. Use `catalog:` for shared
    external dependencies (React, Drizzle, etc.).
 4. **Don't Reinvent**: Check `@ottabase/utils` for internal helpers (date, string, currency) and `@ottabase/ui-shadcn`
@@ -47,7 +47,7 @@ Use this as the default decision tree when shipping new work.
 2. **Keep data logic in models**
     - Put domain logic in model methods, not page/component handlers.
 3. **Theme-safe UI**
-    - Prefer design tokens/CSS variables and existing UI packages (`@ottabase/ui-shadcn`, `@ottabase/ui-mantine`).
+    - Prefer design tokens/CSS variables and existing UI packages (`@ottabase/ui-shadcn`, `@ottabase/ui-tailwind`).
     - Avoid hardcoded one-off colors/sizes that bypass theme runtime.
     - Icons: Lucide Icons, and Tabler, Radix as fallback. Charts: Tremor where applicable.
     - Always add dark mode classes for new UI.
@@ -105,8 +105,8 @@ export class Todo extends BaseModel {
 ```text
 ottabase/
 ├── apps/
-│   └── ottabase-template-app-tanstack/  # Primary app (TanStack + Workers)
-└── packages/                            # Shared code
+│   └── otta-web/  # Primary app (Vite + Workers)
+└── packages/      # Shared code
 ```
 
 ## Local Development
@@ -434,7 +434,7 @@ curl -X POST http://localhost:3004/api/ottaorm/init
 Add to catalog when:
 
 - Used by 2+ packages/apps (react, typescript, drizzle-orm)
-- Core framework libraries (mantine, tanstack, jotai)
+- Core framework libraries (tailwind, tanstack, jotai)
 - Shared tooling (tsup, vitest, eslint)
 
 ```yaml
@@ -464,7 +464,7 @@ Add locally when:
 pnpm add --filter @ottabase/ottaeditor @editorjs/editorjs
 
 # Add to specific app
-pnpm add --filter @ottabase/ottabase-template-app-tanstack some-package
+pnpm add --filter @ottabase/otta-web some-package
 ```
 
 ### Workspace Protocol
@@ -632,15 +632,13 @@ Install recommended extensions in `.vscode/extensions.json` for Prettier format-
 The `pnpm dev` command (or `node dev.js --noopen`) starts both Vite (port 3003) and Wrangler (port 3004) in parallel.
 Key caveats for Cloud agents:
 
-1. **Wrangler needs a `dist/` directory** in `apps/ottabase-template-app-tanstack/`. If it doesn't exist (first run, or
-   after `pnpm clean`), create it:
-   `mkdir -p apps/ottabase-template-app-tanstack/dist && echo '<html></html>' > apps/ottabase-template-app-tanstack/dist/index.html`.
+1. **Wrangler needs a `dist/` directory** in `apps/otta-web/`. If it doesn't exist (first run, or after `pnpm clean`),
+   create it: `mkdir -p apps/otta-web/dist && echo '<html></html>' > apps/otta-web/dist/index.html`.
 2. **Wrangler needs `CLOUDFLARE_API_TOKEN`** in non-interactive (headless) environments. Set a dummy value for local
    dev: `export CLOUDFLARE_API_TOKEN=dummy-local-dev`. Use `--local` flag if needed.
 3. Start the servers separately for better control:
-    - Backend:
-      `cd apps/ottabase-template-app-tanstack && CLOUDFLARE_API_TOKEN=dummy-local-dev npx wrangler dev --port 3004 --local`
-    - Frontend: `cd apps/ottabase-template-app-tanstack && npx vite --port 3003`
+    - Backend: `cd apps/otta-web && CLOUDFLARE_API_TOKEN=dummy-local-dev npx wrangler dev --port 3004 --local`
+    - Frontend: `cd apps/otta-web && npx vite --port 3003`
 4. **Build scripts for native packages** (esbuild, workerd) may be ignored by pnpm. After `pnpm install`, run:
    `for dir in node_modules/.pnpm/esbuild@*/node_modules/esbuild; do (cd "$dir" && node install.js); done` and
    `for dir in node_modules/.pnpm/workerd@*/node_modules/workerd; do (cd "$dir" && node install.js); done`.
@@ -654,7 +652,7 @@ account). Use the `/__bootstrap__` API:
 limits), then runs migrations — use this for a clean fresh install when KV may contain stale keys.
 
 ```bash
-BOOTSTRAP_SECRET=$(grep BOOTSTRAP_OWNER_SECRET apps/ottabase-template-app-tanstack/.env.local | cut -d= -f2)
+BOOTSTRAP_SECRET=$(grep BOOTSTRAP_OWNER_SECRET apps/otta-web/.env.local | cut -d= -f2)
 curl -s -X POST http://localhost:3004/__bootstrap__/api/init -H "X-Bootstrap-Secret: $BOOTSTRAP_SECRET"
 curl -s -X POST http://localhost:3004/__bootstrap__/api/seed -H "X-Bootstrap-Secret: $BOOTSTRAP_SECRET"
 curl -s -X POST http://localhost:3004/__bootstrap__/api/create-owner -H "X-Bootstrap-Secret: $BOOTSTRAP_SECRET" -H "Content-Type: application/json" -d '{"email":"admin@example.com","password":"<your-secure-password>","name":"Admin"}'
@@ -669,3 +667,8 @@ See `README.md` and `AGENTS.MD` above for full command reference. Key commands:
 - `pnpm lint` — lint all packages (note: `@ottabase/ottalayout` has a pre-existing lint failure)
 - `pnpm test` — run all tests via Vitest + Turborepo
 - `pnpm type-check` — TypeScript validation
+
+#### Misc
+
+- Template apps were previously named `ottabase-template-app-tanstack` and were later renamed to `otta-web` for clarity.
+  If old references appear in docs or code, they can generally be ignored or updated to `otta-web`.

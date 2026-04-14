@@ -89,7 +89,7 @@ jobs:
                   # inside that app, then set the APPS_TO_DEPLOY secret - no yml editing needed.
                   APPS_TO_DEPLOY="${{ secrets.APPS_TO_DEPLOY }}"
                   if [ -z "$APPS_TO_DEPLOY" ]; then
-                    APPS_TO_DEPLOY="ottabase-template-app-tanstack,ottabase-template-app-nextjs-homepage"
+                    APPS_TO_DEPLOY="otta-web,ottabase-template-app-nextjs-homepage"
                     echo "📋 Using default apps: ${APPS_TO_DEPLOY}"
                   else
                     echo "📋 Apps from secret: ${APPS_TO_DEPLOY}"
@@ -238,10 +238,10 @@ jobs:
                         echo "⚠️  Warning: No cloudflare-config.json or wrangler.jsonc for ${app_folder}, skipping"
                         continue
                       fi
-                      # Use TanStack defaults (default template app is TanStack)
+                      # Use Vite defaults (default template app uses Vite build output)
                       CONFIG='{
                         "deployable": true,
-                        "appType": "tanstack",
+                        "appType": "vite",
                         "buildCommand": "build",
                         "workerBuildCommand": null,
                         "outputDirectory": "dist",
@@ -433,21 +433,21 @@ jobs:
                       ${{ runner.os }}-nextjs-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-
                       ${{ runner.os }}-nextjs-${{ matrix.folder }}-
 
-            - name: Cache TanStack builds
-              if: steps.config.outputs.app-type == 'tanstack'
+            - name: Cache Vite builds
+              if: steps.config.outputs.app-type == 'vite'
               uses: actions/cache@v4
               with:
                   path: |
                       apps/${{ matrix.folder }}/dist
                       apps/${{ matrix.folder }}/node_modules/.vite
                   key:
-                      ${{ runner.os }}-tanstack-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-${{
+                      ${{ runner.os }}-vite-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-${{
                       hashFiles('apps/${{ matrix.folder }}/**/*.{ts,tsx,js,jsx}') }}-${{ hashFiles('apps/${{
                       matrix.folder }}/wrangler.jsonc', 'apps/${{ matrix.folder }}/vite.config.ts') }}
                   restore-keys: |
-                      ${{ runner.os }}-tanstack-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/${{ matrix.folder }}/**/*.{ts,tsx,js,jsx}') }}-
-                      ${{ runner.os }}-tanstack-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-
-                      ${{ runner.os }}-tanstack-${{ matrix.folder }}-
+                      ${{ runner.os }}-vite-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ hashFiles('apps/${{ matrix.folder }}/**/*.{ts,tsx,js,jsx}') }}-
+                      ${{ runner.os }}-vite-${{ matrix.folder }}-${{ hashFiles('pnpm-lock.yaml') }}-
+                      ${{ runner.os }}-vite-${{ matrix.folder }}-
 
             # Verify build tools are accessible
             - name: Verify build tools
@@ -463,7 +463,7 @@ jobs:
                     echo "  - next: $(pnpm exec next --version 2>&1 || echo 'installed')"
                   fi
 
-                  if [ "${{ steps.config.outputs.app-type }}" == "tanstack" ]; then
+                  if [ "${{ steps.config.outputs.app-type }}" == "vite" ]; then
                     echo "  - vite: $(pnpm exec vite --version 2>&1 || echo 'installed')"
                   fi
 
@@ -541,8 +541,8 @@ jobs:
                     echo "✅ Next.js build output verified (.next directory exists)"
                   fi
 
-                  # For TanStack apps, verify dist directory was created
-                  if [ "${{ steps.config.outputs.app-type }}" == "tanstack" ]; then
+                  # For Vite apps, verify dist directory was created
+                  if [ "${{ steps.config.outputs.app-type }}" == "vite" ]; then
                     echo "Checking for dist directory at: apps/${{ matrix.folder }}/dist"
                     echo "Current working directory: $(pwd)"
                     echo "Directory listing of apps/${{ matrix.folder }}:"
@@ -550,14 +550,14 @@ jobs:
 
                     if [ ! -d "apps/${{ matrix.folder }}/dist" ]; then
                       echo ""
-                      echo "❌ ERROR: TanStack build output not found"
+                      echo "❌ ERROR: Vite build output not found"
                       echo ""
                       echo "Expected directory 'apps/${{ matrix.folder }}/dist' was not created."
                       echo "This indicates the Vite build did not complete successfully."
                       echo ""
                       exit 1
                     fi
-                    echo "✅ TanStack build output verified (dist directory exists)"
+                    echo "✅ Vite build output verified (dist directory exists)"
                   fi
 
                   echo "✅ Application build completed successfully"
@@ -662,8 +662,8 @@ jobs:
                       echo "  3. The Next.js build (.next directory) is missing"
                       echo ""
                     fi
-                    if [ "${{ steps.config.outputs.app-type }}" == "tanstack" ]; then
-                      echo "For TanStack apps, the expected structure is:"
+                    if [ "${{ steps.config.outputs.app-type }}" == "vite" ]; then
+                      echo "For Vite apps, the expected structure is:"
                       echo "  • dist/ - Vite build output directory"
                       echo "  • cloudflare-worker.ts - Cloudflare Worker entry point"
                       echo ""

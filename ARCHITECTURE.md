@@ -21,7 +21,7 @@ flowchart TB
     Root --> Packages[packages]
     Root --> Tooling[tooling and CI]
 
-    Apps --> TanStack[ottabase-template-app-tanstack]
+    Apps --> TanStack[otta-web]
     Apps --> Homepage[ottabase-template-app-nextjs-homepage]
 
     Packages --> Core[core platform packages]
@@ -55,7 +55,7 @@ Packages follow a strict layering model. Lower layers must never depend on highe
 ```mermaid
 flowchart TD
     subgraph L5 [Layer 5 — App]
-        App["ottabase-template-app-tanstack"]
+        App["otta-web"]
     end
 
     subgraph L4 [Layer 4 — UI Composition]
@@ -115,7 +115,7 @@ lower layer.
 
 ## Runtime Architecture (Primary App)
 
-Primary app: `apps/ottabase-template-app-tanstack`
+Primary app: `apps/otta-web`
 
 ```mermaid
 flowchart LR
@@ -452,12 +452,12 @@ flowchart LR
 
 ## Key File Map
 
-- Worker entrypoint: `apps/ottabase-template-app-tanstack/cloudflare-worker.ts`
-- API router: `apps/ottabase-template-app-tanstack/worker/routes/router.ts`
-- DB init and model registration: `apps/ottabase-template-app-tanstack/worker/lib/db-utils.ts`
-- App config: `apps/ottabase-template-app-tanstack/ottabase/ottabase.config.ts`
-- Schema collector: `apps/ottabase-template-app-tanstack/ottabase/db/schemas-helper.ts`
-- Package migration registry: `apps/ottabase-template-app-tanstack/ottabase/config.migrations.ts`
+- Worker entrypoint: `apps/otta-web/cloudflare-worker.ts`
+- API router: `apps/otta-web/worker/routes/router.ts`
+- DB init and model registration: `apps/otta-web/worker/lib/db-utils.ts`
+- App config: `apps/otta-web/ottabase/ottabase.config.ts`
+- Schema collector: `apps/otta-web/ottabase/db/schemas-helper.ts`
+- Package migration registry: `apps/otta-web/ottabase/config.migrations.ts`
 
 ## Architecture Decisions
 

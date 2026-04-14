@@ -11,9 +11,9 @@
         },
         "appType": {
             "type": "string",
-            "enum": ["tanstack", "nextjs", "react", "remix", "vite", "custom"],
+            "enum": ["vite", "nextjs", "react", "remix", "custom"],
             "description": "Type of application framework",
-            "default": "tanstack"
+            "default": "vite"
         },
         "workerName": {
             "type": "string",

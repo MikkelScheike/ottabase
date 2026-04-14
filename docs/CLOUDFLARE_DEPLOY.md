@@ -1,6 +1,6 @@
 # Deploy Ottabase to Cloudflare Workers
 
-Complete guide for deploying `ottabase-template-app-tanstack` to Cloudflare Workers with automated CI/CD.
+Complete guide for deploying `otta-web` to Cloudflare Workers with automated CI/CD.
 
 ## Prerequisites
 
@@ -151,19 +151,19 @@ Watch in GitHub Actions:
 ### Find Your Worker URL
 
 ```bash
-wrangler deployments list --name ottabase-template-app-tanstack
+wrangler deployments list --name otta-web
 ```
 
-Or: https://dash.cloudflare.com → Workers & Pages → ottabase-template-app-tanstack
+Or: https://dash.cloudflare.com → Workers & Pages → otta-web
 
 ### Test Your App
 
 ```bash
 # Visit in browser
-https://ottabase-template-app-tanstack.your-subdomain.workers.dev
+https://otta-web.your-subdomain.workers.dev
 
 # Check logs
-wrangler tail ottabase-template-app-tanstack
+wrangler tail otta-web
 ```
 
 ---
@@ -210,11 +210,11 @@ pnpm install
 pnpm dev
 
 # Manual deployment (bypass CI)
-cd apps/ottabase-template-app-tanstack
+cd apps/otta-web
 pnpm build && pnpm wrangler deploy --env production
 
 # View logs
-wrangler tail ottabase-template-app-tanstack
+wrangler tail otta-web
 
 # Execute D1 commands
 wrangler d1 execute ottabase-db --remote --command="SELECT * FROM users LIMIT 5"
@@ -239,8 +239,8 @@ Defined in `.github/workflows/deploy.yml` - triggers on push to `main`:
 
 - `.github/workflows/deploy.yml` - CI/CD workflow (auto-detects placeholders in wrangler.jsonc and substitutes from
   GitHub Secrets via substitute-wrangler-secrets.py)
-- `apps/ottabase-template-app-tanstack/wrangler.jsonc` - Cloudflare config (template with `ALL_CAPS` placeholder values;
-  CI generates wrangler.production.jsonc)
+- `apps/otta-web/wrangler.jsonc` - Cloudflare config (template with `ALL_CAPS` placeholder values; CI generates
+  wrangler.production.jsonc)
 
 ### Cloudflare Bindings
 

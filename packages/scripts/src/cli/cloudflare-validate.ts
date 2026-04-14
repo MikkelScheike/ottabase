@@ -61,7 +61,7 @@ async function main() {
     let hasErrors = false;
     let hasWarnings = false;
 
-    const wranglerPath = path.join(process.cwd(), 'apps', 'ottabase-template-app-tanstack', 'wrangler.jsonc');
+    const wranglerPath = path.join(process.cwd(), 'apps', 'otta-web', 'wrangler.jsonc');
 
     if (!fs.existsSync(wranglerPath)) {
         log(`Error: ${wranglerPath} not found.`, RED);
@@ -69,7 +69,7 @@ async function main() {
     }
 
     const wranglerContent = fs.readFileSync(wranglerPath, 'utf8');
-    const wranglerCmd = 'pnpm --filter @ottabase/ottabase-template-app-tanstack exec wrangler';
+    const wranglerCmd = 'pnpm --filter @ottabase/otta-web exec wrangler';
 
     // Check wrangler login
     log('Checking Cloudflare authentication...', YELLOW);

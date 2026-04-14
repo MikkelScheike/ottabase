@@ -57,7 +57,7 @@ Secrets; it does not modify wrangler.jsonc.
 
 ### Local Development (`.env.local`)
 
-Create `apps/ottabase-template-app-tanstack/.env.local` with the following (if using .env for local auth/R2):
+Create `apps/otta-web/.env.local` with the following (if using .env for local auth/R2):
 
 ```bash
 
@@ -132,7 +132,7 @@ wrangler secret put CF_R2_SECRET_ACCESS_KEY
 
 ## 📁 Configuration Files
 
-### 1. `apps/ottabase-template-app-tanstack/wrangler.jsonc`
+### 1. `apps/otta-web/wrangler.jsonc`
 
 **Status:** ✅ Template (do not modify programmatically)
 
@@ -192,7 +192,7 @@ multi-app: same placeholder name = shared resource; different names = isolated (
 }
 ```
 
-### 2. `apps/ottabase-template-app-tanstack/cloudflare-env.d.ts`
+### 2. `apps/otta-web/cloudflare-env.d.ts`
 
 **Status:** ✅ Already configured
 
@@ -225,7 +225,7 @@ export interface CloudflareEnv {
 }
 ```
 
-### 3. `apps/ottabase-template-app-tanstack/cloudflare-worker.ts`
+### 3. `apps/otta-web/cloudflare-worker.ts`
 
 **Status:** ✅ Already configured
 

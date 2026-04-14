@@ -15,7 +15,7 @@ const appsDir = join(rootDir, 'apps');
 
 const DEFAULT_CONFIG = {
     deployable: true,
-    appType: 'tanstack',
+    appType: 'vite',
     buildCommand: 'build',
     workerBuildCommand: null,
     outputDirectory: 'dist',

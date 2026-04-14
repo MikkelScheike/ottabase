@@ -8,14 +8,14 @@
 
 Ottabase includes a complete multi-tenant RBAC (Role-Based Access Control) system with:
 
-- ✅ **Database-level tenant isolation** - Automatic cross-tenant data leak prevention
-- ✅ **Flexible hierarchy** - Supports multi-tenant SaaS OR single-founder multi-app
-- ✅ **Organization management** - Full CRUD for tenants and members
-- ✅ **Role management** - System roles + custom org-scoped roles
-- ✅ **Permission matrix** - Visual permission management across hierarchy
-- ✅ **Audit logging** - Complete compliance and security tracking
-- ✅ **Per-org caching** - O(1) cache invalidation, no cross-tenant pollution
-- ✅ **UI components** - Ready-to-use admin interfaces (TanStack app)
+- **Database-level tenant isolation** - Automatic cross-tenant data leak prevention
+- **Flexible hierarchy** - Supports multi-tenant SaaS OR single-founder multi-app
+- **Organization management** - Full CRUD for tenants and members
+- **Role management** - System roles + custom org-scoped roles
+- **Permission matrix** - Visual permission management across hierarchy
+- **Audit logging** - Complete compliance and security tracking
+- **Per-org caching** - O(1) cache invalidation, no cross-tenant pollution
+- **UI components** - Ready-to-use admin interfaces (Vite app)
 
 ---
 
@@ -361,8 +361,7 @@ Extracts tenant context from:
 
 ### Organizations Page
 
-**Route:** `/organizations` **File:**
-`apps/ottabase-template-app-tanstack/src/pages/organizations/OrganizationsPage.tsx`
+**Route:** `/organizations` **File:** `apps/otta-web/src/pages/organizations/OrganizationsPage.tsx`
 
 Features:
 
@@ -376,8 +375,7 @@ Features:
 
 ### Organization Members
 
-**Route:** `/organizations/:orgId/members` **File:**
-`apps/ottabase-template-app-tanstack/src/pages/organizations/OrganizationMembersPage.tsx`
+**Route:** `/organizations/:orgId/members` **File:** `apps/otta-web/src/pages/organizations/OrganizationMembersPage.tsx`
 
 Features:
 
@@ -390,7 +388,7 @@ Features:
 
 ### RBAC Admin
 
-**Route:** `/admin/rbac` **File:** `apps/ottabase-template-app-tanstack/src/pages/admin/rbac/RBACAdminPage.tsx`
+**Route:** `/admin/rbac` **File:** `apps/otta-web/src/pages/admin/rbac/RBACAdminPage.tsx`
 
 Dashboard with links to:
 
@@ -400,7 +398,7 @@ Dashboard with links to:
 
 ### Roles Management
 
-**Route:** `/admin/rbac/roles` **File:** `apps/ottabase-template-app-tanstack/src/pages/admin/rbac/RBACRolesPage.tsx`
+**Route:** `/admin/rbac/roles` **File:** `apps/otta-web/src/pages/admin/rbac/RBACRolesPage.tsx`
 
 Features:
 
@@ -411,8 +409,7 @@ Features:
 
 ### Permissions Matrix
 
-**Route:** `/admin/rbac/permissions` **File:**
-`apps/ottabase-template-app-tanstack/src/pages/admin/rbac/PermissionsMatrixPage.tsx`
+**Route:** `/admin/rbac/permissions` **File:** `apps/otta-web/src/pages/admin/rbac/PermissionsMatrixPage.tsx`
 
 Features:
 
@@ -424,7 +421,7 @@ Features:
 
 ### Audit Log Viewer
 
-**Route:** `/admin/audit` **File:** `apps/ottabase-template-app-tanstack/src/pages/admin/audit/AuditLogViewerPage.tsx`
+**Route:** `/admin/audit` **File:** `apps/otta-web/src/pages/admin/audit/AuditLogViewerPage.tsx`
 
 Features:
 
@@ -436,8 +433,7 @@ Features:
 
 ### Organization Registration (NEW)
 
-**Route:** `/organizations/new` **File:**
-`apps/ottabase-template-app-tanstack/src/pages/organizations/OrganizationRegistrationPage.tsx`
+**Route:** `/organizations/new` **File:** `apps/otta-web/src/pages/organizations/OrganizationRegistrationPage.tsx`
 
 Features:
 
@@ -450,8 +446,7 @@ Features:
 
 ### Organization Settings (NEW)
 
-**Route:** `/organizations/:id/settings` **File:**
-`apps/ottabase-template-app-tanstack/src/pages/organizations/OrganizationSettingsPage.tsx`
+**Route:** `/organizations/:id/settings` **File:** `apps/otta-web/src/pages/organizations/OrganizationSettingsPage.tsx`
 
 Features:
 
@@ -465,7 +460,7 @@ Features:
 
 ### User Profile (NEW)
 
-**Route:** `/profile` **File:** `apps/ottabase-template-app-tanstack/src/pages/user/UserProfilePage.tsx`
+**Route:** `/profile` **File:** `apps/otta-web/src/pages/user/UserProfilePage.tsx`
 
 Features:
 
@@ -480,7 +475,7 @@ Features:
 
 ### User Management (NEW)
 
-**Route:** `/admin/users` **File:** `apps/ottabase-template-app-tanstack/src/pages/admin/users/UserManagementPage.tsx`
+**Route:** `/admin/users` **File:** `apps/otta-web/src/pages/admin/users/UserManagementPage.tsx`
 
 Features:
 
@@ -493,8 +488,7 @@ Features:
 
 ### User RBAC Assignment (NEW)
 
-**Route:** `/admin/users/:userId/rbac` **File:**
-`apps/ottabase-template-app-tanstack/src/pages/admin/users/UserRBACPage.tsx`
+**Route:** `/admin/users/:userId/rbac` **File:** `apps/otta-web/src/pages/admin/users/UserRBACPage.tsx`
 
 Features:
 
@@ -508,7 +502,7 @@ Features:
 
 ### Organization Switcher Component (NEW)
 
-**File:** `apps/ottabase-template-app-tanstack/src/components/OrganizationSwitcher.tsx`
+**File:** `apps/otta-web/src/components/OrganizationSwitcher.tsx`
 
 A reusable dropdown component for switching between organizations:
 
@@ -537,7 +531,7 @@ Features:
 
 ## ⚡ TanStack Query Hooks (Optimized)
 
-**File:** `apps/ottabase-template-app-tanstack/src/hooks/useRBAC.ts`
+**File:** `apps/otta-web/src/hooks/useRBAC.ts`
 
 All RBAC operations are now powered by TanStack Query for:
 
@@ -737,12 +731,12 @@ enforce security policies based on the authenticated user's session.
 
 ### Worker Integration
 
-The TanStack app worker (`cloudflare-worker.ts`) automatically integrates auth with RLS:
+The Vite app worker (`cloudflare-worker.ts`) automatically integrates auth with RLS:
 
 ```typescript
 import { getSession, handleAuthRequest } from '@ottabase/auth/backend';
 import { initRLS, secureCrud, type SecurityContext } from '@ottabase/ottaorm';
-import { getOttabaseConfig } from './ottabase/config.loader'; // TanStack template; replace in other apps
+import { getOttabaseConfig } from './ottabase/config.loader'; // Vite template; replace in other apps
 
 // 1. Initialize RLS on startup
 function initDbConnection(env: CloudflareEnv): void {
@@ -851,7 +845,7 @@ function MyComponent() {
 The OrganizationSwitcher component persists the selected org and sends it via header:
 
 ```typescript
-// apps/ottabase-template-app-tanstack/src/router.tsx
+// apps/otta-web/src/router.tsx
 const [currentOrgId, setCurrentOrgId] = useState<string | undefined>(() => {
     return localStorage.getItem('currentOrgId') || undefined;
 });
@@ -869,7 +863,7 @@ const [currentOrgId, setCurrentOrgId] = useState<string | undefined>(() => {
 Update your API client to send the header:
 
 ```typescript
-// apps/ottabase-template-app-tanstack/src/lib/api.ts
+// apps/otta-web/src/lib/api.ts
 export async function api<T = any>(url: string, options: RequestInit = {}): Promise<T> {
     const orgId = localStorage.getItem('currentOrgId');
 
@@ -897,7 +891,7 @@ export async function api<T = any>(url: string, options: RequestInit = {}): Prom
 To include organization ID in the JWT/session, customize the Auth.js callbacks:
 
 ```typescript
-// apps/ottabase-template-app-tanstack/src/lib/auth-backend.ts
+// apps/otta-web/src/lib/auth-backend.ts
 import { createAuthConfig } from '@ottabase/auth/backend';
 
 export function createAuthConfig(env: AuthEnv) {
@@ -1290,4 +1284,4 @@ For issues or questions:
 
 1. Check package READMEs in `packages/rbac/` and `packages/audit/`
 2. Review TENANT_ISOLATION.md for security details
-3. Examine example implementations in `apps/ottabase-template-app-tanstack/`
+3. Examine example implementations in `apps/otta-web/`

@@ -121,7 +121,7 @@ Shortlink clicks are tracked via Cloudflare Analytics Engine. Configure the WAE 
 ]
 ```
 
-Use `@ottabase/analytics` to write click events, then query via the `/analytics` page in the TanStack app.
+Use `@ottabase/analytics` to write click events, then query via the `/analytics` page in the Vite app.
 
 ## License
 
