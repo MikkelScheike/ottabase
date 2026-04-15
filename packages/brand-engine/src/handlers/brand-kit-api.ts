@@ -114,10 +114,14 @@ export async function handleGetBrandKits(
     _env: BrandApiEnv,
     appId: string | null,
 ): Promise<Response> {
+    // NOTE: Do NOT auto-create system default here now that appId is mandatory.
+    // Default kits are seeded by ensureAppBrandDefaults() during bootstrap/init.
+    /*
     // Bootstrap: System default kit auto-created by resolution pipeline when needed
     if (appId === null) {
-        await BrandKit.getOrCreateDefault();
+        await BrandKit.getOrCreateDefault(); // with appId=null, creates system default
     }
+    */
     const appKits = (await BrandKit.where({ appId: appId ?? null }, { orderBy: 'name' })) as BrandKit[];
     // Include system default (appId=null) so it appears in the list — it's the fallback used by all apps
     let kits = appKits;
