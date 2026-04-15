@@ -86,18 +86,19 @@
     ],
 
     // Analytics Engine: event tracking (datasets auto-created on first write)
+    // Ensure to make these https://dash.cloudflare.com/<your-account-id>/workers/analytics-engine
     "analytics_engine_datasets": [
         {
-            "binding": "OBCF_ANALYTICS_CORE",
             "dataset": "core_events",
+            "binding": "OBCF_ANALYTICS_CORE",
         },
         {
-            "binding": "OBCF_ANALYTICS_SHORTLINKS",
             "dataset": "shortlink_clicks",
+            "binding": "OBCF_ANALYTICS_SHORTLINKS",
         },
         {
-            "binding": "OBCF_ANALYTICS_REFERRALS",
             "dataset": "referral_clicks",
+            "binding": "OBCF_ANALYTICS_REFERRALS",
         },
     ],
 
