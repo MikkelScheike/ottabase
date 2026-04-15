@@ -127,6 +127,9 @@ function registerAppModels(env: CloudflareEnv): void {
 export function ensureDbConnection(env: CloudflareEnv): void {
     if (!env.OBCF_D1) return;
 
+    // Cloudflare bindings are stable object references within an isolate, so
+    // reference equality is sufficient to detect whether this isolate has
+    // already been initialized for the current D1 binding.
     if (dbConnectionReady && initializedD1Binding === env.OBCF_D1) {
         return;
     }

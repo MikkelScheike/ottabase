@@ -73,17 +73,46 @@ function waitForHttpReady(url, label, { timeoutMs = 90000, intervalMs = 250, acc
     const startedAt = Date.now();
 
     return new Promise((resolve, reject) => {
+        let settled = false;
+        let probeTimer = null;
+
+        const settle = (callback, value) => {
+            if (settled) {
+                return;
+            }
+
+            settled = true;
+            if (probeTimer) {
+                clearTimeout(probeTimer);
+                probeTimer = null;
+            }
+            callback(value);
+        };
+
+        const scheduleNextCheck = () => {
+            if (settled) {
+                return;
+            }
+
+            probeTimer = setTimeout(check, intervalMs);
+        };
+
         const check = () => {
+            if (settled) {
+                return;
+            }
+
             const request = http.get(url, (response) => {
                 response.resume();
 
                 if (acceptStatuses.includes(response.statusCode || 0)) {
-                    resolve();
+                    settle(resolve);
                     return;
                 }
 
                 if (Date.now() - startedAt >= timeoutMs) {
-                    reject(
+                    settle(
+                        reject,
                         new Error(
                             `${label} did not become ready within ${timeoutMs}ms (last status: ${response.statusCode})`,
                         ),
@@ -91,16 +120,16 @@ function waitForHttpReady(url, label, { timeoutMs = 90000, intervalMs = 250, acc
                     return;
                 }
 
-                setTimeout(check, intervalMs);
+                scheduleNextCheck();
             });
 
             request.on('error', () => {
                 if (Date.now() - startedAt >= timeoutMs) {
-                    reject(new Error(`${label} did not become ready within ${timeoutMs}ms`));
+                    settle(reject, new Error(`${label} did not become ready within ${timeoutMs}ms`));
                     return;
                 }
 
-                setTimeout(check, intervalMs);
+                scheduleNextCheck();
             });
 
             request.setTimeout(2000, () => {
