@@ -175,6 +175,25 @@ pnpm dev
 curl -X POST http://localhost:3004/api/ottaorm/init
 ```
 
+## Otta CLI
+
+The `otta` CLI provides a streamlined interface for monorepo tasks:
+
+```bash
+# Scaffold a new app
+otta new web my-app              # Vite + TanStack Router + Workers
+otta new landing my-site         # Next.js landing page
+
+# Development
+otta dev otta-web                # Start dev server
+otta build otta-web              # Build for production
+otta test otta-web               # Run tests
+otta lint otta-web               # Lint
+otta list                        # List all apps
+```
+
+See `otta --help` or the [CLI README](./packages/cli/README.md) for more commands.
+
 ## OttaORM: Fat Models
 
 Central to the codebase. Each model contains schema, validation, relationships, and methods.

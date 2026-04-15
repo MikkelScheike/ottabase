@@ -532,6 +532,39 @@ pnpm install
 
 ## Commands Reference
 
+### Otta CLI (Recommended)
+
+The `otta` CLI provides a streamlined interface for common monorepo tasks:
+
+```bash
+# Scaffolding
+otta new web my-app              # Create a new web app (Vite + TanStack Router + Workers)
+otta new landing my-site         # Create a new landing page (Next.js + Workers)
+otta templates                   # Show available templates
+
+# Development
+otta dev otta-web                # Start dev server for an app
+otta dev otta-landing --port 3005  # Start with custom port
+
+# Building & Testing
+otta build otta-web              # Build an app for production
+otta test otta-web               # Run tests
+otta test otta-web --watch       # Run tests in watch mode
+otta test otta-web --coverage    # Run tests with coverage
+
+# Quality
+otta lint otta-web               # Lint an app
+otta lint otta-web --fix         # Lint and auto-fix
+otta type-check otta-web         # Type check an app (alias: otta types)
+
+# Info
+otta list                        # List all apps (alias: otta ls)
+otta info otta-web               # Show detailed app info
+otta clean otta-web              # Clean build artifacts
+```
+
+### pnpm Commands
+
 ```bash
 # Dev
 pnpm dev                          # All apps

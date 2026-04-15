@@ -33,7 +33,11 @@
         "apps/*",
         "packages/*"
     ],
+    "bin": {
+        "otta": "packages/cli/bin/otta.mjs"
+    },
     "scripts": {
+        "otta": "node packages/cli/bin/otta.mjs",
         "dev": "node dev.js",
         "dev:fe": "pnpm --filter @ottabase/otta-web dev",
         "dev:homepage": "pnpm --filter @ottabase/otta-landing dev",
@@ -70,6 +74,7 @@
         "format": "prettier --write .",
         "git:normalize": "(git add --renormalize .) && (git update-index --refresh)",
         "prepare": "husky",
+        "postinstall": "node -e \"require('fs').existsSync('packages/cli/dist') || require('child_process').execSync('pnpm --filter @ottabase/cli build', {stdio:'inherit'})\"",
         "lint-staged": "lint-staged",
         "storybook": "storybook dev -p 6006",
         "storybook:build": "storybook build",
