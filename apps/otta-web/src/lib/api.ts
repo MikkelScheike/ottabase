@@ -203,6 +203,13 @@ export const api = createApiClient({
         return headers;
     },
     timeout: 30000,
+    retry: {
+        attempts: 4,
+        baseDelayMs: 250,
+        maxDelayMs: 1500,
+        retryableStatuses: [502, 503, 504],
+        retryableMethods: ['GET', 'HEAD', 'OPTIONS'],
+    },
 });
 
 // Re-export types for convenience

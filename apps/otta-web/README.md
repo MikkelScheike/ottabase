@@ -13,6 +13,9 @@ TanStack Router + Query template with automated OttaORM migrations and Cloudflar
 - **Mantine + shadcn/ui** - Flexible UI component libraries
 - **Jotai** - Global state management
 
+Worker runtime note: database/model/RLS setup is cached once per Cloudflare isolate and reused across later requests, so
+the worker avoids rebuilding OttaORM state on every request. Static asset requests skip that setup entirely.
+
 ## Quick Start
 
 ```bash

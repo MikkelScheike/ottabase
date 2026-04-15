@@ -4,7 +4,7 @@ import type { CloudflareEnv } from './cloudflare-env';
 import { queueHandler } from './ottabase/queue';
 import { handleBootstrapRoute, interceptIfNotReady, resolvePlatformState } from './worker/bootstrap';
 import { injectBrandCriticalCSS } from './worker/lib/brand-html-inject';
-import { initDbConnection } from './worker/lib/db-utils';
+import { ensureDbConnection } from './worker/lib/db-utils';
 import { checkKillSwitches } from './worker/lib/killswitch';
 import { resolveApiRoute } from './worker/routes/router';
 import { handleShortlinkFallback } from './worker/routes/shortlinks';
@@ -68,7 +68,10 @@ export default {
             // -------------------------------------------------------
             // Normal request flow — platform is READY
             // -------------------------------------------------------
-            initDbConnection(env);
+            const requiresDbConnection = normalizedPathname.startsWith('/api/') || isHtmlRequest(request);
+            if (requiresDbConnection) {
+                ensureDbConnection(env);
+            }
 
             const origin = request.headers.get('Origin') || '*';
             const route = normalizedPathname;

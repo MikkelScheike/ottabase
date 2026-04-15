@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { changePassword } from '../client-api';
+import { changePassword, getSession } from '../client-api';
 
 describe('client-api changePassword', () => {
     afterEach(() => {
+        vi.useRealTimers();
         vi.restoreAllMocks();
     });
 
@@ -70,5 +71,60 @@ describe('client-api changePassword', () => {
             success: false,
             error: 'Network down',
         });
+    });
+
+    it('retries getSession after a transient network failure', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal(
+            'fetch',
+            vi
+                .fn()
+                .mockRejectedValueOnce(new Error('temporary network failure'))
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        user: { id: 'user-1', email: 'test@example.com' },
+                        expires: Date.now() + 1000,
+                    }),
+                }) as unknown as typeof fetch,
+        );
+
+        const sessionPromise = getSession();
+        await vi.runAllTimersAsync();
+
+        await expect(sessionPromise).resolves.toEqual({
+            user: { id: 'user-1', email: 'test@example.com' },
+            expires: expect.any(Number),
+        });
+        expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries getSession after a transient 503 response', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal(
+            'fetch',
+            vi
+                .fn()
+                .mockResolvedValueOnce({
+                    ok: false,
+                    status: 503,
+                })
+                .mockResolvedValueOnce({
+                    ok: true,
+                    json: async () => ({
+                        user: { id: 'user-2', email: 'warm@example.com' },
+                        expires: Date.now() + 1000,
+                    }),
+                }) as unknown as typeof fetch,
+        );
+
+        const sessionPromise = getSession();
+        await vi.runAllTimersAsync();
+
+        await expect(sessionPromise).resolves.toEqual({
+            user: { id: 'user-2', email: 'warm@example.com' },
+            expires: expect.any(Number),
+        });
+        expect(fetch).toHaveBeenCalledTimes(2);
     });
 });

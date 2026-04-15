@@ -48,6 +48,9 @@ function MyContent() {
 - `fallbackTheme` — Theme tokens used if the API fails (graceful degradation)
 - `mode` — `'light'` | `'dark'` override (default: matches `prefers-color-scheme`)
 
+`BrandProvider` automatically retries transient startup failures from `/api/brand` such as temporary `502`, `503`, and
+`504` responses so worker warmup does not immediately drop the app shell into an error state.
+
 ## LayoutResolver
 
 `LayoutResolver` reads route mappings from the brand config and renders the correct layout shell for the current path.

@@ -42,6 +42,9 @@ import { mediaLibraryPolicy } from '../../ottabase/models/mediaLibraryPolicy';
 import type { CloudflareEnv } from '../cloudflare-env';
 import { readJson } from './utils';
 
+let initializedD1Binding: CloudflareEnv['OBCF_D1'] | null = null;
+let dbConnectionReady = false;
+
 export function initAdminCron(env: CloudflareEnv): Response | null {
     if (!env.OBCF_D1) {
         return errorResponse('D1 database binding not configured', 500, {
@@ -78,15 +81,7 @@ export async function checkMigrationAuth(request: Request, env: CloudflareEnv): 
     return providedSecret === env.MIGRATION_SECRET;
 }
 
-export function initDbConnection(env: CloudflareEnv): void {
-    if (!env.OBCF_D1) return;
-
-    if (hasConnection('default')) {
-        clearConnection('default');
-    }
-
-    registerConnection('default', createD1Driver(env.OBCF_D1));
-
+function registerAppModels(env: CloudflareEnv): void {
     const config = getOttabaseConfig(env);
     const packages = config.packages;
     const coreModels = [
@@ -122,11 +117,54 @@ export function initDbConnection(env: CloudflareEnv): void {
     ];
     // Menu, MenuItem: use /api/brand/menus (cache-invalidating CRUD), not OttaORM
     const brandModels = [BrandKit, LayoutTemplate, LayoutRouteMapping, MenuSlotAssignment];
-    registerPolicy(mediaLibraryPolicy);
-
     const appModels = [Todo];
 
+    registerPolicy(mediaLibraryPolicy);
     registerModels([...coreModels, ...ottablogModels, ...packageModels, ...brandModels, ...appModels]);
-
     initRLS();
+}
+
+export function ensureDbConnection(env: CloudflareEnv): void {
+    if (!env.OBCF_D1) return;
+
+    if (dbConnectionReady && initializedD1Binding === env.OBCF_D1) {
+        return;
+    }
+
+    const shouldResetConnection =
+        hasConnection('default') || (dbConnectionReady && initializedD1Binding !== env.OBCF_D1);
+
+    try {
+        if (shouldResetConnection) {
+            clearConnection('default');
+        }
+
+        registerConnection('default', createD1Driver(env.OBCF_D1));
+        registerAppModels(env);
+
+        initializedD1Binding = env.OBCF_D1;
+        dbConnectionReady = true;
+    } catch (error) {
+        initializedD1Binding = null;
+        dbConnectionReady = false;
+
+        if (hasConnection('default')) {
+            clearConnection('default');
+        }
+
+        throw error;
+    }
+}
+
+export function initDbConnection(env: CloudflareEnv): void {
+    ensureDbConnection(env);
+}
+
+export function resetDbConnectionForTests(): void {
+    initializedD1Binding = null;
+    dbConnectionReady = false;
+
+    if (hasConnection('default')) {
+        clearConnection('default');
+    }
 }

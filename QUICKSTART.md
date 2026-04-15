@@ -59,6 +59,9 @@ pnpm dev:full
 Use `pnpm dev:full` for a fresh-machine sanity run. Use `pnpm dev` for normal day-to-day development after the repo is
 already installed and built.
 
+`pnpm dev` waits for both Vite and the Wrangler worker health endpoint before it reports readiness or opens the browser,
+which avoids the common first-load race where the frontend boots before the backend is reachable.
+
 ---
 
 ## Step 2: Configure Environment (30 seconds)

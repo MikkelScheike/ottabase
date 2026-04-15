@@ -115,6 +115,17 @@ const defaultOptions: AuthClientOptions = {
     baseUrl: '/api/auth',
 };
 
+const SESSION_RETRY_ATTEMPTS = 3;
+const SESSION_RETRY_BASE_DELAY_MS = 250;
+
+function isTransientSessionStatus(status: number): boolean {
+    return status === 502 || status === 503 || status === 504;
+}
+
+function waitForRetry(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 const authErrorMessages: Record<string, string> = {
     CredentialsSignin: 'Invalid email or password',
     AccessDenied: 'Access denied',
@@ -378,31 +389,45 @@ export async function registerWithCredentials(
 export async function getSession(options?: AuthClientOptions): Promise<AuthSession | null> {
     const baseUrl = options?.baseUrl ?? defaultOptions.baseUrl;
 
-    try {
-        const response = await fetch(`${baseUrl}/session`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            credentials: 'include',
-            cache: 'no-store',
-        });
+    for (let attempt = 1; attempt <= SESSION_RETRY_ATTEMPTS; attempt += 1) {
+        try {
+            const response = await fetch(`${baseUrl}/session`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'include',
+                cache: 'no-store',
+            });
 
-        if (!response.ok) {
+            if (!response.ok) {
+                if (attempt < SESSION_RETRY_ATTEMPTS && isTransientSessionStatus(response.status)) {
+                    await waitForRetry(SESSION_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
+                    continue;
+                }
+
+                return null;
+            }
+
+            const session = await response.json().catch(() => null);
+
+            if (!session || !session.user) {
+                return null;
+            }
+
+            return session as AuthSession;
+        } catch (error) {
+            if (attempt < SESSION_RETRY_ATTEMPTS) {
+                await waitForRetry(SESSION_RETRY_BASE_DELAY_MS * Math.pow(2, attempt - 1));
+                continue;
+            }
+
+            console.error('Failed to get session:', error);
             return null;
         }
-
-        const session = await response.json().catch(() => null);
-
-        if (!session || !session.user) {
-            return null;
-        }
-
-        return session as AuthSession;
-    } catch (error) {
-        console.error('Failed to get session:', error);
-        return null;
     }
+
+    return null;
 }
 
 /**

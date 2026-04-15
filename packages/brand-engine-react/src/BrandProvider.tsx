@@ -376,6 +376,13 @@ function detectMode(): 'light' | 'dark' {
     return 'light';
 }
 
+const BRAND_FETCH_MAX_ATTEMPTS = 4;
+const BRAND_FETCH_BASE_DELAY_MS = 250;
+const BRAND_FETCH_RETRYABLE_STATUSES = new Set([502, 503, 504]);
+/* Note:
+500 is not included as it may indicate a real server error rather than a transient issue, and retrying on 500 could lead to unnecessary load on the server.
+*/
+
 export function BrandProvider({
     children,
     apiEndpoint = '/api/brand',
@@ -403,7 +410,10 @@ export function BrandProvider({
     const fetchConfigWithRetry = useCallback(
         async (attempt = 1) => {
             try {
-                setIsLoading(true);
+                if (attempt === 1) {
+                    setIsLoading(true);
+                    setError(null);
+                }
                 // No mode param — API returns both light+dark themes per kit
                 const params = new URLSearchParams();
                 if (appId) params.set('appId', appId);
@@ -413,25 +423,34 @@ export function BrandProvider({
                 if (appId) headers['X-App-Id'] = appId;
                 const response = await fetch(url, { cache: 'no-store', headers });
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: Failed to fetch brand config`);
+                    const error = new Error(`HTTP ${response.status}: Failed to fetch brand config`) as Error & {
+                        status?: number;
+                    };
+                    error.status = response.status;
+                    throw error;
                 }
                 const data = (await response.json()) as FullBrandConfig;
                 clearTokenOverrideCache();
                 setFullConfig(data);
                 setError(null);
+                setIsLoading(false);
             } catch (err) {
                 const errObj = err instanceof Error ? err : new Error('Unknown error');
-                setError(errObj);
+                const maybeStatus = (err as { status?: number } | null)?.status;
+                const shouldRetry =
+                    attempt < BRAND_FETCH_MAX_ATTEMPTS &&
+                    (maybeStatus === undefined || BRAND_FETCH_RETRYABLE_STATUSES.has(maybeStatus));
 
-                // Retry with exponential backoff (max 3 attempts)
-                if (attempt < 3) {
-                    const delayMs = Math.pow(2, attempt) * 1000; // 2s, 4s
+                if (shouldRetry) {
+                    const delayMs = BRAND_FETCH_BASE_DELAY_MS * Math.pow(2, attempt - 1);
                     retryTimeoutRef.current = setTimeout(() => {
                         retryTimeoutRef.current = null;
                         fetchConfigWithRetry(attempt + 1);
                     }, delayMs);
+                    return;
                 }
-            } finally {
+
+                setError(errObj);
                 setIsLoading(false);
             }
         },
