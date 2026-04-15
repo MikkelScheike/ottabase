@@ -1,16 +1,19 @@
 {
-    // ─── SINGLE SOURCE OF TRUTH FOR SECRETS ───
-    // This file drives CI secret detection. The env.production / env.preview sections
-    // contain ALL_CAPS_SNAKE_CASE placeholder values (e.g. "D1_DATABASE_ID") that are:
-    //   1. Auto-detected by substitute-wrangler-secrets.py at deploy time
-    //   2. Verified against GitHub Secrets (missing → CI fails early with clear error)
-    //   3. Substituted into wrangler.production.jsonc / wrangler.preview.jsonc
+    // ─── TWO-TIER PLACEHOLDER SYSTEM ───
     //
-    // To add a new secret:  set the placeholder value here → add matching GitHub Secret → done.
-    // To share a resource:  use the same placeholder value across apps → maps to the same GitHub Secret → same real ID injected.
-    // To isolate:            use different values (e.g. APP_1_D1_DATABASE_ID); prefixing is a convention, not required.
+    // ┌─ Tier 1: YOUR_* (top-level, e.g. "YOUR_D1_DATABASE_ID")
+    // │   • Local dev ONLY: Wrangler ignores the value and uses local simulators (.wrangler/state/v3/*)
+    // │   • Never substituted by CI. Safe to leave as-is.
+    // │
+    // └─ Tier 2: ALL_CAPS_SNAKE_CASE (env.production / env.preview, e.g. "D1_DATABASE_ID")
+    //     • The value IS the GitHub Secret name. CI auto-detects and substitutes the real UUID at deploy time.
+    //     • Missing GitHub Secret → CI fails early with a clear error before any deployment.
+    //     • Substituted into wrangler.production.jsonc / wrangler.preview.jsonc by substitute-wrangler-secrets.py
     //
-    // Top-level YOUR_* values are for reference only (local dev uses simulators).
+    // To add a new secret:   set an ALL_CAPS placeholder in env.production/env.preview → add matching GitHub Secret → done.
+    // To share a resource:   use the same placeholder value across apps → same GitHub Secret → same real ID injected.
+    // To isolate per-app:    use different placeholder values (e.g. APP_1_D1_DATABASE_ID); prefixing is a convention, not required.
+    //
     // See CLOUDFLARE_DEPLOY.md for full walkthrough.
 
     "$schema": "node_modules/wrangler/config-schema.json",
@@ -55,7 +58,7 @@
         {
             "binding": "OBCF_D1",
             "database_name": "ottabase-db",
-            "database_id": "YOUR_D1_DATABASE_ID", // Local dev only; env sections have real placeholders for CI
+            "database_id": "YOUR_D1_DATABASE_ID", // YOUR_* = local dev only, NOT substituted by CI; Wrangler uses local simulator regardless of this value
             "preview_database_id": "preview", // Uses preview DB for `wrangler dev --remote`
         },
     ],
@@ -66,8 +69,8 @@
     "kv_namespaces": [
         {
             "binding": "OBCF_KV",
-            "id": "YOUR_KV_NAMESPACE_ID", // Local dev only; env sections have real placeholders for CI
-            "preview_id": "YOUR_KV_PREVIEW_ID", // Local dev only; CI substitutes in env.preview
+            "id": "YOUR_KV_NAMESPACE_ID", // YOUR_* = local dev only, NOT substituted by CI; Wrangler uses local simulator regardless of this value
+            "preview_id": "YOUR_KV_PREVIEW_ID", // YOUR_* = local dev only, NOT substituted by CI
         },
     ],
 

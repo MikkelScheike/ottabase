@@ -435,12 +435,21 @@ pnpm wrangler queues create ottabase-queue
 
 #### 2. Set GitHub Secrets
 
-`wrangler.jsonc` uses `ALL_CAPS` placeholder values that CI auto-substitutes from GitHub Secrets at deploy time. Set
-these in your repository → Settings → Secrets → Actions:
+`wrangler.jsonc` uses a **two-tier placeholder system**:
+
+| Tier                             | Pattern               | Example               | Substituted by CI?                                                                         |
+| -------------------------------- | --------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
+| Top-level                        | `YOUR_*`              | `YOUR_D1_DATABASE_ID` | **No** — local dev only; Wrangler ignores the value and uses local simulators              |
+| `env.production` / `env.preview` | `ALL_CAPS_SNAKE_CASE` | `D1_DATABASE_ID`      | **Yes** — the value is the GitHub Secret name; CI substitutes the real UUID at deploy time |
+
+Set these in your repository → Settings → Secrets → Actions:
 
 - `D1_DATABASE_ID`, `KV_NAMESPACE_ID` (production)
 - `D1_PREVIEW_DATABASE_ID`, `KV_PREVIEW_NAMESPACE_ID` (PR previews)
 - `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+
+To add a new secret: add an `ALL_CAPS` placeholder in `env.production`/`env.preview` → add the matching GitHub Secret.
+CI auto-detects it. No other changes needed.
 
 See [CLOUDFLARE_DEPLOY.md](../../docs/CLOUDFLARE_DEPLOY.md) for the full setup guide.
 

@@ -264,8 +264,6 @@ From here, you can also use the admin UI to manage migrations through Admin → 
 
 ---
 
----
-
 ## Key Nuances & Tips
 
 ### 1. **Architecture: Fat Models, Not Controllers**
@@ -297,7 +295,19 @@ Avoid Node.js APIs like `fs`, `child_process`, `os`. Use Cloudflare bindings ins
 - `env.OBCF_R2` for file storage
 - `env.OBCF_QUEUE` for jobs
 
-### 3. **Monorepo Structure**
+### 3. **`wrangler.jsonc` Two-Tier Placeholder System**
+
+When you open `wrangler.jsonc` you'll see two kinds of placeholder values — they mean different things:
+
+| Pattern                                                         | Example                            | What it means                                                                                        |
+| --------------------------------------------------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `YOUR_*` (top-level)                                            | `YOUR_D1_DATABASE_ID`              | Local dev only — Wrangler ignores it and uses local simulators. **Never substituted by CI.**         |
+| `ALL_CAPS_SNAKE_CASE` (inside `env.production` / `env.preview`) | `D1_DATABASE_ID`,`KV_NAMESPACE_ID` | **This is the GitHub Secret name.** CI auto-detects it and substitutes the real UUID at deploy time. |
+
+For local dev, leave the `YOUR_*` values as-is. For deployment, the `ALL_CAPS` values must have matching GitHub Secrets
+set.
+
+### 4. **Monorepo Structure**
 
 - **`apps/`** — Full-stack applications
     - `otta-web/` — Main TanStack Router + Vite + Wrangler app
@@ -309,7 +319,7 @@ Avoid Node.js APIs like `fs`, `child_process`, `os`. Use Cloudflare bindings ins
     - `@ottabase/ui-shadcn` — UI component library
     - (and 43 more...)
 
-### 4. **Workspace Protocol**
+### 5. **Workspace Protocol**
 
 Internal dependencies use `workspace:*`, external use `catalog:`:
 
@@ -320,7 +330,7 @@ Internal dependencies use `workspace:*`, external use `catalog:`:
 }
 ```
 
-### 5. **Bootstrap Is One-Time**
+### 6. **Bootstrap Is One-Time**
 
 The `__bootstrap__/api/*` routes are only active on first setup. Once the platform is `READY`, they're blocked. To
 reset:
@@ -340,19 +350,19 @@ Use `pnpm clean:cf` when you want to wipe local Cloudflare-emulated persistence 
 Use bootstrap for the first-time platform bring-up. Use Admin → Migrate later when the app is already running and you
 need to apply schema updates from the UI.
 
-### 6. **Two Ports, Same App**
+### 7. **Two Ports, Same App**
 
 - **Port 3003** (Vite) — Frontend (SPA)
 - **Port 3004** (Wrangler) — Backend API + static files
 
 On production, Cloudflare Workers serves both. Locally, both must be running.
 
-### 7. **Multi-Tenancy Is Built-In**
+### 8. **Multi-Tenancy Is Built-In**
 
 Every request automatically includes tenant context (`organizationId`, `userId`, `appId`). Row-Level Security (RLS)
 enforces data isolation. Never bypass RLS—always provide adequate context.
 
-### 8. **TypeScript Everything**
+### 9. **TypeScript Everything**
 
 No JavaScript in source. All packages must have `tsconfig.json` and export `.d.ts` type definitions.
 
