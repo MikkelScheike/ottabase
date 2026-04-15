@@ -250,6 +250,22 @@
                     },
                 ],
             },
+            // Production analytics datasets (auto-created on first write)
+            // Ensure to make these https://dash.cloudflare.com/<your-account-id>/workers/analytics-engine
+            "analytics_engine_datasets": [
+                {
+                    "dataset": "core_events",
+                    "binding": "OBCF_ANALYTICS_CORE",
+                },
+                {
+                    "dataset": "shortlink_clicks",
+                    "binding": "OBCF_ANALYTICS_SHORTLINKS",
+                },
+                {
+                    "dataset": "referral_clicks",
+                    "binding": "OBCF_ANALYTICS_REFERRALS",
+                },
+            ],
         },
         // PR preview – placeholders = GitHub Secret names; CI substitutes at deploy time
         "preview": {
