@@ -1,4 +1,3 @@
-import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import {
     formatMediaFileSize,
     MediaLightboxProvider,
@@ -7,6 +6,7 @@ import {
     useMediaLightboxRegistration,
     type MediaLibraryItemLike,
 } from '@ottabase/medialibrary';
+import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { IconPhoto, IconPlayerPlay, IconZoomIn } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
 
@@ -74,7 +74,7 @@ function MediaTile({ item }: { item: MediaLibraryItemLike }) {
             <CardContent className="space-y-3 p-4">
                 <div className="space-y-1">
                     <p className="truncate text-sm font-medium">{item.title || item.originalName}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-xs text-muted-foreground capitalize">
                         {item.mediaKind} · {formatMediaFileSize(item.fileSize)}
                     </p>
                 </div>
