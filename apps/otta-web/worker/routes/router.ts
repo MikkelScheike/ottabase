@@ -435,7 +435,7 @@ async function handlePostRoutes(context: ApiRouteContext): Promise<Response | nu
         return handleAnalyticsTrack({
             request: context.request,
             dataset: context.env.OBCF_ANALYTICS_CORE,
-            defaultAppId: 'ottabase-template',
+            defaultAppId: getOttabaseConfig(context.env).appId,
         });
     }
 
