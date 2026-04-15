@@ -1,6 +1,6 @@
+import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import { Blocks, customRenderers, defaultEJSRConfigs, HtmlRenderer } from '@ottabase/ottarenderer';
 import '@ottabase/ottarenderer/styles';
-import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import {
     Card,
     CardContent,
@@ -36,9 +36,9 @@ const sampleEditorJSData = {
             id: 'advimg1',
             type: 'advancedImage',
             data: {
-                url: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&q=80',
-                caption: 'A beautiful mountain landscape at sunset',
-                alt: 'Mountain landscape',
+                url: 'https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=800&q=80',
+                caption: 'Stellar nursery – the cosmic birthplace of stars',
+                alt: 'Nebula in deep space',
                 withBorder: true,
                 stretched: false,
                 aspectRatio: '16:9',
@@ -74,9 +74,9 @@ const sampleEditorJSData = {
             id: 'advimg2',
             type: 'advancedImage',
             data: {
-                url: 'https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=1200&q=80',
-                caption: 'Modern workspace with laptop and coffee',
-                alt: 'Workspace',
+                url: 'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?w=1200&q=80',
+                caption: 'Earth from orbit – pale blue dot in the cosmic ocean',
+                alt: 'Earth from space',
                 withBackground: true,
                 featuredImage: true,
                 stretched: true,
@@ -94,29 +94,34 @@ const sampleEditorJSData = {
             id: 'mediagallery1',
             type: 'mediaGallery',
             data: {
-                title: 'Mixed Media Gallery',
+                title: 'Space Media Gallery',
                 caption: 'Click any item to open the immersive lightbox.',
                 layout: 'grid-featured',
                 items: [
                     {
-                        url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1200&q=80',
-                        title: 'Code Workspace',
-                        caption: 'Image item',
+                        url: 'https://images.unsplash.com/photo-1614732414444-096e5f1122d5?w=1200&q=80',
+                        title: 'Milky Way Core',
+                        caption: 'Our galactic center',
                         mediaKind: 'image',
                     },
                     {
-                        url: 'https://cdn.coverr.co/videos/coverr-aerial-view-of-a-city-at-sunset-1579/1080p.mp4',
-                        title: 'City Sunset Clip',
-                        caption: 'Video item',
+                        url: 'https://www.w3schools.com/html/mov_bbb.mp4',
+                        title: 'Big Buck Bunny',
+                        caption: 'Sample video',
                         mediaKind: 'video',
                         mimeType: 'video/mp4',
                     },
                     {
-                        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
-                        title: 'Sample Audio',
-                        caption: 'Audio item',
-                        mediaKind: 'audio',
-                        mimeType: 'audio/mpeg',
+                        url: 'https://images.unsplash.com/photo-1454789548928-9efd52dc4031?w=1200&q=80',
+                        title: 'Astronaut',
+                        caption: 'Spacewalk',
+                        mediaKind: 'image',
+                    },
+                    {
+                        url: 'https://images.unsplash.com/photo-1516339901601-2e1b62dc0c45?w=1200&q=80',
+                        title: 'Saturn Rings',
+                        caption: 'Gas giant',
+                        mediaKind: 'image',
                     },
                 ],
             },
@@ -260,9 +265,9 @@ function MyHtmlContent({ htmlString }) {
             id: 'advimg3',
             type: 'advancedImage',
             data: {
-                url: 'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=1000&q=80',
-                caption: 'Clean code is simple and direct',
-                alt: 'Code on screen',
+                url: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1000&q=80',
+                caption: 'Earth at night – the glow of human civilization from orbit',
+                alt: 'Earth at night from space',
                 withBorder: true,
                 aspectRatio: '4:3',
             },

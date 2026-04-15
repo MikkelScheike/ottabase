@@ -170,10 +170,10 @@
             "id": "-lczZ8_LTp",
             "type": "beforeAfter",
             "data": {
-                "beforeUrl": "https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200",
-                "afterUrl": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=1200",
-                "beforeLabel": "Before",
-                "afterLabel": "After",
+                "beforeUrl": "https://images.unsplash.com/photo-1480714378408-67cf0d13bc1b?w=1200",
+                "afterUrl": "https://images.unsplash.com/photo-1514565131-fce0801e5785?w=1200",
+                "beforeLabel": "Day",
+                "afterLabel": "Night",
                 "orientation": "horizontal",
                 "sliderPosition": 52,
                 "caption": "Before/After comparison block with interactive slider.",
@@ -213,23 +213,23 @@
             "id": "yWXVRnpj9z",
             "type": "imageHotspots",
             "data": {
-                "imageUrl": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=1600",
-                "alt": "Mountain ridge with valleys",
+                "imageUrl": "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=1600",
+                "alt": "Urban cityscape at dusk",
                 "caption": "Image hotspots block with click-to-reveal annotations.",
                 "hotspots": [
                     {
-                        "id": "peak",
+                        "id": "tower",
                         "x": 7,
                         "y": 20,
-                        "title": "Primary Peak",
-                        "content": "Tallest visible summit in this frame."
+                        "title": "Landmark Tower",
+                        "content": "The tallest building in the financial district."
                     },
                     {
-                        "id": "trail",
+                        "id": "street",
                         "x": 71,
                         "y": 65,
-                        "title": "Ridge Trail",
-                        "content": "The trail line where hikers usually traverse."
+                        "title": "Main Avenue",
+                        "content": "The busiest street with shops and cafes."
                     }
                 ],
                 "height": "420px",
@@ -320,35 +320,35 @@
             "id": "w9u4YXNRj-",
             "type": "mediaGallery",
             "data": {
-                "title": "Gallery of Mountains",
+                "title": "Urban Architecture",
                 "caption": "Layout preset = Mosaic",
                 "layout": "mosaic",
                 "items": [
                     {
-                        "url": "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800",
-                        "altText": "Mountain landscape",
-                        "caption": "Swiss Alps at sunrise",
+                        "url": "https://images.unsplash.com/photo-1486325212027-8081e485255e?w=800",
+                        "altText": "Modern skyscraper",
+                        "caption": "Glass and steel tower",
                         "mediaKind": "image",
                         "title": ""
                     },
                     {
-                        "url": "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800",
-                        "altText": "Night sky mountains",
-                        "caption": "Stars over the mountains",
+                        "url": "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=800",
+                        "altText": "City at night",
+                        "caption": "Neon-lit streets",
                         "mediaKind": "image",
                         "title": ""
                     },
                     {
-                        "url": "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=800",
-                        "altText": "Rocky mountains",
-                        "caption": "Rocky Mountain National Park",
+                        "url": "https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=800",
+                        "altText": "Urban skyline",
+                        "caption": "Downtown panorama",
                         "mediaKind": "image",
                         "title": ""
                     },
                     {
-                        "url": "https://images.unsplash.com/photo-1501854140801-50d01698950b?w=800",
-                        "altText": "Green hills aerial",
-                        "caption": "Rolling hills from above",
+                        "url": "https://images.unsplash.com/photo-1444723121867-7a241cacace9?w=800",
+                        "altText": "Bridge at sunset",
+                        "caption": "Iconic city bridge",
                         "mediaKind": "image",
                         "title": ""
                     }
