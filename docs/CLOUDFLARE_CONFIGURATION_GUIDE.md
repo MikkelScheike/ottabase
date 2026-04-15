@@ -48,8 +48,29 @@ Secrets; it does not modify wrangler.jsonc.
 | -------------- | ----------------- | ------------------------- | ------------------------------------------------------------- |
 | **Hyperdrive** | `OBCF_HYPERDRIVE` | External database pooling | `wrangler hyperdrive create <name> --connection-string="..."` |
 
-**For /analytics page:** Set `CLOUDFLARE_ACCOUNT_ID` (vars) and `CLOUDFLARE_ANALYTICS_API_TOKEN` (secret) with
-`Account Analytics` Read permission. Analytics datasets are auto-created on first write.
+**For /analytics page:** The `/analytics` dashboard requires `CLOUDFLARE_ACCOUNT_ID` (set as a `var` in
+`wrangler.jsonc`) and `CLOUDFLARE_ANALYTICS_API_TOKEN` (set as a Worker secret).
+
+**Creating `CLOUDFLARE_ANALYTICS_API_TOKEN`:**
+
+1. Go to **Cloudflare Dashboard → My Profile → [API Tokens](https://dash.cloudflare.com/profile/api-tokens)**
+2. Click **Create Token → Create Custom Token**
+3. Add permission: **Account | Account Analytics | Read**
+4. (Optional) Restrict to your account under **Account Resources**
+5. Copy the token value
+
+**Registering the token:**
+
+```bash
+# Production — store as a Worker secret
+pnpm wrangler secret put CLOUDFLARE_ANALYTICS_API_TOKEN
+
+# Local dev — add to apps/<your-app>/.env.local (gitignored)
+CLOUDFLARE_ANALYTICS_API_TOKEN=your-token-here
+# PS: Analytics will NOT work locally.
+```
+
+Without this token, the `/analytics` page returns `503`. Analytics datasets are auto-created on first write.
 
 ---
 

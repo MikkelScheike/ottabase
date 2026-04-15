@@ -8,6 +8,40 @@ Cloudflare Workers Analytics Engine (WAE) wrapper — track events, query aggreg
 { "@ottabase/analytics": "workspace:*" }
 ```
 
+## Setup
+
+This package queries the
+[Cloudflare Workers Analytics Engine](https://developers.cloudflare.com/analytics/analytics-engine/) GraphQL API to read
+back events. Two environment values are required:
+
+| Variable                         | Type   | Purpose                              |
+| -------------------------------- | ------ | ------------------------------------ |
+| `CLOUDFLARE_ACCOUNT_ID`          | var    | Your 32-char Cloudflare account ID   |
+| `CLOUDFLARE_ANALYTICS_API_TOKEN` | secret | API token with Analytics Engine Read |
+
+### Creating the API token
+
+1. Go to **Cloudflare Dashboard → My Profile → [API Tokens](https://dash.cloudflare.com/profile/api-tokens)**
+2. Click **Create Token → Create Custom Token**
+3. Add permission: **Account | Account Analytics | Read**
+4. (Optional) Restrict to your specific account under **Account Resources**
+5. Click **Continue to summary → Create Token** and copy the value
+
+### Registering the token
+
+```bash
+# Store as a Worker secret (production)
+pnpm wrangler secret put CLOUDFLARE_ANALYTICS_API_TOKEN
+
+# Local dev — add to apps/<your-app>/.env.local
+CLOUDFLARE_ACCOUNT_ID=your-32-char-account-id
+CLOUDFLARE_ANALYTICS_API_TOKEN=your-token-here
+# PS: Cloudflare Analytics will NOT work for localhost
+```
+
+`CLOUDFLARE_ACCOUNT_ID` goes in `wrangler.jsonc` under `vars`. The token must **never** be committed — use
+`wrangler secret put` for production and `.env.local` (gitignored) for local dev.
+
 ## Write Events
 
 ### Low-level (positional slots)
