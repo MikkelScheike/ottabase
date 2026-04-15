@@ -469,24 +469,11 @@ jobs:
 
                   echo "✅ Build tools verified"
 
-            # Restore pre-built packages from cache (built by build-packages job)
-            - name: Restore packages cache
-              id: restore-packages
-              run: |
-                  echo "📦 Restoring pre-built packages from cache..."
-
-                  # Must match build-packages.yml key: LOCK + ROOT + PACKAGE hashes
-                  PACKAGE_HASH=$(find packages -type f \
-                    -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.json" \
-                    | sort | xargs cat | sha256sum | cut -d' ' -f1)
-
-                  LOCK_HASH=$(sha256sum pnpm-lock.yaml | cut -d' ' -f1)
-                  ROOT_HASH=$(cat turbo.json package.json pnpm-workspace.yaml | sha256sum | cut -d' ' -f1)
-                  CACHE_KEY="packages-build-${LOCK_HASH}-${ROOT_HASH}-${PACKAGE_HASH}"
-
-                  echo "cache-key=${CACHE_KEY}" >> $GITHUB_OUTPUT
-                  echo "📦 Cache key: ${CACHE_KEY}"
-
+            # Restore pre-built packages from cache (built by build-packages job).
+            # Uses the key emitted by build-packages directly — no hash recomputation here.
+            # This is the single source of truth: same key that was saved = guaranteed hit.
+            # Fallback restore-key covers the edge case where build-packages was skipped
+            # (e.g. workflow_dispatch without build-packages running).
             - name: Restore cached packages
               uses: actions/cache/restore@v4
               with:
@@ -495,7 +482,7 @@ jobs:
                       packages/*/build
                       packages/*/.turbo
                       .turbo
-                  key: ${{ steps.restore-packages.outputs.cache-key }}
+                  key: ${{ needs.build-packages.outputs.cache-key }}
                   restore-keys: |
                       packages-build-${{ hashFiles('pnpm-lock.yaml') }}-
                   fail-on-cache-miss: true # Fail if cache not found (should always exist from build-packages job)
