@@ -1,13 +1,13 @@
 import { mediaLibraryHooks } from '@/hooks/mediaLibraryHooks';
 import { api, isApiError } from '@/lib/api';
 import type { MediaKind, MediaLibraryItemLike } from '@ottabase/medialibrary';
-import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     MediaPreview,
     formatMediaFileSize,
     getMediaDisplayTitle,
     toMediaSelectionPayload,
 } from '@ottabase/medialibrary';
+import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     Badge,
     Button,
@@ -20,13 +20,14 @@ import {
     Textarea,
 } from '@ottabase/ui-shadcn';
 import {
+    IconCheck,
     IconCopy,
     IconDeviceFloppy,
     IconExternalLink,
+    IconLoader2,
     IconPhotoPlus,
     IconSearch,
     IconTrash,
-    IconCheck,
     IconX,
 } from '@tabler/icons-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -109,6 +110,8 @@ export function MediaLibraryBrowser({
     // Multi-select: ordered list of selected IDs (preserves pick order for insertion)
     const [multiSelectedIds, setMultiSelectedIds] = useState<string[]>([]);
     const [isUploading, setIsUploading] = useState(false);
+    // Tracks per-file progress for serial uploads so the overlay can show "X of Y"
+    const [uploadProgress, setUploadProgress] = useState<{ current: number; total: number } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<MediaListItem | null>(null);
     const [formValues, setFormValues] = useState({
         title: '',
@@ -222,10 +225,12 @@ export function MediaLibraryBrowser({
             }
 
             setIsUploading(true);
+            setUploadProgress({ current: 0, total: list.length });
             let lastUploadedId: string | null = null;
 
             try {
                 for (const file of list) {
+                    setUploadProgress((prev) => (prev ? { ...prev, current: prev.current + 1 } : null));
                     const formData = new FormData();
                     formData.append('file', file);
 
@@ -246,6 +251,7 @@ export function MediaLibraryBrowser({
                 toast.error(error instanceof Error ? error.message : 'Upload failed');
             } finally {
                 setIsUploading(false);
+                setUploadProgress(null);
             }
         },
         [refetchItems],
@@ -363,7 +369,18 @@ export function MediaLibraryBrowser({
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-                <Card className="min-h-[32rem]">
+                <Card className="relative min-h-[32rem]">
+                    {/* Upload overlay: dims the gallery and shows progress during serial uploads */}
+                    {isUploading && (
+                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-background/80 backdrop-blur-sm">
+                            <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="text-sm font-medium text-foreground">
+                                {uploadProgress && uploadProgress.total > 1
+                                    ? `Uploading file ${uploadProgress.current} of ${uploadProgress.total}…`
+                                    : 'Uploading…'}
+                            </p>
+                        </div>
+                    )}
                     <CardHeader>
                         <div className="flex items-center justify-between gap-4">
                             <div>
