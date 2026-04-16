@@ -33,7 +33,7 @@ import {
 import { createModelHooks } from '@ottabase/ottaorm/client';
 import { Blocks, customRenderers, defaultEJSRConfigs } from '@ottabase/ottarenderer';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
-import { ConfirmDialog } from '@ottabase/ui-components';
+import { ConfirmDialog, JsonEditor, type JsonValue } from '@ottabase/ui-components';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -71,6 +71,7 @@ import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import * as Diff from 'diff';
 import {
     ArrowLeft,
+    Braces,
     Calendar,
     Download,
     FileText,
@@ -109,6 +110,7 @@ interface BlogPost {
     seriesOrder: number | null;
     heroImage: HeroImage | null;
     seoMeta: SeoMeta | null;
+    meta: Record<string, unknown> | null;
     privateNotes: OutputData | null;
     footnotes: OutputData | null;
     authorId: string | null;
@@ -292,6 +294,11 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
     const [seoDescription, setSeoDescription] = useState(initialData?.seoMeta?.description || '');
     const [seoKeywords, setSeoKeywords] = useState(initialData?.seoMeta?.keywords?.join(', ') || '');
     const [seoNoIndex, setSeoNoIndex] = useState(initialData?.seoMeta?.noIndex || false);
+
+    // Custom meta: free-form k/v JSON, not used by the engine. Tree-edited via @ottabase/ui-components JsonEditor.
+    const [meta, setMeta] = useState<Record<string, unknown>>(
+        (initialData?.meta as Record<string, unknown> | null) ?? {},
+    );
 
     // Series state
     const [seriesId, setSeriesId] = useState<string | null>(initialData?.seriesId || null);
@@ -485,6 +492,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         setSeoDescription(initialData.seoMeta?.description ?? '');
         setSeoKeywords(initialData.seoMeta?.keywords?.join(', ') ?? '');
         setSeoNoIndex(initialData.seoMeta?.noIndex ?? false);
+        setMeta((initialData.meta as Record<string, unknown> | null) ?? {});
         setSeriesId(initialData.seriesId ?? null);
         setSeriesOrder(initialData.seriesOrder ?? null);
         setMaxVersionsToKeep(initialData.maxVersionsToKeep ?? null);
@@ -541,7 +549,8 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                     description: initialData.seoMeta?.description ?? '',
                     keywords: initialData.seoMeta?.keywords ?? [],
                     noIndex: initialData.seoMeta?.noIndex ?? false,
-                });
+                }) &&
+            JSON.stringify(meta ?? {}) === JSON.stringify(initialData.meta ?? {});
         const formDirty = !initialData ? false : !formSame;
         const editorDirty =
             mainEditor.hasUnsavedChanges || notesEditor.hasUnsavedChanges || footnotesEditor.hasUnsavedChanges;
@@ -563,6 +572,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         seoDescription,
         seoKeywords,
         seoNoIndex,
+        meta,
         initialData,
         isEditMode,
         mainEditor.hasUnsavedChanges,
@@ -992,6 +1002,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                 status: resolvedStatus,
                 heroImage,
                 seoMeta,
+                meta: meta && Object.keys(meta).length > 0 ? meta : null,
                 privateNotes: privateNotes || undefined,
                 footnotes: footnotes || undefined,
                 isFeatured,
@@ -1253,7 +1264,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
 
                     {/* Content Tabs */}
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full grid-cols-4">
+                        <TabsList className="grid w-full grid-cols-5">
                             <TabsTrigger value="content" className="flex items-center gap-2">
                                 <FileText className="h-4 w-4" />
                                 Content
@@ -1269,6 +1280,10 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                             <TabsTrigger value="seo" className="flex items-center gap-2">
                                 <Search className="h-4 w-4" />
                                 SEO
+                            </TabsTrigger>
+                            <TabsTrigger value="meta" className="flex items-center gap-2">
+                                <Braces className="h-4 w-4" />
+                                Custom Meta
                             </TabsTrigger>
                         </TabsList>
 
@@ -1424,6 +1439,36 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                                         />
                                         <Label htmlFor="seoNoIndex">Hide from search engines (noindex)</Label>
                                     </div>
+                                </CardContent>
+                            </Card>
+                        </TabsContent>
+
+                        <TabsContent value="meta" className="mt-4 data-[state=inactive]:hidden">
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Custom Meta</CardTitle>
+                                    <CardDescription>
+                                        Free-form key/value metadata stored on the post. Not used by the blog engine
+                                        itself &mdash; available to themes, plugins, and custom renderers.
+                                    </CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <JsonEditor
+                                        value={(meta ?? {}) as JsonValue}
+                                        onChange={(next) =>
+                                            setMeta(
+                                                next && typeof next === 'object' && !Array.isArray(next)
+                                                    ? (next as Record<string, unknown>)
+                                                    : {},
+                                            )
+                                        }
+                                        rootLabel="meta"
+                                        collapseAtDepth={3}
+                                    />
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                        Add custom keys &amp; values (strings, numbers, booleans, arrays, objects).
+                                        Saved as JSON on the post&apos;s <code>meta</code> column.
+                                    </p>
                                 </CardContent>
                             </Card>
                         </TabsContent>

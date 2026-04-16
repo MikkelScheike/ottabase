@@ -13,7 +13,8 @@ ModelCrud.
 - **Standalone Forms**: Use `action` prop to POST/PATCH directly to any endpoint.
 - **Model Defaults**: Respects `static defaults` from OttaORM models in create forms.
 - **OttaSelect**: Relationship fields use `@ottabase/ottaselect` for single/multi-select.
-- **JSON Editor**: JSON fields use `json-edit-react` with tabbed edit/tree view.
+- **JSON Editor**: JSON fields use the in-house `JsonEditor` from `@ottabase/ui-components` (Tree + Raw modes, inline
+  editing, live validation).
 - **Type-safe**: Full TypeScript, seamlessly integrates with OttaORM types.
 
 ## Installation

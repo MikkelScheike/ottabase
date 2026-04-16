@@ -44,6 +44,38 @@ import { ConfirmDialog } from '@ottabase/ui-components';
 />;
 ```
 
+### JsonEditor
+
+A clean, minimal, dual-mode JSON editor with a Tree view (inline key/value editing, type switching, add/remove nodes)
+and a Raw mode (live validation, format/minify). No external JSON editor dependencies; Tailwind-only styling with
+dark-mode support.
+
+#### Props
+
+- `value: JsonValue` - Current JSON value (object, array, or primitive)
+- `onChange?: (value: JsonValue) => void` - Fires when the user edits
+- `readOnly?: boolean` - Disable editing (expand/collapse still works)
+- `defaultMode?: 'tree' | 'raw'` - Starting mode (default: `'tree'`)
+- `collapseAtDepth?: number` - Auto-collapse nodes at or beyond this depth
+- `rootLabel?: string` - Label shown next to the root node (e.g. `"meta"`)
+- `className?: string` - Extra className on the outer wrapper
+
+#### Usage
+
+```tsx
+import { JsonEditor } from '@ottabase/ui-components';
+
+const [value, setValue] = useState({ hello: 'world', count: 1 });
+
+<JsonEditor value={value} onChange={setValue} rootLabel="meta" collapseAtDepth={3} />;
+```
+
+Keyboard: `Enter` commits an inline edit, `Escape` cancels. In Raw mode, `Ctrl/Cmd+S` formats.
+
+This is the canonical JSON editor in the monorepo. `@ottabase/forms` uses it internally for `fieldType: 'json'` fields
+and the admin blog editor uses it for the Custom Meta tab — reach for this component instead of adding a third-party
+JSON editor dependency.
+
 ### DarkModeToggle
 
 A versatile component that provides both toggle switch and button interfaces for switching between light and dark
