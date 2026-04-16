@@ -42,15 +42,23 @@ export async function injectBrandCriticalCSS(
         const lightTheme = config.theme;
         const darkTheme = config.darkTheme ?? config.theme;
 
-        const html = await response.text();
+        // FIX: Clone before consuming body to prevent "Body has already been used" errors.
+        // Problem: If we call response.text() and then something throws (e.g., theme
+        // rendering fails), the catch block would return the original response whose
+        // body is already consumed. Cloudflare Workers cannot stream a consumed body,
+        // causing HTTP 500 (Error 1101) on any HTML page (e.g., /blog/demo-content).
+        // Solution: Clone first — read from clone, keep original intact for fallback.
+        const [forRead, fallback] = [response.clone(), response];
+        const html = await forRead.text();
         const criticalTag = buildCriticalStyleTagDual(lightTheme, darkTheme);
         const injectedHtml = html.replace('</head>', `${criticalTag}\n    </head>`);
         return new Response(injectedHtml, {
-            status: response.status,
-            statusText: response.statusText,
-            headers: response.headers,
+            status: fallback.status,
+            statusText: fallback.statusText,
+            headers: fallback.headers,
         });
     } catch {
+        // Safe: `response` (aliased as `fallback`) was never consumed — only the clone was.
         return response;
     }
 }

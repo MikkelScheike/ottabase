@@ -90,13 +90,15 @@ export default {
                     });
                     return response;
                 } catch {
-                    const headers = new Headers(response.headers);
+                    // Headers are immutable (e.g. from cache or subrequest) — clone to get mutable headers
+                    const cloned = response.clone();
+                    const headers = new Headers(cloned.headers);
                     Object.entries(corsHeaders).forEach(([key, value]) => {
                         headers.set(key, value);
                     });
-                    return new Response(response.body, {
-                        status: response.status,
-                        statusText: response.statusText,
+                    return new Response(cloned.body, {
+                        status: cloned.status,
+                        statusText: cloned.statusText,
                         headers,
                     });
                 }
