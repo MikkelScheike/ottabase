@@ -83,10 +83,10 @@ export const defaultEJSRConfigs = {
         className: `${blockClass} cdc-content-steps`,
     },
     mediaEmbed: {
-        className: `${blockClass} cdc-content-media-embed`,
+        className: `${blockClass} cdc-content-media-embed not-prose`,
     },
     mediaGallery: {
-        className: `${blockClass} cdc-content-media-gallery`,
+        className: `${blockClass} cdc-content-media-gallery not-prose`,
     },
     faq: {
         className: `${blockClass} cdc-content-faq`,

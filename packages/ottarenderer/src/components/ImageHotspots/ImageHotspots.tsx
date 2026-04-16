@@ -117,7 +117,7 @@ const ImageHotspots: RenderFn<ImageHotspotsData> = ({ data, className = '' }) =>
         .join(' ');
 
     return (
-        <figure className={`${className} cdc-content-block cdc-image-hotspots`}>
+        <figure className={`${className} cdc-content-block cdc-image-hotspots not-prose`}>
             <div ref={containerRef} className={containerClasses} style={containerStyle} onClick={handleContainerClick}>
                 <img
                     src={imageUrl}
