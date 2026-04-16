@@ -18,7 +18,16 @@ import {
 export type ConfirmDialogTone = 'default' | 'destructive' | 'unsaved-changes';
 
 export interface ConfirmDialogProps extends Omit<React.ComponentPropsWithoutRef<typeof AlertDialog>, 'children'> {
-    title: React.ReactNode;
+    title?: React.ReactNode;
+    /**
+     * Keeps a semantic title in the DOM for screen readers while hiding it visually.
+     * Useful when the product design does not want a visible title.
+     */
+    hideTitle?: boolean;
+    /**
+     * Accessible fallback title when `title` is omitted. Defaults to "Confirm action".
+     */
+    a11yTitle?: React.ReactNode;
     description?: React.ReactNode;
     children?: React.ReactNode;
     trigger?: React.ReactElement;
@@ -36,6 +45,8 @@ export interface ConfirmDialogProps extends Omit<React.ComponentPropsWithoutRef<
 
 export function ConfirmDialog({
     title,
+    hideTitle = false,
+    a11yTitle,
     description,
     children,
     trigger,
@@ -57,6 +68,7 @@ export function ConfirmDialog({
         primaryActionText ?? confirmLabel ?? (isUnsavedChangesTone ? 'Leave without saving' : 'Confirm');
     const resolvedCancelLabel =
         secondaryActionText ?? cancelLabel ?? (isUnsavedChangesTone ? 'Stay and keep editing' : 'Cancel');
+    const resolvedTitle = title ?? a11yTitle ?? 'Confirm action';
     const { className: contentClassName, ...restContentProps } = contentProps ?? {};
     const { className: confirmClassName, ...restConfirmProps } = confirmProps ?? {};
     const { className: cancelClassName, ...restCancelProps } = cancelProps ?? {};
@@ -80,7 +92,9 @@ export function ConfirmDialog({
             {trigger ? <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger> : null}
             <AlertDialogContent className={contentClassName} {...restContentProps}>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>{title}</AlertDialogTitle>
+                    <AlertDialogTitle className={hideTitle || !title ? 'sr-only' : undefined}>
+                        {resolvedTitle}
+                    </AlertDialogTitle>
                     {description ? <AlertDialogDescription>{description}</AlertDialogDescription> : null}
                 </AlertDialogHeader>
                 {children}

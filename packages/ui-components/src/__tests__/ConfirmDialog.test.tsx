@@ -121,4 +121,35 @@ describe('ConfirmDialog', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Open controlled dialog' }));
         expect(onOpenChange).toHaveBeenCalledWith(true);
     });
+
+    it('supports visually hidden titles for accessibility', () => {
+        render(
+            <ConfirmDialog
+                open
+                onOpenChange={vi.fn()}
+                title="Delete media item"
+                hideTitle
+                description="This permanently removes the media file."
+            />,
+        );
+
+        const hiddenTitle = screen.getByText('Delete media item');
+        expect(hiddenTitle.className).toContain('sr-only');
+        expect(screen.getByText('This permanently removes the media file.')).toBeTruthy();
+    });
+
+    it('renders an accessible fallback title when title is omitted', () => {
+        render(
+            <ConfirmDialog
+                open
+                onOpenChange={vi.fn()}
+                a11yTitle="Confirm media deletion"
+                description="Continue to remove this item."
+            />,
+        );
+
+        const fallbackTitle = screen.getByText('Confirm media deletion');
+        expect(fallbackTitle.className).toContain('sr-only');
+        expect(screen.getByText('Continue to remove this item.')).toBeTruthy();
+    });
 });

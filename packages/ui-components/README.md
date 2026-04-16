@@ -12,7 +12,9 @@ A shared confirmation dialog wrapper built on top of `@ottabase/ui-shadcn`'s ale
 
 - `open?: boolean` - Controlled open state
 - `onOpenChange?: (open: boolean) => void` - Controlled state callback
-- `title: React.ReactNode` - Dialog title
+- `title?: React.ReactNode` - Dialog title (optional; defaults to a screen-reader-only title)
+- `hideTitle?: boolean` - Hide the title visually while keeping it for accessibility
+- `a11yTitle?: React.ReactNode` - Accessible fallback title when `title` is omitted (default: `Confirm action`)
 - `description?: React.ReactNode` - Optional supporting copy
 - `trigger?: React.ReactElement` - Optional trigger element for uncontrolled usage
 - `tone?: 'default' | 'destructive' | 'unsaved-changes'` - Confirmation behavior and styling
