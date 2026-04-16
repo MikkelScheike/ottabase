@@ -96,8 +96,19 @@ describe('Cropper', () => {
         expect(typeof c.setShape).toBe('function');
         expect(typeof c.setMaxHeight).toBe('function');
         expect(typeof c.setPresetsVisible).toBe('function');
+        expect(typeof c.setTransitions).toBe('function');
+        expect(typeof c.setTransitionDuration).toBe('function');
         expect(typeof c.getBlob).toBe('function');
         expect(typeof c.destroy).toBe('function');
+        c.destroy();
+    });
+
+    it('setTransitions and setTransitionDuration update options without resetting image', () => {
+        const el = document.createElement('div');
+        const c = new Cropper(el, { transitions: true, transitionDuration: 300 });
+        // Should not throw and should not require image to be loaded
+        expect(() => c.setTransitions(false)).not.toThrow();
+        expect(() => c.setTransitionDuration(500)).not.toThrow();
         c.destroy();
     });
 

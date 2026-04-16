@@ -812,6 +812,16 @@ export class Cropper {
         if (el) el.style.display = visible ? 'flex' : 'none';
     }
 
+    /** Enable or disable smooth transitions without resetting the loaded image */
+    setTransitions(enabled: boolean) {
+        this.options.transitions = enabled;
+    }
+
+    /** Set transition duration in ms without resetting the loaded image */
+    setTransitionDuration(ms: number) {
+        this.options.transitionDuration = ms;
+    }
+
     private updatePresetActive() {
         const ar = this.options.aspectRatio;
         const activeStyle = 'font-weight:600';

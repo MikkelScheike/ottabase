@@ -243,19 +243,7 @@ export function CropperDemoPage() {
                                 checked={transitions}
                                 onCheckedChange={(checked) => {
                                     setTransitions(checked);
-                                    // Recreate cropper with new transition setting
-                                    if (containerRef.current) {
-                                        cropperRef.current?.destroy();
-                                        cropperRef.current = new Cropper(containerRef.current, {
-                                            aspectRatio,
-                                            shape,
-                                            maxHeight,
-                                            aspectPresets: presetsVisible ? DEFAULT_ASPECT_PRESETS : false,
-                                            zoom,
-                                            transitions: checked,
-                                            transitionDuration,
-                                        });
-                                    }
+                                    cropperRef.current?.setTransitions(checked);
                                 }}
                             />
                         </div>
@@ -266,18 +254,7 @@ export function CropperDemoPage() {
                                 value={[transitionDuration]}
                                 onValueChange={([v]) => {
                                     setTransitionDuration(v ?? 300);
-                                    if (containerRef.current) {
-                                        cropperRef.current?.destroy();
-                                        cropperRef.current = new Cropper(containerRef.current, {
-                                            aspectRatio,
-                                            shape,
-                                            maxHeight,
-                                            aspectPresets: presetsVisible ? DEFAULT_ASPECT_PRESETS : false,
-                                            zoom,
-                                            transitions,
-                                            transitionDuration: v ?? 300,
-                                        });
-                                    }
+                                    cropperRef.current?.setTransitionDuration(v ?? 300);
                                 }}
                                 min={100}
                                 max={1000}

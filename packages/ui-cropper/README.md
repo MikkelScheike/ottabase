@@ -63,6 +63,8 @@ cropper.destroy();
 | `setShape(shape)`            | Set viewfinder: 'rect' \| 'circle'                                             |
 | `setMaxHeight(px)`           | Set max display height                                                         |
 | `setPresetsVisible(visible)` | Show/hide aspect preset buttons                                                |
+| `setTransitions(enabled)`    | Enable/disable smooth transitions without resetting the loaded image           |
+| `setTransitionDuration(ms)`  | Set transition duration in ms without resetting the loaded image               |
 | `getBlob(mime?, quality?)`   | Export cropped image as Blob                                                   |
 | `loadFromFile(file)`         | Load image from a File object                                                  |
 | `loadFromUrl(url)`           | Load image from URL (http, blob:, or data: base64)                             |
