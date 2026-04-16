@@ -180,6 +180,8 @@ const BeforeAfter: RenderFn<BeforeAfterData> = ({ data, className = '' }) => {
 
     const containerClasses = [
         'cdc-before-after__container',
+        // Opt out of Tailwind prose styles so `prose img` margins/border-radius don't affect inner images
+        'not-prose',
         isVertical && 'cdc-before-after__container--vertical',
         imageFit === 'cover' && 'cdc-before-after__container--cover',
     ]
@@ -187,7 +189,7 @@ const BeforeAfter: RenderFn<BeforeAfterData> = ({ data, className = '' }) => {
         .join(' ');
 
     return (
-        <figure className={`${className} cdc-content-block cdc-before-after`}>
+        <figure className={`${className} not-prose cdc-content-block cdc-before-after`}>
             <div
                 ref={containerRef}
                 className={containerClasses}

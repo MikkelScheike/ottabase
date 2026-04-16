@@ -1219,10 +1219,6 @@ details[open] > .cdc-faq-question .cdc-faq-chevron {
     object-fit: cover;
 }
 
-.cdc-before-after__container--cover .cdc-before-after__before img {
-    object-fit: cover;
-}
-
 /* After image: base layer */
 .cdc-before-after__after {
     display: block;
@@ -1246,8 +1242,15 @@ details[open] > .cdc-faq-question .cdc-faq-chevron {
 .cdc-before-after__before img {
     display: block;
     width: 100%;
-    height: 100%;
+    /* Contain mode (default): match the after image's natural rendering so both
+       images appear at the same scale and alignment. */
+    height: auto;
     margin: 0; /* Reset prose styles */
+}
+
+/* Cover mode: before image must fill the fixed-height container like the after image */
+.cdc-before-after__container--cover .cdc-before-after__before img {
+    height: 100%;
     object-fit: cover;
 }
 
