@@ -58,7 +58,10 @@ export async function applyStudioStateFromApi() {
     }
     studioStateFetchPromise = (async () => {
         try {
-            const state = await api<StudioState>('/api/blog/studio/state');
+            // Runtime blog state is mounted globally (public + authenticated visitors).
+            // skipUnauthorizedHandler avoids triggering the global /login redirect if this ever 401s,
+            // which previously caused an infinite redirect loop for unauthenticated blog visitors.
+            const state = await api<StudioState>('/api/blog/studio/state', { skipUnauthorizedHandler: true });
             await applyState(state);
             return state;
         } catch (err) {

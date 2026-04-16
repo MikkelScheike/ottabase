@@ -167,9 +167,9 @@ async function publicPostJson(
 }
 
 export async function handleBlogStudioState(context: BlogRouteContext): Promise<Response> {
-    const admin = await requireAdminAccess(context as any, { scope: 'either' });
-    if (admin instanceof Response) return admin;
-
+    // Public endpoint: the runtime needs active theme + enabled plugin config to render blog pages
+    // for every visitor (BlogStudioProvider is mounted globally). Mutation endpoints below remain
+    // admin-guarded. Default-row seeding is gated to admin callers to avoid public write side effects.
     const { env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
@@ -178,37 +178,47 @@ export async function handleBlogStudioState(context: BlogRouteContext): Promise<
     const appId = resolveAppId(context);
     const state = await StudioManager.getState(appId);
 
-    if (state.themes.length === 0) {
-        await OttablogTheme.create({
-            themeId: 'default',
-            name: 'Default',
-            description: 'Clean, modern default theme with dark mode support',
-            version: '1.0.0',
-            appId,
-            isActive: true,
-        });
-        await OttablogTheme.create({
-            themeId: 'minimal',
-            name: 'Minimal',
-            description: 'Clean, minimalist theme focused on typography and readability',
-            version: '1.0.0',
-            author: 'Ottabase',
-            appId,
-            isActive: false,
-        });
-    }
-    if (state.plugins.length === 0) {
-        await OttablogPlugin.create({
-            pluginId: 'content-injector-plugin',
-            name: 'Content Injector Plugin',
-            description: 'Injects custom content into posts',
-            appId,
-            enabled: false,
-        });
+    const needsSeeding = state.themes.length === 0 || state.plugins.length === 0;
+    if (needsSeeding) {
+        // Only seed default theme/plugin rows if the caller is an admin — avoids any unauthenticated
+        // visitor triggering DB writes. Non-admins get the current (possibly empty) state; the client
+        // falls back to in-memory defaults registered by registerBlogThemesAndPlugins().
+        const admin = await requireAdminAccess(context as any, { scope: 'either' });
+        if (!(admin instanceof Response)) {
+            if (state.themes.length === 0) {
+                await OttablogTheme.create({
+                    themeId: 'default',
+                    name: 'Default',
+                    description: 'Clean, modern default theme with dark mode support',
+                    version: '1.0.0',
+                    appId,
+                    isActive: true,
+                });
+                await OttablogTheme.create({
+                    themeId: 'minimal',
+                    name: 'Minimal',
+                    description: 'Clean, minimalist theme focused on typography and readability',
+                    version: '1.0.0',
+                    author: 'Ottabase',
+                    appId,
+                    isActive: false,
+                });
+            }
+            if (state.plugins.length === 0) {
+                await OttablogPlugin.create({
+                    pluginId: 'content-injector-plugin',
+                    name: 'Content Injector Plugin',
+                    description: 'Injects custom content into posts',
+                    appId,
+                    enabled: false,
+                });
+            }
+            const finalState = await StudioManager.getState(appId);
+            return jsonResponse(finalState);
+        }
     }
 
-    const finalState = await StudioManager.getState(appId);
-    return jsonResponse(finalState);
+    return jsonResponse(state);
 }
 
 export async function handleBlogStudioActivateTheme(context: BlogRouteContext): Promise<Response> {
