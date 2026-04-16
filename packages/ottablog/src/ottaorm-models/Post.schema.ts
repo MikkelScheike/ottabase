@@ -71,6 +71,10 @@ export const postsTable = sqliteTable(
             noFollow?: boolean;
         }>(),
 
+        // Custom meta as JSON - free-form key/value pairs for user-defined metadata.
+        // Not used by the blog engine itself; available for theme/plugin/custom rendering.
+        meta: text('meta', { mode: 'json' }).$type<Record<string, unknown>>(),
+
         // Private notes (author-only, not shown publicly) - EditorJS JSON format
         privateNotes: text('private_notes', { mode: 'json' }).$type<{
             time?: number;

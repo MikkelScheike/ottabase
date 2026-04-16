@@ -14,6 +14,7 @@ describe('ottablog models', () => {
             expect(Post.casts).toHaveProperty('updatedAt');
             expect(Post.casts).toHaveProperty('content');
             expect(Post.casts).toHaveProperty('seoMeta');
+            expect(Post.casts).toHaveProperty('meta');
             expect(Post.casts).toHaveProperty('isProtected');
         });
 
@@ -64,6 +65,17 @@ describe('ottablog models', () => {
             expect(fields.viewCount.type).toBe('number');
             expect(fields.viewCount.editable).toBe(false);
             expect(fields.viewCount.sortable).toBe(true);
+        });
+
+        it('should have meta json field configured as writable + editable', () => {
+            expect(Post.casts.meta).toBe('json');
+            const fields = Post.getFields();
+            expect(fields).toHaveProperty('meta');
+            expect(fields.meta.type).toBe('json');
+            expect(fields.meta.editable).toBe(true);
+            const writable = (Post as any).writable as { create: string[]; update: string[] };
+            expect(writable.create).toContain('meta');
+            expect(writable.update).toContain('meta');
         });
     });
 

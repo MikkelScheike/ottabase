@@ -161,6 +161,8 @@ post.generateExcerpt(); // Auto-generate from content
 - `heroImage` - Featured image JSON (`url`, `alt`, `caption`, `maxHeight`, `width`, `height`, `focalPoint`, `cfImageId`,
   `mediaId`)
 - `seoMeta` - SEO metadata JSON
+- `meta` - Free-form custom key/value metadata JSON (not used by the engine; available to themes/plugins/custom
+  renderers)
 - `privateNotes` - Author-only notes (EditorJS)
 - `footnotes` - Public footnotes (EditorJS)
 - `authorId` - Author user ID (references User model via `author()` relationship)

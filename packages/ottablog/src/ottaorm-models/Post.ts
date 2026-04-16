@@ -37,6 +37,7 @@ export class Post extends BaseModel {
         content: 'json' as const,
         heroImage: 'json' as const,
         seoMeta: 'json' as const,
+        meta: 'json' as const,
         privateNotes: 'json' as const,
         footnotes: 'json' as const,
         isFeatured: 'boolean' as const,
@@ -77,6 +78,7 @@ export class Post extends BaseModel {
             'seriesOrder',
             'heroImage',
             'seoMeta',
+            'meta',
             'privateNotes',
             'footnotes',
             'authorId',
@@ -107,6 +109,7 @@ export class Post extends BaseModel {
             'seriesOrder',
             'heroImage',
             'seoMeta',
+            'meta',
             'privateNotes',
             'footnotes',
             'authorId',
@@ -337,6 +340,21 @@ export class Post extends BaseModel {
             uiConfig: {
                 label: 'SEO Metadata',
                 description: 'SEO and social media metadata',
+            },
+            formConfig: {
+                visible: true,
+                fieldType: 'json',
+            },
+            tableConfig: {
+                visible: false,
+            },
+        },
+        meta: {
+            type: 'json',
+            editable: true,
+            uiConfig: {
+                label: 'Custom Meta',
+                description: 'Free-form key/value metadata (not used by the blog engine)',
             },
             formConfig: {
                 visible: true,
