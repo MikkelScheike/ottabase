@@ -1,5 +1,11 @@
 import { useTheme } from '@/ottabase/providers/ThemeContext';
-import { buildCSSVarMap, getThemeOrDefault, resolveTheme, THEME_PRESET_ITEMS } from '@ottabase/brand-engine';
+import {
+    buildCSSVarMap,
+    getThemeOrDefault,
+    injectFont,
+    resolveTheme,
+    THEME_PRESET_ITEMS,
+} from '@ottabase/brand-engine';
 import { OttaSelect, type OttaSelectItem } from '@ottabase/ottaselect';
 import {
     Button,
@@ -82,10 +88,19 @@ export function ThemingDemoPage() {
 
     useEffect(() => {
         if (!previewLayerRef.current) return;
+        // Apply CSS variables to the scoped preview container
         for (const [key, value] of Object.entries(previewVars)) {
             previewLayerRef.current.style.setProperty(key, String(value));
         }
-    }, [previewVars]);
+        // Load Google Font stylesheets for the selected theme so font-handwriting
+        // (and heading/body) actually render the correct typeface in the preview
+        const typo = previewResolved?.typography;
+        if (typo) {
+            [typo.heading?.url, typo.body?.url, typo.handwriting?.url]
+                .filter(Boolean)
+                .forEach((url) => injectFont(url as string));
+        }
+    }, [previewVars, previewResolved]);
 
     return (
         <div className="space-y-theme-section animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -273,8 +288,8 @@ export function ThemingDemoPage() {
                         <CardContent className="space-y-4">
                             <div>
                                 <h1 className="font-heading text-4xl font-extrabold lg:text-5xl">Heading 1</h1>
-                                <h2 className="font-heading text-3xl font-semibold first:mt-0">Heading 2</h2>
-                                <h3 className="font-heading text-2xl font-semibold">Heading 3</h3>
+                                <h2 className="font-heading text-3xl font-semibold mt-3">Heading 2</h2>
+                                <h3 className="font-heading text-2xl font-semibold mt-3">Heading 3</h3>
                                 <p className="leading-7 [&:not(:first-child)]:mt-6">
                                     The quick brown fox jumps over the lazy dog. This paragraph demonstrates the body
                                     font readability and line height settings derived from the base design system.
