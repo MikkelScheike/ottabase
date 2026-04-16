@@ -52,7 +52,7 @@ describe('blog init applyStudioStateFromApi', () => {
         await Promise.all([p1, p2]);
 
         expect(mockApi).toHaveBeenCalledTimes(1);
-        expect(mockApi).toHaveBeenCalledWith('/api/blog/studio/state');
+        expect(mockApi).toHaveBeenCalledWith('/api/blog/studio/state', { skipUnauthorizedHandler: true });
     });
 
     it('sequential calls after first completes should each make a new request', async () => {
