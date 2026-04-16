@@ -55,6 +55,8 @@ export interface HeroImage {
     width?: number;
     /** Height in pixels */
     height?: number;
+    /** Max display height in pixels (applied to the hero figure container) */
+    maxHeight?: number;
     /** Focal point for cropping (0-100 percentage) */
     focalPoint?: { x: number; y: number };
 }

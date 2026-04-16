@@ -83,6 +83,27 @@ describe('BlogRenderer', () => {
             );
         });
 
+        it('should render hero image with maxHeight applied', async () => {
+            const post = createMockPost({
+                heroImage: {
+                    url: 'https://example.com/image.jpg',
+                    alt: 'Test image',
+                    maxHeight: 400,
+                },
+            });
+            const { container } = render(<BlogRenderer post={post} showHeroImage />);
+
+            await waitFor(
+                () => {
+                    const figure = container.querySelector('figure');
+                    expect(figure).toBeTruthy();
+                    // maxHeight is applied as inline style on the figure
+                    expect(figure?.style.maxHeight).toBe('400px');
+                },
+                { timeout: 3000 },
+            );
+        });
+
         it('should accept showMetadata prop', async () => {
             const post = createMockPost();
             const { container } = render(<BlogRenderer post={post} showMetadata />);

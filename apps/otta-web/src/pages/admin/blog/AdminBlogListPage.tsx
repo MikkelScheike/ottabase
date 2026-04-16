@@ -4,10 +4,12 @@
  * Unified content management for all content types (blog, changelog, docs, news, announcements).
  * Lists all posts with filtering, status management, and CRUD operations.
  */
+import { TableSkeleton } from '@/components/LoadingSkeletons';
 import { ADMIN_LIST_QUERY_CONFIG } from '@/config/queryConfig';
 import { api } from '@/lib/api';
+import type { PaginatedResponse } from '@/lib/api-types';
 import { CONTENT_TYPES, formatShortDate, POST_STATUSES, type ContentType, type PostStatus } from '@ottabase/ottablog';
-import { createModelHooks } from '@ottabase/ottaorm/client';
+import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
 import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     AlertDialog,
@@ -29,6 +31,12 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
     Input,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import {
@@ -46,7 +54,7 @@ import {
     Star,
     Trash2,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BlogAdminNav } from './BlogAdminNav';
 
 /** Debounce delay for search input (ms) */
@@ -63,9 +71,10 @@ interface BlogPost {
     author?: { id: string; name: string | null; image: string | null } | null;
     isFeatured: boolean;
     readingTimeMinutes: number | null;
-    publishedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
+    publishAt: number | null;
+    publishedAt: number | null;
+    createdAt: number;
+    updatedAt: number;
 }
 
 const blogPostHooks = createModelHooks<BlogPost>({ entityName: 'posts' });
@@ -140,27 +149,57 @@ export function AdminBlogListPage() {
         whereClause.contentType = contentTypeFilter;
     }
 
+    const queryParams = useMemo(() => {
+        const params = new URLSearchParams();
+        params.set('page', String(currentPage));
+        params.set('perPage', String(POSTS_PER_PAGE));
+        params.set('orderBy', 'updatedAt');
+        params.set('orderDirection', 'desc');
+        if (debouncedSearch) {
+            params.set('search', debouncedSearch);
+        }
+        if (Object.keys(whereClause).length > 0) {
+            params.set('where', JSON.stringify(whereClause));
+        }
+        return params.toString();
+    }, [currentPage, debouncedSearch, statusFilter, contentTypeFilter]);
+
     // Fetch posts with pagination and server-side filtering + search
     const {
         data: postsResponse,
         isLoading,
         error,
-    } = blogPostHooks.useList(
-        {
-            where: Object.keys(whereClause).length > 0 ? whereClause : undefined,
-            search: debouncedSearch || undefined,
-            orderBy: 'updatedAt',
-            orderDirection: 'desc',
-            limit: POSTS_PER_PAGE,
-            offset: (currentPage - 1) * POSTS_PER_PAGE,
-        },
-        ADMIN_LIST_QUERY_CONFIG,
-    );
+    } = useApiQuery<PaginatedResponse<BlogPost>>({
+        entity: 'posts',
+        queryKey: ['admin-posts', queryParams],
+        endpoint: `/api/ottaorm/posts?${queryParams}`,
+        queryOptions: ADMIN_LIST_QUERY_CONFIG,
+    });
 
-    const posts = postsResponse || [];
+    const posts = postsResponse?.data ?? [];
+    const pagination = postsResponse?.pagination ?? null;
+    const totalCount = pagination?.total ?? posts.length;
+    const pageStart = pagination
+        ? pagination.total === 0
+            ? 0
+            : (pagination.page - 1) * pagination.perPage + 1
+        : posts.length === 0
+          ? 0
+          : (currentPage - 1) * POSTS_PER_PAGE + 1;
+    const pageEnd = pagination
+        ? Math.min(pagination.page * pagination.perPage, pagination.total)
+        : Math.min(currentPage * POSTS_PER_PAGE, posts.length);
 
     const updatePost = blogPostHooks.useUpdate();
     const deletePost = blogPostHooks.useDelete();
+
+    useEffect(() => {
+        if (!pagination) return;
+        const totalPages = Math.max(1, pagination.totalPages);
+        if (currentPage > totalPages) {
+            setCurrentPage(totalPages);
+        }
+    }, [pagination, currentPage]);
 
     // Toggle highlight/featured status
     const handleToggleFeatured = (id: string, currentValue: boolean) => {
@@ -348,134 +387,167 @@ export function AdminBlogListPage() {
                         {isLoading && <span className="text-sm font-normal text-muted-foreground">Loading...</span>}
                     </CardTitle>
                     <CardDescription>
-                        {posts.length} item{posts.length !== 1 ? 's' : ''}
+                        {totalCount} item{totalCount !== 1 ? 's' : ''}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {posts.length === 0 ? (
+                    {isLoading ? (
+                        <TableSkeleton rows={6} columns={6} />
+                    ) : posts.length === 0 ? (
                         <div className="text-center py-12">
                             <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
                             <h3 className="mt-4 text-lg font-semibold">No posts found</h3>
                             <p className="mt-2 text-muted-foreground">
-                                {posts.length === 0
-                                    ? 'Get started by creating your first post.'
+                                {totalCount === 0
+                                    ? 'Get started by creating your first one.'
                                     : 'Try adjusting your search or filters.'}
                             </p>
-                            {posts.length === 0 && (
+                            {totalCount === 0 && (
                                 <Button asChild className="mt-4">
-                                    <Link to="/admin/blog/new">
+                                    <Link
+                                        to="/admin/blog/new"
+                                        search={
+                                            contentTypeFilter !== 'all' ? { contentType: contentTypeFilter } : undefined
+                                        }
+                                    >
                                         <Plus className="mr-2 h-4 w-4" />
-                                        Create Post
+                                        {contentTypeFilter !== 'all'
+                                            ? `Create ${CONTENT_TYPE_TABS.find((t) => t.value === contentTypeFilter)?.label ?? 'Post'}`
+                                            : 'Create Post'}
                                     </Link>
                                 </Button>
                             )}
                         </div>
                     ) : (
-                        <div className="space-y-4">
-                            {posts.map((post) => (
-                                <div
-                                    key={post.id}
-                                    className="flex items-start justify-between gap-4 rounded-lg border p-4 transition-colors hover:bg-muted/50"
-                                >
-                                    <div className="flex-1 space-y-2">
-                                        <div className="flex items-center gap-2 flex-wrap">
-                                            <button
-                                                type="button"
-                                                title={post.isFeatured ? 'Remove highlight' : 'Highlight this post'}
-                                                className="shrink-0 text-muted-foreground hover:text-yellow-500 transition-colors"
-                                                onClick={() => handleToggleFeatured(post.id, post.isFeatured)}
-                                                disabled={updatePost.isPending}
-                                            >
-                                                {post.isFeatured ? (
-                                                    <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                                                ) : (
-                                                    <Star className="h-4 w-4" />
-                                                )}
-                                            </button>
-                                            <Link
-                                                to="/admin/blog/$postId/edit"
-                                                params={{ postId: post.id }}
-                                                className="font-semibold hover:underline"
-                                            >
-                                                {post.title}
-                                            </Link>
-                                            {getStatusBadge(post.status)}
-                                            {getContentTypeBadge(post.contentType)}
-                                        </div>
-
-                                        {post.excerpt && (
-                                            <p className="text-sm text-muted-foreground line-clamp-2">{post.excerpt}</p>
-                                        )}
-
-                                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                                            <span className="flex items-center gap-1">
-                                                <Clock className="h-3 w-3" />
-                                                {post.readingTimeMinutes ? `${post.readingTimeMinutes} min read` : '—'}
-                                            </span>
-                                            {post.author?.name && <span>by {post.author.name}</span>}
-                                            <span>
+                        <div className="rounded-md border">
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Title</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Type</TableHead>
+                                        <TableHead>Author</TableHead>
+                                        <TableHead>Publish</TableHead>
+                                        <TableHead className="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {posts.map((post) => (
+                                        <TableRow key={post.id} className="hover:bg-muted/50">
+                                            <TableCell className="max-w-[360px]">
+                                                <div className="flex items-start gap-3">
+                                                    <button
+                                                        type="button"
+                                                        title={
+                                                            post.isFeatured ? 'Remove highlight' : 'Highlight this post'
+                                                        }
+                                                        className="mt-1 shrink-0 text-muted-foreground hover:text-yellow-500 transition-colors"
+                                                        onClick={() => handleToggleFeatured(post.id, post.isFeatured)}
+                                                        disabled={updatePost.isPending}
+                                                    >
+                                                        {post.isFeatured ? (
+                                                            <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                                        ) : (
+                                                            <Star className="h-4 w-4" />
+                                                        )}
+                                                    </button>
+                                                    <div className="min-w-0">
+                                                        <Link
+                                                            to="/admin/blog/$postId/edit"
+                                                            params={{ postId: post.id }}
+                                                            className="font-medium hover:underline line-clamp-1"
+                                                        >
+                                                            {post.title}
+                                                        </Link>
+                                                        {post.excerpt && (
+                                                            <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                                                                {post.excerpt}
+                                                            </p>
+                                                        )}
+                                                        <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                                            <Clock className="h-3 w-3" />
+                                                            {post.readingTimeMinutes
+                                                                ? `${post.readingTimeMinutes} min read`
+                                                                : '—'}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{getStatusBadge(post.status)}</TableCell>
+                                            <TableCell>{getContentTypeBadge(post.contentType)}</TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
+                                                {post.author?.name || '—'}
+                                            </TableCell>
+                                            <TableCell className="text-sm text-muted-foreground">
                                                 {post.status === 'published'
                                                     ? `Published ${formatShortDate(post.publishedAt)}`
-                                                    : `Updated ${formatShortDate(post.updatedAt)}`}
-                                            </span>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex items-center gap-2">
-                                        <Button variant="ghost" size="icon" asChild>
-                                            <a
-                                                href={getPublicUrl(post.slug, post.contentType)}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                aria-label="View"
-                                            >
-                                                <Eye className="h-4 w-4" />
-                                            </a>
-                                        </Button>
-                                        <Button variant="ghost" size="icon" asChild>
-                                            <Link to="/admin/blog/$postId/edit" params={{ postId: post.id }}>
-                                                <Edit className="h-4 w-4" />
-                                            </Link>
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleDelete(post.id, post.title)}
-                                            disabled={deletePost.isPending}
-                                        >
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </div>
-                                </div>
-                            ))}
+                                                    : post.status === 'scheduled'
+                                                      ? `Scheduled ${formatShortDate(post.publishAt)}`
+                                                      : `Updated ${formatShortDate(post.updatedAt)}`}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <a
+                                                            href={getPublicUrl(post.slug, post.contentType)}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                            aria-label="View"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </a>
+                                                    </Button>
+                                                    <Button variant="ghost" size="icon" asChild>
+                                                        <Link
+                                                            to="/admin/blog/$postId/edit"
+                                                            params={{ postId: post.id }}
+                                                        >
+                                                            <Edit className="h-4 w-4" />
+                                                        </Link>
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(post.id, post.title)}
+                                                        disabled={deletePost.isPending}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-destructive" />
+                                                    </Button>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
                         </div>
                     )}
                 </CardContent>
             </Card>
 
             {/* Pagination Controls */}
-            {!isLoading && posts.length > 0 && (
+            {!isLoading && pagination && pagination.total > 0 && (
                 <div className="flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
-                        Showing {Math.min((currentPage - 1) * POSTS_PER_PAGE + 1, posts.length)} to{' '}
-                        {Math.min(currentPage * POSTS_PER_PAGE, posts.length)} results
+                        Showing {pageStart} to {pageEnd} of {pagination.total} results
                     </p>
                     <div className="flex items-center gap-2">
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
+                            disabled={pagination.page <= 1}
                         >
                             <ChevronLeft className="h-4 w-4 mr-1" />
                             Previous
                         </Button>
-                        <span className="text-sm text-muted-foreground px-2">Page {currentPage}</span>
+                        <span className="text-sm text-muted-foreground px-2">
+                            Page {pagination.page} of {pagination.totalPages}
+                        </span>
                         <Button
                             variant="outline"
                             size="sm"
                             onClick={() => setCurrentPage((p) => p + 1)}
-                            disabled={posts.length < POSTS_PER_PAGE}
+                            disabled={pagination.page >= pagination.totalPages}
                         >
                             Next
                             <ChevronRight className="h-4 w-4 ml-1" />

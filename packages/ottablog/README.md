@@ -111,6 +111,7 @@ const post = await Post.create({
         url: 'https://...',
         alt: 'Image alt text',
         caption: 'Image caption',
+        maxHeight: 600, // optional: clamp display height (100–3000 px)
     },
     seoMeta: {
         title: 'SEO Title',
@@ -157,7 +158,8 @@ post.generateExcerpt(); // Auto-generate from content
 - `categoryId` - Legacy single-category reference (prefer junction via PostCategoryLink)
 - `seriesId` - Series reference
 - `seriesOrder` - Position in series
-- `heroImage` - Featured image JSON
+- `heroImage` - Featured image JSON (`url`, `alt`, `caption`, `maxHeight`, `width`, `height`, `focalPoint`, `cfImageId`,
+  `mediaId`)
 - `seoMeta` - SEO metadata JSON
 - `privateNotes` - Author-only notes (EditorJS)
 - `footnotes` - Public footnotes (EditorJS)

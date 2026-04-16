@@ -167,12 +167,15 @@ async function publicPostJson(
 }
 
 export async function handleBlogStudioState(context: BlogRouteContext): Promise<Response> {
-    const { request, env } = context;
+    const admin = await requireAdminAccess(context as any, { scope: 'either' });
+    if (admin instanceof Response) return admin;
+
+    const { env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const appId: string | null = null;
+    const appId = resolveAppId(context);
     const state = await StudioManager.getState(appId);
 
     if (state.themes.length === 0) {
@@ -209,12 +212,15 @@ export async function handleBlogStudioState(context: BlogRouteContext): Promise<
 }
 
 export async function handleBlogStudioActivateTheme(context: BlogRouteContext): Promise<Response> {
+    const admin = await requireAdminAccess(context as any, { scope: 'either' });
+    if (admin instanceof Response) return admin;
+
     const { request, env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const appId: string | null = null;
+    const appId = resolveAppId(context);
     const body = await readJson<{ themeId: string }>(request);
     const themeId = body?.themeId;
     if (!themeId) {
@@ -238,12 +244,15 @@ export async function handleBlogStudioActivateTheme(context: BlogRouteContext): 
 }
 
 export async function handleBlogStudioPluginEnable(context: BlogRouteContext): Promise<Response> {
+    const admin = await requireAdminAccess(context as any, { scope: 'either' });
+    if (admin instanceof Response) return admin;
+
     const { request, env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const appId: string | null = null;
+    const appId = resolveAppId(context);
     const body = await readJson<{ pluginId: string; enabled: boolean }>(request);
     const pluginId = body?.pluginId;
     const enabled = body?.enabled ?? true;
@@ -268,12 +277,15 @@ export async function handleBlogStudioPluginEnable(context: BlogRouteContext): P
 }
 
 export async function handleBlogStudioPluginConfig(context: BlogRouteContext): Promise<Response> {
+    const admin = await requireAdminAccess(context as any, { scope: 'either' });
+    if (admin instanceof Response) return admin;
+
     const { request, env } = context;
     const d1Error = ensureD1(env);
     if (d1Error) return d1Error;
     registerConnection('default', createD1Driver(env.OBCF_D1));
 
-    const appId: string | null = null;
+    const appId = resolveAppId(context);
     const body = await readJson<{ pluginId: string; config: Record<string, unknown> }>(request);
     const pluginId = body?.pluginId;
     const config = body?.config;

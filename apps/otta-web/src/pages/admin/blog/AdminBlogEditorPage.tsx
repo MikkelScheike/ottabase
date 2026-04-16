@@ -8,12 +8,13 @@ import { UnsavedChangesDialog } from '@/components/editor/UnsavedChangesDialog';
 import { MediaLibraryBrowser } from '@/components/media-library/MediaLibraryBrowser';
 import { SERIES_LIST_QUERY_CONFIG, VERSION_HISTORY_QUERY_CONFIG } from '@/config/queryConfig';
 import { useEditorLeaveGuard } from '@/hooks/useEditorLeaveGuard';
-import { api } from '@/lib/api';
+import { api, isApiError } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import {
     CONTENT_TYPES,
     formatDate,
+    formatShortDate,
     generateSlug,
     POST_STATUSES,
     type ContentType,
@@ -116,9 +117,12 @@ interface BlogPost {
     allowComments: boolean;
     isProtected?: boolean;
     passwordHint?: string | null;
-    publishedAt: string | null;
+    publishAt: number | null;
+    publishedAt: number | null;
     maxVersionsToKeep: number | null;
     wordCount: number | null;
+    createdAt: number;
+    updatedAt: number;
     appId: string | null;
     organizationId: string | null;
     userId: string | null;
@@ -273,8 +277,8 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
     const [isProtected, setIsProtected] = useState(initialData?.isProtected ?? false);
     const [passwordHint, setPasswordHint] = useState(initialData?.passwordHint ?? '');
     const [password, setPassword] = useState(''); // transient: only sent when setting/changing
-    const [publishedAt, setPublishedAt] = useState(
-        initialData?.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '',
+    const [publishAt, setPublishAt] = useState(
+        initialData?.publishAt ? new Date(initialData.publishAt).toISOString().slice(0, 16) : '',
     );
 
     // Hero image state
@@ -475,7 +479,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         setAllowComments(initialData.allowComments ?? true);
         setIsProtected(initialData.isProtected ?? false);
         setPasswordHint(initialData.passwordHint ?? '');
-        setPublishedAt(initialData.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '');
+        setPublishAt(initialData.publishAt ? new Date(initialData.publishAt).toISOString().slice(0, 16) : '');
         setHeroImage(initialData.heroImage ?? null);
         setSeoTitle(initialData.seoMeta?.title ?? '');
         setSeoDescription(initialData.seoMeta?.description ?? '');
@@ -517,8 +521,8 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
             isProtected === (initialData.isProtected ?? false) &&
             (passwordHint ?? '') === (initialData.passwordHint ?? '') &&
             !password &&
-            (publishedAt || '') ===
-                (initialData.publishedAt ? new Date(initialData.publishedAt).toISOString().slice(0, 16) : '') &&
+            (publishAt || '') ===
+                (initialData.publishAt ? new Date(initialData.publishAt).toISOString().slice(0, 16) : '') &&
             (seriesId ?? '') === (initialData.seriesId ?? '') &&
             (seriesOrder ?? '') === (initialData.seriesOrder ?? '') &&
             (maxVersionsToKeep ?? '') === (initialData.maxVersionsToKeep ?? '') &&
@@ -550,7 +554,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         status,
         isFeatured,
         allowComments,
-        publishedAt,
+        publishAt,
         seriesId,
         seriesOrder,
         maxVersionsToKeep,
@@ -617,13 +621,15 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         setActiveTab('content');
     };
 
+    const previewPublishedAt = publishAt ? new Date(publishAt).getTime() : (initialData?.publishedAt ?? null);
+
     const previewPost = previewVersion
         ? {
               title: previewVersion.title,
               excerpt: previewVersion.excerpt,
               content: previewVersion.content,
               footnotes: previewVersion.footnotes,
-              publishedAt,
+              publishedAt: previewPublishedAt,
               // Author comes from post or logged-in user
               author: initialData?.author || (user ? { id: user.id, name: user.name, image: user.image } : null),
               heroImage,
@@ -851,6 +857,19 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         }
     };
 
+    // Update hero image max height (100–3000 px)
+    const handleHeroMaxHeightChange = (value: string) => {
+        if (heroImage) {
+            if (!value) {
+                setHeroImage({ ...heroImage, maxHeight: undefined });
+                return;
+            }
+            const parsed = Number(value);
+            const maxHeight = Number.isFinite(parsed) ? Math.min(3000, Math.max(100, parsed)) : undefined;
+            setHeroImage({ ...heroImage, maxHeight });
+        }
+    };
+
     // Calculate word count from EditorJS content
     const calculateWordCount = (data: OutputData | null): number => {
         if (!data?.blocks) return 0;
@@ -946,13 +965,31 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                 setSlug(baseSlug);
             }
 
-            const postData: Partial<BlogPost> = {
+            const publishAtValue = publishAt ? new Date(publishAt).getTime() : null;
+            const shouldAutoSchedule = Boolean(publishAtValue) && (status === 'draft' || status === 'scheduled');
+            const resolvedStatus: PostStatus = publishNow ? 'published' : shouldAutoSchedule ? 'scheduled' : status;
+
+            if (resolvedStatus === 'scheduled' && !publishAtValue) {
+                setAlertDialog({
+                    open: true,
+                    title: 'Validation Error',
+                    message: 'Scheduled posts must include a publish date.',
+                });
+                return;
+            }
+
+            const shouldSetPublishedAt = publishNow || (resolvedStatus === 'published' && !initialData?.publishedAt);
+            const publishedAtValue = shouldSetPublishedAt ? Date.now() : undefined;
+            const publishAtPayload = publishNow || resolvedStatus !== 'scheduled' ? null : publishAtValue;
+            const expectedUpdatedAt = initialData?.updatedAt ? new Date(initialData.updatedAt).getTime() : undefined;
+
+            const postData: Partial<BlogPost> & { expectedUpdatedAt?: number } = {
                 title,
                 slug: baseSlug,
                 excerpt: excerpt || undefined,
                 content: content || undefined,
                 contentType,
-                status: publishNow ? 'published' : status,
+                status: resolvedStatus,
                 heroImage,
                 seoMeta,
                 privateNotes: privateNotes || undefined,
@@ -962,8 +999,9 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                 isProtected,
                 passwordHint: passwordHint || undefined,
                 ...(isProtected && password.trim() ? { password: password.trim() } : {}),
-                publishedAt:
-                    publishNow && !publishedAt ? Date.now() : publishedAt ? new Date(publishedAt).getTime() : undefined,
+                publishAt: publishAtPayload,
+                ...(publishedAtValue !== undefined ? { publishedAt: publishedAtValue } : {}),
+                ...(expectedUpdatedAt !== undefined ? { expectedUpdatedAt } : {}),
                 seriesId: seriesId || undefined,
                 seriesOrder: seriesOrder || undefined,
                 maxVersionsToKeep: maxVersionsToKeep || undefined,
@@ -1055,6 +1093,14 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
             }
         } catch (error) {
             console.error('Failed to save post:', error);
+            if (isApiError(error) && error.status === 409) {
+                setAlertDialog({
+                    open: true,
+                    title: 'Update conflict',
+                    message: 'This post was updated elsewhere. Refresh to load the latest version and try again.',
+                });
+                return;
+            }
             setAlertDialog({ open: true, title: 'Error', message: 'Failed to save post. Please try again.' });
         }
     };
@@ -1505,6 +1551,22 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                                     placeholder="Describe the image..."
                                 />
                             </div>
+
+                            <div className="space-y-2">
+                                <Label>Max Height (px)</Label>
+                                <Input
+                                    type="number"
+                                    min={100}
+                                    max={3000}
+                                    value={heroImage?.maxHeight ?? ''}
+                                    onChange={(e) => handleHeroMaxHeightChange(e.target.value)}
+                                    placeholder="Default (natural height)"
+                                    disabled={!heroImage?.url}
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    100–3000 px. Leave blank to use natural height.
+                                </p>
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -1566,12 +1628,17 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Publish Date</Label>
+                                <Label>Schedule Publish</Label>
                                 <Input
                                     type="datetime-local"
-                                    value={publishedAt}
-                                    onChange={(e) => setPublishedAt(e.target.value)}
+                                    value={publishAt}
+                                    onChange={(e) => setPublishAt(e.target.value)}
                                 />
+                                {initialData?.publishedAt && (
+                                    <p className="text-xs text-muted-foreground">
+                                        Published {formatShortDate(initialData.publishedAt)}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="space-y-3 pt-2">
@@ -2026,7 +2093,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                                 {previewPost.publishedAt && (
                                     <div className="flex items-center gap-1">
                                         <Calendar className="h-4 w-4" />
-                                        <time dateTime={previewPost.publishedAt}>
+                                        <time dateTime={new Date(previewPost.publishedAt).toISOString()}>
                                             {formatDate(previewPost.publishedAt)}
                                         </time>
                                     </div>

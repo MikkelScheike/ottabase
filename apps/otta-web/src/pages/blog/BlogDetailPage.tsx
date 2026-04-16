@@ -6,18 +6,19 @@
  */
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_DETAIL_QUERY_CONFIG, BLOG_LIST_QUERY_CONFIG } from '@/config/queryConfig';
+import { useComments, useCreateComment, type CommentType } from '@/hooks/commentHooks';
 import { api, isApiError } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useBlogStudio } from '@/ottabase/blog/BlogStudioContext';
 import type { PostAuthor } from '@/types/blog';
 import { MediaLightboxProvider } from '@ottabase/medialibrary';
-import { BlogRenderer, formatDate, type BlogPostData } from '@ottabase/ottablog';
+import { BlogRenderer, formatDate, formatShortDate, type BlogPostData } from '@ottabase/ottablog';
 import type { OutputData } from '@ottabase/ottaeditor';
 import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
-import { Badge, Button, Input } from '@ottabase/ui-shadcn';
+import { Avatar, AvatarFallback, AvatarImage, Badge, Button, Input, Skeleton, Textarea } from '@ottabase/ui-shadcn';
 import { Link, useParams } from '@tanstack/react-router';
 import { ArrowLeft, ArrowRight, ChevronLeft, FolderTree, Loader2, Lock, Pencil, Tag } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 interface BlogPost {
     id: string;
@@ -44,6 +45,7 @@ interface BlogPost {
     readingTimeMinutes: number | null;
     wordCount: number | null;
     isFeatured: boolean;
+    allowComments: boolean;
     isProtected?: boolean;
     passwordHint?: string | null;
     publishedAt: string | null;
@@ -68,6 +70,16 @@ const blogSeriesHooks = createModelHooks<BlogSeries>({
     entityName: 'series',
 });
 
+const COMMENTS_TARGET_TYPE = 'post';
+
+function getInitials(name?: string | null): string {
+    if (!name) return '??';
+    const parts = name.trim().split(' ').filter(Boolean);
+    if (parts.length === 0) return '??';
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return `${parts[0][0] ?? ''}${parts[parts.length - 1][0] ?? ''}`.toUpperCase();
+}
+
 export function BlogDetailPage() {
     const params = useParams({ strict: false });
     const slug = (params as { slug?: string }).slug;
@@ -77,6 +89,10 @@ export function BlogDetailPage() {
     const [password, setPassword] = useState('');
     const [unlockError, setUnlockError] = useState<string | null>(null);
     const [isUnlocking, setIsUnlocking] = useState(false);
+    const [commentDraft, setCommentDraft] = useState('');
+    const [replyingToId, setReplyingToId] = useState<string | null>(null);
+    const [replyText, setReplyText] = useState('');
+    const [commentError, setCommentError] = useState<string | null>(null);
 
     // useApiQuery with entity:'posts' namespaces the key as ['posts', 'by-slug', slug].
     // Any mutation on the posts entity auto-busts this cache via the global observer.
@@ -115,6 +131,46 @@ export function BlogDetailPage() {
     const prevPost = currentIndex > 0 ? seriesPosts[currentIndex - 1] : null;
     const nextPost = currentIndex < seriesPosts.length - 1 ? seriesPosts[currentIndex + 1] : null;
 
+    const postForComments = unlockedPost ?? post;
+    const isLocked = !!(postForComments?.isProtected && !postForComments?.content);
+    const allowComments = postForComments?.allowComments ?? true;
+    const commentsTargetId = post?.id ?? unlockedPost?.id ?? null;
+
+    const createComment = useCreateComment();
+    const {
+        data: commentsData,
+        isLoading: isLoadingComments,
+        error: commentsError,
+        refetch: refetchComments,
+    } = useComments(
+        commentsTargetId
+            ? {
+                  where: { targetType: COMMENTS_TARGET_TYPE, targetId: commentsTargetId, status: 'active' },
+                  orderBy: 'createdAt',
+                  orderDirection: 'asc',
+              }
+            : undefined,
+        {
+            enabled: Boolean(commentsTargetId) && !isLocked && allowComments,
+        },
+    );
+
+    const comments = useMemo<CommentType[]>(() => {
+        if (Array.isArray(commentsData)) return commentsData;
+        return (commentsData as { data?: CommentType[] } | undefined)?.data ?? [];
+    }, [commentsData]);
+
+    const commentsByParent = useMemo(() => {
+        const map = new Map<string | null, CommentType[]>();
+        for (const comment of comments) {
+            const parentId = comment.parentId ?? null;
+            const list = map.get(parentId) ?? [];
+            list.push(comment);
+            map.set(parentId, list);
+        }
+        return map;
+    }, [comments]);
+
     // Loading state
     if (isLoadingPost) {
         return (
@@ -143,7 +199,6 @@ export function BlogDetailPage() {
     }
 
     const displayPost = unlockedPost ?? post;
-    const isLocked = !!(displayPost.isProtected && !displayPost.content);
 
     const handleUnlock = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -167,6 +222,64 @@ export function BlogDetailPage() {
         } finally {
             setIsUnlocking(false);
         }
+    };
+
+    const handleSubmitComment = () => {
+        if (!commentDraft.trim() || !commentsTargetId) return;
+        if (!user?.id) {
+            setCommentError('Please sign in to comment.');
+            return;
+        }
+        setCommentError(null);
+        createComment.mutate(
+            {
+                body: commentDraft.trim(),
+                targetType: COMMENTS_TARGET_TYPE,
+                targetId: commentsTargetId,
+            },
+            {
+                onSuccess: () => {
+                    setCommentDraft('');
+                    refetchComments();
+                },
+                onError: (err) => {
+                    setCommentError(err instanceof Error ? err.message : 'Failed to post comment.');
+                },
+            },
+        );
+    };
+
+    const handleSubmitReply = (parent: CommentType) => {
+        if (!replyText.trim() || !commentsTargetId) return;
+        if (!user?.id) {
+            setCommentError('Please sign in to reply.');
+            return;
+        }
+        setCommentError(null);
+        createComment.mutate(
+            {
+                body: replyText.trim(),
+                targetType: COMMENTS_TARGET_TYPE,
+                targetId: commentsTargetId,
+                parentId: parent.id,
+                depth: (parent.depth ?? 0) + 1,
+            },
+            {
+                onSuccess: () => {
+                    setReplyText('');
+                    setReplyingToId(null);
+                    refetchComments();
+                },
+                onError: (err) => {
+                    setCommentError(err instanceof Error ? err.message : 'Failed to post reply.');
+                },
+            },
+        );
+    };
+
+    const toggleReply = (commentId: string) => {
+        setReplyingToId((current) => (current === commentId ? null : commentId));
+        setReplyText('');
     };
 
     // Convert post to BlogPostData format
@@ -203,6 +316,68 @@ export function BlogDetailPage() {
     const canonicalUrl =
         displayPost.seoMeta?.canonicalUrl || (typeof window !== 'undefined' ? window.location.href : undefined);
     const ogImage = displayPost.seoMeta?.ogImage || displayPost.heroImage?.url;
+
+    const renderComments = (parentId: string | null, depth: number): React.ReactNode => {
+        const items = commentsByParent.get(parentId) ?? [];
+        if (items.length === 0) return null;
+
+        return items.map((comment) => {
+            const indentClass = depth === 0 ? '' : depth === 1 ? 'ml-6' : depth === 2 ? 'ml-12' : 'ml-16';
+            const isReplying = replyingToId === comment.id;
+
+            return (
+                <div key={comment.id} className={`border-t first:border-t-0 py-4 ${indentClass}`}>
+                    <div className="flex gap-3">
+                        <Avatar className="h-8 w-8">
+                            <AvatarImage src={comment._user?.image || undefined} />
+                            <AvatarFallback>{getInitials(comment._user?.name)}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1">
+                            <div className="flex items-center gap-2 text-sm">
+                                <span className="font-medium">{comment._user?.name || 'Anonymous'}</span>
+                                <span className="text-xs text-muted-foreground">
+                                    {formatShortDate(comment.createdAt)}
+                                </span>
+                            </div>
+                            <p className="mt-2 text-sm whitespace-pre-wrap text-foreground">{comment.body}</p>
+                            {user?.id && depth < 3 && (
+                                <button
+                                    type="button"
+                                    className="mt-2 text-xs text-muted-foreground hover:text-foreground"
+                                    onClick={() => toggleReply(comment.id)}
+                                >
+                                    {isReplying ? 'Cancel reply' : 'Reply'}
+                                </button>
+                            )}
+                            {isReplying && (
+                                <div className="mt-3 space-y-2">
+                                    <Textarea
+                                        placeholder="Write a reply..."
+                                        value={replyText}
+                                        onChange={(e) => setReplyText(e.target.value)}
+                                        className="min-h-[80px] text-sm"
+                                    />
+                                    <div className="flex justify-end">
+                                        <Button
+                                            size="sm"
+                                            onClick={() => handleSubmitReply(comment)}
+                                            disabled={!replyText.trim() || createComment.isPending}
+                                        >
+                                            {createComment.isPending ? (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            ) : null}
+                                            Post reply
+                                        </Button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    {renderComments(comment.id, depth + 1)}
+                </div>
+            );
+        });
+    };
 
     return (
         <div className="max-w-4xl mx-auto px-4 py-8">
@@ -351,6 +526,82 @@ export function BlogDetailPage() {
                                 </Link>
                             ))}
                         </div>
+                    )}
+
+                    {allowComments && (
+                        <section className="mt-12 border-t pt-8">
+                            <div className="flex items-center justify-between">
+                                <h2 className="text-xl font-semibold">Comments</h2>
+                                <span className="text-sm text-muted-foreground">
+                                    {comments.length} comment{comments.length !== 1 ? 's' : ''}
+                                </span>
+                            </div>
+
+                            {commentError && (
+                                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                                    {commentError}
+                                </div>
+                            )}
+
+                            {!user?.id && (
+                                <div className="mt-4 rounded-lg border p-4 text-sm text-muted-foreground">
+                                    <Link to="/login" className="underline">
+                                        Sign in
+                                    </Link>{' '}
+                                    to join the discussion.
+                                </div>
+                            )}
+
+                            <div className="mt-4 space-y-2">
+                                <Textarea
+                                    placeholder="Write a comment..."
+                                    value={commentDraft}
+                                    onChange={(e) => setCommentDraft(e.target.value)}
+                                    className="min-h-[100px] text-sm"
+                                    disabled={!user?.id}
+                                />
+                                <div className="flex justify-end">
+                                    <Button
+                                        size="sm"
+                                        onClick={handleSubmitComment}
+                                        disabled={!commentDraft.trim() || !user?.id || createComment.isPending}
+                                    >
+                                        {createComment.isPending ? (
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        ) : null}
+                                        Post comment
+                                    </Button>
+                                </div>
+                            </div>
+
+                            {commentsError && (
+                                <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                                    {commentsError.message || 'Failed to load comments.'}
+                                </div>
+                            )}
+
+                            <div className="mt-6 rounded-lg border bg-card">
+                                {isLoadingComments ? (
+                                    <div className="space-y-4 p-4">
+                                        {[1, 2, 3].map((i) => (
+                                            <div key={i} className="flex gap-3">
+                                                <Skeleton className="h-8 w-8 rounded-full" />
+                                                <div className="flex-1 space-y-2">
+                                                    <Skeleton className="h-4 w-24" />
+                                                    <Skeleton className="h-4 w-full" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : comments.length === 0 ? (
+                                    <p className="p-6 text-center text-sm text-muted-foreground">
+                                        No comments yet. Be the first to comment.
+                                    </p>
+                                ) : (
+                                    <div className="p-4">{renderComments(null, 0)}</div>
+                                )}
+                            </div>
+                        </section>
                     )}
                 </>
             )}

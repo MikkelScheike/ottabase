@@ -1,7 +1,7 @@
 /**
- * Admin Blog Studio Page
+ * Admin Content Studio Page
  *
- * Manage blog themes and plugins
+ * Manage content themes and plugins
  */
 import type { StudioPluginState, StudioThemeState } from '@ottabase/ottablog';
 import { useApiMutation, useApiQuery } from '@ottabase/ottaorm/client';
@@ -209,7 +209,7 @@ export function AdminBlogStudioPage() {
             <BlogAdminNav />
 
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">Content Theme</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Content Studio</h1>
                 <p className="text-muted-foreground mt-1">Manage themes and plugins for your content.</p>
             </div>
 

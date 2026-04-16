@@ -13,7 +13,7 @@ const NAV_ITEMS = [
     { to: '/admin/blog/tags', label: 'Tag', icon: Tag },
     { to: '/admin/blog/categories', label: 'Category', icon: FolderTree },
     { to: '/admin/blog/series', label: 'Series', icon: Layers },
-    { to: '/admin/blog/studio', label: 'Theme', icon: Palette },
+    { to: '/admin/blog/studio', label: 'Content Studio', icon: Palette },
 ] as const;
 
 export function BlogAdminNav() {

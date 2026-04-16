@@ -54,6 +54,7 @@ export const postsTable = sqliteTable(
             cfImageId?: string;
             width?: number;
             height?: number;
+            maxHeight?: number;
             focalPoint?: { x: number; y: number };
         }>(),
 

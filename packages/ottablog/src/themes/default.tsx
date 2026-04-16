@@ -40,7 +40,10 @@ export const defaultTheme: Theme = {
         renderHero: (post, props) => {
             if (!props.showHeroImage || !post.heroImage?.url) return null;
             return (
-                <figure className={`${props.className || ''} ${defaultTheme.config?.classes?.hero || ''}`}>
+                <figure
+                    className={`${props.className || ''} ${defaultTheme.config?.classes?.hero || ''} ${post.heroImage.maxHeight ? 'overflow-hidden' : ''}`}
+                    style={post.heroImage.maxHeight ? { maxHeight: `${post.heroImage.maxHeight}px` } : undefined}
+                >
                     <img
                         src={post.heroImage.url}
                         alt={post.heroImage.alt || post.title}

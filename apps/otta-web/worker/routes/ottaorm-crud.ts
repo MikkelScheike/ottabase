@@ -56,6 +56,42 @@ export async function handleOttaormCrud(context: OttaormCrudContext): Promise<Re
         crudRequest.body &&
         (crudRequest.method === 'POST' || crudRequest.method === 'PATCH')
     ) {
+        if (crudRequest.method === 'PATCH' && crudRequest.id) {
+            const expectedUpdatedAt = (crudRequest.body as any).expectedUpdatedAt;
+            if (expectedUpdatedAt !== undefined) {
+                const expectedTimestamp =
+                    expectedUpdatedAt instanceof Date ? expectedUpdatedAt.getTime() : Number(expectedUpdatedAt);
+
+                if (!Number.isFinite(expectedTimestamp)) {
+                    return errorResponse('expectedUpdatedAt must be a valid timestamp', 400, {
+                        code: 'VALIDATION_ERROR',
+                        fieldErrors: { expectedUpdatedAt: ['Invalid timestamp'] },
+                    });
+                }
+
+                const existing = await Post.find(crudRequest.id);
+                if (!existing) {
+                    return errorResponse('Post not found', 404, { code: 'NOT_FOUND' });
+                }
+
+                const currentUpdatedAt = existing.get('updatedAt');
+                const currentTimestamp =
+                    currentUpdatedAt instanceof Date ? currentUpdatedAt.getTime() : Number(currentUpdatedAt);
+
+                if (!Number.isFinite(currentTimestamp) || currentTimestamp !== expectedTimestamp) {
+                    return errorResponse('Post was updated by another session', 409, {
+                        code: 'CONFLICT',
+                        details: {
+                            expectedUpdatedAt: expectedTimestamp,
+                            currentUpdatedAt: currentTimestamp,
+                        },
+                    });
+                }
+            }
+
+            delete (crudRequest.body as any).expectedUpdatedAt;
+        }
+
         const isProtected = (crudRequest.body as any).isProtected;
         const password = (crudRequest.body as any).password;
         if (isProtected === true && typeof password !== 'string') {

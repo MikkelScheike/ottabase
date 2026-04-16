@@ -2,6 +2,7 @@
 // Brand Kits list – Create, Clone, navigate to detail
 // ---------------------------------------------------------------------------
 
+import { useApiQuery } from '@ottabase/ottaorm/client';
 import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     Badge,
@@ -16,9 +17,16 @@ import {
     DropdownMenuItem,
     DropdownMenuTrigger,
 } from '@ottabase/ui-shadcn';
-import { IconCopy, IconDotsVertical, IconGitBranch, IconPalette, IconPlus, IconSettings2 } from '@tabler/icons-react';
+import {
+    IconAlertTriangle,
+    IconCopy,
+    IconDotsVertical,
+    IconGitBranch,
+    IconPalette,
+    IconPlus,
+    IconSettings2,
+} from '@tabler/icons-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useApiQuery } from '@ottabase/ottaorm/client';
 import { Link, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -161,6 +169,16 @@ function KitCard({
                     <div className="flex items-center gap-2">
                         <h3 className="font-semibold truncate">{kit.name}</h3>
                         {isDefaultKit && <Badge variant="secondary">Default</Badge>}
+                        {!kit.appId && (
+                            <Badge
+                                variant="outline"
+                                className="text-amber-600 border-amber-400 dark:text-amber-400 dark:border-amber-600 flex items-center gap-1"
+                                title="This Brand Kit is not linked to any app (appId is null)"
+                            >
+                                <IconAlertTriangle className="h-3 w-3" />
+                                No App
+                            </Badge>
+                        )}
                     </div>
                     <p className="text-sm text-muted-foreground truncate">{kit.brandName}</p>
                     {kit.parentBrandKitName && (

@@ -7,6 +7,7 @@ TanStack Router + Query template with automated OttaORM migrations and Cloudflar
 - **TanStack Router** - Type-safe routing with file-based structure
 - **TanStack Query** - Powerful async state management
 - **OttaORM** - Fat models with automated migrations
+- **Ottablog CMS** - Feature-rich content package with rich content blocks and CMS features
 - **Auth.js** - OAuth, Magic Link, and Credentials authentication
 - **Vite** - Fast development server and optimized builds
 - **Cloudflare Workers** - D1, KV, R2, Queues, Rate Limiting, Durable Objects
