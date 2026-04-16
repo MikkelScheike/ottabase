@@ -43,17 +43,21 @@ export function MigrationStatusPage() {
         Unknown: true,
     });
     const [secretInput, setSecretInput] = useState('');
+    const [allowDestructive, setAllowDestructive] = useState(false);
 
     // Call /api/ottaorm/init via fetch so we can handle 401 (MIGRATION_SECRET) locally
     // without triggering the global API client's "session expired" redirect.
-    const runInit = useCallback(async (secret?: string) => {
+    const runInit = useCallback(async (secret?: string, destructive?: boolean) => {
         setInitLoading(true);
         setInitError(null);
         try {
             const res = await fetch('/api/ottaorm/init', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(secret ? { secret } : {}),
+                body: JSON.stringify({
+                    ...(secret ? { secret } : {}),
+                    ...(destructive ? { allowDestructive: true } : {}),
+                }),
                 credentials: 'include',
             });
             const data = await res.json().catch(() => ({}));
@@ -177,16 +181,43 @@ export function MigrationStatusPage() {
                 <p className="text-sm text-muted-foreground mt-1">
                     This ensures all schemas (core, app, and packages) are migrated properly.
                 </p>
-                <div className="mt-4 flex max-w-xl items-center gap-2">
-                    <Input
-                        type="password"
-                        placeholder="Migration Secret (required for production)"
-                        value={secretInput}
-                        onChange={(e) => setSecretInput(e.target.value)}
-                        spellCheck={false}
-                        autoComplete="off"
-                    />
-                    <Button onClick={() => runInit(secretInput || undefined)}>Run Migration</Button>
+                <div className="mt-4 space-y-3 max-w-xl">
+                    <div className="flex items-center gap-2">
+                        <Input
+                            type="password"
+                            placeholder="Migration Secret (required for production)"
+                            value={secretInput}
+                            onChange={(e) => setSecretInput(e.target.value)}
+                            spellCheck={false}
+                            autoComplete="off"
+                        />
+                        <Button onClick={() => runInit(secretInput || undefined, allowDestructive)}>
+                            Run Migration
+                        </Button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Checkbox
+                            id="allow-destructive"
+                            checked={allowDestructive}
+                            onCheckedChange={(checked) => setAllowDestructive(checked === true)}
+                        />
+                        <Label htmlFor="allow-destructive" className="text-sm cursor-pointer flex items-center gap-2">
+                            <span>Allow destructive actions</span>
+                            <span className="text-xs text-muted-foreground">
+                                (drops orphan columns, recreates tables if needed)
+                            </span>
+                        </Label>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Note: If <code>MIGRATION_ALLOW_DESTRUCTIVE=true</code> in the environment, destructive mode is
+                        always enabled on the server, even when this checkbox is unchecked.
+                    </p>
+                    {allowDestructive && (
+                        <div className="rounded-md border border-amber-500/30 bg-amber-50 dark:bg-amber-950/20 p-3 text-sm text-amber-700 dark:text-amber-400">
+                            ⚠️ <strong>Warning:</strong> Destructive mode will remove columns that exist in the database
+                            but not in the schema. Make sure you have a backup before proceeding.
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -456,18 +487,6 @@ export function MigrationStatusPage() {
                             </div>
                         </CardContent>
                     </Card>
-
-                    <div className="flex justify-end">
-                        <Button
-                            onClick={() => {
-                                const searchParams = new URLSearchParams(window.location.search);
-                                const secret = secretInput || searchParams.get('secret') || undefined;
-                                runInit(secret);
-                            }}
-                        >
-                            Run Again
-                        </Button>
-                    </div>
                 </div>
             )}
         </div>

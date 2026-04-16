@@ -38,24 +38,43 @@ export async function handleOttaormInit(context: OttaormInitContext): Promise<Re
         });
     }
 
-    const isAuthorized = await checkMigrationAuth(request, env);
+    // Clone request BEFORE any body reads so we can read it twice
+    const requestForAuth = request.clone();
+    const requestForOptions = request.clone();
+
+    const isAuthorized = await checkMigrationAuth(requestForAuth, env);
     if (!isAuthorized) {
         return errorResponse('Unauthorized - MIGRATION_SECRET required in production', 401, {
             code: 'UNAUTHORIZED',
         });
     }
 
+    // Parse request body for options (using the second clone)
+    let allowDestructiveFromBody = false;
+    try {
+        const body = (await requestForOptions.json()) as { allowDestructive?: boolean };
+        allowDestructiveFromBody = body.allowDestructive === true;
+    } catch {
+        // Body parsing failed or no body - ignore
+    }
+
     const driver = createD1Driver(env.OBCF_D1);
     const allSchemas = getAllSchemas();
+
+    // Allow destructive migrations when:
+    // 1. Explicitly enabled via env var MIGRATION_ALLOW_DESTRUCTIVE=true/1
+    // 2. Or passed in request body as allowDestructive: true (for UI checkbox)
+    const allowDestructive =
+        allowDestructiveFromBody ||
+        env.MIGRATION_ALLOW_DESTRUCTIVE?.trim().toLowerCase() === '1' ||
+        env.MIGRATION_ALLOW_DESTRUCTIVE?.trim().toLowerCase() === 'true';
+
     const result = await autoInit({
         driver,
         schema: allSchemas,
         customMigrations: appMigrations,
         verbose: true,
-        // Allow destructive migrations only when explicitly enabled via env
-        allowDestructive:
-            env.MIGRATION_ALLOW_DESTRUCTIVE?.trim().toLowerCase() === '1' ||
-            env.MIGRATION_ALLOW_DESTRUCTIVE?.trim().toLowerCase() === 'true',
+        allowDestructive,
     });
 
     // Seed default brand kit + route mappings for current app (brand kits are always app-scoped)
