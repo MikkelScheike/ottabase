@@ -79,10 +79,9 @@ export async function handleOttaormCrud(context: OttaormCrudContext): Promise<Re
         }
 
         // Enforce author and tenancy context
+        // Note: authorId references User - use author() relationship to get author info
         const user = session?.user;
         (crudRequest.body as any).authorId = user?.id ?? (crudRequest.body as any).authorId ?? null;
-        (crudRequest.body as any).authorName = user?.name ?? (crudRequest.body as any).authorName ?? null;
-        (crudRequest.body as any).authorEmail = user?.email ?? (crudRequest.body as any).authorEmail ?? null;
         (crudRequest.body as any).userId = user?.id ?? (crudRequest.body as any).userId ?? null;
         (crudRequest.body as any).organizationId = securityContext.organizationId ?? null;
         (crudRequest.body as any).appId = securityContext.appId ?? (crudRequest.body as any).appId ?? 'web';

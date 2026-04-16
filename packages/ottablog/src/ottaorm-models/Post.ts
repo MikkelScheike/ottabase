@@ -80,9 +80,6 @@ export class Post extends BaseModel {
             'privateNotes',
             'footnotes',
             'authorId',
-            'authorName',
-            'authorEmail',
-            'authorAvatar',
             'readingTimeMinutes',
             'wordCount',
             'isFeatured',
@@ -113,9 +110,6 @@ export class Post extends BaseModel {
             'privateNotes',
             'footnotes',
             'authorId',
-            'authorName',
-            'authorEmail',
-            'authorAvatar',
             'readingTimeMinutes',
             'wordCount',
             'isFeatured',
@@ -385,53 +379,12 @@ export class Post extends BaseModel {
             editable: true,
             filterable: true,
             uiConfig: {
-                label: 'Author ID',
+                label: 'Author',
+                description: 'Author user ID (use author() relationship for full info)',
             },
             formConfig: {
                 visible: true,
                 fieldType: 'select',
-            },
-            tableConfig: {
-                visible: false,
-            },
-        },
-        authorName: {
-            type: 'string',
-            editable: true,
-            uiConfig: {
-                label: 'Author Name',
-            },
-            formConfig: {
-                visible: true,
-                fieldType: 'input',
-            },
-            tableConfig: {
-                visible: false,
-            },
-        },
-        authorEmail: {
-            type: 'string',
-            editable: true,
-            uiConfig: {
-                label: 'Author Email',
-            },
-            formConfig: {
-                visible: true,
-                fieldType: 'input',
-            },
-            tableConfig: {
-                visible: false,
-            },
-        },
-        authorAvatar: {
-            type: 'string',
-            editable: true,
-            uiConfig: {
-                label: 'Author Avatar',
-            },
-            formConfig: {
-                visible: true,
-                fieldType: 'input',
             },
             tableConfig: {
                 visible: false,

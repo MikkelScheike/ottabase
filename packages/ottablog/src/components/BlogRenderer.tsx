@@ -9,7 +9,7 @@ import '@ottabase/ottarenderer/styles';
 import React, { useEffect, useMemo, useState } from 'react';
 import { applyFilters, doAction, HOOKS } from '../hooks';
 import { defaultTheme, getActiveTheme, getTheme } from '../themes';
-import type { EditorJSData, HeroImage, SeoMeta } from '../types';
+import type { EditorJSData, HeroImage, PostAuthor, SeoMeta } from '../types';
 import { formatDate as defaultFormatDate } from '../types';
 import './BlogRenderer.css';
 
@@ -25,9 +25,8 @@ export interface BlogPostData {
     seoMeta?: SeoMeta | null;
     footnotes?: EditorJSData | null;
     authorId?: string | null;
-    authorName?: string | null;
-    authorEmail?: string | null;
-    authorAvatar?: string | null;
+    /** Author from User relationship */
+    author?: PostAuthor | null;
     readingTimeMinutes?: number | null;
     wordCount?: number | null;
     isFeatured?: boolean;
@@ -410,7 +409,7 @@ export function BlogExcerptCard({
                 {/* Metadata */}
                 {showMetadata && (
                     <div className="blog-card__meta">
-                        {post.authorName && <span className="blog-card__author">{post.authorName}</span>}
+                        {post.author?.name && <span className="blog-card__author">{post.author.name}</span>}
                         {post.publishedAt && <time className="blog-card__date">{formatDate(post.publishedAt)}</time>}
                         {post.readingTimeMinutes && (
                             <span className="blog-card__reading-time">{post.readingTimeMinutes} min</span>

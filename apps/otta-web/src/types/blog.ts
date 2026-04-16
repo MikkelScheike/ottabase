@@ -7,6 +7,16 @@ import type { ContentType, PostStatus } from '@ottabase/ottablog';
 import type { OutputData } from '@ottabase/ottaeditor';
 
 /**
+ * Author information from User relationship
+ */
+export interface PostAuthor {
+    id: string;
+    name: string | null;
+    email: string | null;
+    image: string | null;
+}
+
+/**
  * Blog Post (full detail)
  */
 export interface BlogPost {
@@ -25,6 +35,7 @@ export interface BlogPost {
         alt?: string;
         caption?: string;
         cfImageId?: string;
+        mediaId?: string;
         width?: number;
         height?: number;
         focalPoint?: { x: number; y: number };
@@ -42,20 +53,19 @@ export interface BlogPost {
     } | null;
     privateNotes: OutputData | null;
     footnotes: OutputData | null;
+    // Author from User relationship
     authorId: string | null;
-    authorName: string | null;
-    authorEmail: string | null;
-    authorAvatar: string | null;
+    author?: PostAuthor | null;
     isFeatured: boolean;
     allowComments: boolean;
     viewCount: number;
     readingTimeMinutes: number | null;
     wordCount: number | null;
-    publishedAt: string | null;
-    publishAt: string | null;
-    postedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
+    publishedAt: number | null;
+    publishAt: number | null;
+    postedAt: number | null;
+    createdAt: number;
+    updatedAt: number;
     maxVersionsToKeep: number | null;
     appId: string | null;
     organizationId: string | null;
@@ -72,14 +82,15 @@ export interface BlogPostListItem {
     excerpt: string | null;
     contentType: ContentType;
     status: PostStatus;
-    heroImage: { url: string; alt?: string } | null;
-    authorName: string | null;
-    authorAvatar: string | null;
+    heroImage: { url: string; alt?: string; mediaId?: string } | null;
+    // Author from User relationship
+    authorId?: string | null;
+    author?: PostAuthor | null;
     isFeatured: boolean;
     readingTimeMinutes: number | null;
-    publishedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
+    publishedAt: number | null;
+    createdAt: number;
+    updatedAt: number;
     seriesId: string | null;
     seriesTitle?: string | null;
 }
@@ -95,8 +106,8 @@ export interface BlogSeries {
     coverImage: string | null;
     isComplete: boolean;
     sortOrder: number | null;
-    createdAt: string;
-    updatedAt: string;
+    createdAt: number;
+    updatedAt: number;
     appId: string | null;
 }
 
@@ -114,7 +125,7 @@ export interface BlogPostVersion {
     footnotes: OutputData | null;
     changedBy?: string | null;
     changeNote?: string | null;
-    createdAt: string;
+    createdAt: number;
     wordCount: number | null;
     organizationId: string | null;
     appId: string | null;

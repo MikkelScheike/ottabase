@@ -49,6 +49,8 @@ export interface HeroImage {
     caption?: string;
     /** Cloudflare Image ID (if using CF Images) */
     cfImageId?: string;
+    /** Media library item ID (if from media library) */
+    mediaId?: string;
     /** Width in pixels */
     width?: number;
     /** Height in pixels */
@@ -58,19 +60,17 @@ export interface HeroImage {
 }
 
 /**
- * Author information
+ * Post author information from User relationship
  */
-export interface Author {
-    /** Author ID (references user) */
+export interface PostAuthor {
+    /** Author ID (references User) */
     id: string;
     /** Display name */
-    name: string;
+    name: string | null;
     /** Author email */
-    email?: string;
-    /** Author avatar URL */
-    avatar?: string;
-    /** Author bio */
-    bio?: string;
+    email?: string | null;
+    /** Author avatar/profile image URL */
+    image?: string | null;
 }
 
 /**

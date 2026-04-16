@@ -92,11 +92,9 @@ export const postsTable = sqliteTable(
             version?: string;
         }>(),
 
-        // Author information
+        // Author - references User table via authorId
+        // Use Post.author() relationship to get author info (name, email, image)
         authorId: text('author_id'),
-        authorName: text('author_name'),
-        authorEmail: text('author_email'),
-        authorAvatar: text('author_avatar'),
 
         // Tenancy / ownership
         organizationId: text('organization_id'),

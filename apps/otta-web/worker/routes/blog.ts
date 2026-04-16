@@ -77,11 +77,17 @@ async function findPublishedPostBySlug(
 /**
  * Convert a Post model to a public-safe JSON object.
  * Strips privateNotes. Strips content from protected posts unless explicitly included.
- * Optionally enriches with tags and category name.
+ * Optionally enriches with tags, category name, and author info.
  */
 async function publicPostJson(
     record: Post,
-    options?: { includeContent?: boolean; enrichTags?: boolean; enrichCategory?: boolean; enrichSeries?: boolean },
+    options?: {
+        includeContent?: boolean;
+        enrichTags?: boolean;
+        enrichCategory?: boolean;
+        enrichSeries?: boolean;
+        enrichAuthor?: boolean;
+    },
 ) {
     const j = record.toJson() as Record<string, unknown>;
     const { privateNotes, ...rest } = j;
@@ -92,6 +98,25 @@ async function publicPostJson(
         Object.assign(rest, restNoContent);
         rest.content = null;
         rest.footnotes = null;
+    }
+
+    // Enrich with author info from User relationship
+    if (options?.enrichAuthor && rest.authorId) {
+        try {
+            const author = await record.author(['id', 'name', 'email', 'image']);
+            if (author) {
+                rest.author = {
+                    id: author.get('id'),
+                    name: author.get('name'),
+                    email: author.get('email'),
+                    image: author.get('image'),
+                };
+            } else {
+                rest.author = null;
+            }
+        } catch {
+            rest.author = null;
+        }
     }
 
     // Enrich with tags
@@ -364,10 +389,15 @@ export async function handleBlogPostsList(context: BlogRouteContext): Promise<Re
         result = await Post.paginate(page, perPage, where, { orderBy, orderDirection });
     }
 
-    // Enrich all posts with tags and category name
+    // Enrich all posts with tags, category name, series, and author
     const data = await Promise.all(
         result.data.map((r) =>
-            publicPostJson(r as Post, { enrichTags: true, enrichCategory: true, enrichSeries: true }),
+            publicPostJson(r as Post, {
+                enrichTags: true,
+                enrichCategory: true,
+                enrichSeries: true,
+                enrichAuthor: true,
+            }),
         ),
     );
     return jsonResponse({
@@ -408,6 +438,7 @@ export async function handleBlogPostBySlug(context: BlogRouteContext, slug: stri
         enrichTags: true,
         enrichCategory: true,
         enrichSeries: true,
+        enrichAuthor: true,
     });
     return jsonResponse(data);
 }
@@ -447,6 +478,7 @@ export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<R
             enrichTags: true,
             enrichCategory: true,
             enrichSeries: true,
+            enrichAuthor: true,
         });
         return jsonResponse(data);
     }
@@ -461,6 +493,7 @@ export async function handleBlogPostUnlock(context: BlogRouteContext): Promise<R
         enrichTags: true,
         enrichCategory: true,
         enrichSeries: true,
+        enrichAuthor: true,
     });
     return jsonResponse(data);
 }
@@ -559,7 +592,7 @@ export async function handleBlogRelatedPosts(context: BlogRouteContext, postId: 
         limit,
     });
 
-    const data = await Promise.all(related.map((r) => publicPostJson(r, { enrichTags: true })));
+    const data = await Promise.all(related.map((r) => publicPostJson(r, { enrichTags: true, enrichAuthor: true })));
     return jsonResponse(data);
 }
 
@@ -595,6 +628,20 @@ export async function handleBlogRssFeed(context: BlogRouteContext): Promise<Resp
         limit,
     });
 
+    // Load author names from User model via authorId relationship
+    // Collect unique authorIds and fetch users in one batch
+    const authorIds = [...new Set(posts.map((p) => p.get('authorId') as string | null).filter(Boolean))] as string[];
+    const authorMap = new Map<string, string>();
+    if (authorIds.length > 0) {
+        const { User } = await import('@ottabase/ottaorm');
+        const authors = await User.whereIn('id', authorIds, { select: ['id', 'name'] });
+        for (const author of authors) {
+            const id = author.get('id') as string;
+            const name = author.get('name') as string;
+            if (id && name) authorMap.set(id, name);
+        }
+    }
+
     // Derive the site URL from the request
     const siteUrl = `${url.protocol}//${url.host}`;
     const feedTitle = url.searchParams.get('title') || 'Blog';
@@ -613,7 +660,9 @@ export async function handleBlogRssFeed(context: BlogRouteContext): Promise<Resp
             const title = escapeXml((post.get('title') as string) || '');
             const slug = post.get('slug') as string;
             const excerpt = escapeXml((post.get('excerpt') as string) || '');
-            const authorName = escapeXml((post.get('authorName') as string) || '');
+            // Get author name from User relationship (via authorId)
+            const authorId = post.get('authorId') as string | null;
+            const authorName = authorId ? escapeXml(authorMap.get(authorId) || '') : '';
             const publishedAt = post.get('publishedAt') as number | null;
             const pubDate = publishedAt ? new Date(publishedAt).toUTCString() : '';
             const heroImage = post.get('heroImage') as { url?: string } | null;

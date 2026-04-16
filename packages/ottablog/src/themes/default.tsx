@@ -68,10 +68,10 @@ export const defaultTheme: Theme = {
             const formatDate = props.formatDate || defaultFormatDate;
             return (
                 <div className={`${defaultTheme.config?.classes?.metadata || ''}`}>
-                    {post.authorName && (
+                    {post.author?.name && (
                         <div className="flex items-center gap-2">
-                            {post.authorAvatar && (
-                                <img src={post.authorAvatar} alt={post.authorName} className="w-8 h-8 rounded-full" />
+                            {post.author?.image && (
+                                <img src={post.author.image} alt={post.author.name} className="w-6 h-6 rounded-full" />
                             )}
                             <span
                                 className={props.onAuthorClick ? 'cursor-pointer hover:underline' : ''}
@@ -79,7 +79,7 @@ export const defaultTheme: Theme = {
                                     props.onAuthorClick && post.authorId && props.onAuthorClick(post.authorId)
                                 }
                             >
-                                {post.authorName}
+                                {post.author.name}
                             </span>
                         </div>
                     )}
@@ -113,9 +113,9 @@ export const defaultTheme: Theme = {
             return (
                 <div className={`${props.contentClassName || ''} ${defaultTheme.config?.classes?.content || ''}`}>
                     <Blocks
-                        // Ensure version is always present — editorjs-blocks-react-renderer
+                        // Ensure version and time are always present — editorjs-blocks-react-renderer
                         // calls data.version.includes() unconditionally and will throw if absent.
-                        data={{ version: '2.30.0', ...(post.content as EditorJSData) }}
+                        data={{ version: '2.30.0', time: Date.now(), ...(post.content as EditorJSData) }}
                         renderers={customRenderers}
                         config={defaultEJSRConfigs}
                     />
@@ -130,7 +130,7 @@ export const defaultTheme: Theme = {
                     <h2 className="text-xl font-semibold mb-4">Footnotes</h2>
                     <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-muted-foreground">
                         <Blocks
-                            data={{ version: '2.30.0', ...(post.footnotes as EditorJSData) }}
+                            data={{ version: '2.30.0', time: Date.now(), ...(post.footnotes as EditorJSData) }}
                             renderers={customRenderers}
                             config={defaultEJSRConfigs}
                         />
@@ -171,7 +171,7 @@ export const defaultTheme: Theme = {
                             )}
                             {props.showMetadata && (
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-2">
-                                    {post.authorName && <span>{post.authorName}</span>}
+                                    {post.author?.name && <span>{post.author.name}</span>}
                                     {post.publishedAt && <time>{formatDate(post.publishedAt)}</time>}
                                     {post.readingTimeMinutes && <span>{post.readingTimeMinutes} min read</span>}
                                 </div>

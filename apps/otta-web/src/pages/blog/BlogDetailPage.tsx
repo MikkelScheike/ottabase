@@ -9,6 +9,7 @@ import { BLOG_DETAIL_QUERY_CONFIG, BLOG_LIST_QUERY_CONFIG } from '@/config/query
 import { api, isApiError } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { useBlogStudio } from '@/ottabase/blog/BlogStudioContext';
+import type { PostAuthor } from '@/types/blog';
 import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import { BlogRenderer, formatDate, type BlogPostData } from '@ottabase/ottablog';
 import type { OutputData } from '@ottabase/ottaeditor';
@@ -38,8 +39,8 @@ interface BlogPost {
     } | null;
     footnotes: OutputData | null;
     authorId: string | null;
-    authorName: string | null;
-    authorAvatar: string | null;
+    // Author from User relationship
+    author?: PostAuthor | null;
     readingTimeMinutes: number | null;
     wordCount: number | null;
     isFeatured: boolean;
@@ -181,9 +182,7 @@ export function BlogDetailPage() {
         seoMeta: displayPost.seoMeta,
         footnotes: displayPost.footnotes,
         authorId: displayPost.authorId,
-        authorName: displayPost.authorName,
-        authorEmail: null,
-        authorAvatar: displayPost.authorAvatar,
+        author: displayPost.author,
         readingTimeMinutes: displayPost.readingTimeMinutes,
         wordCount: displayPost.wordCount,
         isFeatured: displayPost.isFeatured,
@@ -219,7 +218,7 @@ export function BlogDetailPage() {
                 noIndex={displayPost.seoMeta?.noIndex}
                 noFollow={displayPost.seoMeta?.noFollow}
                 publishedTime={displayPost.publishedAt || undefined}
-                author={displayPost.authorName || undefined}
+                author={displayPost.author?.name || undefined}
             />
 
             {/* Back link + Edit (author only) */}

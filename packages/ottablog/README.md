@@ -161,7 +161,7 @@ post.generateExcerpt(); // Auto-generate from content
 - `seoMeta` - SEO metadata JSON
 - `privateNotes` - Author-only notes (EditorJS)
 - `footnotes` - Public footnotes (EditorJS)
-- `authorId`, `authorName`, `authorEmail`, `authorAvatar` - Author info
+- `authorId` - Author user ID (references User model via `author()` relationship)
 - `readingTimeMinutes`, `wordCount` - Auto-calculated stats
 - `viewCount` - View/hit counter (incremented via `trackView()`)
 - `isFeatured` - Pin to top
@@ -169,6 +169,22 @@ post.generateExcerpt(); // Auto-generate from content
 - `publishAt`, `publishedAt`, `postedAt` - Dates
 - `appId` - Multi-app identifier
 - `maxVersionsToKeep` - Version retention setting
+
+**Relationships:**
+
+```typescript
+// Get author (User model) via belongsTo relationship
+const author = await post.author();
+if (author) {
+    console.log(author.get('name'), author.get('email'), author.get('image'));
+}
+
+// Get tags (PostTag) via belongsToMany
+const tags = await post.tags();
+
+// Get categories (PostCategory) via belongsToMany
+const categories = await post.categories();
+```
 
 ### PostCategory
 

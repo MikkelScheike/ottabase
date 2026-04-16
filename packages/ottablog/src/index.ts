@@ -88,7 +88,7 @@ export type {
 } from './ottaorm-models';
 
 // Type exports
-export type { Author, ContentType, EditorJSData, HeroImage, PostStatus, ReadingTime, SeoMeta } from './types';
+export type { ContentType, EditorJSData, HeroImage, PostAuthor, PostStatus, ReadingTime, SeoMeta } from './types';
 
 // Constants and helpers
 export {

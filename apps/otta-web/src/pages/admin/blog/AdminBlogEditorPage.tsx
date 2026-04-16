@@ -111,8 +111,7 @@ interface BlogPost {
     privateNotes: OutputData | null;
     footnotes: OutputData | null;
     authorId: string | null;
-    authorName: string | null;
-    authorEmail: string | null;
+    author?: { id: string; name: string | null; image: string | null } | null;
     isFeatured: boolean;
     allowComments: boolean;
     isProtected?: boolean;
@@ -269,7 +268,6 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         initialData?.contentType || defaultContentType || 'blog',
     );
     const [status, setStatus] = useState<PostStatus>(initialData?.status || 'draft');
-    const [authorName, setAuthorName] = useState(initialData?.authorName ?? (isEditMode ? '' : (user?.name ?? '')));
     const [isFeatured, setIsFeatured] = useState(initialData?.isFeatured || false);
     const [allowComments, setAllowComments] = useState(initialData?.allowComments ?? true);
     const [isProtected, setIsProtected] = useState(initialData?.isProtected ?? false);
@@ -473,7 +471,6 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         setExcerpt(initialData.excerpt ?? '');
         setContentType(initialData.contentType ?? 'blog');
         setStatus(initialData.status ?? 'draft');
-        setAuthorName(initialData.authorName ?? (isEditMode ? '' : (user?.name ?? '')));
         setIsFeatured(initialData.isFeatured ?? false);
         setAllowComments(initialData.allowComments ?? true);
         setIsProtected(initialData.isProtected ?? false);
@@ -515,7 +512,6 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
             excerpt === (initialData.excerpt ?? '') &&
             contentType === initialData.contentType &&
             status === initialData.status &&
-            authorName === (initialData.authorName ?? '') &&
             isFeatured === initialData.isFeatured &&
             allowComments === initialData.allowComments &&
             isProtected === (initialData.isProtected ?? false) &&
@@ -552,7 +548,6 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
         excerpt,
         contentType,
         status,
-        authorName,
         isFeatured,
         allowComments,
         publishedAt,
@@ -629,7 +624,8 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
               content: previewVersion.content,
               footnotes: previewVersion.footnotes,
               publishedAt,
-              authorName,
+              // Author comes from post or logged-in user
+              author: initialData?.author || (user ? { id: user.id, name: user.name, image: user.image } : null),
               heroImage,
               contentType,
               isFeatured,
@@ -754,8 +750,8 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
             }
 
             fetch(`/api/ottaorm/posts/unique?${params.toString()}`)
-                .then((res) => res.json())
-                .then((result: { unique?: boolean }) => setSlugStatus(result.unique ? 'available' : 'taken'))
+                .then((res) => res.json() as Promise<{ unique?: boolean }>)
+                .then((result) => setSlugStatus(result.unique ? 'available' : 'taken'))
                 .catch(() => setSlugStatus('idle'));
         },
         [slug, title, postId, initialData?.appId],
@@ -829,20 +825,20 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
 
     const handleHeroMediaSelect = (item: {
         url: string;
-        name?: string;
-        alt?: string;
-        caption?: string;
+        name?: string | null;
+        alt?: string | null;
+        caption?: string | null;
         mediaId?: string;
-        width?: number;
-        height?: number;
+        width?: number | null;
+        height?: number | null;
     }) => {
         setHeroImage({
             url: item.url,
             alt: item.alt || heroImage?.alt || item.name || '',
-            caption: item.caption,
+            caption: item.caption || undefined,
             mediaId: item.mediaId,
-            width: item.width,
-            height: item.height,
+            width: item.width ?? undefined,
+            height: item.height ?? undefined,
             cfImageId: heroImage?.cfImageId,
         });
         setIsHeroMediaPickerOpen(false);
@@ -961,13 +957,13 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                 seoMeta,
                 privateNotes: privateNotes || undefined,
                 footnotes: footnotes || undefined,
-                authorName: authorName || undefined,
                 isFeatured,
                 allowComments,
                 isProtected,
                 passwordHint: passwordHint || undefined,
                 ...(isProtected && password.trim() ? { password: password.trim() } : {}),
-                publishedAt: publishNow && !publishedAt ? Date.now() : publishedAt || undefined,
+                publishedAt:
+                    publishNow && !publishedAt ? Date.now() : publishedAt ? new Date(publishedAt).getTime() : undefined,
                 seriesId: seriesId || undefined,
                 seriesOrder: seriesOrder || undefined,
                 maxVersionsToKeep: maxVersionsToKeep || undefined,
@@ -1570,15 +1566,6 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Author Name</Label>
-                                <Input
-                                    value={authorName}
-                                    onChange={(e) => setAuthorName(e.target.value)}
-                                    placeholder="Author name..."
-                                />
-                            </div>
-
-                            <div className="space-y-2">
                                 <Label>Publish Date</Label>
                                 <Input
                                     type="datetime-local"
@@ -2030,10 +2017,10 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
 
                             {/* Metadata */}
                             <div className="flex flex-wrap items-center gap-4 mb-8 text-sm text-muted-foreground">
-                                {previewPost.authorName && (
+                                {previewPost.author?.name && (
                                     <div className="flex items-center gap-2">
                                         <User className="h-4 w-4" />
-                                        <span className="font-medium text-foreground">{previewPost.authorName}</span>
+                                        <span className="font-medium text-foreground">{previewPost.author.name}</span>
                                     </div>
                                 )}
                                 {previewPost.publishedAt && (
@@ -2063,7 +2050,7 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                                 <div className="prose prose-slate dark:prose-invert max-w-none mb-12">
                                     <MediaLightboxProvider>
                                         <Blocks
-                                            data={previewPost.content!}
+                                            data={{ version: '2.30.0', time: Date.now(), ...previewPost.content! }}
                                             renderers={customRenderers}
                                             config={defaultEJSRConfigs}
                                         />
@@ -2078,7 +2065,11 @@ function BlogEditorForm({ postId, isEditMode, initialData, defaultContentType }:
                                     <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-muted-foreground">
                                         <MediaLightboxProvider>
                                             <Blocks
-                                                data={previewPost.footnotes!}
+                                                data={{
+                                                    version: '2.30.0',
+                                                    time: Date.now(),
+                                                    ...previewPost.footnotes!,
+                                                }}
                                                 renderers={customRenderers}
                                                 config={defaultEJSRConfigs}
                                             />

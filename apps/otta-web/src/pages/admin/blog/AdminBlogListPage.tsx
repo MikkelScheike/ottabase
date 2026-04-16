@@ -59,7 +59,8 @@ interface BlogPost {
     excerpt: string | null;
     contentType: ContentType;
     status: PostStatus;
-    authorName: string | null;
+    authorId: string | null;
+    author?: { id: string; name: string | null; image: string | null } | null;
     isFeatured: boolean;
     readingTimeMinutes: number | null;
     publishedAt: string | null;
@@ -411,7 +412,7 @@ export function AdminBlogListPage() {
                                                 <Clock className="h-3 w-3" />
                                                 {post.readingTimeMinutes ? `${post.readingTimeMinutes} min read` : '—'}
                                             </span>
-                                            {post.authorName && <span>by {post.authorName}</span>}
+                                            {post.author?.name && <span>by {post.author.name}</span>}
                                             <span>
                                                 {post.status === 'published'
                                                     ? `Published ${formatShortDate(post.publishedAt)}`

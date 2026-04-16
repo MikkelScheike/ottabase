@@ -7,6 +7,7 @@
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_LIST_QUERY_CONFIG, SERIES_LIST_QUERY_CONFIG } from '@/config/queryConfig';
 import { useSession } from '@/lib/auth';
+import type { PostAuthor } from '@/types/blog';
 import { CONTENT_TYPES, formatDate, type ContentType } from '@ottabase/ottablog';
 import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
 import { Badge, Button, Card, CardContent, Input } from '@ottabase/ui-shadcn';
@@ -28,7 +29,9 @@ interface BlogPost {
     contentType: string;
     status: string;
     heroImage: { url: string; alt?: string } | null;
-    authorName: string | null;
+    // Author from User relationship
+    authorId?: string | null;
+    author?: PostAuthor | null;
     readingTimeMinutes: number | null;
     isFeatured: boolean;
     isProtected?: boolean;
@@ -299,10 +302,10 @@ function FeaturedPostCard({ post }: { post: BlogPost }) {
                         </div>
                     )}
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        {post.authorName && (
+                        {post.author?.name && (
                             <span className="flex items-center gap-1">
                                 <User className="h-3 w-3" />
-                                {post.authorName}
+                                {post.author.name}
                             </span>
                         )}
                         {post.publishedAt && (

@@ -6,6 +6,7 @@
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_DETAIL_QUERY_CONFIG } from '@/config/queryConfig';
 import { useSession } from '@/lib/auth';
+import type { PostAuthor } from '@/types/blog';
 import { MediaLightboxProvider } from '@ottabase/medialibrary';
 import type { HeroImage } from '@ottabase/ottablog';
 import type { OutputData } from '@ottabase/ottaeditor';
@@ -26,8 +27,7 @@ interface ChangelogPostDetail {
     status: string;
     isFeatured: boolean;
     authorId: string | null;
-    authorName: string | null;
-    authorAvatar: string | null;
+    author?: PostAuthor | null;
     readingTimeMinutes: number | null;
     publishedAt: string | null;
 }
@@ -106,7 +106,7 @@ export function ChangelogDetailPage() {
                 twitterCard="summary_large_image"
                 ogImage={heroUrl}
                 publishedTime={entry.publishedAt ?? undefined}
-                author={entry.authorName ?? undefined}
+                author={entry.author?.name ?? undefined}
             />
 
             <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
@@ -139,11 +139,11 @@ export function ChangelogDetailPage() {
                     <h1 className="mt-2 text-3xl font-bold tracking-tight text-foreground dark:text-foreground sm:text-4xl">
                         {entry.title}
                     </h1>
-                    {(entry.authorName || entry.authorAvatar) && (
+                    {entry.author && (
                         <div className="mt-6 flex items-center gap-3">
-                            {entry.authorAvatar ? (
+                            {entry.author.image ? (
                                 <img
-                                    src={entry.authorAvatar}
+                                    src={entry.author.image}
                                     alt=""
                                     className="h-10 w-10 rounded-full object-cover ring-1 ring-border dark:ring-border"
                                 />
@@ -151,7 +151,7 @@ export function ChangelogDetailPage() {
                                 <div className="h-10 w-10 rounded-full bg-muted dark:bg-muted" />
                             )}
                             <span className="text-sm font-medium text-foreground dark:text-foreground">
-                                {entry.authorName}
+                                {entry.author.name}
                             </span>
                         </div>
                     )}

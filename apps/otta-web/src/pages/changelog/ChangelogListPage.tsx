@@ -6,8 +6,9 @@
 import { SEOHead } from '@/components/SEOHead';
 import { BLOG_LIST_QUERY_CONFIG } from '@/config/queryConfig';
 import { useSession } from '@/lib/auth';
-import type { OutputData } from '@ottabase/ottaeditor';
+import type { PostAuthor } from '@/types/blog';
 import type { HeroImage } from '@ottabase/ottablog';
+import type { OutputData } from '@ottabase/ottaeditor';
 import { useApiQuery } from '@ottabase/ottaorm/client';
 import { Button } from '@ottabase/ui-shadcn';
 import { IconArrowRight, IconPlus, IconStarFilled } from '@tabler/icons-react';
@@ -23,8 +24,8 @@ interface ChangelogPostPublic {
     status: string;
     isFeatured: boolean;
     authorId: string | null;
-    authorName: string | null;
-    authorAvatar: string | null;
+    // Author from User relationship
+    author?: PostAuthor | null;
     readingTimeMinutes: number | null;
     publishedAt: string | null;
 }
@@ -186,11 +187,11 @@ export function ChangelogListPage() {
                                 </Link>
 
                                 {/* Author */}
-                                {(entry.authorName || entry.authorAvatar) && (
+                                {entry.author && (
                                     <div className="mt-4 flex items-center gap-2">
-                                        {entry.authorAvatar ? (
+                                        {entry.author.image ? (
                                             <img
-                                                src={entry.authorAvatar}
+                                                src={entry.author.image}
                                                 alt=""
                                                 className="h-8 w-8 rounded-full object-cover ring-1 ring-border dark:ring-border"
                                             />
@@ -198,7 +199,7 @@ export function ChangelogListPage() {
                                             <div className="h-8 w-8 rounded-full bg-muted dark:bg-muted" />
                                         )}
                                         <span className="text-sm font-medium text-foreground dark:text-foreground">
-                                            {entry.authorName ?? 'Team'}
+                                            {entry.author.name ?? 'Team'}
                                         </span>
                                     </div>
                                 )}
