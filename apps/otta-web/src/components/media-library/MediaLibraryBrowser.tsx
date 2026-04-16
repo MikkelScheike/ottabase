@@ -97,11 +97,12 @@ export function MediaLibraryBrowser({
     showUpload = true,
     allowDelete = true,
     mode = 'page',
-    confirmLabel = 'Insert this file',
+    confirmLabel = 'Use this media',
     allowMultiselect = false,
     onSelectItem,
     onSelectItems,
 }: MediaLibraryBrowserProps) {
+    const rootRef = useRef<HTMLDivElement>(null);
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const [searchValue, setSearchValue] = useState('');
     const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -131,6 +132,48 @@ export function MediaLibraryBrowser({
         const timer = setTimeout(() => setDebouncedSearch(searchValue.trim()), 300);
         return () => clearTimeout(timer);
     }, [searchValue]);
+
+    // When upload overlay is visible, lock only the nearest local scroll container.
+    // Early-return when not uploading so DOM traversal is skipped entirely.
+    useEffect(() => {
+        if (!isUploading || typeof window === 'undefined') {
+            return;
+        }
+
+        const findScrollableAncestor = (element: HTMLElement | null): HTMLElement | null => {
+            let current = element?.parentElement ?? null;
+            while (current) {
+                const style = window.getComputedStyle(current);
+                const hasScrollableOverflow =
+                    /(auto|scroll)/.test(style.overflowY) || /(auto|scroll)/.test(style.overflow);
+                if (hasScrollableOverflow && current.scrollHeight > current.clientHeight) {
+                    return current;
+                }
+                current = current.parentElement;
+            }
+            return null;
+        };
+
+        const scrollContainer = findScrollableAncestor(rootRef.current);
+        if (!scrollContainer) return;
+
+        const prevOverflow = scrollContainer.style.overflow;
+        const prevOverflowY = scrollContainer.style.overflowY;
+        const prevTouchAction = scrollContainer.style.touchAction;
+        const prevOverscrollBehavior = scrollContainer.style.overscrollBehavior;
+
+        scrollContainer.style.overflow = 'hidden';
+        scrollContainer.style.overflowY = 'hidden';
+        scrollContainer.style.touchAction = 'none';
+        scrollContainer.style.overscrollBehavior = 'contain';
+
+        return () => {
+            scrollContainer.style.overflow = prevOverflow;
+            scrollContainer.style.overflowY = prevOverflowY;
+            scrollContainer.style.touchAction = prevTouchAction;
+            scrollContainer.style.overscrollBehavior = prevOverscrollBehavior;
+        };
+    }, [isUploading]);
 
     const whereClause = useMemo(() => {
         const clause: Record<string, unknown> = {
@@ -215,7 +258,7 @@ export function MediaLibraryBrowser({
 
     const refetchItems = useCallback(async () => {
         await mediaListQuery.refetch();
-    }, [mediaListQuery]);
+    }, [mediaListQuery.refetch]);
 
     const handleUploadFiles = useCallback(
         async (files: FileList | File[]) => {
@@ -309,7 +352,18 @@ export function MediaLibraryBrowser({
     }, [deleteTarget, refetchItems, selectedId]);
 
     return (
-        <div className="space-y-6">
+        <div ref={rootRef} className="relative space-y-6">
+            {/* Global upload overlay: blocks the full browser (grid + details panel) during serial uploads */}
+            {isUploading && (
+                <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-background/80 backdrop-blur-sm">
+                    <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm font-medium text-foreground">
+                        {uploadProgress && uploadProgress.total > 1
+                            ? `Uploading file ${uploadProgress.current} of ${uploadProgress.total}…`
+                            : 'Uploading…'}
+                    </p>
+                </div>
+            )}
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
@@ -369,18 +423,7 @@ export function MediaLibraryBrowser({
             </div>
 
             <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
-                <Card className="relative min-h-[32rem]">
-                    {/* Upload overlay: dims the gallery and shows progress during serial uploads */}
-                    {isUploading && (
-                        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-background/80 backdrop-blur-sm">
-                            <IconLoader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-sm font-medium text-foreground">
-                                {uploadProgress && uploadProgress.total > 1
-                                    ? `Uploading file ${uploadProgress.current} of ${uploadProgress.total}…`
-                                    : 'Uploading…'}
-                            </p>
-                        </div>
-                    )}
+                <Card className="min-h-[32rem]">
                     <CardHeader>
                         <div className="flex items-center justify-between gap-4">
                             <div>
@@ -831,7 +874,8 @@ export function MediaLibraryBrowser({
             <ConfirmDialog
                 open={Boolean(deleteTarget)}
                 onOpenChange={(open) => !open && setDeleteTarget(null)}
-                title="Delete this media item?"
+                a11yTitle="Delete this media item"
+                hideTitle
                 description="This permanently removes the file from storage and the media library. This action cannot be undone."
                 tone="destructive"
                 secondaryActionText="Cancel"
