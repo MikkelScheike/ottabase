@@ -334,6 +334,45 @@ describe('OttaORM field/value find functionality', () => {
         });
     });
 
+    describe('parseCrudRequest - malformed input fails closed', () => {
+        it('should flag invalid JSON in "where" query param as parseError', async () => {
+            const url = new URL('http://localhost/api/ottaorm/tests?where=not-json');
+            const request = new Request(url.toString(), { method: 'GET' });
+            const parsed = await parseCrudRequest(request, url, '/api/ottaorm');
+
+            expect(parsed?.parseError).toBeDefined();
+            expect(parsed?.parseError?.code).toBe('INVALID_QUERY');
+        });
+
+        it('should flag invalid JSON body on POST as parseError', async () => {
+            const url = new URL('http://localhost/api/ottaorm/tests');
+            const request = new Request(url.toString(), {
+                method: 'POST',
+                body: 'not-json',
+                headers: { 'Content-Type': 'application/json' },
+            });
+            const parsed = await parseCrudRequest(request, url, '/api/ottaorm');
+
+            expect(parsed?.parseError).toBeDefined();
+            expect(parsed?.parseError?.code).toBe('INVALID_BODY');
+        });
+
+        it('handleCrud should short-circuit with 400 when parseError is present', async () => {
+            registerModel(TestModel);
+
+            const result = await handleCrud({
+                method: 'POST',
+                model: 'tests',
+                body: {},
+                parseError: { message: 'Invalid JSON in request body', code: 'INVALID_BODY' },
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.status).toBe(400);
+            expect(result.code).toBe('INVALID_BODY');
+        });
+    });
+
     describe('handleCrud - ValidationError handling', () => {
         it('should return 422 with fieldErrors on ValidationError', async () => {
             // Make create throw a ValidationError

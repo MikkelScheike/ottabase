@@ -22,6 +22,12 @@ export interface CrudRequest {
     body?: Record<string, unknown>;
     /** Allow additional server-controlled fields to pass writable checks */
     allowedWritableFields?: string[];
+    /**
+     * Populated by parseCrudRequest when the incoming request is malformed
+     * (e.g. invalid JSON body or invalid `where` query JSON). handleCrud
+     * short-circuits with 400 when this is set — fail closed, not open.
+     */
+    parseError?: { message: string; code: string };
     query?: {
         where?: Record<string, unknown>;
         orderBy?: string;
@@ -71,6 +77,16 @@ export interface CrudResponse {
  */
 export async function handleCrud(request: CrudRequest): Promise<CrudResponse> {
     const { method, model: entityName, id, body, query } = request;
+
+    // Fail closed on malformed request payloads surfaced by parseCrudRequest.
+    if (request.parseError) {
+        return {
+            success: false,
+            error: request.parseError.message,
+            code: request.parseError.code,
+            status: 400,
+        };
+    }
 
     // Check if model is registered
     if (!hasModel(entityName)) {
@@ -466,14 +482,20 @@ export async function parseCrudRequest(
 
     // Parse query parameters
     const query: CrudRequest['query'] = {};
+    let parseError: CrudRequest['parseError'];
 
     const whereParam = url.searchParams.get('where');
     if (whereParam) {
         try {
             query.where = JSON.parse(whereParam);
         } catch (error) {
-            // Log invalid JSON in "where" to aid debugging, but keep behavior lenient
-            console.warn('ottaorm: Ignoring invalid JSON in "where" query parameter:', whereParam, error);
+            // Fail closed: reject malformed JSON in `where` instead of silently dropping it.
+            // Silently ignoring can mask bugs (query runs unfiltered) or leak data across tenants.
+            console.warn('ottaorm: Invalid JSON in "where" query parameter:', whereParam, error);
+            parseError = {
+                message: 'Invalid JSON in "where" query parameter',
+                code: 'INVALID_QUERY',
+            };
         }
     }
 
@@ -531,7 +553,13 @@ export async function parseCrudRequest(
                 body = parsed as Record<string, unknown>;
             }
         } catch {
+            // Fail closed: malformed JSON must not silently degrade into an empty body.
+            // An empty body on PATCH/PUT could otherwise be treated as "no-op success".
             body = {};
+            parseError = parseError ?? {
+                message: 'Invalid JSON in request body',
+                code: 'INVALID_BODY',
+            };
         }
     }
 
@@ -541,6 +569,7 @@ export async function parseCrudRequest(
         id,
         body,
         query: Object.keys(query).length > 0 ? query : undefined,
+        ...(parseError ? { parseError } : {}),
     };
 }
 

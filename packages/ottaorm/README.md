@@ -945,6 +945,17 @@ app** scope (aligned with composite unique indexes on posts).
 `executeSecureCrudRequest` maps `UNIQUE constraint failed` (including **composite** indexes) to HTTP **409** with
 `fieldErrors`. `parseSqliteUniqueConstraintForApi()` prefers meaningful columns (e.g. `slug`) when SQLite lists several.
 
+### Malformed request payloads
+
+`parseCrudRequest` **fails closed** when it can't parse user input, attaching a `parseError` to the returned
+`CrudRequest`. Both `handleCrud` and `executeSecureCrudRequest` short-circuit with **HTTP 400** when `parseError` is
+present, so malformed input never silently degrades into an empty-body no-op or an unfiltered query:
+
+| Scenario                        | Code            | Status |
+| ------------------------------- | --------------- | ------ |
+| Invalid JSON in `?where=` param | `INVALID_QUERY` | 400    |
+| Invalid JSON body on POST/PATCH | `INVALID_BODY`  | 400    |
+
 ### SecurityContext
 
 The security context is passed to all RLS operations:

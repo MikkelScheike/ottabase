@@ -220,4 +220,46 @@ describe('executeSecureCrudRequest', () => {
         expect(result.success).toBe(false);
         expect(result.status).toBe(400);
     });
+
+    describe('parseError fail-closed behavior', () => {
+        it('returns 400 INVALID_BODY without touching the model layer', async () => {
+            const handleCrudSpy = vi.spyOn(crud, 'handleCrud');
+            const context = { userId: 'u1', organizationId: 'org-1' };
+
+            const result = await executeSecureCrudRequest(
+                {
+                    method: 'POST',
+                    model: 'posts',
+                    body: {},
+                    parseError: { message: 'Invalid JSON in request body', code: 'INVALID_BODY' },
+                },
+                context,
+            );
+
+            expect(result.success).toBe(false);
+            expect(result.status).toBe(400);
+            expect(result.code).toBe('INVALID_BODY');
+            // Must short-circuit before reaching handleCrud / model layer
+            expect(handleCrudSpy).not.toHaveBeenCalled();
+        });
+
+        it('returns 400 INVALID_QUERY without touching the model layer', async () => {
+            const handleCrudSpy = vi.spyOn(crud, 'handleCrud');
+            const context = { userId: 'u1', organizationId: 'org-1' };
+
+            const result = await executeSecureCrudRequest(
+                {
+                    method: 'GET',
+                    model: 'posts',
+                    parseError: { message: 'Invalid JSON in "where" query parameter', code: 'INVALID_QUERY' },
+                },
+                context,
+            );
+
+            expect(result.success).toBe(false);
+            expect(result.status).toBe(400);
+            expect(result.code).toBe('INVALID_QUERY');
+            expect(handleCrudSpy).not.toHaveBeenCalled();
+        });
+    });
 });

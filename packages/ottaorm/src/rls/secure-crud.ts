@@ -289,6 +289,18 @@ export async function executeSecureCrudRequest(
 ): Promise<CrudResponse> {
     const { method, model, id, body, query } = crudRequest;
 
+    // Fail closed on malformed request payloads surfaced by parseCrudRequest.
+    // Prevents invalid JSON bodies from silently degrading into empty-body no-ops,
+    // and invalid `where` JSON from running an unfiltered query.
+    if (crudRequest.parseError) {
+        return {
+            success: false,
+            error: crudRequest.parseError.message,
+            code: crudRequest.parseError.code,
+            status: 400,
+        };
+    }
+
     try {
         return await executeSecureCrud({
             method,
