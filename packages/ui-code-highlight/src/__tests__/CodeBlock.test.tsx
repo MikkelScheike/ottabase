@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import hljs from 'highlight.js/lib/core';
+import { describe, expect, it, vi } from 'vitest';
 import { CodeBlock } from '../CodeBlock';
 
 describe('CodeBlock', () => {
@@ -56,6 +57,26 @@ describe('CodeBlock', () => {
             const code = 'const x = 1;';
             render(<CodeBlock code={code} />);
             expect(screen.getByText(code)).toBeTruthy();
+        });
+
+        it('sanitizes highlighted HTML before injecting it into the DOM', () => {
+            const highlightSpy = vi.spyOn(hljs, 'highlight').mockReturnValue({
+                value: '<span class="hljs-keyword">safe</span><img src="x" onerror="alert(1)"><script>alert(1)</script>',
+                language: 'javascript',
+                relevance: 1,
+                illegal: false,
+                _top: {} as any,
+                _emitter: {} as any,
+            });
+
+            const { container } = render(<CodeBlock code="safe" language="javascript" />);
+            const codeElement = container.querySelector('code');
+
+            expect(codeElement?.innerHTML).toContain('hljs-keyword');
+            expect(codeElement?.innerHTML).not.toContain('onerror');
+            expect(codeElement?.innerHTML).not.toContain('<script>');
+
+            highlightSpy.mockRestore();
         });
 
         it('renders header with language when not plaintext', () => {

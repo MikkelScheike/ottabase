@@ -380,6 +380,9 @@ importers:
       '@ottabase/ui-shadcn':
         specifier: workspace:*
         version: link:../../packages/ui-shadcn
+      '@ottabase/utils':
+        specifier: workspace:*
+        version: link:../../packages/utils
       '@radix-ui/react-slot':
         specifier: ^1.1.1
         version: 1.2.3(@types/react@19.2.7)(react@19.2.4)
@@ -1116,6 +1119,10 @@ importers:
         version: 5.9.3
 
   packages/docs:
+    dependencies:
+      '@ottabase/utils':
+        specifier: workspace:*
+        version: link:../utils
     devDependencies:
       '@ottabase/ui-code-highlight':
         specifier: workspace:*
@@ -1980,6 +1987,9 @@ importers:
 
   packages/ui-code-highlight:
     dependencies:
+      '@ottabase/utils':
+        specifier: workspace:*
+        version: link:../utils
       highlight.js:
         specifier: 'catalog:'
         version: 11.11.1

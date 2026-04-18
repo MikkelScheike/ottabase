@@ -1,4 +1,5 @@
 import { CodeBlock } from '@ottabase/ui-code-highlight';
+import { sanitizeBlockHtml } from '@ottabase/utils/sanitize';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DocsCodeRenderMode, TocItem } from '../types';
 import { extractToc } from '../utils';
@@ -49,7 +50,7 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
         return (
             <div
                 className={`otta-docs-content ${className}`}
-                dangerouslySetInnerHTML={{ __html: html }}
+                dangerouslySetInnerHTML={{ __html: sanitizeBlockHtml(html) }}
                 onClick={handleClick}
             />
         );
@@ -90,7 +91,7 @@ function MarkdownWithCodeBlocks({
                     }
                 }
                 if (part) {
-                    return <span key={i} dangerouslySetInnerHTML={{ __html: part }} />;
+                    return <span key={i} dangerouslySetInnerHTML={{ __html: sanitizeBlockHtml(part) }} />;
                 }
                 return null;
             })}

@@ -100,26 +100,8 @@ const Spoiler: RenderFn<{ text?: string }> = ({ data, className = '' }) => {
         [tooltipPosition],
     );
 
-    // Generate structured data for SEO (Schema.org)
-    const structuredData = useMemo(() => {
-        if (!spoilerText) return null;
-        return {
-            '@context': 'https://schema.org',
-            '@type': 'CreativeWork',
-            text: spoilerText,
-            interactionType: 'https://schema.org/ReadAction',
-        };
-    }, [spoilerText]);
-
     return (
         <>
-            {/* Structured data for SEO - hidden from users but visible to crawlers */}
-            {structuredData && (
-                <script
-                    type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
-                />
-            )}
             <span
                 onClick={handleClick}
                 onMouseMove={handleMouseMove}

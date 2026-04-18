@@ -28,6 +28,7 @@
             "@ottabase/ui-components": ["./packages/ui-components/src"],
             "@ottabase/ui-components/*": ["./packages/ui-components/src/*"],
             "@ottabase/utils": ["./packages/utils/src"],
+            "@ottabase/utils/*": ["./packages/utils/src/*"],
             "@ottabase/cron": ["./packages/cron/src"]
         }
     },

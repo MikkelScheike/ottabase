@@ -1,6 +1,13 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
-import { sanitizeBlockHtml, sanitizeInlineHtml, sanitizeSvgHtml, sanitizeUrl } from '../sanitize';
+import {
+    sanitizeBlockHtml,
+    sanitizeCssForStyleTag,
+    sanitizeInlineHtml,
+    sanitizeJsonForScript,
+    sanitizeSvgHtml,
+    sanitizeUrl,
+} from '../sanitize';
 
 describe('sanitizeInlineHtml', () => {
     it('passes through safe inline tags', () => {
@@ -36,6 +43,16 @@ describe('sanitizeInlineHtml', () => {
 
     it('handles empty string', () => {
         expect(sanitizeInlineHtml('')).toBe('');
+    });
+});
+
+describe('sanitizeCssForStyleTag', () => {
+    it('neutralizes style break-out and javascript URLs', () => {
+        const input = 'body{color:red}</style><script>alert(1)</script>.x{background:url(javascript:alert(1))}';
+        const result = sanitizeCssForStyleTag(input);
+        expect(result).not.toContain('</style>');
+        expect(result).not.toContain('<script>');
+        expect(result).not.toContain('javascript:');
     });
 });
 
@@ -118,5 +135,30 @@ describe('sanitizeUrl', () => {
         expect(sanitizeUrl(null)).toBe('#');
         expect(sanitizeUrl(undefined)).toBe('#');
         expect(sanitizeUrl('')).toBe('#');
+    });
+});
+
+describe('sanitizeJsonForScript', () => {
+    it('escapes characters that can break script context', () => {
+        const raw = {
+            text: '</script><script>alert(1)</script>',
+            other: '& < >',
+        };
+
+        const result = sanitizeJsonForScript(raw);
+        expect(result).not.toContain('</script>');
+        expect(result).toContain('\\u003c/script\\u003e');
+        expect(result).toContain('\\u0026');
+    });
+
+    it('returns null literal for undefined input', () => {
+        expect(sanitizeJsonForScript(undefined)).toBe('null');
+    });
+
+    it('returns null literal for circular input', () => {
+        const circular: Record<string, unknown> = {};
+        circular.self = circular;
+
+        expect(sanitizeJsonForScript(circular)).toBe('null');
     });
 });

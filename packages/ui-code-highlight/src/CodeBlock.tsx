@@ -1,22 +1,22 @@
 'use client';
-
-import { memo, useMemo, useState } from 'react';
-import { Check, Copy, ChevronDown, ChevronRight } from 'lucide-react';
+import { sanitizeBlockHtml } from '@ottabase/utils/sanitize';
 import hljs from 'highlight.js/lib/core';
+import { Check, ChevronDown, ChevronRight, Copy } from 'lucide-react';
+import { memo, useMemo, useState } from 'react';
 
 // Import common languages
-import javascript from 'highlight.js/lib/languages/javascript';
-import typescript from 'highlight.js/lib/languages/typescript';
-import xml from 'highlight.js/lib/languages/xml';
-import css from 'highlight.js/lib/languages/css';
-import scss from 'highlight.js/lib/languages/scss';
-import json from 'highlight.js/lib/languages/json';
 import bash from 'highlight.js/lib/languages/bash';
-import sql from 'highlight.js/lib/languages/sql';
-import python from 'highlight.js/lib/languages/python';
+import css from 'highlight.js/lib/languages/css';
+import ini from 'highlight.js/lib/languages/ini';
+import javascript from 'highlight.js/lib/languages/javascript';
+import json from 'highlight.js/lib/languages/json';
 import markdown from 'highlight.js/lib/languages/markdown';
 import plaintext from 'highlight.js/lib/languages/plaintext';
-import ini from 'highlight.js/lib/languages/ini';
+import python from 'highlight.js/lib/languages/python';
+import scss from 'highlight.js/lib/languages/scss';
+import sql from 'highlight.js/lib/languages/sql';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml';
 
 // Register languages (ini supports toml-like syntax)
 hljs.registerLanguage('javascript', javascript);
@@ -211,7 +211,9 @@ function CodeBlockInner({
                                         </span>
                                         <span
                                             className={`hljs language-${language} !bg-transparent`}
-                                            dangerouslySetInnerHTML={{ __html: lineHtml || ' ' }}
+                                            dangerouslySetInnerHTML={{
+                                                __html: sanitizeBlockHtml(lineHtml || ' '),
+                                            }}
                                         />
                                     </span>
                                 );
@@ -219,7 +221,7 @@ function CodeBlockInner({
                         ) : (
                             <code
                                 className={`hljs language-${language} !bg-transparent`}
-                                dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+                                dangerouslySetInnerHTML={{ __html: sanitizeBlockHtml(highlightedHtml) }}
                             />
                         )}
                     </pre>

@@ -51,6 +51,9 @@
             "optional": true
         }
     },
+    "dependencies": {
+        "@ottabase/utils": "workspace:*"
+    },
     "devDependencies": {
         "@ottabase/ui-code-highlight": "workspace:*",
         "@types/node": "catalog:",

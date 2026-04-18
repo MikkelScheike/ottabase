@@ -145,13 +145,17 @@ import {
 - **`sanitizeInlineHtml(html: string): string`** - Sanitize inline EditorJS markup (safe for `dangerouslySetInnerHTML`)
 - **`sanitizeBlockHtml(html: string): string`** - Sanitize broader block-level HTML content
 - **`sanitizeSvgHtml(svg: string): string`** - Sanitize inline SVG content
+- **`sanitizeJsonForScript(data: unknown): string`** - Serialize and escape JSON for safe `<script>` embedding
+- **`sanitizeCssForStyleTag(css: string): string`** - Neutralize unsafe CSS when injecting into `<style>` tags
 
-Use all four helpers together for untrusted renderer input:
+Use the appropriate sanitizer helper for each untrusted renderer input type:
 
 - `sanitizeInlineHtml` for inline rich text (for example list items and step content)
 - `sanitizeBlockHtml` for full HTML blocks
 - `sanitizeSvgHtml` for inline icon/SVG markup
 - `sanitizeUrl` for anchor/link URL fields before assigning to `href`
+- `sanitizeJsonForScript` for `application/ld+json` and other inline JSON script tags
+- `sanitizeCssForStyleTag` for generated theme CSS inserted via `dangerouslySetInnerHTML`
 
 ### Environment Utilities (`@ottabase/utils/env`) - Server-side
 

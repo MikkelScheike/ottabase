@@ -20,6 +20,7 @@ import {
     SelectValue,
     Textarea,
 } from '@ottabase/ui-shadcn';
+import { sanitizeBlockHtml } from '@ottabase/utils/sanitize';
 import { Link } from '@tanstack/react-router';
 import { AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
@@ -162,6 +163,8 @@ export function EmailDemoPage() {
             subject: subjectText,
         });
     }, [templateName, parsedVariables, contentDraft, subjectText]);
+
+    const sanitizedRenderedHtml = useMemo(() => sanitizeBlockHtml(rendered.html), [rendered.html]);
 
     const handleSendTest = async () => {
         if (parseError) {
@@ -338,7 +341,10 @@ export function EmailDemoPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="rounded-lg bg-white p-3 shadow-sm">
-                            <div className="email-preview" dangerouslySetInnerHTML={{ __html: rendered.html }} />
+                            <div
+                                className="email-preview"
+                                dangerouslySetInnerHTML={{ __html: sanitizedRenderedHtml }}
+                            />
                         </div>
                         <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">
                             <div className="font-semibold text-foreground">Plain Text</div>

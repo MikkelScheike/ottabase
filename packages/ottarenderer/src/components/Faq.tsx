@@ -1,3 +1,4 @@
+import { sanitizeJsonForScript } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 
 export interface FaqItem {
@@ -49,7 +50,10 @@ const Faq: RenderFn<FaqData> = ({ data, className = '' }) => {
 
     return (
         <>
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: sanitizeJsonForScript(structuredData) }}
+            />
             <section className={`${className} my-6 not-prose cdc-content-faq`} aria-label="Frequently asked questions">
                 {style === 'accordion' ? (
                     <div className="cdc-faq-accordion" role="list">

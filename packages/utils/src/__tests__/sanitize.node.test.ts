@@ -2,7 +2,13 @@
 // Tests that sanitize helpers work correctly in a plain Node.js environment
 // (no jsdom env). This exercises the lazy-jsdom factory path in sanitize.ts.
 import { describe, expect, it } from 'vitest';
-import { sanitizeBlockHtml, sanitizeInlineHtml, sanitizeSvgHtml } from '../sanitize';
+import {
+    sanitizeBlockHtml,
+    sanitizeCssForStyleTag,
+    sanitizeInlineHtml,
+    sanitizeJsonForScript,
+    sanitizeSvgHtml,
+} from '../sanitize';
 
 describe('sanitize helpers in Node environment (jsdom factory path)', () => {
     describe('sanitizeInlineHtml', () => {
@@ -61,6 +67,35 @@ describe('sanitize helpers in Node environment (jsdom factory path)', () => {
         it('does not throw and returns a string', () => {
             expect(() => sanitizeSvgHtml('')).not.toThrow();
             expect(typeof sanitizeSvgHtml('<svg><circle r="5"/></svg>')).toBe('string');
+        });
+    });
+
+    describe('sanitizeJsonForScript', () => {
+        it('escapes script-breaking sequences', () => {
+            const result = sanitizeJsonForScript({ text: '</script><script>x</script>' });
+            expect(result).not.toContain('</script>');
+            expect(result).toContain('\\u003c/script\\u003e');
+        });
+
+        it('returns null literal for undefined input', () => {
+            expect(sanitizeJsonForScript(undefined)).toBe('null');
+        });
+
+        it('returns null literal for circular input', () => {
+            const circular: Record<string, unknown> = {};
+            circular.self = circular;
+
+            expect(sanitizeJsonForScript(circular)).toBe('null');
+        });
+    });
+
+    describe('sanitizeCssForStyleTag', () => {
+        it('sanitizes style break-out payloads', () => {
+            const input = '</style><script>alert(1)</script>body{background:url(javascript:alert(1))}';
+            const result = sanitizeCssForStyleTag(input);
+            expect(result).not.toContain('</style>');
+            expect(result).not.toContain('<script>');
+            expect(result).not.toContain('javascript:');
         });
     });
 });

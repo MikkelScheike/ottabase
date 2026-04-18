@@ -1,4 +1,5 @@
 import { buildCriticalCSS } from '@ottabase/brand-engine';
+import { sanitizeCssForStyleTag } from '@ottabase/utils/sanitize';
 import type { Metadata } from 'next';
 import { generateBrandConfig } from '../lib/brand-server';
 import './globals.css';
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html lang="en" suppressHydrationWarning>
             <head>
                 {/* Inject critical CSS for theme variables */}
-                <style id="brand-critical" dangerouslySetInnerHTML={{ __html: criticalCSS }} />
+                <style id="brand-critical" dangerouslySetInnerHTML={{ __html: sanitizeCssForStyleTag(criticalCSS) }} />
                 {/* Load fonts - only if URLs are defined */}
                 {theme.typography.heading.url && <link rel="stylesheet" href={theme.typography.heading.url} />}
                 {theme.typography.body.url && <link rel="stylesheet" href={theme.typography.body.url} />}

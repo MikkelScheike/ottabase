@@ -26,6 +26,7 @@
         "test:coverage": "vitest --coverage"
     },
     "dependencies": {
+        "@ottabase/utils": "workspace:*",
         "highlight.js": "catalog:"
     },
     "peerDependencies": {

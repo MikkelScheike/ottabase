@@ -13,6 +13,7 @@ import {
     TabsList,
     TabsTrigger,
 } from '@ottabase/ui-shadcn';
+import { sanitizeBlockHtml } from '@ottabase/utils/sanitize';
 import { stripHtml } from '@ottabase/utils/string';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
@@ -109,6 +110,7 @@ export function AdminDevMailPage() {
     }, [filteredMessages, selectedId]);
 
     const selectedLinks = selectedMessage ? extractLinks(selectedMessage) : [];
+    const sanitizedSelectedHtml = selectedMessage ? sanitizeBlockHtml(selectedMessage.html) : '';
 
     return (
         <div className="space-y-4">
@@ -356,7 +358,7 @@ export function AdminDevMailPage() {
                                         <TabsContent value="html" className="m-0 p-6">
                                             <div
                                                 className="prose prose-sm max-w-none dark:prose-invert"
-                                                dangerouslySetInnerHTML={{ __html: selectedMessage.html }}
+                                                dangerouslySetInnerHTML={{ __html: sanitizedSelectedHtml }}
                                             />
                                         </TabsContent>
                                         <TabsContent value="plain" className="m-0 p-6">

@@ -1,4 +1,4 @@
-import { sanitizeSvgHtml, sanitizeUrl } from '@ottabase/utils/sanitize';
+import { sanitizeJsonForScript, sanitizeSvgHtml, sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import { useMemo } from 'react';
 
@@ -58,7 +58,7 @@ const CTA: RenderFn<CTAData> = ({ data, className = '' }) => {
             {structuredData && (
                 <script
                     type="application/ld+json"
-                    dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+                    dangerouslySetInnerHTML={{ __html: sanitizeJsonForScript(structuredData) }}
                 />
             )}
             <div className={`${className} my-6 flex ${justify} cdc-content-cta`} data-alignment={alignment}>

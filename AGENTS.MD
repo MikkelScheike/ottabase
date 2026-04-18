@@ -18,8 +18,10 @@ Monorepo using **pnpm workspaces** + **Turborepo**. Vite app with Cloudflare Wor
 5. **Edge Runtime**: This is a Cloudflare Workers project. Avoid Node.js-only APIs (fs, child_process) in app code.
 6. **Fat Models**: Encapsulate logic in models. E.g., `user.activate()` instead of `authService.activate(user)`.
 7. **Sanitize Untrusted Content**: For user/editor-provided HTML or URL values, always use `sanitizeInlineHtml`,
-   `sanitizeBlockHtml`, `sanitizeSvgHtml`, and `sanitizeUrl` from `@ottabase/utils/sanitize`. Do not use raw
-   `dangerouslySetInnerHTML` or raw `href` values without sanitization.
+   `sanitizeBlockHtml`, `sanitizeSvgHtml`, and `sanitizeUrl` from `@ottabase/utils/sanitize`. For inline JSON script
+   content (for example `application/ld+json`), use `sanitizeJsonForScript`. For CSS injected into `<style>` tags, use
+   `sanitizeCssForStyleTag`. All `dangerouslySetInnerHTML` payloads must be passed through the appropriate sanitizer
+   helper first. Do not use raw `dangerouslySetInnerHTML` or raw `href` values without sanitization.
 
 ## Always-On Rules
 
@@ -116,10 +118,12 @@ ottabase/
 
 - **OS**: Windows 11
 - **Terminal**: Command Prompt (cmd) - avoid PowerShell due to path issues
-- **Deployment (CI/CD)**: would run on Ubuntu
+- **Deployment (CI/CD)**: Linux / Ubuntu
 - **Runtime**: Node.js 24+
 - **Package Manager**: pnpm with workspaces
 - **Build**: Turborepo
+- Do not apply any git commands that modify state or history (e.g., `git commit`, `git reset`, `git rebase`,
+  `git commit --amend`) without explicit user instructions.
 
 ```bash
 pnpm build:pkg    # Build packages first
@@ -307,6 +311,7 @@ Utilities with tree-shakeable imports.
 import { toUTC, formatInUserTimezone } from '@ottabase/utils/timezone';
 import { makeSlug, isValidUrl } from '@ottabase/utils/url';
 import { changeCase, isEmail } from '@ottabase/utils/string';
+import { sanitizeInlineHtml, sanitizeJsonForScript, sanitizeCssForStyleTag } from '@ottabase/utils/sanitize';
 ```
 
 ### @ottabase/ottablog
