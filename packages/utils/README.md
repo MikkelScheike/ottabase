@@ -57,6 +57,9 @@ import {
 // URL utilities
 import { makeSlug, getSegment, getDomainName, joinPaths, isValidUrl } from '@ottabase/utils/url';
 
+// HTML sanitization utilities (browser + Node/SSR safe)
+import { sanitizeUrl, sanitizeInlineHtml, sanitizeBlockHtml, sanitizeSvgHtml } from '@ottabase/utils/sanitize';
+
 // Environment utilities (server-side)
 import { isDev, isProd, isTest, isStaging, isCI, getEnvironment, isRunningOnServer } from '@ottabase/utils/env';
 
@@ -134,6 +137,21 @@ import {
 - **`prependBaseUrlForRelativePath(url: string, baseUrl?: string): string`** - Prepend base URL to relative paths
 - **`isValidUrl(url: string): boolean`** - Check if string is valid URL
 - **`replaceDoubleSlashes(url: string): string`** - Replace multiple slashes with single slash
+
+### Sanitization Utilities (`@ottabase/utils/sanitize`)
+
+- **`sanitizeUrl(url: string | null | undefined): string`** - Allowlist URL schemes (`http`, `https`, `mailto`, `tel`,
+  `sms`) and safe relative links, else fallback to `#`
+- **`sanitizeInlineHtml(html: string): string`** - Sanitize inline EditorJS markup (safe for `dangerouslySetInnerHTML`)
+- **`sanitizeBlockHtml(html: string): string`** - Sanitize broader block-level HTML content
+- **`sanitizeSvgHtml(svg: string): string`** - Sanitize inline SVG content
+
+Use all four helpers together for untrusted renderer input:
+
+- `sanitizeInlineHtml` for inline rich text (for example list items and step content)
+- `sanitizeBlockHtml` for full HTML blocks
+- `sanitizeSvgHtml` for inline icon/SVG markup
+- `sanitizeUrl` for anchor/link URL fields before assigning to `href`
 
 ### Environment Utilities (`@ottabase/utils/env`) - Server-side
 
@@ -451,3 +469,12 @@ This package is designed to be extensible. Future additions may include:
 
 - Node.js ≥ 24.0.0
 - TypeScript support included
+
+## Build Artifact Verification
+
+Run this after build when validating publish-ready sanitize output:
+
+```bash
+pnpm --filter @ottabase/utils build
+pnpm --filter @ottabase/utils verify:dist-sanitize
+```

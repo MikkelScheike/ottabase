@@ -17,6 +17,9 @@ Monorepo using **pnpm workspaces** + **Turborepo**. Vite app with Cloudflare Wor
    for UI components before creating new ones.
 5. **Edge Runtime**: This is a Cloudflare Workers project. Avoid Node.js-only APIs (fs, child_process) in app code.
 6. **Fat Models**: Encapsulate logic in models. E.g., `user.activate()` instead of `authService.activate(user)`.
+7. **Sanitize Untrusted Content**: For user/editor-provided HTML or URL values, always use `sanitizeInlineHtml`,
+   `sanitizeBlockHtml`, `sanitizeSvgHtml`, and `sanitizeUrl` from `@ottabase/utils/sanitize`. Do not use raw
+   `dangerouslySetInnerHTML` or raw `href` values without sanitization.
 
 ## Always-On Rules
 
