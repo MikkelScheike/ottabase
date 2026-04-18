@@ -1,3 +1,4 @@
+import { sanitizeInlineHtml } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 
 export interface StepItem {
@@ -41,9 +42,10 @@ const Steps: RenderFn<StepsData> = ({ data, className = '' }) => {
                         <article className="cdc-steps-content">
                             {item.title ? <h3 className="cdc-steps-title">{item.title}</h3> : null}
                             {item.content ? (
-                                <p className={`cdc-steps-text${item.title ? '' : ' cdc-steps-text--no-title'}`}>
-                                    {item.content}
-                                </p>
+                                <p
+                                    className={`cdc-steps-text${item.title ? '' : ' cdc-steps-text--no-title'}`}
+                                    dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(item.content) }}
+                                />
                             ) : null}
                         </article>
                     </div>

@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import { useMemo } from 'react';
 
@@ -152,7 +153,7 @@ const Map: RenderFn<MapData> = ({ data, className = '' }) => {
                     <p className="font-medium text-foreground mb-1">Map preview unavailable</p>
                     <p className="mb-3">The link could not be embedded safely. You can still open it in a new tab.</p>
                     <a
-                        href={url}
+                        href={sanitizeUrl(url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 text-primary hover:underline"
@@ -200,7 +201,7 @@ const Map: RenderFn<MapData> = ({ data, className = '' }) => {
             {/* Noscript fallback */}
             <noscript>
                 <p className="text-sm text-muted-foreground">
-                    <a href={url} target="_blank" rel="noopener noreferrer">
+                    <a href={sanitizeUrl(url)} target="_blank" rel="noopener noreferrer">
                         {caption || 'View map'}
                     </a>
                 </p>

@@ -1,4 +1,5 @@
 import { useMediaLightboxRegistration } from '@ottabase/medialibrary';
+import { sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import React from 'react';
 import { AdvancedImageData } from './advancedimage.types';
@@ -163,7 +164,7 @@ const AdvancedImageBlock: RenderFn<AdvancedImageData> = ({ data, className = '' 
                 )}
                 {linkUrl ? (
                     <a
-                        href={linkUrl}
+                        href={sanitizeUrl(linkUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block no-underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 rounded-sm"

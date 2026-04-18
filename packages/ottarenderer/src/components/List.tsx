@@ -1,3 +1,4 @@
+import { sanitizeInlineHtml } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import './List.css';
 
@@ -13,7 +14,8 @@ const List: RenderFn<{ items: any[]; style: string }> = ({ data, className = '',
                             key={i}
                             className={`cdc-content-list cdc-content-list-l${level} text-foreground text-base/7`}
                         >
-                            {item.content}
+                            {/* EditorJS list items often include inline HTML (e.g. <strong>) */}
+                            <span dangerouslySetInnerHTML={{ __html: sanitizeInlineHtml(item.content ?? '') }} />
                             {item.items.length > 0 && <List data={item} level={level + 1} />}
                         </li>
                     );

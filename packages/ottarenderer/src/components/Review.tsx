@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import { useId, useMemo } from 'react';
 
@@ -215,7 +216,7 @@ const Review: RenderFn<ReviewData> = ({ data, className = '' }) => {
                                     >
                                         {linkUrl ? (
                                             <a
-                                                href={linkUrl}
+                                                href={sanitizeUrl(linkUrl)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="hover:underline text-inherit"
@@ -370,7 +371,7 @@ const Review: RenderFn<ReviewData> = ({ data, className = '' }) => {
                         {linkUrl && (
                             <div className="mb-4">
                                 <a
-                                    href={linkUrl}
+                                    href={sanitizeUrl(linkUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground underline underline-offset-4 decoration-muted-foreground/40 hover:decoration-foreground transition-colors"

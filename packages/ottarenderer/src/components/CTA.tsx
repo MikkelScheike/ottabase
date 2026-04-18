@@ -1,3 +1,4 @@
+import { sanitizeSvgHtml, sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import { useMemo } from 'react';
 
@@ -25,7 +26,7 @@ const buttonStyleClass: Record<NonNullable<CTAData['style']>, string> = {
 
 const CTA: RenderFn<CTAData> = ({ data, className = '' }) => {
     const buttonText = data?.text || 'Get Started';
-    const url = data?.url || '#';
+    const url = sanitizeUrl(data?.url);
     const style = data?.style || 'primary';
     const alignment = data?.alignment || 'center';
     const openInNewTab = data?.openInNewTab ?? false;
@@ -71,7 +72,7 @@ const CTA: RenderFn<CTAData> = ({ data, className = '' }) => {
                     itemProp="name"
                     aria-label={buttonText}
                 >
-                    {icon && <span dangerouslySetInnerHTML={{ __html: icon }} aria-hidden="true" />}
+                    {icon && <span dangerouslySetInnerHTML={{ __html: sanitizeSvgHtml(icon) }} aria-hidden="true" />}
                     {buttonText}
                 </a>
             </div>

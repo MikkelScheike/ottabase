@@ -1,3 +1,4 @@
+import { sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 
 export type TestimonialVariant = 'card' | 'minimal' | 'featured' | 'quote-bubble' | 'side-by-side';
@@ -63,7 +64,7 @@ function AuthorAttribution({
     compact?: boolean;
 }) {
     const nameEl = sourceUrl ? (
-        <a href={sourceUrl} target="_blank" rel="noopener noreferrer" className="cdc-testimonial-name">
+        <a href={sanitizeUrl(sourceUrl)} target="_blank" rel="noopener noreferrer" className="cdc-testimonial-name">
             {authorName}
         </a>
     ) : (
@@ -290,7 +291,7 @@ const Testimonial: RenderFn<TestimonialData> = ({ data, className = '' }) => {
                         <div className="cdc-testimonial-meta">
                             {sourceUrl ? (
                                 <a
-                                    href={sourceUrl}
+                                    href={sanitizeUrl(sourceUrl)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="cdc-testimonial-name"

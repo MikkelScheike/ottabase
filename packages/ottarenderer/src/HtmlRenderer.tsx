@@ -1,3 +1,4 @@
+import { sanitizeBlockHtml } from '@ottabase/utils/sanitize';
 import React from 'react';
 
 interface HtmlRendererProps {
@@ -13,7 +14,7 @@ const HtmlRenderer: React.FC<HtmlRendererProps> = ({ content, className = '' }) 
     return (
         <div
             className={`html-renderer prose prose-gray dark:prose-invert max-w-none ${className}`}
-            dangerouslySetInnerHTML={{ __html: content }}
+            dangerouslySetInnerHTML={{ __html: sanitizeBlockHtml(content) }}
         />
     );
 };

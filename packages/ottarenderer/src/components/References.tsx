@@ -1,5 +1,5 @@
+import { sanitizeUrl } from '@ottabase/utils/sanitize';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
-import React from 'react';
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -44,11 +44,21 @@ function ReferenceEntry({
                 {item.year && <span className="cdc-references-year"> ({item.year})</span>}
                 {(item.authors || item.year) && '. '}
                 {item.title ? (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="cdc-references-link">
+                    <a
+                        href={sanitizeUrl(item.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="cdc-references-link"
+                    >
                         {item.title}
                     </a>
                 ) : (
-                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="cdc-references-link">
+                    <a
+                        href={sanitizeUrl(item.url)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="cdc-references-link"
+                    >
                         {urlDisplay}
                     </a>
                 )}

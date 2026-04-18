@@ -25,9 +25,9 @@ export interface ChecklistItem {
 
 const Checklist: RenderFn<{ items: ChecklistItem[] }> = ({ data, className = '' }) => {
     return (
-        <ul className={`${className} list-none p-0 m-0 space-y-2`}>
+        <ul className={`${className} list-none p-0 m-0 pb-4 space-y-2`}>
             {data?.items?.map((item, i) => {
-                const textColor = item.checked ? 'text-muted-foreground line-through' : 'text-foreground';
+                const textColor = item.checked ? 'text-muted-foreground' : 'text-foreground';
                 const checkboxBorderColor = item.checked ? 'border-primary' : 'border-border';
                 const checkboxBgColor = item.checked ? 'bg-primary' : 'bg-background';
 
@@ -35,11 +35,9 @@ const Checklist: RenderFn<{ items: ChecklistItem[] }> = ({ data, className = '' 
                     <li key={i} className="flex items-start">
                         <div className="relative flex items-center">
                             <div
-                                className={`mt-1 h-5 w-5 border ${checkboxBorderColor} rounded-sm ${checkboxBgColor} focus:outline-none transition duration-200 align-top cursor-pointer mr-2 flex items-center justify-center`}
+                                className={`mt-1 h-5 w-5 border ${checkboxBorderColor} rounded-sm ${checkboxBgColor} focus:outline-none transition duration-200 align-top cursor-default mr-2 flex items-center justify-center`}
                             >
-                                {item.checked && (
-                                    <IconCheck size={12} className="text-primary-foreground pointer-events-none" />
-                                )}
+                                {item.checked && <IconCheck size={14} className="text-primary-foreground" />}
                             </div>
                         </div>
                         <span className={`${textColor} flex-grow`}>{HTMLReactParser(item.text ?? '')}</span>
