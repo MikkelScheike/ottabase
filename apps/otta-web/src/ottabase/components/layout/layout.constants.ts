@@ -10,8 +10,9 @@ export interface NavLink {
 const NAV_LINKS_ALL: NavLink[] = [
     { to: '/', label: 'Home' },
     { to: '/demo', label: '✨ Demo' },
+    { to: '/docs', label: '✨ Docs' },
+    { to: '/blog', label: '✨ Blog' },
     { to: '/changelog', label: "What's New" },
-    { to: '/blog', label: 'Blog' },
     { to: '/shortlinks', label: 'Links' },
     { to: '/analytics', label: 'Analytics', authRequired: true },
     { to: '/admin', label: 'Admin' },

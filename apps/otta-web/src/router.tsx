@@ -2,16 +2,14 @@ import { NotFoundPage } from '@/components/NotFoundPage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
 import { usePageViewTracking } from '@/hooks/usePageViewTracking';
-import { api, isApiError } from '@/lib/api';
 import { ConfigurableLayout } from '@/ottabase/components/ConfigurableLayout';
-import { APP_META, MEDIA_LIBRARY_ENABLED, PACKAGES_ENABLED } from '@/ottabase/config';
+import { MEDIA_LIBRARY_ENABLED, PACKAGES_ENABLED } from '@/ottabase/config';
 import { BrandPathSync, LayoutResolver } from '@ottabase/brand-engine-react';
 import { tanstackRouterAdapter } from '@ottabase/brand-engine-react/routers';
-import { Button, Toaster } from '@ottabase/ui-shadcn';
+import { Toaster } from '@ottabase/ui-shadcn';
 import {
     createBrowserHistory,
     lazyRouteComponent,
-    Link,
     Navigate,
     Outlet,
     RootRoute,
@@ -19,7 +17,7 @@ import {
     Router,
 } from '@tanstack/react-router';
 
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 
 const ADMIN_REQUIRED_PERMISSIONS = ['admin'];
 
@@ -43,72 +41,6 @@ function RootLayout() {
             <Toaster />
             {content}
         </>
-    );
-}
-
-function HomeRouteComponent() {
-    const [result, setResult] = useState<string | null>(null);
-    const [loading, setLoading] = useState(false);
-
-    const checkHealth = async () => {
-        setLoading(true);
-        setResult(null);
-        try {
-            const data = await api('/api/health');
-            setResult(JSON.stringify(data, null, 2));
-        } catch (err) {
-            if (isApiError(err)) {
-                setResult(`Error ${err.status}: ${err.message}`);
-            } else {
-                setResult(`Error: ${err instanceof Error ? err.message : String(err)}`);
-            }
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    return (
-        <div className="flex flex-col gap-theme-section max-w-3xl">
-            <h1 className="text-4xl font-bold">{APP_META.appName}</h1>
-
-            <div className="space-y-4 text-muted-foreground text-sm leading-relaxed">
-                <p>
-                    A full-stack starter template and monorepo ecosystem built on <strong>Vite</strong>,{' '}
-                    <strong>TanStack Router</strong>, and <strong>Cloudflare Workers</strong>.
-                </p>
-                <p>
-                    Powered by <strong>OttaORM</strong>, a <em>fat-model</em> system that unifies Drizzle schema,
-                    business logic, RLS isolation, and auto-generated TanStack Query hooks into single TypeScript
-                    classes.
-                </p>
-                <p>
-                    Includes plug-and-play modules for Runtime UI theming (Brand Engine), Auth.js, granular RBAC, and a
-                    headless CMS (Ottablog) to help you ship SaaS applications to the Edge faster.
-                </p>
-            </div>
-
-            <div className="flex flex-col gap-theme-card mt-4">
-                <div className="flex flex-wrap gap-2">
-                    <Button asChild variant="outline">
-                        <Link to="/demo">Go to Demo</Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                        <Link to="/docs/$" params={{ _splat: '' }}>
-                            Docs
-                        </Link>
-                    </Button>
-                    <Button variant="outline" onClick={checkHealth} disabled={loading}>
-                        {loading ? 'Checking...' : '/api/health'}
-                    </Button>
-                </div>
-
-                {result && (
-                    <pre className="mt-2 rounded-lg bg-muted p-4 text-xs overflow-auto max-h-48 border animate-in fade-in slide-in-from-top-2 duration-300">
-                        {result}
-                    </pre>
-                )}
-            </div>
-        </div>
     );
 }
 
@@ -137,7 +69,11 @@ const rootRoute = new RootRoute({
 const indexRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/',
-    component: HomeRouteComponent,
+    component: lazyRouteComponent(() =>
+        import('@/pages/demo/home/HomeRoutePage').then((m) => ({
+            default: m.HomeRoutePage,
+        })),
+    ),
 });
 
 const docsRoute = new Route({
