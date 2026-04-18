@@ -20,6 +20,8 @@ catalog:
     "@storybook/addon-docs": ^10.2.10
     "@storybook/addon-links": ^10.2.10
     "@storybook/addon-styling-webpack": ^3.0.0
+    "@testing-library/jest-dom": ^6.9.1
+    "@testing-library/react": ^16.3.2
     "@storybook/react-webpack5": ^10.2.10
     "@storybook/test": ^10.2.10
     "@tabler/icons-react": ^3.35.0
@@ -52,6 +54,7 @@ catalog:
     highlight.js: ^11.11.1
     husky: ^9.1.7
     jotai: ^2.16.2
+    jsdom: ^27.4.0
     lint-staged: ^15.5.2
     localflare: ^0.1.2
     lucide-react: ^0.468.0

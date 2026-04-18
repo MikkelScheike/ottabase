@@ -27,11 +27,11 @@
         "@tabler/icons-react": "catalog:"
     },
     "devDependencies": {
-        "@testing-library/react": "^16.3.2",
+        "@testing-library/react": "catalog:",
         "@types/react": "catalog:",
         "@types/react-dom": "catalog:",
         "drizzle-orm": "catalog:",
-        "jsdom": "^27.4.0",
+        "jsdom": "catalog:",
         "react": "catalog:",
         "react-dom": "catalog:",
         "typescript": "catalog:",

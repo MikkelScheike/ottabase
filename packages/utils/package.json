@@ -136,7 +136,7 @@
         "@types/node": "catalog:",
         "@types/react": "catalog:",
         "eslint": "catalog:",
-        "jsdom": "^27.4.0",
+        "jsdom": "catalog:",
         "react": "catalog:",
         "rimraf": "catalog:",
         "tsup": "catalog:",
