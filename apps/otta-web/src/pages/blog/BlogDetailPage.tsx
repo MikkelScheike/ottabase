@@ -406,7 +406,7 @@ export function BlogDetailPage() {
                 </Button>
                 {user?.id && displayPost.authorId && user.id === displayPost.authorId && (
                     <Button variant="outline" size="sm" asChild>
-                        <Link to="/admin/blog/$postId/edit" params={{ postId: displayPost.id }}>
+                        <Link to="/admin/content/blog/$postId/edit" params={{ postId: displayPost.id }}>
                             <Pencil className="mr-1.5 h-4 w-4" />
                             Edit
                         </Link>

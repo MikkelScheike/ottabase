@@ -1,245 +1,45 @@
-import { MEDIA_LIBRARY_ENABLED, PACKAGES_ENABLED } from '@/ottabase/config';
+import { getEnabledAdminNav } from '@/ottabase/config/admin-nav';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
-import { IconMenu2 } from '@tabler/icons-react';
 import { Link } from '@tanstack/react-router';
-import type { LucideIcon } from 'lucide-react';
-import {
-    Activity,
-    Bell,
-    Building2,
-    Clock,
-    Database,
-    FileText,
-    Layers,
-    Layout,
-    Mail,
-    Palette,
-    Power,
-    Shield,
-    ShieldCheck,
-    UserPlus,
-    Users,
-} from 'lucide-react';
 
-// brandEngine is core — BrandEngine/Theme Generator always shown
-const PACKAGE_LINK_KEYS: Record<string, keyof typeof PACKAGES_ENABLED> = {
-    Content: 'ottablog',
-    'Content Theme': 'ottablog',
-    'Referral Tracking': 'referrals',
-};
-
-interface AdminLink {
-    title: string;
-    description: string;
-    href: string;
-    icon: LucideIcon | typeof IconMenu2;
-    disabled?: boolean;
-    external?: boolean;
-}
-
-interface AdminCategory {
-    label: string;
-    links: AdminLink[];
-}
-
-const ADMIN_CATEGORIES: AdminCategory[] = [
-    {
-        label: 'Appearance & Navigation',
-        links: [
-            {
-                title: 'BrandEngine',
-                description: 'Theme, layout, typography, and design token configuration with real-time preview.',
-                href: '/admin/brand-engine',
-                icon: Layout,
-            },
-            {
-                title: 'Theme Generator',
-                description: 'Generate color palettes and check accessibility contrast (in Brand Engine).',
-                href: '/admin/brand-engine',
-                icon: Palette,
-            },
-            {
-                title: 'Menus',
-                description: 'Define navigation menus (sidebar, header). Override default nav links.',
-                href: '/admin/menus',
-                icon: IconMenu2,
-            },
-        ],
-    },
-    {
-        label: 'Content',
-        links: [
-            {
-                title: 'Content Management',
-                description: 'Create and manage blog posts, changelogs, docs, news, and announcements.',
-                href: '/admin/blog',
-                icon: FileText,
-            },
-            {
-                title: 'Content Theme',
-                description: 'Manage content themes and plugins (activate theme, enable/disable plugins).',
-                href: '/admin/blog/studio',
-                icon: Palette,
-            },
-            ...(MEDIA_LIBRARY_ENABLED
-                ? [
-                      {
-                          title: 'Media Library',
-                          description: 'Browse uploads with previews, metadata, and direct links for editors.',
-                          href: '/admin/media-library',
-                          icon: FileText,
-                      },
-                  ]
-                : []),
-        ],
-    },
-    {
-        label: 'Users & Access Control',
-        links: [
-            {
-                title: 'User Management',
-                description: 'View and manage all users, assign roles, and control organization access.',
-                href: '/admin/users',
-                icon: Users,
-            },
-            {
-                title: 'Organizations',
-                description: 'Manage multi-tenant organizations, members, and settings.',
-                href: '/organizations',
-                icon: Building2,
-            },
-            {
-                title: 'RBAC Administration',
-                description: 'Manage roles, permissions, and access control for multi-tenant security.',
-                href: '/admin/rbac',
-                icon: Shield,
-            },
-        ],
-    },
-    {
-        label: 'Security & Compliance',
-        links: [
-            {
-                title: 'Audit Logs',
-                description: 'View and search audit logs for security and compliance tracking.',
-                href: '/admin/audit',
-                icon: FileText,
-            },
-            {
-                title: 'RLS Security Demo',
-                description: 'Interactive demo of Row-Level Security with live security tests and policy overview.',
-                href: '/admin/security/rls',
-                icon: ShieldCheck,
-            },
-            {
-                title: 'Platform Kill Switches',
-                description:
-                    'Configure global read-only mode or full lockdown (KILLSWITCH_READONLY_MODE / KILLSWITCH_LOCKDOWN).',
-                href: '/admin/security/kill-switches',
-                icon: Power,
-            },
-        ],
-    },
-    {
-        label: 'Infrastructure',
-        links: [
-            {
-                title: 'Migration Status',
-                description: 'Check database schema status, view migration history, and initialize tables.',
-                href: '/migration-status',
-                icon: Database,
-            },
-            {
-                title: 'Database Manager',
-                description: 'Directly view and manage database tables and records.',
-                href: '/admin/db',
-                icon: Database,
-            },
-            {
-                title: 'Queue Management',
-                description: 'Monitor background job queues, view processing stats, and manage failed jobs.',
-                href: '/admin/queues',
-                icon: Layers,
-            },
-            {
-                title: 'Scheduled Tasks',
-                description: 'Manage DB-driven cron jobs, view run history, and schedule new tasks.',
-                href: '/admin/cron',
-                icon: Clock,
-            },
-            {
-                title: 'System Health',
-                description: 'View system health metrics and API status.',
-                href: '/api/health',
-                icon: Activity,
-                external: true,
-            },
-        ],
-    },
-    {
-        label: 'Communication & Growth',
-        links: [
-            {
-                title: 'Notifications',
-                description: 'Send notifications to users and broadcast system alerts to administrators.',
-                href: '/admin/notifications',
-                icon: Bell,
-            },
-            {
-                title: 'Dev Mail Trap',
-                description:
-                    'Inspect locally captured emails for magic links, verification, password resets, and queue sends.',
-                href: '/admin/dev-mail',
-                icon: Mail,
-            },
-            {
-                title: 'Referral Tracking',
-                description: 'View referral statistics, manage usernames, and track conversions.',
-                href: '/admin/referrals',
-                icon: UserPlus,
-            },
-        ],
-    },
-];
-
+/**
+ * Admin Console overview page.
+ *
+ * Renders cards driven by the SSOT in `apps/otta-web/src/ottabase/config/admin-nav.ts`.
+ * Adding a new admin page = one entry in that file (the AdminLayout sidebar
+ * picks it up automatically too).
+ */
 export function AdminIndexPage() {
-    // Filter categories by enabled packages, then drop empty categories
-    const categories = ADMIN_CATEGORIES.map((cat) => ({
-        ...cat,
-        links: cat.links.filter((link) => {
-            const pkg = PACKAGE_LINK_KEYS[link.title];
-            return !pkg || PACKAGES_ENABLED[pkg];
-        }),
-    })).filter((cat) => cat.links.length > 0);
+    const groups = getEnabledAdminNav();
 
     return (
-        <div className="space-y-10">
+        <div className="space-y-10 pb-20">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Admin Console</h1>
-                <p className="text-muted-foreground mt-2">Central hub for system administration and monitoring.</p>
+                <p className="text-muted-foreground mt-2 max-w-3xl">
+                    Everything that keeps the platform running — identity, content, infrastructure, growth — in one
+                    place. Tenant-isolated, role-gated, and built for production operations.
+                </p>
             </div>
 
-            {categories.map((category) => (
-                <section key={category.label} className="space-y-4">
-                    <h2 className="text-lg font-semibold text-foreground tracking-tight">{category.label}</h2>
+            {groups.map((group) => (
+                <section key={group.id} className="space-y-4">
+                    <h2 className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
+                        <group.icon className="h-4 w-4" />
+                        {group.label}
+                    </h2>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {category.links.map((link) => (
-                            <Link
-                                key={link.title}
-                                to={link.href}
-                                target={link.external ? '_blank' : undefined}
-                                disabled={link.disabled}
-                                className={link.disabled ? 'pointer-events-none opacity-50' : ''}
-                            >
+                        {group.items.map((item) => (
+                            <Link key={item.href} to={item.href} target={item.external ? '_blank' : undefined}>
                                 <Card className="h-full hover:bg-muted/50 transition-colors cursor-pointer">
                                     <CardHeader className="flex flex-row items-center gap-4 space-y-0 pb-2">
                                         <div className="p-2 bg-primary/10 rounded-full">
-                                            <link.icon className="h-5 w-5 text-primary" />
+                                            <item.icon className="h-5 w-5 text-primary" />
                                         </div>
-                                        <CardTitle className="text-base">{link.title}</CardTitle>
+                                        <CardTitle className="text-base">{item.title}</CardTitle>
                                     </CardHeader>
                                     <CardContent>
-                                        <CardDescription>{link.description}</CardDescription>
+                                        <CardDescription>{item.description}</CardDescription>
                                     </CardContent>
                                 </Card>
                             </Link>
@@ -247,25 +47,6 @@ export function AdminIndexPage() {
                     </div>
                 </section>
             ))}
-
-            <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
-                <div className="flex gap-4 flex-wrap">
-                    <Link to="/demo" className="text-sm text-primary hover:underline">
-                        Component Demos
-                    </Link>
-                    {PACKAGES_ENABLED.shortlinks && (
-                        <Link to="/shortlinks" className="text-sm text-primary hover:underline">
-                            Shortlinks Manager
-                        </Link>
-                    )}
-                    {MEDIA_LIBRARY_ENABLED && (
-                        <Link to="/media-library" className="text-sm text-primary hover:underline">
-                            My Uploads
-                        </Link>
-                    )}
-                </div>
-            </div>
         </div>
     );
 }

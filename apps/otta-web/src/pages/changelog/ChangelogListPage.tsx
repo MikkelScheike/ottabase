@@ -82,7 +82,7 @@ export function ChangelogListPage() {
                         </div>
                         {isAuthenticated && (
                             <Button asChild>
-                                <Link to="/admin/blog/new" search={{ contentType: 'changelog' }}>
+                                <Link to="/admin/content/blog/new" search={{ contentType: 'changelog' }}>
                                     <IconPlus className="mr-2 h-4 w-4" />
                                     New Entry
                                 </Link>

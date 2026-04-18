@@ -11,12 +11,13 @@ import { createPortal } from 'react-dom';
 import { getNavLinks } from './layout.constants';
 
 export function DrawerNav() {
-    const { isAuthenticated } = useSession();
+    const { isAuthenticated, user } = useSession();
     const location = useLocation();
     const { config } = useBrand();
     const [open, setOpen] = useState(false);
 
-    const links = getNavLinks().filter((l) => !l.authRequired || isAuthenticated);
+    const isAdmin = !!user?.permissions?.includes('admin') || !!user?.permissions?.includes('*:*');
+    const links = getNavLinks({ isAuthenticated, isAdmin });
     const staticNav = links.map((link) => {
         const isActive = location.pathname === link.to || (link.to !== '/' && location.pathname.startsWith(link.to));
         return (

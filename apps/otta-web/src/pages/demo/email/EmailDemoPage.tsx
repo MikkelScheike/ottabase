@@ -460,7 +460,8 @@ export function EmailDemoPage() {
                             <br />
                             Optional: <code>DEV_EMAIL_TRAP_MAX_EMAILS</code>
                             <br />
-                            Captured emails are viewable in the admin inbox at <code>/admin/dev-mail</code>.
+                            Captured emails are viewable in the admin inbox at{' '}
+                            <code>/admin/infrastructure/dev-mail</code>.
                         </p>
                     </div>
 

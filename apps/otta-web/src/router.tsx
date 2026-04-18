@@ -1,3 +1,4 @@
+import { AdminLayout } from '@/components/admin/AdminLayout';
 import { NotFoundPage } from '@/components/NotFoundPage';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { RouteLoadingFallback } from '@/components/RouteLoadingFallback';
@@ -17,7 +18,7 @@ import {
     Router,
 } from '@tanstack/react-router';
 
-import { type ReactNode } from 'react';
+import { type ComponentType, type ReactNode } from 'react';
 
 const ADMIN_REQUIRED_PERMISSIONS = ['admin'];
 
@@ -27,19 +28,13 @@ function RootLayout() {
     // Track page views automatically
     usePageViewTracking();
 
-    const content = (
+    return (
         <>
+            <Toaster />
             <BrandPathSync pathname={pathname} />
             <LayoutResolver router={tanstackRouterAdapter} layoutComponent={ConfigurableLayout}>
                 <Outlet />
             </LayoutResolver>
-        </>
-    );
-
-    return (
-        <>
-            <Toaster />
-            {content}
         </>
     );
 }
@@ -52,10 +47,11 @@ function AdminPrivilegeFallback() {
     );
 }
 
+/** Wraps an admin page in: ProtectedRoute(admin) → AdminLayout(sidebar) → page. */
 function renderAdminRoute(children: ReactNode) {
     return (
         <ProtectedRoute requiredPermissions={ADMIN_REQUIRED_PERMISSIONS} fallback={<AdminPrivilegeFallback />}>
-            {children}
+            <AdminLayout>{children}</AdminLayout>
         </ProtectedRoute>
     );
 }
@@ -66,569 +62,95 @@ const rootRoute = new RootRoute({
     notFoundComponent: NotFoundPage,
 });
 
-const indexRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/home/HomeRoutePage').then((m) => ({
-            default: m.HomeRoutePage,
-        })),
-    ),
-});
+// ─── Helpers to drastically reduce route-declaration boilerplate ─────────────
 
-const docsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/docs/$',
-    component: lazyRouteComponent(() =>
-        import('@/pages/docs/DocsPage').then((m) => ({
-            default: m.DocsPage,
-        })),
-    ),
-});
+type ComponentLoader = () => Promise<{ default: ComponentType<unknown> }>;
 
-const demoLayoutRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/demo',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/DemoLayout').then((m) => ({
-            default: m.DemoLayout,
-        })),
-    ),
-});
+/** Public lazy route under rootRoute. */
+function publicRoute(
+    path: string,
+    loader: ComponentLoader,
+    options: Partial<{ validateSearch: (s: Record<string, unknown>) => unknown }> = {},
+) {
+    return new Route({
+        getParentRoute: () => rootRoute,
+        path,
+        component: lazyRouteComponent(loader),
+        ...options,
+    });
+}
 
-const demoIndexRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: '/',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/DemoIndexPage').then((m) => ({
-            default: m.DemoIndexPage,
-        })),
-    ),
-});
+/** Auth-protected lazy route under rootRoute. */
+function protectedRoute(path: string, loader: () => Promise<Record<string, ComponentType>>, exportName: string) {
+    return new Route({
+        getParentRoute: () => rootRoute,
+        path,
+        component: lazyRouteComponent(() =>
+            loader().then((m) => {
+                const Comp = m[exportName]!;
+                return {
+                    default: () => (
+                        <ProtectedRoute>
+                            <Comp />
+                        </ProtectedRoute>
+                    ),
+                };
+            }),
+        ),
+    });
+}
 
-const demoMantineRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'mantine',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/mantine/MantineDemoRoute').then((m) => ({
-            default: m.MantineDemoRoute,
-        })),
-    ),
-});
+/** Admin-protected lazy route — wraps page in AdminLayout sidebar. */
+function makeAdminRoute(
+    path: string,
+    loader: () => Promise<Record<string, ComponentType>>,
+    exportName: string,
+    options: Partial<{ validateSearch: (s: Record<string, unknown>) => unknown }> = {},
+) {
+    return new Route({
+        getParentRoute: () => rootRoute,
+        path,
+        component: lazyRouteComponent(() =>
+            loader().then((m) => {
+                const Comp = m[exportName]!;
+                return { default: () => renderAdminRoute(<Comp />) };
+            }),
+        ),
+        ...options,
+    });
+}
 
-const demoShadcnRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'shadcn',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/shadcn/ShadcnDemoPage').then((m) => ({
-            default: m.ShadcnDemoPage,
-        })),
-    ),
-});
+// ─── Marketing / app surface ─────────────────────────────────────────────────
 
-const demoOttaEditorRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ottaeditor',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ottaeditor/OttaEditorDemoPage').then((m) => ({
-            default: m.OttaEditorDemoPage,
-        })),
-    ),
-});
+const indexRoute = publicRoute('/', () => import('@/pages/home/HomePage').then((m) => ({ default: m.HomePage })));
 
-const demoOttaOrmRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ottaorm',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ottaorm/OttaORMDemoPage').then((m) => ({
-            default: m.OttaORMDemoPage,
-        })),
-    ),
-});
+const docsRoute = publicRoute('/docs/$', () => import('@/pages/docs/DocsPage').then((m) => ({ default: m.DocsPage })));
 
-const demoOttaFormsRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ottaforms',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ottaforms/OttaFormsDemoPage').then((m) => ({
-            default: m.OttaFormsDemoPage,
-        })),
-    ),
-});
+// ─── Auth ────────────────────────────────────────────────────────────────────
 
-const demoOttaSelectRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ottaselect',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ottaselect/OttaSelectDemoPage').then((m) => ({
-            default: m.OttaSelectDemoPage,
-        })),
-    ),
-});
+const loginRoute = publicRoute('/login', () =>
+    import('@/pages/auth/LoginPage').then((m) => ({ default: m.LoginPage })),
+);
+const registerRoute = publicRoute('/register', () =>
+    import('@/pages/auth/RegisterPage').then((m) => ({ default: m.RegisterPage })),
+);
+const verifyEmailRoute = publicRoute('/verify-email', () =>
+    import('@/pages/auth/VerifyEmailPage').then((m) => ({ default: m.VerifyEmailPage })),
+);
+const resetPasswordRoute = publicRoute('/reset-password', () =>
+    import('@/pages/auth/ResetPasswordPage').then((m) => ({ default: m.ResetPasswordPage })),
+);
 
-const demoSplitPaneRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'split-pane',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/split-pane/SplitPaneDemoPage').then((m) => ({
-            default: m.SplitPaneDemoPage,
-        })),
-    ),
-});
+// ─── User app surface ────────────────────────────────────────────────────────
 
-const demoDataTableRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ui-datatable',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ui-datatable/DataTableDemoPage').then((m) => ({
-            default: m.DataTableDemoPage,
-        })),
-    ),
-});
+const dashboardRoute = protectedRoute('/dashboard', () => import('@/pages/auth/DashboardPage'), 'DashboardPage');
+const userProfileRoute = protectedRoute('/profile', () => import('@/pages/user/UserProfilePage'), 'UserProfilePage');
+const userMediaLibraryRoute = protectedRoute(
+    '/media-library',
+    () => import('@/pages/user/UserMediaLibraryPage'),
+    'UserMediaLibraryPage',
+);
 
-const demoCropperRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ui-cropper',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ui-cropper/CropperDemoPage').then((m) => ({
-            default: m.CropperDemoPage,
-        })),
-    ),
-});
-
-const demoTimezoneRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'timezone',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/timezone/TimezoneDemoPage').then((m) => ({
-            default: m.TimezoneDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareDemoIndexPage').then((m) => ({
-            default: m.CloudflareDemoIndexPage,
-        })),
-    ),
-});
-
-const demoCloudflareD1Route = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/d1',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareD1DemoPage').then((m) => ({
-            default: m.CloudflareD1DemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareKVRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/kv',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareKVDemoPage').then((m) => ({
-            default: m.CloudflareKVDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareR2Route = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/r2',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareR2DemoPage').then((m) => ({
-            default: m.CloudflareR2DemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareFileUploadRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/file-upload',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareFileUploadDemoPage').then((m) => ({
-            default: m.CloudflareFileUploadDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareImagesRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/images',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareImagesDemoPage').then((m) => ({
-            default: m.CloudflareImagesDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareHyperdriveRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/hyperdrive',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareHyperdriveDemoPage').then((m) => ({
-            default: m.CloudflareHyperdriveDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareQueuesRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/queues',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareQueuesDemoPage').then((m) => ({
-            default: m.CloudflareQueuesDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareRateLimitingRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/rate-limiting',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareRateLimitingDemoPage').then((m) => ({
-            default: m.CloudflareRateLimitingDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareRealtimeRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/realtime',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareRealtimeDemoPage').then((m) => ({
-            default: m.CloudflareRealtimeDemoPage,
-        })),
-    ),
-});
-
-const demoCloudflareAIRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cloudflare/ai',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cloudflare/CloudflareAIDemoPage').then((m) => ({
-            default: m.CloudflareAIDemoPage,
-        })),
-    ),
-});
-
-const demoApiRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'api',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/api/ApiDemoPage').then((m) => ({
-            default: m.ApiDemoPage,
-        })),
-    ),
-});
-
-const demoThemingRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'theming',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/theming/ThemingDemoPage').then((m) => ({
-            default: m.ThemingDemoPage,
-        })),
-    ),
-});
-
-const demoStateRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'state',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/state/StateDemoPage').then((m) => ({
-            default: m.StateDemoPage,
-        })),
-    ),
-});
-
-const demoRendererRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'renderer',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/renderer/RendererDemoPage').then((m) => ({
-            default: m.RendererDemoPage,
-        })),
-    ),
-});
-
-const demoEmailRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'email',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/email/EmailDemoPage').then((m) => ({
-            default: m.EmailDemoPage,
-        })),
-    ),
-});
-
-const demoCodeBlockRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'codeblock',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/CodeBlockDemoPage').then((m) => ({
-            default: m.CodeBlockDemoPage,
-        })),
-    ),
-});
-
-const demoNotificationsRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'notifications',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/notifications/DemoNotificationsPage').then((m) => ({
-            default: m.DemoNotificationsPage,
-        })),
-    ),
-});
-
-const demoLoggerRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'logger',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/logger/LoggerDemoPage').then((m) => ({
-            default: m.LoggerDemoPage,
-        })),
-    ),
-});
-
-const demoI18nRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'i18n',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/i18n/I18nDemoPage').then((m) => ({
-            default: m.I18nDemoPage,
-        })),
-    ),
-});
-
-const demoBreadcrumbsRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'breadcrumbs',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/breadcrumbs/BreadcrumbsDemoPage').then((m) => ({
-            default: m.BreadcrumbsDemoPage,
-        })),
-    ),
-});
-
-const demoOttaDateRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ottadate',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ottadate/OttaDateDemoPage').then((m) => ({
-            default: m.OttaDateDemoPage,
-        })),
-    ),
-});
-
-const demoSpotlightRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'spotlight',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/spotlight/SpotlightDemoPage').then((m) => ({
-            default: m.SpotlightDemoPage,
-        })),
-    ),
-});
-
-const demoMenusRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'menus',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/menus/MenusDemoPage').then((m) => ({
-            default: m.MenusDemoPage,
-        })),
-    ),
-});
-
-const demoMediaLibraryRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'medialibrary',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/medialibrary/MediaLibraryDemoPage').then((m) => ({
-            default: m.MediaLibraryDemoPage,
-        })),
-    ),
-});
-
-const demoAnalyticsRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'analytics',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/analytics/AnalyticsDemoPage').then((m) => ({
-            default: m.AnalyticsDemoPage,
-        })),
-    ),
-});
-
-const demoAuthRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'auth',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/auth/AuthDemoPage').then((m) => ({
-            default: m.AuthDemoPage,
-        })),
-    ),
-});
-
-const demoBrandEngineRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'brand-engine',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/brand-engine/BrandEngineDemoPage').then((m) => ({
-            default: m.BrandEngineDemoPage,
-        })),
-    ),
-});
-
-const demoLayoutSystemRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'layout',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/layout/LayoutDemoPage').then((m) => ({
-            default: m.LayoutDemoPage,
-        })),
-    ),
-});
-
-const commentsDemoRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'comments',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/comments/CommentsDemoPage').then((m) => ({
-            default: m.CommentsDemoPage,
-        })),
-    ),
-});
-
-const demoCronRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'cron',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/cron/CronDemoPage').then((m) => ({
-            default: m.CronDemoPage,
-        })),
-    ),
-});
-
-const demoUiTailwindRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ui-tailwind',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ui-tailwind/UiTailwindDemoPage').then((m) => ({
-            default: m.UiTailwindDemoPage,
-        })),
-    ),
-});
-
-const demoUiComponentsRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ui-components',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ui-components/UiComponentsDemoPage').then((m) => ({
-            default: m.UiComponentsDemoPage,
-        })),
-    ),
-});
-
-const demoUiBaseRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'ui-base',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/ui-base/UiBaseDemoPage').then((m) => ({
-            default: m.UiBaseDemoPage,
-        })),
-    ),
-});
-
-const demoScriptsRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'scripts',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/scripts/ScriptsDemoPage').then((m) => ({
-            default: m.ScriptsDemoPage,
-        })),
-    ),
-});
-
-const demoConfigRoute = new Route({
-    getParentRoute: () => demoLayoutRoute,
-    path: 'config',
-    component: lazyRouteComponent(() =>
-        import('@/pages/demo/config/ConfigDemoPage').then((m) => ({
-            default: m.ConfigDemoPage,
-        })),
-    ),
-});
-
-// Auth routes
-const loginRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/login',
-    component: lazyRouteComponent(() => import('@/pages/auth/LoginPage').then((m) => ({ default: m.LoginPage }))),
-});
-
-const registerRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/register',
-    component: lazyRouteComponent(() =>
-        import('@/pages/auth/RegisterPage').then((m) => ({
-            default: m.RegisterPage,
-        })),
-    ),
-});
-
-const verifyEmailRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/verify-email',
-    component: lazyRouteComponent(() =>
-        import('@/pages/auth/VerifyEmailPage').then((m) => ({
-            default: m.VerifyEmailPage,
-        })),
-    ),
-});
-
-const resetPasswordRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/reset-password',
-    component: lazyRouteComponent(() =>
-        import('@/pages/auth/ResetPasswordPage').then((m) => ({
-            default: m.ResetPasswordPage,
-        })),
-    ),
-});
-
-const dashboardRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/dashboard',
-    component: lazyRouteComponent(() =>
-        import('@/pages/auth/DashboardPage').then((m) => ({
-            default: () => (
-                <ProtectedRoute>
-                    <m.DashboardPage />
-                </ProtectedRoute>
-            ),
-        })),
-    ),
-});
-
-// Shortlinks route
-const shortlinksRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/shortlinks',
-    component: lazyRouteComponent(() =>
-        import('@/pages/shortlinks/ShortlinksPage').then((m) => ({
-            default: m.ShortlinksPage,
-        })),
-    ),
-});
-
-// Unified analytics (Core + Shortlinks + Referrals tabs)
 const analyticsRoute = new Route({
     getParentRoute: () => rootRoute,
     path: '/analytics',
@@ -641,600 +163,369 @@ const analyticsRoute = new Route({
                   : 'core',
     }),
     component: lazyRouteComponent(() =>
-        import('@/pages/analytics/AnalyticsPage').then((m) => ({
-            default: m.AnalyticsPage,
-        })),
+        import('@/pages/analytics/AnalyticsPage').then((m) => ({ default: m.AnalyticsPage })),
     ),
 });
 
-const migrationStatusRoute = new Route({
+const shortlinksRoute = publicRoute('/shortlinks', () =>
+    import('@/pages/shortlinks/ShortlinksPage').then((m) => ({ default: m.ShortlinksPage })),
+);
+const referralsRoute = publicRoute('/referrals', () =>
+    import('@/pages/referrals/ReferralsPage').then((m) => ({ default: m.ReferralsPage })),
+);
+
+// ─── Public content (blog, changelog) ────────────────────────────────────────
+
+const blogListRoute = publicRoute('/blog', () =>
+    import('@/pages/blog/BlogListPage').then((m) => ({ default: m.BlogListPage })),
+);
+const blogDetailRoute = publicRoute('/blog/$slug', () =>
+    import('@/pages/blog/BlogDetailPage').then((m) => ({ default: m.BlogDetailPage })),
+);
+const blogTagArchiveRoute = publicRoute('/blog/tag/$slug', () =>
+    import('@/pages/blog/BlogTagArchivePage').then((m) => ({ default: m.BlogTagArchivePage })),
+);
+const blogCategoryArchiveRoute = publicRoute('/blog/category/$slug', () =>
+    import('@/pages/blog/BlogCategoryArchivePage').then((m) => ({ default: m.BlogCategoryArchivePage })),
+);
+const blogSeriesArchiveRoute = publicRoute('/blog/series/$slug', () =>
+    import('@/pages/blog/BlogSeriesArchivePage').then((m) => ({ default: m.BlogSeriesArchivePage })),
+);
+const changelogListRoute = publicRoute('/changelog', () =>
+    import('@/pages/changelog/ChangelogListPage').then((m) => ({ default: m.ChangelogListPage })),
+);
+const changelogDetailRoute = publicRoute('/changelog/$slug', () =>
+    import('@/pages/changelog/ChangelogDetailPage').then((m) => ({ default: m.ChangelogDetailPage })),
+);
+
+// ─── /admin overview ─────────────────────────────────────────────────────────
+
+const adminRoute = makeAdminRoute('/admin', () => import('@/pages/admin/AdminIndexPage'), 'AdminIndexPage');
+
+// ─── /admin/appearance ───────────────────────────────────────────────────────
+
+const adminBrandKitsRoute = makeAdminRoute(
+    '/admin/appearance/brand-kits',
+    () => import('@/pages/admin/appearance/BrandKitsListPage'),
+    'AdminBrandKitsListPage',
+);
+const adminBrandKitNewRoute = makeAdminRoute(
+    '/admin/appearance/brand-kits/new',
+    () => import('@/pages/admin/appearance/BrandKitDetailPage'),
+    'AdminBrandKitDetailPage',
+);
+const adminBrandKitDetailRoute = makeAdminRoute(
+    '/admin/appearance/brand-kits/$kitId',
+    () => import('@/pages/admin/appearance/BrandKitDetailPage'),
+    'AdminBrandKitDetailPage',
+);
+const adminBrandLayoutsRoute = makeAdminRoute(
+    '/admin/appearance/layouts',
+    () => import('@/pages/admin/appearance/BrandLayoutsPage'),
+    'AdminBrandLayoutsPage',
+);
+const adminMenusRoute = makeAdminRoute(
+    '/admin/appearance/menus',
+    () => import('@/pages/admin/appearance/MenusListPage'),
+    'AdminMenusListPage',
+);
+const adminMenuDetailRoute = makeAdminRoute(
+    '/admin/appearance/menus/$menuId',
+    () => import('@/pages/admin/appearance/MenuDetailPage'),
+    'AdminMenuDetailPage',
+);
+const adminThemeGeneratorRoute = makeAdminRoute(
+    '/admin/appearance/theme-generator',
+    () => import('@/pages/admin/appearance/ThemeGeneratorRedirect'),
+    'ThemeGeneratorRedirect',
+);
+
+// ─── /admin/content ──────────────────────────────────────────────────────────
+
+const adminBlogRoute = makeAdminRoute(
+    '/admin/content/blog',
+    () => import('@/pages/admin/content/blog/AdminBlogListPage'),
+    'AdminBlogListPage',
+);
+const adminBlogNewRoute = makeAdminRoute(
+    '/admin/content/blog/new',
+    () => import('@/pages/admin/content/blog/AdminBlogEditorPage'),
+    'AdminBlogEditorPage',
+    {
+        validateSearch: (search: Record<string, unknown>) => ({
+            contentType: typeof search.contentType === 'string' ? search.contentType : undefined,
+        }),
+    },
+);
+const adminBlogEditRoute = makeAdminRoute(
+    '/admin/content/blog/$postId/edit',
+    () => import('@/pages/admin/content/blog/AdminBlogEditorPage'),
+    'AdminBlogEditorPage',
+);
+const adminBlogStudioRoute = makeAdminRoute(
+    '/admin/content/blog/studio',
+    () => import('@/pages/admin/content/blog/AdminBlogStudioPage'),
+    'AdminBlogStudioPage',
+);
+const adminBlogTagsRoute = makeAdminRoute(
+    '/admin/content/blog/tags',
+    () => import('@/pages/admin/content/blog/AdminBlogTagsPage'),
+    'AdminBlogTagsPage',
+);
+const adminBlogCategoriesRoute = makeAdminRoute(
+    '/admin/content/blog/categories',
+    () => import('@/pages/admin/content/blog/AdminBlogCategoriesPage'),
+    'AdminBlogCategoriesPage',
+);
+const adminBlogSeriesRoute = makeAdminRoute(
+    '/admin/content/blog/series',
+    () => import('@/pages/admin/content/blog/AdminBlogSeriesPage'),
+    'AdminBlogSeriesPage',
+);
+const adminChangelogRoute = makeAdminRoute(
+    '/admin/content/changelog',
+    () => import('@/pages/admin/content/changelog/AdminChangelogListPage'),
+    'AdminChangelogListPage',
+);
+// Changelog new/edit redirect to blog editor with contentType=changelog.
+// Cast Navigate target: routes built via makeAdminRoute don't expose path as a
+// string literal in the inferred route tree, so the Register types here are
+// incomplete. The runtime path is correct.
+const adminChangelogNewRoute = new Route({
     getParentRoute: () => rootRoute,
-    path: '/migration-status',
-    component: lazyRouteComponent(() =>
-        import('@/pages/MigrationStatusPage').then((m) => ({
-            default: m.MigrationStatusPage,
-        })),
+    path: '/admin/content/changelog/new',
+    component: () => (
+        <Navigate to={'/admin/content/blog/new' as never} search={{ contentType: 'changelog' } as never} />
     ),
 });
-
-// Referrals route
-const referralsRoute = new Route({
+const adminChangelogEditRoute = new Route({
     getParentRoute: () => rootRoute,
-    path: '/referrals',
-    component: lazyRouteComponent(() =>
-        import('@/pages/referrals/ReferralsPage').then((m) => ({
-            default: m.ReferralsPage,
-        })),
-    ),
+    path: '/admin/content/changelog/$entryId/edit',
+    component: () => {
+        const params = window.location.pathname.match(/\/admin\/content\/changelog\/([^/]+)\/edit/);
+        const entryId = params?.[1] ?? '';
+        return <Navigate to={'/admin/content/blog/$postId/edit' as never} params={{ postId: entryId } as never} />;
+    },
 });
+const adminMediaLibraryRoute = makeAdminRoute(
+    '/admin/content/media',
+    () => import('@/pages/admin/content/MediaLibraryPage'),
+    'AdminMediaLibraryPage',
+);
 
-// Admin route
-const adminRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminIndexPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminIndexPage />),
-        })),
-    ),
-});
+// ─── /admin/access ───────────────────────────────────────────────────────────
 
-// Admin BrandEngine – Brand Kits list
-const adminBrandEngineRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/brand-engine',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminBrandKitsListPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBrandKitsListPage />),
-        })),
-    ),
-});
+const adminUsersRoute = makeAdminRoute(
+    '/admin/access/users',
+    () => import('@/pages/admin/access/users/UserManagementPage'),
+    'UserManagementPage',
+);
+const adminUserRBACRoute = makeAdminRoute(
+    '/admin/access/users/$userId/rbac',
+    () => import('@/pages/admin/access/users/UserRBACPage'),
+    'UserRBACPage',
+);
+const adminOrganizationsRoute = makeAdminRoute(
+    '/admin/access/organizations',
+    () => import('@/pages/admin/access/organizations/OrganizationsPage'),
+    'OrganizationsPage',
+);
+const adminOrganizationNewRoute = makeAdminRoute(
+    '/admin/access/organizations/new',
+    () => import('@/pages/admin/access/organizations/OrganizationRegistrationPage'),
+    'OrganizationRegistrationPage',
+);
+const adminOrganizationMembersRoute = makeAdminRoute(
+    '/admin/access/organizations/$organizationId/members',
+    () => import('@/pages/admin/access/organizations/OrganizationMembersPage'),
+    'OrganizationMembersPage',
+);
+const adminOrganizationSettingsRoute = makeAdminRoute(
+    '/admin/access/organizations/$organizationId/settings',
+    () => import('@/pages/admin/access/organizations/OrganizationSettingsPage'),
+    'OrganizationSettingsPage',
+);
+const adminRBACRoute = makeAdminRoute(
+    '/admin/access/rbac',
+    () => import('@/pages/admin/access/rbac/RBACAdminPage'),
+    'RBACAdminPage',
+);
+const adminRBACRolesRoute = makeAdminRoute(
+    '/admin/access/rbac/roles',
+    () => import('@/pages/admin/access/rbac/RBACRolesPage'),
+    'RBACRolesPage',
+);
+const adminRBACPermissionsRoute = makeAdminRoute(
+    '/admin/access/rbac/permissions',
+    () => import('@/pages/admin/access/rbac/PermissionsMatrixPage'),
+    'PermissionsMatrixPage',
+);
 
-// Admin Brand Kit create – new kit form
-const adminBrandKitCreateRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/brand-engine/kits/new',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminBrandKitDetailPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBrandKitDetailPage />),
-        })),
-    ),
-});
+// ─── /admin/security ─────────────────────────────────────────────────────────
 
-// Admin Brand Kit detail – tabbed editor with preview
-const adminBrandKitDetailRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/brand-engine/kits/$kitId',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminBrandKitDetailPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBrandKitDetailPage />),
-        })),
-    ),
-});
+const adminAuditRoute = makeAdminRoute(
+    '/admin/security/audit',
+    () => import('@/pages/admin/security/audit/AuditLogViewerPage'),
+    'AuditLogViewerPage',
+);
+const adminSecurityRLSRoute = makeAdminRoute(
+    '/admin/security/rls',
+    () => import('@/pages/admin/security/RLSInspectorPage'),
+    'RLSInspectorPage',
+);
+const adminKillSwitchesRoute = makeAdminRoute(
+    '/admin/security/kill-switches',
+    () => import('@/pages/admin/security/KillSwitchesPage'),
+    'default',
+);
 
-// Admin Menus (Ottamenu – core)
-const adminMenusRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/menus',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminMenusListPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminMenusListPage />),
-        })),
-    ),
-});
+// ─── /admin/infrastructure ───────────────────────────────────────────────────
 
-const adminMenuDetailRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/menus/$menuId',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminMenuDetailPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminMenuDetailPage />),
-        })),
-    ),
-});
-
-// Admin BrandEngine – Layouts & Route Mappings
-const adminBrandLayoutsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/brand-engine/layouts',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminBrandLayoutsPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBrandLayoutsPage />),
-        })),
-    ),
-});
-
-const adminThemeGeneratorRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/theme-generator',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/ThemeGeneratorRedirect').then((m) => ({
-            default: () => renderAdminRoute(<m.ThemeGeneratorRedirect />),
-        })),
-    ),
-});
-
-// Admin Referrals route
-const adminReferralsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/referrals',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminReferralsPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminReferralsPage />),
-        })),
-    ),
-});
-
-// Admin Queue Management route
-const adminQueueRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/queues',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminQueuePage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminQueuePage />),
-        })),
-    ),
-});
-
-const adminDevMailRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/dev-mail',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminDevMailPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminDevMailPage />),
-        })),
-    ),
-});
-
-// Admin Cron/Scheduled Tasks route
-const adminCronRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/cron',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminCronPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminCronPage />),
-        })),
-    ),
-});
-
-// Admin Notifications route
-const adminNotificationsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/notifications',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminNotificationsPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminNotificationsPage />),
-        })),
-    ),
-});
-
-// Admin Blog routes
-const adminBlogRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogListPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogListPage />),
-        })),
-    ),
-});
-
-const adminBlogNewRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog/new',
-    validateSearch: (search: Record<string, unknown>) => ({
-        contentType: typeof search.contentType === 'string' ? search.contentType : undefined,
-    }),
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogEditorPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogEditorPage />),
-        })),
-    ),
-});
-
-const adminBlogEditRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog/$postId/edit',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogEditorPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogEditorPage />),
-        })),
-    ),
-});
-
-const adminBlogStudioRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog/studio',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogStudioPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogStudioPage />),
-        })),
-    ),
-});
-
-const adminBlogTagsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog/tags',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogTagsPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogTagsPage />),
-        })),
-    ),
-});
-
-const adminBlogCategoriesRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog/categories',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogCategoriesPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogCategoriesPage />),
-        })),
-    ),
-});
-
-const adminBlogSeriesRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/blog/series',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/blog/AdminBlogSeriesPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminBlogSeriesPage />),
-        })),
-    ),
-});
-
-// Public Blog routes
-const blogListRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/blog',
-    component: lazyRouteComponent(() =>
-        import('@/pages/blog/BlogListPage').then((m) => ({
-            default: m.BlogListPage,
-        })),
-    ),
-});
-
-const adminDbRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/db',
-    validateSearch: (search: Record<string, unknown>) => {
-        return {
+const adminDatabaseRoute = makeAdminRoute(
+    '/admin/infrastructure/database',
+    () => import('@/pages/admin/infrastructure/DatabasePage'),
+    'AdminDbPage',
+    {
+        validateSearch: (search: Record<string, unknown>) => ({
             table: (search.table as string) || '',
             page: Number(search.page) || 1,
             perPage: Number(search.perPage) || 25,
-        };
+        }),
     },
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminDbPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminDbPage />),
-        })),
+);
+const adminMigrationsRoute = makeAdminRoute(
+    '/admin/infrastructure/migrations',
+    () => import('@/pages/admin/infrastructure/MigrationsPage'),
+    'MigrationStatusPage',
+);
+const adminQueuesRoute = makeAdminRoute(
+    '/admin/infrastructure/queues',
+    () => import('@/pages/admin/infrastructure/QueuesPage'),
+    'AdminQueuePage',
+);
+const adminCronRoute = makeAdminRoute(
+    '/admin/infrastructure/cron',
+    () => import('@/pages/admin/infrastructure/CronPage'),
+    'AdminCronPage',
+);
+const adminDevMailRoute = makeAdminRoute(
+    '/admin/infrastructure/dev-mail',
+    () => import('@/pages/admin/infrastructure/DevMailPage'),
+    'AdminDevMailPage',
+);
+
+// ─── /admin/growth ───────────────────────────────────────────────────────────
+
+const adminNotificationsRoute = makeAdminRoute(
+    '/admin/growth/notifications',
+    () => import('@/pages/admin/growth/NotificationsPage'),
+    'AdminNotificationsPage',
+);
+const adminReferralsRoute = makeAdminRoute(
+    '/admin/growth/referrals',
+    () => import('@/pages/admin/growth/ReferralsPage'),
+    'AdminReferralsPage',
+);
+
+// ─── /demo gallery ───────────────────────────────────────────────────────────
+
+const demoLayoutRoute = new Route({
+    getParentRoute: () => rootRoute,
+    path: '/demo',
+    component: lazyRouteComponent(() => import('@/pages/demo/DemoLayout').then((m) => ({ default: m.DemoLayout }))),
+});
+
+/** Compact helper for the (very repetitive) /demo child routes. */
+function demoChild(path: string, loader: () => Promise<Record<string, ComponentType>>, exportName: string) {
+    return new Route({
+        getParentRoute: () => demoLayoutRoute,
+        path,
+        component: lazyRouteComponent(() => loader().then((m) => ({ default: m[exportName]! }))),
+    });
+}
+
+const demoChildren = [
+    demoChild('/', () => import('@/pages/demo/DemoIndexPage'), 'DemoIndexPage'),
+    demoChild('mantine', () => import('@/pages/demo/mantine/MantineDemoRoute'), 'MantineDemoRoute'),
+    demoChild('shadcn', () => import('@/pages/demo/shadcn/ShadcnDemoPage'), 'ShadcnDemoPage'),
+    demoChild('ottaeditor', () => import('@/pages/demo/ottaeditor/OttaEditorDemoPage'), 'OttaEditorDemoPage'),
+    demoChild('ottaorm', () => import('@/pages/demo/ottaorm/OttaORMDemoPage'), 'OttaORMDemoPage'),
+    demoChild('ottaforms', () => import('@/pages/demo/ottaforms/OttaFormsDemoPage'), 'OttaFormsDemoPage'),
+    demoChild('ottaselect', () => import('@/pages/demo/ottaselect/OttaSelectDemoPage'), 'OttaSelectDemoPage'),
+    demoChild('ui-datatable', () => import('@/pages/demo/ui-datatable/DataTableDemoPage'), 'DataTableDemoPage'),
+    demoChild('split-pane', () => import('@/pages/demo/split-pane/SplitPaneDemoPage'), 'SplitPaneDemoPage'),
+    demoChild('ui-cropper', () => import('@/pages/demo/ui-cropper/CropperDemoPage'), 'CropperDemoPage'),
+    demoChild('logger', () => import('@/pages/demo/logger/LoggerDemoPage'), 'LoggerDemoPage'),
+    demoChild('i18n', () => import('@/pages/demo/i18n/I18nDemoPage'), 'I18nDemoPage'),
+    demoChild('breadcrumbs', () => import('@/pages/demo/breadcrumbs/BreadcrumbsDemoPage'), 'BreadcrumbsDemoPage'),
+    demoChild('timezone', () => import('@/pages/demo/timezone/TimezoneDemoPage'), 'TimezoneDemoPage'),
+    demoChild('cloudflare', () => import('@/pages/demo/cloudflare/CloudflareDemoIndexPage'), 'CloudflareDemoIndexPage'),
+    demoChild('cloudflare/d1', () => import('@/pages/demo/cloudflare/CloudflareD1DemoPage'), 'CloudflareD1DemoPage'),
+    demoChild('cloudflare/kv', () => import('@/pages/demo/cloudflare/CloudflareKVDemoPage'), 'CloudflareKVDemoPage'),
+    demoChild('cloudflare/r2', () => import('@/pages/demo/cloudflare/CloudflareR2DemoPage'), 'CloudflareR2DemoPage'),
+    demoChild(
+        'cloudflare/file-upload',
+        () => import('@/pages/demo/cloudflare/CloudflareFileUploadDemoPage'),
+        'CloudflareFileUploadDemoPage',
     ),
-});
-
-const adminMediaLibraryRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/media-library',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/AdminMediaLibraryPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminMediaLibraryPage />),
-        })),
+    demoChild(
+        'cloudflare/images',
+        () => import('@/pages/demo/cloudflare/CloudflareImagesDemoPage'),
+        'CloudflareImagesDemoPage',
     ),
-});
-
-const blogDetailRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/blog/$slug',
-    component: lazyRouteComponent(() =>
-        import('@/pages/blog/BlogDetailPage').then((m) => ({
-            default: m.BlogDetailPage,
-        })),
+    demoChild(
+        'cloudflare/hyperdrive',
+        () => import('@/pages/demo/cloudflare/CloudflareHyperdriveDemoPage'),
+        'CloudflareHyperdriveDemoPage',
     ),
-});
-
-const blogTagArchiveRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/blog/tag/$slug',
-    component: lazyRouteComponent(() =>
-        import('@/pages/blog/BlogTagArchivePage').then((m) => ({
-            default: m.BlogTagArchivePage,
-        })),
+    demoChild(
+        'cloudflare/queues',
+        () => import('@/pages/demo/cloudflare/CloudflareQueuesDemoPage'),
+        'CloudflareQueuesDemoPage',
     ),
-});
-
-const blogCategoryArchiveRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/blog/category/$slug',
-    component: lazyRouteComponent(() =>
-        import('@/pages/blog/BlogCategoryArchivePage').then((m) => ({
-            default: m.BlogCategoryArchivePage,
-        })),
+    demoChild(
+        'cloudflare/rate-limiting',
+        () => import('@/pages/demo/cloudflare/CloudflareRateLimitingDemoPage'),
+        'CloudflareRateLimitingDemoPage',
     ),
-});
-
-const blogSeriesArchiveRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/blog/series/$slug',
-    component: lazyRouteComponent(() =>
-        import('@/pages/blog/BlogSeriesArchivePage').then((m) => ({
-            default: m.BlogSeriesArchivePage,
-        })),
+    demoChild(
+        'cloudflare/realtime',
+        () => import('@/pages/demo/cloudflare/CloudflareRealtimeDemoPage'),
+        'CloudflareRealtimeDemoPage',
     ),
-});
-
-const changelogListRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/changelog',
-    component: lazyRouteComponent(() =>
-        import('@/pages/changelog/ChangelogListPage').then((m) => ({
-            default: m.ChangelogListPage,
-        })),
+    demoChild('cloudflare/ai', () => import('@/pages/demo/cloudflare/CloudflareAIDemoPage'), 'CloudflareAIDemoPage'),
+    demoChild('api', () => import('@/pages/demo/api/ApiDemoPage'), 'ApiDemoPage'),
+    demoChild('theming', () => import('@/pages/demo/theming/ThemingDemoPage'), 'ThemingDemoPage'),
+    demoChild('state', () => import('@/pages/demo/state/StateDemoPage'), 'StateDemoPage'),
+    demoChild('renderer', () => import('@/pages/demo/renderer/RendererDemoPage'), 'RendererDemoPage'),
+    demoChild('email', () => import('@/pages/demo/email/EmailDemoPage'), 'EmailDemoPage'),
+    demoChild('codeblock', () => import('@/pages/demo/CodeBlockDemoPage'), 'CodeBlockDemoPage'),
+    demoChild(
+        'notifications',
+        () => import('@/pages/demo/notifications/DemoNotificationsPage'),
+        'DemoNotificationsPage',
     ),
-});
-
-const changelogDetailRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/changelog/$slug',
-    component: lazyRouteComponent(() =>
-        import('@/pages/changelog/ChangelogDetailPage').then((m) => ({
-            default: m.ChangelogDetailPage,
-        })),
-    ),
-});
-
-const adminChangelogRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/changelog',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/changelog/AdminChangelogListPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AdminChangelogListPage />),
-        })),
-    ),
-});
-
-// Admin changelog new/edit routes redirect to blog editor with contentType=changelog
-const adminChangelogNewRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/changelog/new',
-    component: () => <Navigate to="/admin/blog/new" search={{ contentType: 'changelog' }} />,
-});
-
-const adminChangelogEditRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/changelog/$entryId/edit',
-    component: () => {
-        // Read entryId at render time and redirect to blog edit
-        const params = window.location.pathname.match(/\/admin\/changelog\/([^/]+)\/edit/);
-        const entryId = params?.[1] ?? '';
-        return <Navigate to="/admin/blog/$postId/edit" params={{ postId: entryId }} />;
-    },
-});
-
-// Organizations routes
-const organizationsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/organizations',
-    component: lazyRouteComponent(() =>
-        import('@/pages/organizations/OrganizationsPage').then((m) => ({
-            default: m.OrganizationsPage,
-        })),
-    ),
-});
-
-const organizationMembersRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/organizations/$organizationId/members',
-    component: lazyRouteComponent(() =>
-        import('@/pages/organizations/OrganizationMembersPage').then((m) => ({
-            default: m.OrganizationMembersPage,
-        })),
-    ),
-});
-
-const organizationRegistrationRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/organizations/new',
-    component: lazyRouteComponent(() =>
-        import('@/pages/organizations/OrganizationRegistrationPage').then((m) => ({
-            default: m.OrganizationRegistrationPage,
-        })),
-    ),
-});
-
-const organizationSettingsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/organizations/$organizationId/settings',
-    component: lazyRouteComponent(() =>
-        import('@/pages/organizations/OrganizationSettingsPage').then((m) => ({
-            default: m.OrganizationSettingsPage,
-        })),
-    ),
-});
-
-// User routes
-const userProfileRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/profile',
-    component: lazyRouteComponent(() =>
-        import('@/pages/user/UserProfilePage').then((m) => ({
-            default: () => (
-                <ProtectedRoute>
-                    <m.UserProfilePage />
-                </ProtectedRoute>
-            ),
-        })),
-    ),
-});
-
-const userMediaLibraryRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/media-library',
-    component: lazyRouteComponent(() =>
-        import('@/pages/user/UserMediaLibraryPage').then((m) => ({
-            default: () => (
-                <ProtectedRoute>
-                    <m.UserMediaLibraryPage />
-                </ProtectedRoute>
-            ),
-        })),
-    ),
-});
-
-// Admin user routes
-const adminUsersRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/users',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/users/UserManagementPage').then((m) => ({
-            default: () => renderAdminRoute(<m.UserManagementPage />),
-        })),
-    ),
-});
-
-const adminUserRBACRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/users/$userId/rbac',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/users/UserRBACPage').then((m) => ({
-            default: () => renderAdminRoute(<m.UserRBACPage />),
-        })),
-    ),
-});
-
-// Admin RBAC routes
-const adminRBACRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/rbac',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/rbac/RBACAdminPage').then((m) => ({
-            default: () => renderAdminRoute(<m.RBACAdminPage />),
-        })),
-    ),
-});
-
-const adminRBACRolesRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/rbac/roles',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/rbac/RBACRolesPage').then((m) => ({
-            default: () => renderAdminRoute(<m.RBACRolesPage />),
-        })),
-    ),
-});
-
-const adminRBACPermissionsRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/rbac/permissions',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/rbac/PermissionsMatrixPage').then((m) => ({
-            default: () => renderAdminRoute(<m.PermissionsMatrixPage />),
-        })),
-    ),
-});
-
-const adminAuditRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/audit',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/audit/AuditLogViewerPage').then((m) => ({
-            default: () => renderAdminRoute(<m.AuditLogViewerPage />),
-        })),
-    ),
-});
-
-const adminSecurityRLSRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/security/rls',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/security/RLSSecurityDemoPage').then((m) => ({
-            default: () => renderAdminRoute(<m.RLSSecurityDemoPage />),
-        })),
-    ),
-});
-
-const adminKillSwitchesRoute = new Route({
-    getParentRoute: () => rootRoute,
-    path: '/admin/security/kill-switches',
-    component: lazyRouteComponent(() =>
-        import('@/pages/admin/security/KillSwitchesPage').then((m) => ({
-            default: () => renderAdminRoute(<m.default />),
-        })),
-    ),
-});
-
-demoLayoutRoute.addChildren([
-    demoIndexRoute,
-    demoMantineRoute,
-    demoShadcnRoute,
-    demoOttaEditorRoute,
-    demoOttaOrmRoute,
-    demoOttaFormsRoute,
-    demoOttaSelectRoute,
-    demoDataTableRoute,
-    demoSplitPaneRoute,
-    demoCropperRoute,
-    demoLoggerRoute,
-    demoI18nRoute,
-    demoBreadcrumbsRoute,
-    demoTimezoneRoute,
-    demoCloudflareRoute,
-    demoCloudflareD1Route,
-    demoCloudflareKVRoute,
-    demoCloudflareR2Route,
-    demoCloudflareFileUploadRoute,
-    demoCloudflareImagesRoute,
-    demoCloudflareHyperdriveRoute,
-    demoCloudflareQueuesRoute,
-    demoCloudflareRateLimitingRoute,
-    demoCloudflareRealtimeRoute,
-    demoCloudflareAIRoute,
-    demoApiRoute,
-    demoThemingRoute,
-    demoStateRoute,
-    demoRendererRoute,
-    demoEmailRoute,
-    demoCodeBlockRoute,
-    demoNotificationsRoute,
-    demoOttaDateRoute,
-    demoSpotlightRoute,
-    demoMenusRoute,
-    demoMediaLibraryRoute,
-    demoAnalyticsRoute,
-    demoAuthRoute,
-    demoBrandEngineRoute,
-    demoLayoutSystemRoute,
-    commentsDemoRoute,
-    demoCronRoute,
-    demoUiTailwindRoute,
-    demoUiComponentsRoute,
-    demoUiBaseRoute,
-    demoScriptsRoute,
-    demoConfigRoute,
-]);
-
-// Package-gated routes (SSOT from ottabase.config.ts). brandEngine is core — always included.
-const packageRoutes = [
-    { route: shortlinksRoute, pkg: 'shortlinks' as const },
-    { route: referralsRoute, pkg: 'referrals' as const },
-    { route: blogListRoute, pkg: 'ottablog' as const },
-    { route: blogDetailRoute, pkg: 'ottablog' as const },
-    { route: blogTagArchiveRoute, pkg: 'ottablog' as const },
-    { route: blogCategoryArchiveRoute, pkg: 'ottablog' as const },
-    { route: blogSeriesArchiveRoute, pkg: 'ottablog' as const },
-    { route: adminBrandEngineRoute, pkg: 'brandEngine' as const },
-    { route: adminBrandKitCreateRoute, pkg: 'brandEngine' as const },
-    { route: adminBrandKitDetailRoute, pkg: 'brandEngine' as const },
-    { route: adminBrandLayoutsRoute, pkg: 'brandEngine' as const },
-    { route: adminThemeGeneratorRoute, pkg: 'brandEngine' as const },
-    { route: adminMenusRoute, pkg: 'ottamenu' as const },
-    { route: adminMenuDetailRoute, pkg: 'ottamenu' as const },
-    { route: adminReferralsRoute, pkg: 'referrals' as const },
-    { route: adminBlogRoute, pkg: 'ottablog' as const },
-    { route: adminBlogNewRoute, pkg: 'ottablog' as const },
-    { route: adminBlogEditRoute, pkg: 'ottablog' as const },
-    { route: adminBlogStudioRoute, pkg: 'ottablog' as const },
-    { route: adminBlogTagsRoute, pkg: 'ottablog' as const },
-    { route: adminBlogCategoriesRoute, pkg: 'ottablog' as const },
-    { route: adminBlogSeriesRoute, pkg: 'ottablog' as const },
+    demoChild('ottadate', () => import('@/pages/demo/ottadate/OttaDateDemoPage'), 'OttaDateDemoPage'),
+    demoChild('spotlight', () => import('@/pages/demo/spotlight/SpotlightDemoPage'), 'SpotlightDemoPage'),
+    demoChild('menus', () => import('@/pages/demo/menus/MenusDemoPage'), 'MenusDemoPage'),
+    demoChild('medialibrary', () => import('@/pages/demo/medialibrary/MediaLibraryDemoPage'), 'MediaLibraryDemoPage'),
+    demoChild('analytics', () => import('@/pages/demo/analytics/AnalyticsDemoPage'), 'AnalyticsDemoPage'),
+    demoChild('auth', () => import('@/pages/demo/auth/AuthDemoPage'), 'AuthDemoPage'),
+    demoChild('brand-engine', () => import('@/pages/demo/brand-engine/BrandEngineDemoPage'), 'BrandEngineDemoPage'),
+    demoChild('layout', () => import('@/pages/demo/layout/LayoutDemoPage'), 'LayoutDemoPage'),
+    demoChild('comments', () => import('@/pages/demo/comments/CommentsDemoPage'), 'CommentsDemoPage'),
+    demoChild('cron', () => import('@/pages/demo/cron/CronDemoPage'), 'CronDemoPage'),
+    demoChild('ui-tailwind', () => import('@/pages/demo/ui-tailwind/UiTailwindDemoPage'), 'UiTailwindDemoPage'),
+    demoChild('ui-components', () => import('@/pages/demo/ui-components/UiComponentsDemoPage'), 'UiComponentsDemoPage'),
+    demoChild('ui-base', () => import('@/pages/demo/ui-base/UiBaseDemoPage'), 'UiBaseDemoPage'),
+    demoChild('scripts', () => import('@/pages/demo/scripts/ScriptsDemoPage'), 'ScriptsDemoPage'),
+    demoChild('config', () => import('@/pages/demo/config/ConfigDemoPage'), 'ConfigDemoPage'),
 ];
+demoLayoutRoute.addChildren(demoChildren);
+
+// ─── Route assembly ──────────────────────────────────────────────────────────
+
+// Always-on routes (core platform). Note: brandEngine and ottamenu are core packages.
 const coreRoutes = [
     indexRoute,
     docsRoute,
@@ -1246,47 +537,70 @@ const coreRoutes = [
     verifyEmailRoute,
     resetPasswordRoute,
     dashboardRoute,
+    userProfileRoute,
     analyticsRoute,
-    migrationStatusRoute,
+    // Admin
     adminRoute,
+    adminBrandKitsRoute,
+    adminBrandKitNewRoute,
+    adminBrandKitDetailRoute,
+    adminBrandLayoutsRoute,
+    adminMenusRoute,
+    adminMenuDetailRoute,
+    adminThemeGeneratorRoute,
     adminChangelogRoute,
     adminChangelogNewRoute,
     adminChangelogEditRoute,
-    adminDevMailRoute,
-    adminQueueRoute,
-    adminCronRoute,
-    adminNotificationsRoute,
-    adminDbRoute,
+    adminUsersRoute,
+    adminUserRBACRoute,
+    adminOrganizationsRoute,
+    adminOrganizationNewRoute,
+    adminOrganizationMembersRoute,
+    adminOrganizationSettingsRoute,
     adminRBACRoute,
     adminRBACRolesRoute,
     adminRBACPermissionsRoute,
     adminAuditRoute,
     adminSecurityRLSRoute,
     adminKillSwitchesRoute,
-    adminUsersRoute,
-    adminUserRBACRoute,
-    organizationsRoute,
-    organizationMembersRoute,
-    organizationRegistrationRoute,
-    organizationSettingsRoute,
-    userProfileRoute,
-    ...(MEDIA_LIBRARY_ENABLED ? [userMediaLibraryRoute, adminMediaLibraryRoute] : []),
+    adminDatabaseRoute,
+    adminMigrationsRoute,
+    adminQueuesRoute,
+    adminCronRoute,
+    adminDevMailRoute,
+    adminNotificationsRoute,
 ];
+
+// Routes that depend on optional packages.
+const packageRoutes = [
+    { route: shortlinksRoute, pkg: 'shortlinks' as const },
+    { route: referralsRoute, pkg: 'referrals' as const },
+    { route: blogListRoute, pkg: 'ottablog' as const },
+    { route: blogDetailRoute, pkg: 'ottablog' as const },
+    { route: blogTagArchiveRoute, pkg: 'ottablog' as const },
+    { route: blogCategoryArchiveRoute, pkg: 'ottablog' as const },
+    { route: blogSeriesArchiveRoute, pkg: 'ottablog' as const },
+    { route: adminBlogRoute, pkg: 'ottablog' as const },
+    { route: adminBlogNewRoute, pkg: 'ottablog' as const },
+    { route: adminBlogEditRoute, pkg: 'ottablog' as const },
+    { route: adminBlogStudioRoute, pkg: 'ottablog' as const },
+    { route: adminBlogTagsRoute, pkg: 'ottablog' as const },
+    { route: adminBlogCategoriesRoute, pkg: 'ottablog' as const },
+    { route: adminBlogSeriesRoute, pkg: 'ottablog' as const },
+    { route: adminReferralsRoute, pkg: 'referrals' as const },
+];
+
 const routeTree = rootRoute.addChildren([
     ...coreRoutes,
-    ...packageRoutes
-        .filter((r) => r.pkg === 'brandEngine' || r.pkg === 'ottamenu' || PACKAGES_ENABLED[r.pkg])
-        .map((r) => r.route),
+    ...packageRoutes.filter((r) => PACKAGES_ENABLED[r.pkg]).map((r) => r.route),
+    ...(MEDIA_LIBRARY_ENABLED ? [userMediaLibraryRoute, adminMediaLibraryRoute] : []),
 ]);
-
-const browserHistory = createBrowserHistory();
 
 export const router = new Router({
     routeTree,
-    history: browserHistory,
+    history: createBrowserHistory(),
     defaultPendingComponent: RouteLoadingFallback,
     defaultPendingMs: 0,
-    defaultPendingMinMs: 0,
 });
 
 declare module '@tanstack/react-router' {

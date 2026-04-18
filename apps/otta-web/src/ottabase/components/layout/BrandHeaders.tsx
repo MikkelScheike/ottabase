@@ -21,11 +21,12 @@ export const TopbarHeader = memo(function TopbarHeader({
     leading?: React.ReactNode;
     sticky?: boolean;
 }) {
-    const { isAuthenticated } = useSession();
+    const { isAuthenticated, user } = useSession();
     const location = useLocation();
     const { config } = useBrand();
 
-    const navLinks = getNavLinks().filter((l) => !l.authRequired || isAuthenticated);
+    const isAdmin = !!user?.permissions?.includes('admin') || !!user?.permissions?.includes('*:*');
+    const navLinks = getNavLinks({ isAuthenticated, isAdmin });
     const staticNav = (
         <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (
@@ -84,11 +85,12 @@ export const MinimalHeader = memo(function MinimalHeader({
     /** When true, render header-nav menu slot (or static nav) — e.g. homepage with navigation: topbar */
     showNav?: boolean;
 }) {
-    const { isAuthenticated } = useSession();
+    const { isAuthenticated, user } = useSession();
     const location = useLocation();
     const { config } = useBrand();
 
-    const navLinks = getNavLinks().filter((l) => !l.authRequired || isAuthenticated);
+    const isAdmin = !!user?.permissions?.includes('admin') || !!user?.permissions?.includes('*:*');
+    const navLinks = getNavLinks({ isAuthenticated, isAdmin });
     const staticNav = (
         <nav className="hidden md:flex items-center gap-1">
             {navLinks.map((link) => (

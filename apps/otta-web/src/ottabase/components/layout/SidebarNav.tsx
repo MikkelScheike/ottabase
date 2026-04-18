@@ -18,10 +18,11 @@ const WIDTH_MAP: Record<string, string> = {
 const SIDEBAR_WIDTH_CSS = `@media (min-width: 768px) { aside[style*="--sidebar-width"] { width: var(--sidebar-width); } }`;
 
 export const SidebarNav = memo(function SidebarNav({ widthClass = 'w-56' }: { widthClass?: string }) {
-    const { isAuthenticated } = useSession();
+    const { isAuthenticated, user } = useSession();
     const location = useLocation();
     const { config } = useBrand();
-    const links = getNavLinks().filter((l) => !l.authRequired || isAuthenticated);
+    const isAdmin = !!user?.permissions?.includes('admin') || !!user?.permissions?.includes('*:*');
+    const links = getNavLinks({ isAuthenticated, isAdmin });
 
     const staticContent = links.map((link) => {
         const isActive = location.pathname === link.to || (link.to !== '/' && location.pathname.startsWith(link.to));

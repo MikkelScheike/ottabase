@@ -4,20 +4,25 @@ export interface NavLink {
     to: string;
     label: string;
     authRequired?: boolean;
+    /** When true, only render for users with admin permission. */
+    adminOnly?: boolean;
 }
 
-/** All nav links [filtered by package in getNavLinks() below]. */
+/**
+ * Top-level app navigation. Admin users see an extra `Admin` entry that
+ * deep-links into the dedicated `/admin` console (which has its own sidebar).
+ */
 const NAV_LINKS_ALL: NavLink[] = [
     { to: '/', label: 'Home' },
-    { to: '/demo', label: '✨ Demo' },
-    { to: '/docs', label: '✨ Docs' },
-    { to: '/blog', label: '✨ Blog' },
+    { to: '/demo', label: 'Demo' },
+    { to: '/docs', label: 'Docs' },
+    { to: '/blog', label: 'Blog' },
     { to: '/changelog', label: "What's New" },
-    { to: '/shortlinks', label: 'Links' },
-    { to: '/analytics', label: 'Analytics', authRequired: true },
-    { to: '/admin', label: 'Admin' },
-    { to: '/dashboard', label: 'Dashboard', authRequired: true },
+    { to: '/shortlinks', label: 'Shortlinks' },
+    { to: '/dashboard', label: 'Profile Information', authRequired: true },
     { to: '/referrals', label: 'Referrals', authRequired: true },
+    { to: '/analytics', label: 'Analytics', authRequired: true, adminOnly: true },
+    { to: '/admin', label: 'Admin', authRequired: true, adminOnly: true },
 ];
 
 const PACKAGE_ROUTE_MAP: Partial<Record<string, keyof typeof PACKAGES_ENABLED>> = {
@@ -26,10 +31,17 @@ const PACKAGE_ROUTE_MAP: Partial<Record<string, keyof typeof PACKAGES_ENABLED>> 
     '/referrals': 'referrals',
 };
 
-/** Nav links filtered by enabled packages (SSOT). */
-export function getNavLinks(): NavLink[] {
+/**
+ * Returns the visible nav links for the current viewer.
+ * Filters by enabled package, auth state, and admin permission.
+ */
+export function getNavLinks(opts: { isAuthenticated?: boolean; isAdmin?: boolean } = {}): NavLink[] {
+    const { isAuthenticated = false, isAdmin = false } = opts;
     return NAV_LINKS_ALL.filter((link) => {
         const pkg = PACKAGE_ROUTE_MAP[link.to];
-        return !pkg || PACKAGES_ENABLED[pkg];
+        if (pkg && !PACKAGES_ENABLED[pkg]) return false;
+        if (link.authRequired && !isAuthenticated) return false;
+        if (link.adminOnly && !isAdmin) return false;
+        return true;
     });
 }

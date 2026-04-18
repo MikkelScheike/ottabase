@@ -196,9 +196,9 @@ describe('BrandLayout', () => {
         it('sidebar contains nav links', () => {
             setLayout({ navigation: 'sidebar' });
             render(<BrandLayout />);
-            // Sidebar links present
+            // Sidebar links present (public links — admin link is gated behind adminOnly)
             expect(screen.getByTestId('link-/blog')).toBeTruthy();
-            expect(screen.getByTestId('link-/admin')).toBeTruthy();
+            expect(screen.getByTestId('link-/changelog')).toBeTruthy();
         });
 
         it('renders drawer trigger for drawer navigation', () => {

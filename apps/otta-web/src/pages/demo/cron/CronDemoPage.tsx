@@ -83,7 +83,7 @@ export function CronDemoPage() {
                         </ol>
                         <p className="pt-1">
                             All schedules run in <strong>UTC</strong>. Manage DB tasks via{' '}
-                            <Link to="/admin/cron" className="text-primary underline">
+                            <Link to="/admin/infrastructure/cron" className="text-primary underline">
                                 Admin → Scheduled Tasks
                             </Link>
                             .

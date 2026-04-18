@@ -36,18 +36,18 @@ export function OrganizationSwitcher({ currentOrgId, onOrgChange }: Organization
             onOrgChange(orgId);
         } else {
             // Default behavior: navigate to org page
-            navigate({ to: `/organizations/${orgId}/members` });
+            navigate({ to: `/admin/access/organizations/${orgId}/members` });
         }
         setIsOpen(false);
     };
 
     const handleCreateNew = () => {
-        navigate({ to: '/organizations/new' });
+        navigate({ to: '/admin/access/organizations/new' });
         setIsOpen(false);
     };
 
     const handleOpenSettings = (orgId: string) => {
-        navigate({ to: `/organizations/${orgId}/settings` });
+        navigate({ to: `/admin/access/organizations/${orgId}/settings` });
         setIsOpen(false);
     };
 

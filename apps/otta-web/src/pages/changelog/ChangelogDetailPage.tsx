@@ -119,7 +119,7 @@ export function ChangelogDetailPage() {
                     </Button>
                     {isAuthor && (
                         <Button variant="outline" size="sm" asChild>
-                            <Link to="/admin/blog/$postId/edit" params={{ postId: entry.id }}>
+                            <Link to="/admin/content/blog/$postId/edit" params={{ postId: entry.id }}>
                                 <IconEdit className="mr-1.5 size-4" aria-hidden />
                                 Edit
                             </Link>
