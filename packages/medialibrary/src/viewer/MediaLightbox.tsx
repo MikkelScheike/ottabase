@@ -7,7 +7,7 @@ import {
     IconMinimize,
     IconX,
 } from '@tabler/icons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import type { MediaViewerItem } from '../types';
 import { formatMediaFileSize, getMediaDisplayTitle } from '../utils';
@@ -48,6 +48,19 @@ export function MediaLightbox({
 }: MediaLightboxProps) {
     const currentItem = items[activeIndex] ?? null;
     const [isFullscreen, setIsFullscreen] = useState(false);
+    const mediaContainerRef = useRef<HTMLDivElement>(null);
+
+    // Pause any <video> inside the media container when navigating or closing.
+    useEffect(() => {
+        if (!mediaContainerRef.current) return;
+        mediaContainerRef.current.querySelectorAll('video').forEach((video) => {
+            try {
+                video.pause();
+            } catch {
+                // ignore — browser may block for detached elements
+            }
+        });
+    }, [activeIndex, isOpen]);
 
     // Fullscreen state sync
     useEffect(() => {
@@ -142,6 +155,8 @@ export function MediaLightbox({
                         <a
                             href={currentItem.url}
                             download={currentItem.originalName ?? undefined}
+                            target="_blank"
+                            rel="noopener noreferrer"
                             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border/40 bg-background/80 text-foreground transition-colors hover:bg-accent"
                             aria-label="Download media"
                         >
@@ -167,7 +182,10 @@ export function MediaLightbox({
                 </div>
 
                 <div className="relative grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 py-4 md:grid-cols-[minmax(0,1fr)_22rem] md:px-6">
-                    <div className="relative flex min-h-0 items-center justify-center overflow-hidden rounded-2xl border border-border/40 bg-muted/20 p-4 md:p-6">
+                    <div
+                        ref={mediaContainerRef}
+                        className="relative flex min-h-0 items-center justify-center overflow-hidden rounded-2xl border border-border/40 bg-muted/20 p-4 md:p-6"
+                    >
                         {items.length > 1 && (
                             <>
                                 <button

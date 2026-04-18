@@ -80,6 +80,8 @@ export interface MediaSelectionPayload {
 
 export type MediaLightboxVariant = 'default' | 'immersive';
 
+export type MediaLightboxNavigationDirection = 'previous' | 'next' | 'jump';
+
 export interface MediaLightboxOptions {
     loop?: boolean;
     showMetadata?: boolean;

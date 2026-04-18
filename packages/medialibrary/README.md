@@ -76,6 +76,46 @@ When the renderer's image blocks are inside the provider, they automatically reg
 `variant="immersive"` — cinematic end-user gallery: pure black backdrop, auto-hiding chrome, caption overlay, smooth
 thumbnail scrolling.
 
+### Lightbox Lifecycle Hooks
+
+`MediaLightboxProvider` supports lifecycle callbacks:
+
+- `onOpen(item, index)` — fired when the lightbox opens.
+- `onNavigate(item, index, direction)` — fired when the active item changes while open (`previous`, `next`, `jump`).
+- `onClose()` — fired when the lightbox closes.
+
+```tsx
+<MediaLightboxProvider
+    onOpen={(item) => console.log('opened', item.id)}
+    onNavigate={(item, index, direction) => console.log('navigate', { item, index, direction })}
+    onClose={() => console.log('closed')}
+>
+    <Blocks data={content} renderers={customRenderers} config={defaultEJSRConfigs} />
+</MediaLightboxProvider>
+```
+
+### Deep-linkable Gallery Items
+
+You can sync lightbox state with the URL query string using `syncWithUrl`:
+
+```tsx
+// Uses ?mgi=<registryKey>
+<MediaLightboxProvider syncWithUrl>
+    <Blocks data={content} renderers={customRenderers} config={defaultEJSRConfigs} />
+</MediaLightboxProvider>
+
+// Custom query parameter name
+<MediaLightboxProvider syncWithUrl={{ paramName: 'media' }}>
+    <Blocks data={content} renderers={customRenderers} config={defaultEJSRConfigs} />
+</MediaLightboxProvider>
+```
+
+Behavior:
+
+- opening pushes a history entry with the active item key
+- next/previous updates replace the existing entry
+- back/forward rehydrates the lightbox item or closes when the param is removed
+
 ### Lightbox CSS Custom Properties
 
 The immersive lightbox exposes CSS custom properties for border-radius customization:
@@ -120,6 +160,8 @@ import { ZoomableImage } from '@ottabase/medialibrary';
 
 - **Scroll wheel** zooms in/out (1×–5×, 0.25× steps)
 - **Double-click** toggles 2× zoom
+- **Pinch-to-zoom** on touch devices
+- **Double-tap** toggles 2× zoom on touch devices
 - **Drag to pan** when zoomed in
 - Zoom level indicator appears in the bottom-right corner when zoom > 1×
 - Zoom and pan reset automatically when `src` changes
@@ -131,13 +173,28 @@ Both lightbox variants include a fullscreen toggle button. Clicking it calls the
 
 ## Download
 
-Both lightbox variants include a download button that links directly to the media URL with the original filename. In the
-immersive lightbox, the download button sits in the top-right control bar alongside the fullscreen toggle.
+Both lightbox variants include a download button that links directly to the media URL with the original filename. The
+download link uses `target="_blank"` and `rel="noopener noreferrer"` so browsers that ignore the `download` attribute
+for some remote HTTPS URLs do not navigate away from the app tab. In the immersive lightbox, the download button sits in
+the top-right control bar alongside the fullscreen toggle.
 
 ## Touch Gestures
 
 The immersive lightbox supports horizontal swipe gestures for navigation on touch devices. A left swipe advances to the
 next item and a right swipe goes to the previous item. Vertical swipes are ignored to avoid conflicts with scrolling.
+
+## MediaPreview Performance
+
+For non-lightbox image rendering (`tile`, `thumb`, `detail`), `MediaPreview` now:
+
+- uses `loading="lazy"`
+- uses `decoding="async"`
+- forwards intrinsic `width`/`height` when available to reserve layout space and reduce CLS
+
+## PDF Preview Sandbox
+
+PDF previews are rendered in an iframe with `sandbox="allow-same-origin"`. This keeps previews safer by disabling script
+execution and top-level navigation while still allowing same-origin PDF rendering.
 
 - **appId consistency:** The media RLS policy filters by `appId`. All upload paths must store the same `appId` that the
   listing/browser UI sends. Use the app's configured `api` client (which injects `X-App-Id` automatically) for uploads

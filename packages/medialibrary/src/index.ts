@@ -6,6 +6,7 @@ export type {
     MediaKind,
     MediaLibraryItemLike,
     MediaLibraryProvider,
+    MediaLightboxNavigationDirection,
     MediaLightboxOptions,
     MediaLightboxVariant,
     MediaMetadataJson,
@@ -38,5 +39,8 @@ export {
     useMediaLightboxRegistration,
     useOptionalMediaLightbox,
 } from './viewer/MediaLightboxProvider';
+export type { MediaLightboxProviderProps } from './viewer/MediaLightboxProvider';
 export { MediaPreview } from './viewer/MediaPreview';
+export { useMediaLightboxUrlSync } from './viewer/useMediaLightboxUrlSync';
+export type { MediaLightboxUrlSyncOptions } from './viewer/useMediaLightboxUrlSync';
 export { ZoomableImage } from './viewer/ZoomableImage';

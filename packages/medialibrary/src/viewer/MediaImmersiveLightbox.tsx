@@ -34,6 +34,20 @@ export function MediaImmersiveLightbox({
     const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const thumbnailStripRef = useRef<HTMLDivElement>(null);
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+    const mediaContainerRef = useRef<HTMLDivElement>(null);
+
+    // Pause any <video> in the media container when navigating or closing to prevent
+    // audio bleed between items / after the lightbox has closed.
+    useEffect(() => {
+        if (!mediaContainerRef.current) return;
+        mediaContainerRef.current.querySelectorAll('video').forEach((video) => {
+            try {
+                video.pause();
+            } catch {
+                // ignore — browser may block for detached elements
+            }
+        });
+    }, [activeIndex, isOpen]);
 
     // Auto-hide controls after inactivity
     const resetHideTimer = useCallback(() => {
@@ -206,6 +220,8 @@ export function MediaImmersiveLightbox({
                     <a
                         href={currentItem.url}
                         download={currentItem.originalName ?? undefined}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/25"
                         aria-label="Download"
@@ -260,6 +276,7 @@ export function MediaImmersiveLightbox({
 
                 {/* Media content — absolutely positioned to fit between top bar and thumbnails */}
                 <div
+                    ref={mediaContainerRef}
                     className="absolute inset-x-0 z-10 flex items-center justify-center px-14 md:px-20"
                     style={{ top: 56, bottom: bottomInset }}
                     onClick={(e) => {

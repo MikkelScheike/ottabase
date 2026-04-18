@@ -73,14 +73,21 @@ export function MediaPreview({
             );
         }
 
+        // Tile / thumb / detail: lazy-load by default and emit intrinsic width/height
+        // so the browser reserves layout space (CLS=0) even before the image decodes.
         const imgClassName = `h-full w-full ${objectFitClassName}`;
+        const intrinsicWidth = typeof item.width === 'number' && item.width > 0 ? item.width : undefined;
+        const intrinsicHeight = typeof item.height === 'number' && item.height > 0 ? item.height : undefined;
         return (
             <div className={shellClassName}>
                 <img
                     src={previewUrl}
                     alt={item.altText || title}
                     className={imgClassName}
-                    loading={mode === 'thumb' ? 'lazy' : 'eager'}
+                    width={intrinsicWidth}
+                    height={intrinsicHeight}
+                    loading="lazy"
+                    decoding="async"
                 />
             </div>
         );

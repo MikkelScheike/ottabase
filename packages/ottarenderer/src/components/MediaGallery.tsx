@@ -1,8 +1,12 @@
-import { MediaPreview, useMediaLightboxRegistration } from '@ottabase/medialibrary';
+import {
+    MediaPreview,
+    useMediaLightboxRegistration,
+    type MediaKind,
+    type MediaViewerItem,
+} from '@ottabase/medialibrary';
 import { RenderFn } from 'editorjs-blocks-react-renderer';
 import React from 'react';
 
-type MediaKind = 'image' | 'video' | 'audio' | 'document' | 'archive' | 'other';
 export type MediaGalleryLayoutPreset = 'grid-balanced' | 'grid-featured' | 'masonry' | 'filmstrip' | 'mosaic';
 
 export interface MediaGalleryItem {
@@ -16,6 +20,10 @@ export interface MediaGalleryItem {
     thumbnailUrl?: string;
     previewUrl?: string;
     altText?: string;
+    /** Intrinsic width, used by the renderer to reserve layout space (CLS=0) */
+    width?: number;
+    /** Intrinsic height, used by the renderer to reserve layout space (CLS=0) */
+    height?: number;
 }
 
 export interface MediaGalleryData {
@@ -25,7 +33,7 @@ export interface MediaGalleryData {
     layout?: MediaGalleryLayoutPreset;
 }
 
-const normalizeItem = (item: MediaGalleryItem) => {
+const normalizeItem = (item: MediaGalleryItem): MediaViewerItem => {
     const title = item.title || item.url.substring(item.url.lastIndexOf('/') + 1);
 
     return {
@@ -38,7 +46,9 @@ const normalizeItem = (item: MediaGalleryItem) => {
         altText: item.altText || title,
         caption: item.caption || null,
         mimeType: item.mimeType || null,
-        mediaKind: (item.mediaKind || 'other') as MediaKind,
+        mediaKind: item.mediaKind || 'other',
+        width: item.width ?? null,
+        height: item.height ?? null,
     };
 };
 
@@ -101,7 +111,7 @@ function MediaGalleryItemCard({ item, index, layout }: MediaGalleryItemCardProps
     const normalized = React.useMemo(() => normalizeItem(item), [item]);
     const { open: openLightbox, isEnabled: hasLightbox } = useMediaLightboxRegistration(
         `media-gallery-${normalized.id || index}`,
-        normalized as any,
+        normalized,
     );
     // Masonry items: break-inside-avoid + mb-3 for column gap; no fixed aspect ratio.
     // All other layouts: aspect class from getLayoutItemClass.
@@ -110,7 +120,7 @@ function MediaGalleryItemCard({ item, index, layout }: MediaGalleryItemCardProps
     return (
         <div
             className={`overflow-hidden rounded-lg border border-border bg-muted/20 ${layoutItemClass} ${hasLightbox ? 'cursor-pointer' : ''}`}
-            role={hasLightbox ? 'button' : undefined}
+            role={hasLightbox ? 'button' : 'presentation'}
             tabIndex={hasLightbox ? 0 : -1}
             onClick={() => {
                 if (hasLightbox) {
