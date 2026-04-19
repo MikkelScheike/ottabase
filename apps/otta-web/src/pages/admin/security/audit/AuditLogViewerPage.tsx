@@ -1,5 +1,6 @@
 import { ApiErrorDisplay } from '@/components/ErrorBoundary';
 import { TableSkeleton } from '@/components/LoadingSkeletons';
+import { timeAgo } from '@/hooks/useLastRefreshed';
 import { useRBACToast } from '@/hooks/useToast';
 import { api } from '@/lib/api';
 import type { PaginatedResponse, Pagination } from '@/lib/api-types';
@@ -58,21 +59,6 @@ type AuditLogsResponse = PaginatedResponse<AuditLogRecord>;
 // ============================================================
 
 /** Format Unix ms timestamp to relative time (e.g. "2m ago", "3h ago") */
-function timeAgo(ms: number): string {
-    const seconds = Math.floor((Date.now() - ms) / 1000);
-    if (seconds < 5) return 'just now';
-    if (seconds < 60) return `${seconds}s ago`;
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 30) return `${days}d ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months}mo ago`;
-    return `${Math.floor(months / 12)}y ago`;
-}
-
 /** Format Unix ms to full readable date */
 function fullDate(ms: number): string {
     return new Date(ms).toLocaleString(undefined, {

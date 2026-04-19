@@ -36,27 +36,27 @@ The following endpoints should work automatically via the generic CRUD API:
 ### Organization Members
 
 - **GET** `/api/ottaorm/organization_members`
-    - Status: ✅ **Should work** (generic list endpoint)
-    - Used by: OrganizationMembersPage (pagination support)
+    - Status: ❌ **Intentionally disabled**
+    - Used by: Not used by OrganizationMembersPage
     - Query params: `page`, `per_page`, `organizationId` (filter)
 
 - **GET** `/api/ottaorm/organization_members/:id`
-    - Status: ✅ **Should work** (generic detail endpoint)
-    - Used by: OrganizationMembersPage (editing)
+    - Status: ❌ **Intentionally disabled**
+    - Used by: Not used by OrganizationMembersPage
 
 - **POST** `/api/ottaorm/organization_members`
-    - Status: ✅ **Should work** (generic create endpoint)
-    - Used by: OrganizationMembersPage (invite form)
+    - Status: ❌ **Intentionally disabled**
+    - Used by: Not used by OrganizationMembersPage
     - Body: `{ userId, organizationId, role, status, invitedBy, invitedAt }`
 
 - **PATCH** `/api/ottaorm/organization_members/:id`
-    - Status: ✅ **Should work** (generic update endpoint)
-    - Used by: OrganizationMembersPage (edit form)
+    - Status: ❌ **Intentionally disabled**
+    - Used by: Not used by OrganizationMembersPage
     - Body: `{ role, status }`
 
 - **DELETE** `/api/ottaorm/organization_members/:id`
-    - Status: ✅ **Should work** (generic delete endpoint)
-    - Used by: OrganizationMembersPage (remove member)
+    - Status: ❌ **Intentionally disabled**
+    - Used by: Not used by OrganizationMembersPage
 
 ## ✅ Custom Admin Endpoints (Implemented)
 
@@ -67,14 +67,42 @@ These endpoints bypass the disabled `/api/ottaorm/users` CRUD and provide admin-
 - **GET** `/api/admin/users`
     - Status: ✅ **Implemented**
     - Used by: UserManagementPage (list all users)
-    - Auth: Requires authenticated session
-    - Response: `{ data: User[] }`
+    - Auth: Requires system admin access
+    - Response: Paginated envelope (`{ data, pagination, meta? }`)
 
 - **GET** `/api/admin/users/:id`
     - Status: ✅ **Implemented**
     - Used by: UserRBACPage (user details + memberships)
-    - Auth: Requires authenticated session
+    - Auth: Requires system admin access
     - Response: `{ data: { ...User, memberships: OrganizationMember[] } }`
+
+- **GET** `/api/admin/users/search`
+    - Status: ✅ **Implemented**
+    - Used by: InviteMemberForm user picker
+    - Auth: Requires admin access
+    - Tenant-safety behavior:
+        - System admins can search by name/email/id.
+        - Organization-scoped admins are restricted to exact email lookup only.
+
+### Admin Organization Members
+
+- **GET** `/api/admin/organizations/:organizationId/members`
+    - Status: ✅ **Implemented**
+    - Used by: OrganizationMembersPage (paginated member list)
+
+- **POST** `/api/admin/organizations/:organizationId/members/invite`
+    - Status: ✅ **Implemented**
+    - Used by: OrganizationMembersPage (invite member)
+
+- **PATCH** `/api/admin/organizations/:organizationId/members/:userId`
+    - Status: ✅ **Implemented**
+    - Used by: OrganizationMembersPage (role/status updates)
+    - Guardrail: Cannot demote or deactivate the last active owner (returns `409 LAST_ACTIVE_OWNER_GUARD`)
+
+- **DELETE** `/api/admin/organizations/:organizationId/members/:userId`
+    - Status: ✅ **Implemented**
+    - Used by: OrganizationMembersPage (member removal)
+    - Guardrail: Cannot remove the last active owner (returns `409 LAST_ACTIVE_OWNER_GUARD`)
 
 ## ✅ Admin Roles Endpoints (Implemented)
 
@@ -84,7 +112,7 @@ Implemented in `worker/routes/admin-roles.ts` using the Role ORM model:
 
 - **GET** `/api/admin/roles`
     - Status: ✅ **Implemented**
-    - Used by: RBACRolesPage (list roles)
+    - Used by: Admin/system role management APIs (RBACRolesPage currently calls `/api/rbac/roles`)
     - Expected response:
         ```json
         {
@@ -107,20 +135,20 @@ Implemented in `worker/routes/admin-roles.ts` using the Role ORM model:
 
 - **POST** `/api/admin/roles`
     - Status: ✅ **Implemented**
-    - Used by: RBACRolesPage (create role)
-    - Auth: Requires authenticated session
+    - Used by: Admin/system role management APIs (RBACRolesPage currently calls `/api/rbac/roles`)
+    - Auth: Requires system admin access
     - Body: `{ name, description?, permissions? }`
 
 - **PATCH** `/api/admin/roles/:id`
     - Status: ✅ **Implemented**
-    - Used by: RBACRolesPage (edit role)
-    - Auth: Requires authenticated session
+    - Used by: Admin/system role management APIs (RBACRolesPage currently calls `/api/rbac/roles`)
+    - Auth: Requires system admin access
     - Body: `{ name?, description?, permissions? }`
 
 - **DELETE** `/api/admin/roles/:id`
     - Status: ✅ **Implemented**
-    - Used by: RBACRolesPage (delete role)
-    - Auth: Requires authenticated session
+    - Used by: Admin/system role management APIs (RBACRolesPage currently calls `/api/rbac/roles`)
+    - Auth: Requires system admin access
     - Prevents deletion of system roles (returns 403)
 
 ## 📊 Testing Checklist
@@ -140,7 +168,7 @@ Implemented in `worker/routes/admin-roles.ts` using the Role ORM model:
 ### RBAC Roles
 
 - [x] Implement `/api/admin/roles` endpoints (GET, POST, PATCH, DELETE)
-- [ ] Navigate to `/admin/rbac/roles`
+- [ ] Navigate to `/admin/access/rbac/roles`
 - [ ] View system roles (owner, admin, member)
 - [ ] Create custom role
 - [ ] Edit custom role permissions

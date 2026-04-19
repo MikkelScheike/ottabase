@@ -51,6 +51,13 @@ export async function handleOttaormCrud(context: OttaormCrudContext): Promise<Re
         });
     }
 
+    if (crudRequest.model === 'organization_members') {
+        return errorResponse('Organization members CRUD is disabled via OttaORM', 403, {
+            code: 'CRUD_DISABLED',
+            hint: 'Use /api/admin/organizations/:organizationId/members endpoints (includes last-owner safety guardrails)',
+        });
+    }
+
     if (
         crudRequest.model === 'posts' &&
         crudRequest.body &&

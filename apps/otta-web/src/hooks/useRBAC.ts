@@ -8,16 +8,17 @@
  * for the five hooks that carry optimistic updates.
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
 import { api } from '@/lib/api';
 import type {
-    OrganizationRecord,
-    OrganizationMemberRecord,
-    RoleRecord,
     AuditLogRecord,
     MemberRole,
+    OrganizationMemberRecord,
+    OrganizationRecord,
+    RoleRecord,
 } from '@/types/rbac';
+import { createModelHooks, useApiQuery } from '@ottabase/ottaorm/client';
+import type { PaginatedResponse } from '@ottabase/utils/pagination';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 // ============================================================================
 // Model hook instances
@@ -26,20 +27,6 @@ import type {
 const organizationHooks = createModelHooks<OrganizationRecord>({ entityName: 'organizations' });
 const orgMemberHooks = createModelHooks<OrganizationMemberRecord>({ entityName: 'organization_members' });
 const roleHooks = createModelHooks<RoleRecord>({ entityName: 'roles' });
-
-// ============================================================================
-// API Response Types
-// ============================================================================
-
-interface PaginatedResponse<T> {
-    data: T[];
-    pagination: {
-        page: number;
-        per_page: number;
-        total: number;
-        total_pages: number;
-    };
-}
 
 // ============================================================================
 // Organizations — Query Hooks
@@ -198,8 +185,20 @@ export function useDeleteOrganization() {
 // Organization Members — Query Hooks
 // ============================================================================
 
-export function useOrganizationMembers(organizationId: string) {
-    return orgMemberHooks.useList({ where: { organizationId } }, { enabled: !!organizationId });
+export function useOrganizationMembers(organizationId: string, page = 1, perPage = 25) {
+    const queryParams = new URLSearchParams({
+        page: String(page),
+        per_page: String(perPage),
+    }).toString();
+
+    return useApiQuery<PaginatedResponse<OrganizationMemberRecord>>({
+        entity: 'organization_members',
+        queryKey: ['admin-organization-members', organizationId, page, perPage],
+        endpoint: `/api/admin/organizations/${organizationId}/members?${queryParams}`,
+        queryOptions: {
+            enabled: !!organizationId,
+        },
+    });
 }
 
 // ============================================================================
@@ -211,7 +210,76 @@ export function useOrganizationMembers(organizationId: string) {
  * invalidation to the global observer via meta.entity.
  */
 export function useInviteMember() {
-    return orgMemberHooks.useCreate();
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        meta: { entity: 'organization_members' },
+        mutationFn: async ({
+            organizationId,
+            userId,
+            role,
+            status,
+        }: {
+            organizationId: string;
+            userId: string;
+            role: MemberRole;
+            status: 'active' | 'invited' | 'suspended';
+        }) => {
+            const response = await api<{ data: OrganizationMemberRecord }>(
+                `/api/admin/organizations/${organizationId}/members/invite`,
+                {
+                    method: 'POST',
+                    body: {
+                        userId,
+                        role,
+                        status,
+                    },
+                },
+            );
+            return response.data;
+        },
+        onSuccess: async (_member, variables) => {
+            await queryClient.invalidateQueries({
+                queryKey: ['admin-organization-members', variables.organizationId],
+            });
+        },
+    });
+}
+
+export function useUpdateMember() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        meta: { entity: 'organization_members' },
+        mutationFn: async ({
+            organizationId,
+            userId,
+            role,
+            status,
+        }: {
+            organizationId: string;
+            userId: string;
+            role: MemberRole;
+            status: 'active' | 'invited' | 'suspended';
+        }) => {
+            const response = await api<{ data: OrganizationMemberRecord }>(
+                `/api/admin/organizations/${organizationId}/members/${encodeURIComponent(userId)}`,
+                {
+                    method: 'PATCH',
+                    body: {
+                        role,
+                        status,
+                    },
+                },
+            );
+            return response.data;
+        },
+        onSuccess: async (_member, variables) => {
+            await queryClient.invalidateQueries({
+                queryKey: ['admin-organization-members', variables.organizationId],
+            });
+        },
+    });
 }
 
 export function useUpdateMemberRole() {
@@ -220,45 +288,58 @@ export function useUpdateMemberRole() {
     return useMutation({
         meta: { entity: 'organization_members' },
         mutationFn: async ({
-            memberId,
+            userId,
             role,
             organizationId,
         }: {
-            memberId: string;
+            userId: string;
             role: MemberRole;
             organizationId: string;
         }) => {
             const response = await api<{ data: OrganizationMemberRecord }>(
-                `/api/ottaorm/organization_members/${memberId}`,
+                `/api/admin/organizations/${organizationId}/members/${encodeURIComponent(userId)}`,
                 {
                     method: 'PATCH',
-                    body: JSON.stringify({ role }),
+                    body: { role },
                 },
             );
             return response.data;
         },
-        onMutate: async ({ memberId, role, organizationId }) => {
-            const listKey = orgMemberHooks.queryKeys.list({ where: { organizationId } });
-            await queryClient.cancelQueries({ queryKey: listKey });
-
-            const previous = queryClient.getQueryData<OrganizationMemberRecord[]>(listKey);
-
-            if (previous) {
-                queryClient.setQueryData<OrganizationMemberRecord[]>(
-                    listKey,
-                    previous.map((member) => (member.id === memberId ? { ...member, role } : member)),
-                );
-            }
-
-            return { previous, organizationId };
+        onSuccess: async (_member, { organizationId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: ['admin-organization-members', organizationId],
+            });
         },
-        onError: (err, { organizationId }, context) => {
-            if (context?.previous) {
-                queryClient.setQueryData(
-                    orgMemberHooks.queryKeys.list({ where: { organizationId } }),
-                    context.previous,
-                );
-            }
+    });
+}
+
+export function useUpdateMemberStatus() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        meta: { entity: 'organization_members' },
+        mutationFn: async ({
+            userId,
+            status,
+            organizationId,
+        }: {
+            userId: string;
+            status: 'active' | 'invited' | 'suspended';
+            organizationId: string;
+        }) => {
+            const response = await api<{ data: OrganizationMemberRecord }>(
+                `/api/admin/organizations/${organizationId}/members/${encodeURIComponent(userId)}`,
+                {
+                    method: 'PATCH',
+                    body: { status },
+                },
+            );
+            return response.data;
+        },
+        onSuccess: async (_member, { organizationId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: ['admin-organization-members', organizationId],
+            });
         },
     });
 }
@@ -268,33 +349,15 @@ export function useRemoveMember() {
 
     return useMutation({
         meta: { entity: 'organization_members' },
-        mutationFn: async ({ memberId, organizationId }: { memberId: string; organizationId: string }) => {
-            await api(`/api/ottaorm/organization_members/${memberId}`, {
+        mutationFn: async ({ userId, organizationId }: { userId: string; organizationId: string }) => {
+            await api(`/api/admin/organizations/${organizationId}/members/${encodeURIComponent(userId)}`, {
                 method: 'DELETE',
             });
         },
-        onMutate: async ({ memberId, organizationId }) => {
-            const listKey = orgMemberHooks.queryKeys.list({ where: { organizationId } });
-            await queryClient.cancelQueries({ queryKey: listKey });
-
-            const previous = queryClient.getQueryData<OrganizationMemberRecord[]>(listKey);
-
-            if (previous) {
-                queryClient.setQueryData<OrganizationMemberRecord[]>(
-                    listKey,
-                    previous.filter((member) => member.id !== memberId),
-                );
-            }
-
-            return { previous, organizationId };
-        },
-        onError: (err, { organizationId }, context) => {
-            if (context?.previous) {
-                queryClient.setQueryData(
-                    orgMemberHooks.queryKeys.list({ where: { organizationId } }),
-                    context.previous,
-                );
-            }
+        onSuccess: async (_data, { organizationId }) => {
+            await queryClient.invalidateQueries({
+                queryKey: ['admin-organization-members', organizationId],
+            });
         },
     });
 }
@@ -450,6 +513,7 @@ export function usePrefetchOrganizations() {
  * Invalidates organizations, organization_members, and roles namespaces.
  */
 export function useInvalidateRBAC() {
+    const queryClient = useQueryClient();
     const orgInvalidate = organizationHooks.useInvalidate();
     const memberInvalidate = orgMemberHooks.useInvalidate();
     const roleInvalidate = roleHooks.useInvalidate();
@@ -458,5 +522,6 @@ export function useInvalidateRBAC() {
         orgInvalidate.invalidateAll();
         memberInvalidate.invalidateAll();
         roleInvalidate.invalidateAll();
+        void queryClient.invalidateQueries({ queryKey: ['admin-organization-members'] });
     };
 }

@@ -1,13 +1,20 @@
 import { ApiErrorDisplay } from '@/components/ErrorBoundary';
 import { TableSkeleton } from '@/components/LoadingSkeletons';
-import { useInviteMember, useOrganizationMembers, useRemoveMember, useUpdateMemberRole } from '@/hooks/useRBAC';
+import { useLastRefreshed } from '@/hooks/useLastRefreshed';
+import {
+    useInviteMember,
+    useOrganizationMembers,
+    useRemoveMember,
+    useUpdateMember,
+    useUpdateMemberRole,
+    useUpdateMemberStatus,
+} from '@/hooks/useRBAC';
 import { useRBACToast } from '@/hooks/useToast';
 import { isApiError } from '@/lib/api';
 import { organizationIdAtom } from '@/ottabase/state/appState';
-import type { BadgeVariant, MemberRole, OrganizationMemberRecord } from '@/types/rbac';
+import type { MemberRole, OrganizationMemberRecord } from '@/types/rbac';
 import { ConfirmDialog } from '@ottabase/ui-components';
 import {
-    Badge,
     Button,
     Card,
     CardContent,
@@ -32,7 +39,7 @@ import {
 } from '@ottabase/ui-shadcn';
 import { Link, useParams } from '@tanstack/react-router';
 import { useSetAtom } from 'jotai';
-import { Edit, Trash2, UserPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Edit, RefreshCw, Trash2, UserPlus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { InviteMemberForm, type InviteMemberFormData } from './components/InviteMemberForm';
 
@@ -40,27 +47,45 @@ const CURRENT_ORG_KEY = 'ottabase.current-org-id';
 
 export function OrganizationMembersPage() {
     const toast = useRBACToast();
-    const { organizationId } = useParams({ from: '/admin/access/organizations/$organizationId/members' });
+    const { organizationId = '' } = useParams({ strict: false }) as { organizationId?: string };
     const setOrganizationId = useSetAtom(organizationIdAtom);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingMember, setEditingMember] = useState<OrganizationMemberRecord | null>(null);
     const [deleteDialog, setDeleteDialog] = useState<string | null>(null);
-
-    // TanStack Query hooks with automatic caching and optimistic updates
-    const { data: members = [], isLoading, error, refetch } = useOrganizationMembers(organizationId);
+    const [currentPage, setCurrentPage] = useState(1);
+    const {
+        data: response,
+        isLoading,
+        isRefetching,
+        error,
+        refetch,
+    } = useOrganizationMembers(organizationId, currentPage);
+    const members: OrganizationMemberRecord[] = response?.data ?? [];
+    const pagination = response?.pagination;
+    const { label: lastRefreshedLabel, touch: touchRefreshed } = useLastRefreshed({
+        isReady: !isLoading && !error,
+    });
     const inviteMutation = useInviteMember();
+    const updateMemberMutation = useUpdateMember();
     const updateRoleMutation = useUpdateMemberRole();
+    const updateStatusMutation = useUpdateMemberStatus();
     const removeMutation = useRemoveMember();
 
     useEffect(() => {
         if (!organizationId) return;
         setOrganizationId(organizationId);
+        setCurrentPage(1);
         try {
             localStorage.setItem(CURRENT_ORG_KEY, organizationId);
         } catch {
             // ignore storage failures
         }
     }, [organizationId, setOrganizationId]);
+
+    const handleRefresh = async () => {
+        await refetch();
+        touchRefreshed();
+    };
 
     const handleInvite = () => {
         setEditingMember(null);
@@ -72,16 +97,16 @@ export function OrganizationMembersPage() {
         setIsDialogOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        setDeleteDialog(id);
+    const handleDelete = async (userId: string) => {
+        setDeleteDialog(userId);
     };
 
     const handleConfirmDelete = async () => {
         if (!deleteDialog) return;
 
-        const id = deleteDialog;
+        const userId = deleteDialog;
         removeMutation.mutate(
-            { memberId: id, organizationId },
+            { userId, organizationId },
             {
                 onSuccess: () => {
                     toast.rbac.memberRemoved();
@@ -95,9 +120,9 @@ export function OrganizationMembersPage() {
     };
 
     // Optimistic role change with instant UI feedback
-    const handleQuickRoleChange = async (memberId: string, newRole: MemberRole) => {
+    const handleQuickRoleChange = async (userId: string, newRole: MemberRole) => {
         updateRoleMutation.mutate(
-            { memberId, role: newRole, organizationId },
+            { userId, role: newRole, organizationId },
             {
                 onSuccess: () => {
                     toast.rbac.memberUpdated();
@@ -109,16 +134,34 @@ export function OrganizationMembersPage() {
         );
     };
 
+    const handleQuickStatusChange = async (userId: string, newStatus: 'active' | 'invited' | 'suspended') => {
+        updateStatusMutation.mutate(
+            { userId, status: newStatus, organizationId },
+            {
+                onSuccess: () => {
+                    toast.rbac.memberUpdated();
+                },
+                onError: (err) => {
+                    toast.error('Failed to update status', err instanceof Error ? err.message : 'Unknown error');
+                },
+            },
+        );
+    };
+
     const handleSubmit = async (data: InviteMemberFormData) => {
         try {
             if (editingMember) {
-                // Note: This would need an updateMember mutation, for now just close
+                await updateMemberMutation.mutateAsync({
+                    organizationId,
+                    userId: editingMember.userId,
+                    role: data.role,
+                    status: data.status,
+                });
                 toast.rbac.memberUpdated();
             } else {
                 await inviteMutation.mutateAsync({
                     ...data,
                     organizationId,
-                    invitedAt: Date.now(),
                 });
                 toast.rbac.memberInvited();
             }
@@ -126,28 +169,6 @@ export function OrganizationMembersPage() {
             setEditingMember(null);
         } catch (err) {
             throw new Error(isApiError(err) ? err.message : 'Failed to invite member');
-        }
-    };
-
-    const getRoleBadgeVariant = (role: string): BadgeVariant => {
-        switch (role) {
-            case 'owner':
-                return 'default';
-            case 'admin':
-                return 'secondary';
-            default:
-                return 'outline';
-        }
-    };
-
-    const getStatusBadgeVariant = (status: string): BadgeVariant => {
-        switch (status) {
-            case 'active':
-                return 'default';
-            case 'invited':
-                return 'secondary';
-            default:
-                return 'outline';
         }
     };
 
@@ -161,8 +182,14 @@ export function OrganizationMembersPage() {
                             <CardDescription>Manage members and their roles</CardDescription>
                         </div>
                         <div className="flex gap-2">
+                            <div className="flex items-center text-xs text-muted-foreground pr-1">
+                                {lastRefreshedLabel}
+                            </div>
+                            <Button variant="outline" onClick={handleRefresh} disabled={isLoading || isRefetching}>
+                                <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+                            </Button>
                             <Button variant="outline" asChild>
-                                <Link to="/admin/access/organizations">← Back to Organizations</Link>
+                                <Link to={'/admin/access/organizations' as never}>← Back to Organizations</Link>
                             </Button>
                             <Button onClick={handleInvite} className="gap-2">
                                 <UserPlus className="h-4 w-4" />
@@ -190,7 +217,7 @@ export function OrganizationMembersPage() {
                         <Table>
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead>User ID</TableHead>
+                                    <TableHead>User</TableHead>
                                     <TableHead>Role</TableHead>
                                     <TableHead>Status</TableHead>
                                     <TableHead>Invited</TableHead>
@@ -202,38 +229,57 @@ export function OrganizationMembersPage() {
                                 {members.map((member) => (
                                     <TableRow key={member.id}>
                                         <TableCell>
-                                            <code className="text-sm bg-muted px-2 py-1 rounded">{member.userId}</code>
+                                            <div className="min-w-0 space-y-0.5">
+                                                <div className="truncate font-medium">
+                                                    {member.user?.name || 'Unknown user'}
+                                                </div>
+                                                <div className="truncate text-xs text-muted-foreground">
+                                                    {member.user?.email || member.userId}
+                                                </div>
+                                                <code className="text-[11px] text-muted-foreground">
+                                                    {member.userId}
+                                                </code>
+                                            </div>
                                         </TableCell>
                                         <TableCell>
                                             <Select
                                                 value={member.role}
                                                 onValueChange={(value: MemberRole) =>
-                                                    handleQuickRoleChange(member.id, value)
+                                                    handleQuickRoleChange(member.userId, value)
                                                 }
-                                                disabled={updateRoleMutation.isPending}
+                                                disabled={
+                                                    updateRoleMutation.isPending || updateStatusMutation.isPending
+                                                }
                                             >
                                                 <SelectTrigger className="w-32">
-                                                    <Badge variant={getRoleBadgeVariant(member.role)}>
-                                                        {member.role}
-                                                    </Badge>
+                                                    <span className="capitalize">{member.role}</span>
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="owner">
-                                                        <Badge variant="default">Owner</Badge>
-                                                    </SelectItem>
-                                                    <SelectItem value="admin">
-                                                        <Badge variant="secondary">Admin</Badge>
-                                                    </SelectItem>
-                                                    <SelectItem value="member">
-                                                        <Badge variant="outline">Member</Badge>
-                                                    </SelectItem>
+                                                    <SelectItem value="owner">Owner</SelectItem>
+                                                    <SelectItem value="admin">Admin</SelectItem>
+                                                    <SelectItem value="member">Member</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         </TableCell>
                                         <TableCell>
-                                            <Badge variant={getStatusBadgeVariant(member.status)}>
-                                                {member.status}
-                                            </Badge>
+                                            <Select
+                                                value={member.status}
+                                                onValueChange={(value: 'active' | 'invited' | 'suspended') =>
+                                                    handleQuickStatusChange(member.userId, value)
+                                                }
+                                                disabled={
+                                                    updateRoleMutation.isPending || updateStatusMutation.isPending
+                                                }
+                                            >
+                                                <SelectTrigger className="w-36">
+                                                    <span className="capitalize">{member.status}</span>
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="active">Active</SelectItem>
+                                                    <SelectItem value="invited">Invited</SelectItem>
+                                                    <SelectItem value="suspended">Suspended</SelectItem>
+                                                </SelectContent>
+                                            </Select>
                                         </TableCell>
                                         <TableCell>
                                             {member.invitedAt ? new Date(member.invitedAt).toLocaleDateString() : '-'}
@@ -247,14 +293,18 @@ export function OrganizationMembersPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => handleEdit(member)}
-                                                    disabled={updateRoleMutation.isPending}
+                                                    disabled={
+                                                        updateRoleMutation.isPending ||
+                                                        updateStatusMutation.isPending ||
+                                                        updateMemberMutation.isPending
+                                                    }
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
                                                 <Button
                                                     variant="ghost"
                                                     size="icon"
-                                                    onClick={() => handleDelete(member.id)}
+                                                    onClick={() => handleDelete(member.userId)}
                                                     disabled={removeMutation.isPending}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
@@ -269,6 +319,39 @@ export function OrganizationMembersPage() {
                 </CardContent>
             </Card>
 
+            {/* Pagination Controls */}
+            {!isLoading && pagination && pagination.total > pagination.perPage && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                        Showing {(pagination.page - 1) * pagination.perPage + 1}–
+                        {Math.min(pagination.page * pagination.perPage, pagination.total)} of {pagination.total} members
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={pagination.page <= 1}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Prev
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                            Page {pagination.page} of {pagination.totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage((p) => p + 1)}
+                            disabled={pagination.page >= pagination.totalPages}
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* Invite/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="max-w-2xl">
@@ -282,6 +365,7 @@ export function OrganizationMembersPage() {
                     </DialogHeader>
                     <InviteMemberForm
                         organizationId={organizationId}
+                        editingMember={editingMember}
                         onSubmit={handleSubmit}
                         onCancel={() => setIsDialogOpen(false)}
                     />

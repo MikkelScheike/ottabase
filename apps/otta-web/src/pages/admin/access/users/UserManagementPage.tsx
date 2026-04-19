@@ -26,9 +26,12 @@ import {
     TableHeader,
     TableRow,
 } from '@ottabase/ui-shadcn';
+import type { PaginatedResponse } from '@ottabase/utils/pagination';
 import { Link } from '@tanstack/react-router';
-import { Calendar, Mail, Search, Shield, Users } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Calendar, ChevronLeft, ChevronRight, Mail, Search, Shield, Users } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+
+const PER_PAGE = 25;
 
 interface User {
     id: string;
@@ -42,30 +45,39 @@ interface User {
 
 export function UserManagementPage() {
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-    const { data: allUsers = [], isLoading } = useApiQuery<
-        { data: Array<User | { entity: string; data: User }> },
-        User[]
-    >({
+    // Debounce search to avoid hammering the API on every keystroke.
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setCurrentPage(1); // Reset to first page on new search
+        }, 300);
+        return () => {
+            if (debounceRef.current) clearTimeout(debounceRef.current);
+        };
+    }, [searchTerm]);
+
+    const queryParams = useMemo(() => {
+        const params = new URLSearchParams();
+        params.set('page', String(currentPage));
+        params.set('per_page', String(PER_PAGE));
+        if (debouncedSearch) params.set('search', debouncedSearch);
+        return params.toString();
+    }, [currentPage, debouncedSearch]);
+
+    const { data: response, isLoading } = useApiQuery<PaginatedResponse<User>>({
         entity: 'users',
-        queryKey: ['admin-list'],
-        endpoint: '/api/admin/users',
-        transform: (response) =>
-            response.data
-                .map((item) => ('data' in item ? item.data : item))
-                .filter((user): user is User => !!user && typeof user.id === 'string'),
+        queryKey: ['admin-users', queryParams],
+        endpoint: `/api/admin/users?${queryParams}`,
         queryOptions: { staleTime: 2 * 60 * 1000 },
     });
 
-    const users = useMemo(
-        () =>
-            allUsers.filter(
-                (user) =>
-                    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    user.email?.toLowerCase().includes(searchTerm.toLowerCase()),
-            ),
-        [allUsers, searchTerm],
-    );
+    const users = response?.data ?? [];
+    const pagination = response?.pagination;
 
     const getUserInitials = (user: User) => {
         if (user.name) {
@@ -78,6 +90,9 @@ export function UserManagementPage() {
         }
         return user.email?.[0]?.toUpperCase() || '?';
     };
+
+    const pageStart = pagination ? (pagination.page - 1) * pagination.perPage + 1 : 0;
+    const pageEnd = pagination ? Math.min(pagination.page * pagination.perPage, pagination.total) : 0;
 
     return (
         <div className="space-y-6">
@@ -96,31 +111,11 @@ export function UserManagementPage() {
             </div>
 
             {/* Stats */}
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-4 md:grid-cols-1">
                 <Card>
                     <CardHeader className="pb-2">
                         <CardDescription>Total Users</CardDescription>
-                        <CardTitle className="text-2xl">{allUsers.length}</CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Admins</CardDescription>
-                        <CardTitle className="text-2xl">{allUsers.filter((u) => u.role === 'admin').length}</CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>Verified</CardDescription>
-                        <CardTitle className="text-2xl">{allUsers.filter((u) => u.emailVerified).length}</CardTitle>
-                    </CardHeader>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>This Month</CardDescription>
-                        <CardTitle className="text-2xl">
-                            {allUsers.filter((u) => new Date(u.createdAt).getMonth() === new Date().getMonth()).length}
-                        </CardTitle>
+                        <CardTitle className="text-2xl">{pagination?.total ?? '—'}</CardTitle>
                     </CardHeader>
                 </Card>
             </div>
@@ -218,6 +213,38 @@ export function UserManagementPage() {
                     )}
                 </CardContent>
             </Card>
+
+            {/* Pagination Controls */}
+            {!isLoading && pagination && pagination.total > PER_PAGE && (
+                <div className="flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                        Showing {pageStart}–{pageEnd} of {pagination.total} users
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                            disabled={pagination.page <= 1}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Prev
+                        </Button>
+                        <span className="text-sm text-muted-foreground">
+                            Page {pagination.page} of {pagination.totalPages}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage((p) => p + 1)}
+                            disabled={pagination.page >= pagination.totalPages}
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

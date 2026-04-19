@@ -18,6 +18,12 @@ import {
     handleAdminDevMailGet,
     handleAdminDevMailList,
 } from './admin-dev-mail';
+import {
+    handleAdminOrganizationInviteMember,
+    handleAdminOrganizationMembersList,
+    handleAdminOrganizationRemoveMember,
+    handleAdminOrganizationUpdateMember,
+} from './admin-organization-members';
 import { handleAdminPromoteOwner } from './admin-owner';
 import {
     handleAdminQueuesDLQJob,
@@ -37,7 +43,7 @@ import {
     handleAdminRoleUpdate,
     handleAdminRolesList,
 } from './admin-roles';
-import { handleAdminUserById, handleAdminUsers } from './admin-users';
+import { handleAdminUserById, handleAdminUserSearch, handleAdminUsers } from './admin-users';
 import { handleAuditLogs } from './audit';
 import {
     handleAuthConfig,
@@ -329,6 +335,15 @@ async function handleGetRoutes(context: ApiRouteContext): Promise<Response | nul
         return handleAdminUsers(context);
     }
 
+    if (route === '/api/admin/users/search') {
+        return handleAdminUserSearch(context);
+    }
+
+    const adminOrganizationMembersListMatch = route.match(/^\/api\/admin\/organizations\/([^/]+)\/members$/);
+    if (adminOrganizationMembersListMatch) {
+        return handleAdminOrganizationMembersList(context, adminOrganizationMembersListMatch[1]);
+    }
+
     const adminUserMatch = route.match(/^\/api\/admin\/users\/([^/]+)$/);
     if (adminUserMatch) {
         return handleAdminUserById(context, adminUserMatch[1]);
@@ -400,6 +415,11 @@ async function handlePostRoutes(context: ApiRouteContext): Promise<Response | nu
 
     if (route === '/api/admin/owner/promote') {
         return handleAdminPromoteOwner(context);
+    }
+
+    const adminOrganizationInviteMatch = route.match(/^\/api\/admin\/organizations\/([^/]+)\/members\/invite$/);
+    if (adminOrganizationInviteMatch) {
+        return handleAdminOrganizationInviteMember(context, adminOrganizationInviteMatch[1]);
     }
 
     if (packages.ottablog) {
@@ -503,6 +523,15 @@ async function handlePatchRoutes(context: ApiRouteContext): Promise<Response | n
     const { route, env } = context;
     const packages = getOttabaseConfig(env).packages;
 
+    const adminOrganizationUpdateMatch = route.match(/^\/api\/admin\/organizations\/([^/]+)\/members\/([^/]+)$/);
+    if (adminOrganizationUpdateMatch) {
+        return handleAdminOrganizationUpdateMember(
+            context,
+            adminOrganizationUpdateMatch[1],
+            decodeURIComponent(adminOrganizationUpdateMatch[2]),
+        );
+    }
+
     if (route === '/api/users/me') {
         return handleUserProfile(context);
     }
@@ -584,6 +613,15 @@ async function handleDeleteRoutes(context: ApiRouteContext): Promise<Response | 
     const adminRoleDeleteMatch = route.match(/^\/api\/admin\/roles\/([^/]+)$/);
     if (adminRoleDeleteMatch) {
         return handleAdminRoleDelete(context, adminRoleDeleteMatch[1]);
+    }
+
+    const adminOrganizationDeleteMatch = route.match(/^\/api\/admin\/organizations\/([^/]+)\/members\/([^/]+)$/);
+    if (adminOrganizationDeleteMatch) {
+        return handleAdminOrganizationRemoveMember(
+            context,
+            adminOrganizationDeleteMatch[1],
+            decodeURIComponent(adminOrganizationDeleteMatch[2]),
+        );
     }
 
     return null;

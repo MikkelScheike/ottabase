@@ -5,8 +5,12 @@ TanStack Router + Query template with automated OttaORM migrations and Cloudflar
 ## Features
 
 - **TanStack Router** - Type-safe routing with file-based structure
+- **Admin Access Routing** - Organization members page is keyed by the typed `$organizationId` route param with a direct
+  back path to `/admin/access/organizations`
 - **TanStack Query** - Powerful async state management
 - **OttaORM** - Fat models with automated migrations
+- **Owner Safety Guardrail** - Admin member APIs prevent demoting, deactivating, or removing the last active
+  organization owner
 - **Ottablog CMS** - Feature-rich content package with rich content blocks and CMS features
 - **Auth.js** - OAuth, Magic Link, and Credentials authentication
 - **Vite** - Fast development server and optimized builds

@@ -62,6 +62,12 @@ export interface OrganizationMemberRecord {
     invitedAt?: string;
     joinedAt?: string;
     metadata?: Record<string, unknown>;
+    user?: {
+        id: string | null;
+        name: string | null;
+        email: string | null;
+        image: string | null;
+    };
 }
 
 export type MemberRole = 'owner' | 'admin' | 'member';

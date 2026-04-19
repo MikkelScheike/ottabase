@@ -586,9 +586,13 @@ const { data: members } = useOrganizationMembers(orgId);
 const inviteMutation = useInviteMember();
 inviteMutation.mutate({
     organizationId: orgId,
-    userId: 'user-123',
+    userId: 'resolved-from-admin-user-search',
     role: 'member',
+    status: 'invited',
 });
+
+// In the admin invite dialog, the user picker searches by name, email, or user ID
+// and submits the resolved users.id value to a dedicated admin invite endpoint.
 
 // Quick role change with optimistic update
 const updateRoleMutation = useUpdateMemberRole();

@@ -93,4 +93,22 @@ describe('handleOttaormCrud (posts concurrency)', () => {
         expect(response.status).toBe(200);
         expect(call.body.expectedUpdatedAt).toBeUndefined();
     });
+
+    it('blocks organization_members CRUD and requires admin endpoints', async () => {
+        const { parseCrudRequest, executeSecureCrudRequest } = await import('@ottabase/ottaorm');
+
+        (parseCrudRequest as any).mockResolvedValue({
+            model: 'organization_members',
+            method: 'PATCH',
+            id: 'user-2',
+            body: { role: 'member' },
+        });
+
+        const response = await handleOttaormCrud(createContext());
+        const body = (await response.json()) as any;
+
+        expect(response.status).toBe(403);
+        expect(body.code).toBe('CRUD_DISABLED');
+        expect(executeSecureCrudRequest as any).not.toHaveBeenCalled();
+    });
 });

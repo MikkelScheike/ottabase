@@ -3,10 +3,15 @@
  *
  * Assign users to organizations with roles
  * GitHub-like minimal UI with dark mode support
+ *
+ * Membership data uses GET /api/admin/users/:id (includes memberships).
+ * Mutations use /api/admin/organizations/:orgId/members/* (last-owner guards).
  */
 
-import { useState } from 'react';
-import { useParams, Link } from '@tanstack/react-router';
+import { TableSkeleton } from '@/components/LoadingSkeletons';
+import { useInviteMember, useOrganizations, useRemoveMember, useUpdateMemberRole } from '@/hooks/useRBAC';
+import { useRBACToast } from '@/hooks/useToast';
+import { useApiQuery } from '@ottabase/ottaorm/client';
 import { ConfirmDialog } from '@ottabase/ui-components';
 import {
     Avatar,
@@ -19,12 +24,6 @@ import {
     CardDescription,
     CardHeader,
     CardTitle,
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
     Dialog,
     DialogContent,
     DialogDescription,
@@ -37,66 +36,77 @@ import {
     SelectTrigger,
     SelectValue,
     Label,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@ottabase/ui-shadcn';
-import { Shield, Building2, Plus, Trash2, Loader2 } from 'lucide-react';
-import { useRBACToast } from '@/hooks/useToast';
-import { useOrganizations } from '@/hooks/useRBAC';
-import { useApiQuery, createModelHooks } from '@ottabase/ottaorm/client';
-import { TableSkeleton } from '@/components/LoadingSkeletons';
 import type { MemberRole, BadgeVariant, OrganizationMemberRecord } from '@/types/rbac';
+import { useQueryClient } from '@tanstack/react-query';
+import { Link, useParams } from '@tanstack/react-router';
+import { Building2, Loader2, Plus, Shield, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 
-interface UserRecord {
+interface AdminUserDetailResponse {
     id: string;
     name: string | null;
-    email: string;
+    email: string | null;
     image: string | null;
+    memberships?: OrganizationMemberRecord[];
 }
 
 interface UserOrganization {
-    id: string;
     organizationId: string;
     organizationName: string;
     role: MemberRole;
     joinedAt: string;
 }
 
-const orgMemberHooks = createModelHooks<OrganizationMemberRecord>({ entityName: 'organization_members' });
-
 export function UserRBACPage() {
     const { userId } = useParams({ from: '/admin/access/users/$userId/rbac' });
     const toast = useRBACToast();
+    const queryClient = useQueryClient();
     const { data: orgs = [] } = useOrganizations();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [selectedOrg, setSelectedOrg] = useState('');
     const [selectedRole, setSelectedRole] = useState<MemberRole>('member');
-    const [removeMembership, setRemoveMembership] = useState<{ id: string; orgName: string } | null>(null);
+    const [removeMembership, setRemoveMembership] = useState<{ organizationId: string; orgName: string } | null>(null);
 
-    const { data: user, isLoading: isUserLoading } = useApiQuery<{ data: UserRecord }, UserRecord>({
+    const userDetailQueryKey = ['users', 'admin', userId] as const;
+
+    const { data: userDetail, isLoading: isUserLoading } = useApiQuery<
+        { data: AdminUserDetailResponse },
+        AdminUserDetailResponse
+    >({
         entity: 'users',
         queryKey: ['admin', userId],
         endpoint: `/api/admin/users/${userId}`,
-        transform: (r) => r.data,
+        transform: (r) => ({
+            id: r.data.id,
+            name: r.data.name,
+            email: r.data.email,
+            image: r.data.image,
+            memberships: r.data.memberships ?? [],
+        }),
         queryOptions: { enabled: !!userId },
     });
 
-    const { data: rawMemberships = [], isLoading: isOrgsLoading } = orgMemberHooks.useList(
-        { where: { userId } },
-        { enabled: !!userId },
-    );
+    const rawMemberships = userDetail?.memberships ?? [];
 
     const userOrgs: UserOrganization[] = rawMemberships.map((m) => {
         const org = orgs.find((o) => o.id === m.organizationId);
         return {
-            id: m.id || `${m.userId}-${m.organizationId}`,
             organizationId: m.organizationId,
             organizationName: org?.name || m.organizationId,
             role: m.role,
-            joinedAt: m.joinedAt || '',
+            joinedAt: typeof m.joinedAt === 'string' ? m.joinedAt : String(m.joinedAt ?? ''),
         };
     });
 
-    const isLoading = isUserLoading || isOrgsLoading;
+    const isLoading = isUserLoading;
 
     const availableOrgs = orgs.filter((org) => !userOrgs.some((uo) => uo.organizationId === org.id));
 
@@ -111,56 +121,81 @@ export function UserRBACPage() {
         }
     };
 
-    const addToOrg = orgMemberHooks.useCreate({
-        onSuccess: () => {
-            toast.rbac.memberInvited();
-            setIsDialogOpen(false);
-            setSelectedOrg('');
-            setSelectedRole('member');
-        },
-        onError: () => toast.error('Failed to add', 'Could not add user to organization'),
-    });
+    const inviteMutation = useInviteMember();
+    const removeMutation = useRemoveMember();
+    const updateRoleMutation = useUpdateMemberRole();
 
-    const removeMember = orgMemberHooks.useDelete({
-        onSuccess: () => toast.rbac.memberRemoved(),
-        onError: () => toast.error('Failed to remove', 'Could not remove user from organization'),
-    });
-
-    const updateRole = orgMemberHooks.useUpdate({
-        onSuccess: () => toast.rbac.memberUpdated(),
-        onError: () => toast.error('Failed to update', 'Could not update role'),
-    });
+    const invalidateUserDetail = () => {
+        void queryClient.invalidateQueries({ queryKey: userDetailQueryKey });
+    };
 
     const handleAddToOrg = () => {
         if (!selectedOrg) {
             toast.error('Validation error', 'Please select an organization');
             return;
         }
-        addToOrg.mutate({
-            userId,
-            organizationId: selectedOrg,
-            role: selectedRole,
-            status: 'active',
-            joinedAt: Date.now(),
-        });
+        inviteMutation.mutate(
+            {
+                organizationId: selectedOrg,
+                userId,
+                role: selectedRole,
+                status: 'active',
+            },
+            {
+                onSuccess: () => {
+                    toast.rbac.memberInvited();
+                    setIsDialogOpen(false);
+                    setSelectedOrg('');
+                    setSelectedRole('member');
+                    invalidateUserDetail();
+                },
+                onError: (err) =>
+                    toast.error(
+                        'Failed to add',
+                        err instanceof Error ? err.message : 'Could not add user to organization',
+                    ),
+            },
+        );
     };
 
-    const handleRemove = (membershipId: string, orgName: string) => {
-        setRemoveMembership({ id: membershipId, orgName });
+    const handleRemove = (organizationId: string, orgName: string) => {
+        setRemoveMembership({ organizationId, orgName });
     };
 
     const handleConfirmRemove = () => {
-        if (removeMembership) {
-            removeMember.mutate(removeMembership.id);
-        }
-        setRemoveMembership(null);
+        if (!removeMembership) return;
+        removeMutation.mutate(
+            { userId, organizationId: removeMembership.organizationId },
+            {
+                onSuccess: () => {
+                    toast.rbac.memberRemoved();
+                    setRemoveMembership(null);
+                    invalidateUserDetail();
+                },
+                onError: (err) =>
+                    toast.error(
+                        'Failed to remove',
+                        err instanceof Error ? err.message : 'Could not remove user from organization',
+                    ),
+            },
+        );
     };
 
-    const handleRoleChange = (membershipId: string, newRole: MemberRole) => {
-        updateRole.mutate({ id: membershipId, data: { role: newRole } });
+    const handleRoleChange = (organizationId: string, newRole: MemberRole) => {
+        updateRoleMutation.mutate(
+            { userId, role: newRole, organizationId },
+            {
+                onSuccess: () => {
+                    toast.rbac.memberUpdated();
+                    invalidateUserDetail();
+                },
+                onError: (err) =>
+                    toast.error('Failed to update role', err instanceof Error ? err.message : 'Could not update role'),
+            },
+        );
     };
 
-    const displayUser = user || { id: userId, name: null, email: '', image: null };
+    const displayUser = userDetail || { id: userId, name: null, email: '', image: null };
     const userInitials = displayUser.name
         ? displayUser.name
               .split(' ')
@@ -203,7 +238,7 @@ export function UserRBACPage() {
                             </Avatar>
                             <div>
                                 <h3 className="font-semibold text-lg">{displayUser.name || 'No name'}</h3>
-                                <p className="text-sm text-muted-foreground">{displayUser.email}</p>
+                                <p className="text-sm text-muted-foreground">{displayUser.email || '—'}</p>
                                 <code className="text-xs bg-muted px-2 py-1 rounded mt-1 inline-block">
                                     {displayUser.id}
                                 </code>
@@ -281,10 +316,10 @@ export function UserRBACPage() {
 
                                     <Button
                                         onClick={handleAddToOrg}
-                                        disabled={addToOrg.isPending || !selectedOrg}
+                                        disabled={inviteMutation.isPending || !selectedOrg}
                                         className="w-full"
                                     >
-                                        {addToOrg.isPending ? (
+                                        {inviteMutation.isPending ? (
                                             <>
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                                 Adding...
@@ -317,7 +352,7 @@ export function UserRBACPage() {
                             </TableHeader>
                             <TableBody>
                                 {userOrgs.map((membership) => (
-                                    <TableRow key={membership.id}>
+                                    <TableRow key={membership.organizationId}>
                                         <TableCell>
                                             <div className="flex items-center gap-2">
                                                 <Building2 className="h-4 w-4 text-muted-foreground" />
@@ -328,8 +363,9 @@ export function UserRBACPage() {
                                             <Select
                                                 value={membership.role}
                                                 onValueChange={(value) =>
-                                                    handleRoleChange(membership.id, value as MemberRole)
+                                                    handleRoleChange(membership.organizationId, value as MemberRole)
                                                 }
+                                                disabled={updateRoleMutation.isPending}
                                             >
                                                 <SelectTrigger className="w-32">
                                                     <Badge variant={getRoleBadgeVariant(membership.role)}>
@@ -358,7 +394,10 @@ export function UserRBACPage() {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                onClick={() => handleRemove(membership.id, membership.organizationName)}
+                                                onClick={() =>
+                                                    handleRemove(membership.organizationId, membership.organizationName)
+                                                }
+                                                disabled={removeMutation.isPending}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -378,10 +417,10 @@ export function UserRBACPage() {
                 description={`Remove this user from ${removeMembership?.orgName ?? 'the organization'}? They will lose access to all resources in this organization.`}
                 tone="destructive"
                 secondaryActionText="Cancel"
-                primaryActionText={removeMember.isPending ? 'Removing…' : 'Remove'}
+                primaryActionText={removeMutation.isPending ? 'Removing…' : 'Remove'}
                 onConfirm={handleConfirmRemove}
-                confirmProps={{ disabled: removeMember.isPending }}
-                cancelProps={{ disabled: removeMember.isPending }}
+                confirmProps={{ disabled: removeMutation.isPending }}
+                cancelProps={{ disabled: removeMutation.isPending }}
             />
         </div>
     );

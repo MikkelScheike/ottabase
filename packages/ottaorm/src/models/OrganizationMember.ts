@@ -2,7 +2,7 @@
 // @ottabase/ottaorm - OrganizationMember model
 // ============================================================
 
-import { and, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import { BaseModel, type ModelFields, type PackageType } from '../base/BaseModel';
 import { organizationsTable } from './Organization.schema';
 import {
@@ -170,7 +170,7 @@ export class OrganizationMember extends BaseModel {
     static async removeMember(userId: string, organizationId: string): Promise<boolean> {
         const db = this.getDriver().getDb();
 
-        const result = await db
+        await db
             .delete(organizationMembersTable)
             .where(
                 and(
@@ -179,7 +179,17 @@ export class OrganizationMember extends BaseModel {
                 ),
             );
 
-        return true;
+        const [remaining] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(organizationMembersTable)
+            .where(
+                and(
+                    eq(organizationMembersTable.userId, userId),
+                    eq(organizationMembersTable.organizationId, organizationId),
+                ),
+            );
+
+        return Number(remaining?.count ?? 0) === 0;
     }
 
     /**
@@ -239,6 +249,8 @@ export class OrganizationMember extends BaseModel {
             status?: 'active' | 'invited' | 'suspended';
             role?: 'owner' | 'admin' | 'member';
             limit?: number;
+            /** Zero-based row offset for pagination */
+            offset?: number;
         },
     ): Promise<Array<OrganizationMemberType & { user?: any }>> {
         const db = this.getDriver().getDb();
@@ -272,13 +284,71 @@ export class OrganizationMember extends BaseModel {
             })
             .from(organizationMembersTable)
             .leftJoin(usersTable, eq(organizationMembersTable.userId, usersTable.id))
-            .where(and(...conditions));
+            .where(and(...conditions))
+            .orderBy(desc(organizationMembersTable.joinedAt), desc(organizationMembersTable.userId));
 
         if (options?.limit) {
             query = query.limit(options.limit) as any;
         }
 
+        if (options?.offset !== undefined) {
+            query = query.offset(options.offset) as any;
+        }
+
         return query;
+    }
+
+    /**
+     * Count all members of an organization (for pagination totals).
+     * Supports the same status/role filters as getOrganizationMembers.
+     */
+    static async countOrganizationMembers(
+        organizationId: string,
+        options?: {
+            status?: 'active' | 'invited' | 'suspended';
+            role?: 'owner' | 'admin' | 'member';
+        },
+    ): Promise<number> {
+        const db = this.getDriver().getDb();
+
+        const conditions = [eq(organizationMembersTable.organizationId, organizationId)];
+
+        if (options?.status) {
+            conditions.push(eq(organizationMembersTable.status, options.status));
+        }
+
+        if (options?.role) {
+            conditions.push(eq(organizationMembersTable.role, options.role));
+        }
+
+        const [result] = await db
+            .select({ count: sql<number>`count(*)` })
+            .from(organizationMembersTable)
+            .where(and(...conditions));
+
+        return Number(result?.count ?? 0);
+    }
+
+    /**
+     * Count active owners in an organization.
+     */
+    static async countActiveOwners(organizationId: string): Promise<number> {
+        return this.countOrganizationMembers(organizationId, {
+            role: 'owner',
+            status: 'active',
+        });
+    }
+
+    /**
+     * True when the target member is the only active owner in the organization.
+     */
+    static async isLastActiveOwner(userId: string, organizationId: string): Promise<boolean> {
+        const [isOwner, ownerCount] = await Promise.all([
+            this.hasRole(userId, organizationId, 'owner'),
+            this.countActiveOwners(organizationId),
+        ]);
+
+        return isOwner && ownerCount <= 1;
     }
 
     /**

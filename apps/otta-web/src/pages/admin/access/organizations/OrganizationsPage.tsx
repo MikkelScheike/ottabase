@@ -173,9 +173,10 @@ export function OrganizationsPage() {
                                         <TableCell>{new Date(org.createdAt).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">
                                             <div className="flex justify-end gap-2">
-                                                <Button variant="ghost" size="icon" asChild>
+                                                <Button variant="outline" size="sm" className="gap-2" asChild>
                                                     <Link to={`/admin/access/organizations/${org.id}/members`}>
                                                         <Users className="h-4 w-4" />
+                                                        View Members
                                                     </Link>
                                                 </Button>
                                                 <Button
