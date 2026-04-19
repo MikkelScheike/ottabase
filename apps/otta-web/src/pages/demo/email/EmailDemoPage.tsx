@@ -133,9 +133,9 @@ export function EmailDemoPage() {
 
     const contentDraft = useMemo(
         () => ({
-            header: headerText,
-            body: bodyText,
-            footer: footerText,
+            header: sanitizeBlockHtml(headerText),
+            body: sanitizeBlockHtml(bodyText),
+            footer: sanitizeBlockHtml(footerText),
         }),
         [headerText, bodyText, footerText],
     );
@@ -163,8 +163,6 @@ export function EmailDemoPage() {
             subject: subjectText,
         });
     }, [templateName, parsedVariables, contentDraft, subjectText]);
-
-    const sanitizedRenderedHtml = useMemo(() => sanitizeBlockHtml(rendered.html), [rendered.html]);
 
     const handleSendTest = async () => {
         if (parseError) {
@@ -340,10 +338,12 @@ export function EmailDemoPage() {
                         <CardDescription>Subject: {rendered.subject || '(no subject)'}</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="rounded-lg bg-white p-3 shadow-sm">
-                            <div
-                                className="email-preview"
-                                dangerouslySetInnerHTML={{ __html: sanitizedRenderedHtml }}
+                        <div className="overflow-hidden rounded-lg border border-border bg-muted/30 shadow-sm dark:bg-muted/20">
+                            <iframe
+                                className="email-preview block min-h-[28rem] w-full bg-white dark:bg-zinc-950"
+                                title="Rendered email HTML preview"
+                                sandbox=""
+                                srcDoc={rendered.html}
                             />
                         </div>
                         <div className="rounded-lg border bg-muted/40 p-3 text-xs text-muted-foreground">

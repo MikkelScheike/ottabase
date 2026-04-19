@@ -32,5 +32,4 @@ export const minimalistTemplate: EmailTemplate = {
     header: '{{header}}',
     body: '{{{body}}}',
     footer: '{{footer}}',
-    text: '{{header}}\n\n{{body}}\n\n{{footer}}',
 };

@@ -49,5 +49,4 @@ export const defaultTemplate = registerEmailTemplate({
     header: '{{header}}',
     body: '{{{body}}}',
     footer: '{{footer}}',
-    text: '{{header}}\n\n{{body}}\n\n{{footer}}',
 });

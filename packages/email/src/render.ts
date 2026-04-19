@@ -110,12 +110,14 @@ export function renderEmail(options: RenderEmailOptions): RenderedEmail {
 
     const textTemplate = template.text;
     const text = textTemplate
-        ? renderSection(textTemplate, {
-              ...variables,
-              header,
-              body,
-              footer,
-          })
+        ? stripHtml(
+              renderSection(textTemplate, {
+                  ...variables,
+                  header,
+                  body,
+                  footer,
+              }),
+          )
         : stripHtml([header, body, footer].filter(Boolean).join('\n\n'));
 
     return { subject, html, text };
