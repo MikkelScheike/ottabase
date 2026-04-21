@@ -19,6 +19,20 @@ Durable Objects.
 - Fat-model architecture keeps domain logic close to data instead of scattering it across controllers and services.
 - Monorepo ergonomics let you ship integrated changes across apps and packages without version skew.
 
+<p align="center">
+    <a href="https://demo.ottabase.com/" target="_blank" rel="noopener noreferrer">
+        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_1_demo.png" alt="Ottabase demo overview" width="33%" style="border-radius: 4px;" />
+    </a>
+    <a href="https://demo.ottabase.com/" target="_blank" rel="noopener noreferrer">
+        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_2_admin.png" alt="Ottabase admin media library" width="33%" style="border-radius: 4px;" />
+    </a>
+    <a href="https://demo.ottabase.com/" target="_blank" rel="noopener noreferrer">
+        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_3_uploads.png" alt="Ottabase content management" width="33%" style="border-radius: 4px;" />
+    </a>
+</p>
+
+## Info
+
 > **⚠️ You own the code.**
 >
 > Ottabase is a **monorepo you clone and modify**, not an npm package you install. Once you fork it, you accept full
@@ -38,7 +52,7 @@ Durable Objects.
 > **Recommended**: Read [ARCHITECTURE.md](./ARCHITECTURE.md), [CONTRIBUTING.md](./.github/CONTRIBUTING.md), and
 > [SECURITY.md](./.github/SECURITY.md) before making structural changes.
 
-## Links
+## Quick Links
 
 - Docs: [Quick Start](./QUICKSTART.md), [README](./README.md), [Architecture](./ARCHITECTURE.md),
   [Changelog](./CHANGELOG.md), [Releases](./docs/RELEASES.md)
@@ -93,11 +107,6 @@ Durable Objects.
 | Queues / cron support  | ✅ Native (CF bindings)              | ⚠️ Limited / external      | ⚠️ External     | ⚠️ Limited                  |
 | Cost predictability    | ✅ High                              | ⚠️ Can scale unpredictably | ⚠️ Infra-based  | ⚠️ Usage-based              |
 | Vendor lock-in         | ⚠️ High (Framework + infra coupling) | ⚠️ Medium (infra coupling) | ⚠️ Low          | ❗ High (proprietary model) |
-
-## Built With Ottabase
-
-- Launch showcase coming soon.
-- Early adopters can be featured here after the public launch.
 
 ## Structure
 
