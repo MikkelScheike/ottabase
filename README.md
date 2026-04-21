@@ -21,13 +21,13 @@ Durable Objects.
 
 <p align="center">
     <a href="https://demo.ottabase.com/" target="_blank" rel="noopener noreferrer">
-        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_1_demo.png" alt="Ottabase demo overview" width="33%" style="border-radius: 4px;" />
+        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_1_demo.png" alt="Ottabase demo overview" width="32.5%" style="border-radius: 4px;" />
     </a>
     <a href="https://demo.ottabase.com/" target="_blank" rel="noopener noreferrer">
-        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_2_admin.png" alt="Ottabase admin media library" width="33%" style="border-radius: 4px;" />
+        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_2_admin.png" alt="Ottabase admin media library" width="32.5%" style="border-radius: 4px;" />
     </a>
     <a href="https://demo.ottabase.com/" target="_blank" rel="noopener noreferrer">
-        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_3_uploads.png" alt="Ottabase content management" width="33%" style="border-radius: 4px;" />
+        <img src="./apps/otta-web/public/ottabase-demo/ottabase_screenshot_3_uploads.png" alt="Ottabase content management" width="32.5%" style="border-radius: 4px;" />
     </a>
 </p>
 
