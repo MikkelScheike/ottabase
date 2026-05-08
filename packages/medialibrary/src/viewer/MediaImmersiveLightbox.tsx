@@ -178,7 +178,7 @@ export function MediaImmersiveLightbox({
 
     return createPortal(
         <div
-            className="fixed inset-0 z-[100] overflow-hidden bg-black"
+            className="pointer-events-auto fixed inset-0 z-[100] overflow-hidden bg-black"
             onPointerMove={resetHideTimer}
             onClick={resetHideTimer}
             onTouchStart={handleTouchStart}

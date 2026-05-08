@@ -125,7 +125,7 @@ export function MediaLightbox({
     const dimensions = formatDimensions(currentItem);
 
     return createPortal(
-        <div className="fixed inset-0 z-[100]">
+        <div className="pointer-events-auto fixed inset-0 z-[100]">
             <button
                 type="button"
                 className="absolute inset-0 bg-background/90 backdrop-blur-md"
