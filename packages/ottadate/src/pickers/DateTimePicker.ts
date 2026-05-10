@@ -36,6 +36,7 @@ import {
 import {
     btn,
     clearChildren,
+    createFixedPopoverPositioner,
     div,
     el,
     iconCalendar,
@@ -46,6 +47,7 @@ import {
     onClickOutside,
     onEscape,
     span,
+    type FixedPopoverPositioner,
 } from '../dom/helpers';
 
 type ViewMode = 'days' | 'months' | 'years';
@@ -69,6 +71,7 @@ export function createDateTimePicker(
     let isOpen = false;
     let removeClickOutside: (() => void) | null = null;
     let removeEscapeHandler: (() => void) | null = null;
+    let popoverPosition: FixedPopoverPositioner | null = null;
 
     const minDate = config.minDate ? toDate(config.minDate as any, tz) : null;
     const maxDate = config.maxDate ? toDate(config.maxDate as any, tz) : null;
@@ -480,6 +483,11 @@ export function createDateTimePicker(
         }
 
         popover.appendChild(renderFooter());
+
+        if (isOpen && !config.inline) {
+            popoverPosition?.update();
+            requestAnimationFrame(() => popoverPosition?.update());
+        }
     }
 
     // --- Actions ---
@@ -534,10 +542,15 @@ export function createDateTimePicker(
 
         removeClickOutside = onClickOutside(root, closePicker);
         removeEscapeHandler = onEscape(closePicker);
+
+        popoverPosition?.dispose();
+        popoverPosition = createFixedPopoverPositioner(trigger, popover);
     }
 
     function closePicker() {
         if (!isOpen || config.inline) return;
+        popoverPosition?.dispose();
+        popoverPosition = null;
         isOpen = false;
         popover.style.display = 'none';
         trigger.setAttribute('aria-expanded', 'false');
@@ -584,6 +597,13 @@ export function createDateTimePicker(
                 hours = selectedDate.getHours();
                 minutes = selectedDate.getMinutes();
                 seconds = selectedDate.getSeconds();
+            } else {
+                // Clear ghost time so the next interaction does not immediately
+                // materialize a date from the previous selection's clock parts.
+                const now = tz ? toZonedTime(new Date(), tz) : new Date();
+                hours = now.getHours();
+                minutes = now.getMinutes();
+                seconds = now.getSeconds();
             }
             updateTriggerText();
             if (isOpen) render();

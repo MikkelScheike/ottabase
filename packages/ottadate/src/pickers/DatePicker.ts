@@ -32,6 +32,7 @@ import {
 import {
     btn,
     clearChildren,
+    createFixedPopoverPositioner,
     div,
     el,
     iconCalendar,
@@ -41,6 +42,7 @@ import {
     onClickOutside,
     onEscape,
     span,
+    type FixedPopoverPositioner,
 } from '../dom/helpers';
 
 /** View modes: day grid, month picker, year picker */
@@ -58,6 +60,7 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
     let isOpen = false;
     let removeClickOutside: (() => void) | null = null;
     let removeEscapeHandler: (() => void) | null = null;
+    let popoverPosition: FixedPopoverPositioner | null = null;
 
     const minDate = config.minDate ? toDate(config.minDate as any, tz) : null;
     const maxDate = config.maxDate ? toDate(config.maxDate as any, tz) : null;
@@ -309,6 +312,11 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
         }
 
         popover.appendChild(renderFooter());
+
+        if (isOpen && !config.inline) {
+            popoverPosition?.update();
+            requestAnimationFrame(() => popoverPosition?.update());
+        }
     }
 
     // --- Actions ---
@@ -344,10 +352,15 @@ export function createDatePicker(container: HTMLElement, options: DatePickerOpti
 
         removeClickOutside = onClickOutside(root, closePicker);
         removeEscapeHandler = onEscape(closePicker);
+
+        popoverPosition?.dispose();
+        popoverPosition = createFixedPopoverPositioner(trigger, popover);
     }
 
     function closePicker() {
         if (!isOpen || config.inline) return;
+        popoverPosition?.dispose();
+        popoverPosition = null;
         isOpen = false;
         popover.style.display = 'none';
         trigger.setAttribute('aria-expanded', 'false');

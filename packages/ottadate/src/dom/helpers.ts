@@ -98,6 +98,88 @@ export function onEscape(handler: () => void): () => void {
     return () => document.removeEventListener('keydown', listener);
 }
 
+export type FixedPopoverPositionOptions = {
+    gap?: number;
+    margin?: number;
+    zIndex?: string;
+};
+
+export type FixedPopoverPositioner = {
+    update: () => void;
+    dispose: () => void;
+};
+
+/**
+ * Keeps a popover in `position: fixed` under the trigger so it is not clipped by
+ * `overflow: auto|hidden` ancestors (e.g. narrow sidebars). Clamps to the viewport
+ * and flips above the trigger when there is not enough room below.
+ */
+export function createFixedPopoverPositioner(
+    trigger: HTMLElement,
+    popover: HTMLElement,
+    options: FixedPopoverPositionOptions = {},
+): FixedPopoverPositioner {
+    const gap = options.gap ?? 6;
+    const margin = options.margin ?? 8;
+    const zIndex = options.zIndex ?? '110';
+
+    const update = () => {
+        if (popover.style.display === 'none') return;
+        const rect = trigger.getBoundingClientRect();
+        popover.style.position = 'fixed';
+        popover.style.zIndex = zIndex;
+        popover.style.boxSizing = 'border-box';
+        popover.style.right = 'auto';
+        popover.style.bottom = 'auto';
+
+        const pw = popover.offsetWidth;
+        const ph = popover.offsetHeight;
+        let left = rect.left;
+        let top = rect.bottom + gap;
+
+        left = Math.max(margin, Math.min(left, window.innerWidth - pw - margin));
+        if (top + ph > window.innerHeight - margin && rect.top - gap - ph >= margin) {
+            top = rect.top - ph - gap;
+        }
+        top = Math.max(margin, Math.min(top, window.innerHeight - ph - margin));
+
+        popover.style.left = `${Math.round(left)}px`;
+        popover.style.top = `${Math.round(top)}px`;
+    };
+
+    update();
+    const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(update);
+    });
+
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    const vv = window.visualViewport;
+    if (vv) {
+        vv.addEventListener('resize', update);
+        vv.addEventListener('scroll', update);
+    }
+
+    const dispose = () => {
+        cancelAnimationFrame(raf);
+        window.removeEventListener('scroll', update, true);
+        window.removeEventListener('resize', update);
+        if (vv) {
+            vv.removeEventListener('resize', update);
+            vv.removeEventListener('scroll', update);
+        }
+        popover.style.position = '';
+        popover.style.left = '';
+        popover.style.top = '';
+        popover.style.right = '';
+        popover.style.bottom = '';
+        popover.style.zIndex = '';
+        popover.style.boxSizing = '';
+    };
+
+    return { update, dispose };
+}
+
 // ---------------------------------------------------------------------------
 // SVG Icons (inline, no external deps)
 // ---------------------------------------------------------------------------

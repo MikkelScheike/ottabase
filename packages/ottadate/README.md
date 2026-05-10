@@ -15,6 +15,8 @@ JS — no React, Vue, or Angular required.
   objects
 - **Auto timezone** — Displays dates in user's detected timezone automatically
 - **Inline or popover** — Both modes supported for all picker variants
+- **Popover not clipped in scroll panes** — `DatePicker` / `DateTimePicker` popovers use `position: fixed` with viewport
+  clamping so narrow sidebars (`overflow: auto`) do not cut off the calendar
 - **Theme-aware** — CSS custom properties integrate with shadcn/tailwind design tokens; dark mode supported
 - **Tree-shakeable** — Import only what you need via sub-path exports
 
