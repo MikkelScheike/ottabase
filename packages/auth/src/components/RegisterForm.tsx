@@ -23,6 +23,8 @@ export interface RegisterFormProps {
     showTermsCheckbox?: boolean;
     termsText?: string;
     onTermsClick?: () => void;
+    /** Override the entire label content with a custom React node (e.g. two separate links) */
+    termsContent?: React.ReactNode;
     className?: string;
 }
 
@@ -40,6 +42,7 @@ export function RegisterForm({
     showTermsCheckbox = false,
     termsText = 'I agree to the Terms of Service and Privacy Policy',
     onTermsClick,
+    termsContent,
     className = '',
 }: RegisterFormProps) {
     const [formData, setFormData] = useState<RegisterFormData>({
@@ -198,7 +201,7 @@ export function RegisterForm({
             </div>
 
             {showTermsCheckbox && (
-                <div className="flex items-start space-x-2">
+                <div className="flex items-center gap-2">
                     <input
                         type="checkbox"
                         id="terms"
@@ -214,16 +217,17 @@ export function RegisterForm({
                             }
                         }}
                         disabled={isLoading}
-                        className="mt-1"
+                        className="h-4 w-4 shrink-0 accent-primary"
                     />
-                    <Label htmlFor="terms" className="text-sm font-normal cursor-pointer">
-                        {onTermsClick ? (
-                            <button type="button" onClick={onTermsClick} className="text-primary hover:underline">
-                                {termsText}
-                            </button>
-                        ) : (
-                            termsText
-                        )}
+                    <Label htmlFor="terms" className="text-sm font-normal cursor-pointer leading-snug">
+                        {termsContent ??
+                            (onTermsClick ? (
+                                <button type="button" onClick={onTermsClick} className="text-primary hover:underline">
+                                    {termsText}
+                                </button>
+                            ) : (
+                                termsText
+                            ))}
                     </Label>
                 </div>
             )}

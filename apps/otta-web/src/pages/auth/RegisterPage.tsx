@@ -174,10 +174,28 @@ export function RegisterPage() {
                                 success={success}
                                 successMessage="Account created! Redirecting to dashboard..."
                                 showTermsCheckbox
-                                termsText="I agree to the Terms of Service and Privacy Policy"
-                                onTermsClick={() => {
-                                    window.open('/terms', '_blank');
-                                }}
+                                termsContent={
+                                    <span>
+                                        I agree to the{' '}
+                                        <a
+                                            href="/legal/terms"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline"
+                                        >
+                                            Terms of Service
+                                        </a>{' '}
+                                        and{' '}
+                                        <a
+                                            href="/legal/privacy"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-primary hover:underline"
+                                        >
+                                            Privacy Policy
+                                        </a>
+                                    </span>
+                                }
                             />
                         )}
                     </CardContent>
