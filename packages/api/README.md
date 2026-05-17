@@ -98,6 +98,16 @@ await api('/api/blog/posts/unlock', {
 });
 ```
 
+Use `suppressGlobalErrorHandler: true` when the global `onError` toast/handler should not run (for example a background
+sync loop that catches and interprets errors). The request still throws `ApiError` on failure.
+
+```ts
+await api('/api/ottaorm/todos/xyz', {
+    method: 'DELETE',
+    suppressGlobalErrorHandler: true,
+});
+```
+
 ## Error Handling
 
 ```typescript
