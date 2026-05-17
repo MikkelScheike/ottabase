@@ -147,6 +147,9 @@ export interface ApiRequestOptions extends Omit<RequestInit, 'body'> {
     /** Skip invoking the unauthorized handler (useful for local 401 handling, Protected Post unlock etc.) */
     skipUnauthorizedHandler?: boolean;
 
+    /** When true, the client does not invoke the global {@link ApiClientConfig.onError} handler for this request (caller handles errors). */
+    suppressGlobalErrorHandler?: boolean;
+
     /** URL query parameters */
     params?: Record<string, string | number | boolean | undefined | null>;
 
@@ -192,6 +195,29 @@ export interface ApiFunction {
 
 const inFlightRequests = new Map<string, Promise<Response>>();
 
+/**
+ * Stable key material for deduping in-flight multipart POSTs. Cannot read bytes (async) here;
+ * we use field name + File name + byte length (and non-file fields) so parallel *different*
+ * uploads to the same URL stay distinct, while accidental double-submit of the same payload
+ * can still coalesce.
+ *
+ * Limitation: two different files with the same filename and size will share a fingerprint (rare).
+ */
+export function formDataDedupeSignature(fd: FormData): string {
+    const parts: string[] = [];
+    for (const [key, value] of fd.entries()) {
+        if (typeof File !== 'undefined' && value instanceof File) {
+            parts.push(`F:${key}:${value.name}:${value.size}`);
+        } else if (typeof Blob !== 'undefined' && value instanceof Blob) {
+            parts.push(`B:${key}:${value.size}`);
+        } else {
+            parts.push(`S:${key}:${String(value)}`);
+        }
+    }
+    parts.sort();
+    return parts.join('\x1e');
+}
+
 function normalizeHeaders(headers: Record<string, string>): Record<string, string> {
     const entries = Object.entries(headers).sort(([a], [b]) => a.localeCompare(b));
     const normalized: Record<string, string> = {};
@@ -214,9 +240,10 @@ function buildDedupeKey(params: {
         url: params.url,
         method: params.method,
         headers: normalizeHeaders(params.headers),
-        // FormData can't be meaningfully serialized; use a placeholder so
-        // multipart uploads are never deduped against each other.
-        body: params.body instanceof FormData ? '__formdata__' : (params.body ?? null),
+        body:
+            params.body instanceof FormData
+                ? `__formdata__:${formDataDedupeSignature(params.body)}`
+                : (params.body ?? null),
         timeout: params.timeout,
         cache: params.fetchOptions.cache ?? null,
         credentials: params.fetchOptions.credentials ?? null,
@@ -320,6 +347,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
         const {
             skipAuth = false,
             skipUnauthorizedHandler = false,
+            suppressGlobalErrorHandler = false,
             params,
             body,
             timeout = defaultTimeout,
@@ -479,7 +507,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
                     onUnauthorized(apiError);
                 }
 
-                if (onError) {
+                if (onError && !suppressGlobalErrorHandler) {
                     onError(apiError);
                 }
 
@@ -518,7 +546,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
                     status: 0,
                 });
 
-                if (onError) {
+                if (onError && !suppressGlobalErrorHandler) {
                     onError(timeoutError);
                 }
 
@@ -533,7 +561,7 @@ export function createApiClient(config: ApiClientConfig = {}): ApiFunction {
                 status: 0,
             });
 
-            if (onError) {
+            if (onError && !suppressGlobalErrorHandler) {
                 onError(networkError);
             }
 

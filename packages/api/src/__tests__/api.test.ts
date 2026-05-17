@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, createApiClient, getErrorMessage, getErrorMessages, isApiError } from '../index';
+import {
+    ApiError,
+    createApiClient,
+    formDataDedupeSignature,
+    getErrorMessage,
+    getErrorMessages,
+    isApiError,
+} from '../index';
 
 type MockResponseOptions = {
     ok?: boolean;
@@ -158,6 +165,26 @@ describe('API Client', () => {
             expect(onError).toHaveBeenCalledWith(expect.any(ApiError));
         });
 
+        it('should not call onError when suppressGlobalErrorHandler is true', async () => {
+            const mockFetch = vi.fn(() =>
+                Promise.resolve(
+                    createMockResponse({
+                        ok: false,
+                        status: 404,
+                        statusText: 'Not Found',
+                        jsonData: { error: 'Not found' },
+                    }),
+                ),
+            );
+            global.fetch = mockFetch;
+
+            const onError = vi.fn();
+            const api = createApiClient({ onError });
+
+            await expect(api('/missing', { suppressGlobalErrorHandler: true })).rejects.toThrow(ApiError);
+            expect(onError).not.toHaveBeenCalled();
+        });
+
         it('should call onUnauthorized for 401 responses', async () => {
             const mockFetch = vi.fn(() =>
                 Promise.resolve(
@@ -239,6 +266,87 @@ describe('API Client', () => {
 
             const api = createApiClient();
             await Promise.all([api('/hello', { dedupe: false }), api('/hello', { dedupe: false })]);
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+        });
+
+        it('dedupes parallel FormData POSTs when the multipart fingerprint matches', async () => {
+            let id = 0;
+            const mockFetch = vi.fn(() =>
+                Promise.resolve(
+                    createMockResponse({
+                        jsonData: { uploadId: ++id },
+                    }),
+                ),
+            );
+            global.fetch = mockFetch;
+
+            const api = createApiClient({ baseUrl: '/api' });
+            const fd1 = new FormData();
+            fd1.append('file', new Blob(['x']), 'same.txt');
+            const fd2 = new FormData();
+            fd2.append('file', new Blob(['x']), 'same.txt');
+
+            const [r1, r2] = await Promise.all([
+                api<{ uploadId: number }>('/upload', { method: 'POST', body: fd1 }),
+                api<{ uploadId: number }>('/upload', { method: 'POST', body: fd2 }),
+            ]);
+
+            expect(mockFetch).toHaveBeenCalledTimes(1);
+            expect(r1.uploadId).toBe(1);
+            expect(r2.uploadId).toBe(1);
+        });
+
+        it('does not dedupe parallel FormData POSTs when filenames or sizes differ', async () => {
+            let id = 0;
+            const mockFetch = vi.fn(() =>
+                Promise.resolve(
+                    createMockResponse({
+                        jsonData: { uploadId: ++id },
+                    }),
+                ),
+            );
+            global.fetch = mockFetch;
+
+            const api = createApiClient({ baseUrl: '/api' });
+            const fd1 = new FormData();
+            fd1.append('file', new Blob(['a']), 'a.txt');
+            const fd2 = new FormData();
+            fd2.append('file', new Blob(['b']), 'b.txt');
+
+            const [r1, r2] = await Promise.all([
+                api<{ uploadId: number }>('/upload', { method: 'POST', body: fd1 }),
+                api<{ uploadId: number }>('/upload', { method: 'POST', body: fd2 }),
+            ]);
+
+            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(r1.uploadId).toBe(1);
+            expect(r2.uploadId).toBe(2);
+        });
+
+        it('does not dedupe parallel FormData when non-file fields differ', async () => {
+            let id = 0;
+            const mockFetch = vi.fn(() =>
+                Promise.resolve(
+                    createMockResponse({
+                        jsonData: { n: ++id },
+                    }),
+                ),
+            );
+            global.fetch = mockFetch;
+
+            const api = createApiClient({ baseUrl: '/api' });
+            const fd1 = new FormData();
+            fd1.append('file', new Blob(['x']), 'same.txt');
+            fd1.append('provider', 'r2');
+            const fd2 = new FormData();
+            fd2.append('file', new Blob(['x']), 'same.txt');
+            fd2.append('provider', 'cloudflare-images');
+
+            await Promise.all([
+                api<{ n: number }>('/upload', { method: 'POST', body: fd1 }),
+                api<{ n: number }>('/upload', { method: 'POST', body: fd2 }),
+            ]);
 
             expect(mockFetch).toHaveBeenCalledTimes(2);
         });
@@ -377,6 +485,18 @@ describe('API Client', () => {
             });
 
             expect(getErrorMessages(apiError)).toEqual(['Error 1', 'Error 2']);
+        });
+    });
+
+    describe('formDataDedupeSignature', () => {
+        it('is stable regardless of append order', () => {
+            const a = new FormData();
+            a.append('z', '1');
+            a.append('file', new Blob(['a']), 'f.txt');
+            const b = new FormData();
+            b.append('file', new Blob(['a']), 'f.txt');
+            b.append('z', '1');
+            expect(formDataDedupeSignature(a)).toBe(formDataDedupeSignature(b));
         });
     });
 });
