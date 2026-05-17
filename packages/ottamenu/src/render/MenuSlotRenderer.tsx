@@ -5,7 +5,7 @@
 
 import { useMemo } from 'react';
 import type { MenuItemDto } from '../types';
-import { MenuRenderer } from './index';
+import { MenuRenderer } from './MenuRenderer';
 import type { MenuRenderType, RenderMenuOptions } from './types';
 
 /** Shape of a resolved menu slot (matches brand API response) */

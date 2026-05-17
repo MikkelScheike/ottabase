@@ -21,7 +21,7 @@ vi.mock('@tanstack/react-router', () => ({
 import { DropdownMenuRenderer } from '../render/DropdownMenuRenderer';
 import { FlyoutMenuRenderer } from '../render/FlyoutMenuRenderer';
 import { FooterMenuRenderer } from '../render/FooterMenuRenderer';
-import { MenuRenderer } from '../render/index';
+import { MenuRenderer } from '../render/MenuRenderer';
 import { MegaMenuRenderer } from '../render/MegaMenuRenderer';
 import { MenuItemLink } from '../render/MenuItemLink';
 import type { ResolvedMenuSlotData } from '../render/MenuSlotRenderer';
