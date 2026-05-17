@@ -6,7 +6,7 @@
 
 import type { Table } from '@tanstack/react-table';
 import { clsx } from 'clsx';
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import type { DataTablePaginationState } from '../types';
 
 interface DataTablePaginationProps<TData> {
@@ -94,20 +94,23 @@ export function DataTablePagination<TData>({
             {/* Right: page size + navigation */}
             <div className="flex items-center gap-4">
                 {/* Page size selector */}
-                <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground whitespace-nowrap">Rows</span>
-                    <select
-                        aria-label="Rows per page"
-                        value={pageSize}
-                        onChange={(e) => setPageSize(Number(e.target.value))}
-                        className="h-8 rounded-md border border-input bg-background pl-2 pr-8 text-sm focus:outline-none focus:ring-1 focus:ring-ring appearance-auto"
-                    >
-                        {pageSizeOptions.map((size) => (
-                            <option key={size} value={size}>
-                                {size}
-                            </option>
-                        ))}
-                    </select>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span className="whitespace-nowrap">Rows</span>
+                    <div className="relative flex items-center">
+                        <select
+                            aria-label="Rows per page"
+                            value={pageSize}
+                            onChange={(e) => setPageSize(Number(e.target.value))}
+                            className="h-8 appearance-none rounded-md border border-input bg-background py-0 pl-2.5 pr-7 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                            {pageSizeOptions.map((size) => (
+                                <option key={size} value={size}>
+                                    {size}
+                                </option>
+                            ))}
+                        </select>
+                        <ChevronDown className="pointer-events-none absolute right-1.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    </div>
                 </div>
 
                 {/* Page indicator */}
