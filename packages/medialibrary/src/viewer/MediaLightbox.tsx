@@ -20,6 +20,7 @@ export interface MediaLightboxProps {
     showMetadata?: boolean;
     canGoPrevious?: boolean;
     canGoNext?: boolean;
+    zIndex?: number;
     onClose: () => void;
     onPrevious: () => void;
     onNext: () => void;
@@ -41,6 +42,7 @@ export function MediaLightbox({
     showMetadata = true,
     canGoPrevious = true,
     canGoNext = true,
+    zIndex = 100,
     onClose,
     onPrevious,
     onNext,
@@ -125,7 +127,7 @@ export function MediaLightbox({
     const dimensions = formatDimensions(currentItem);
 
     return createPortal(
-        <div className="pointer-events-auto fixed inset-0 z-[100]">
+        <div className="pointer-events-auto fixed inset-0" style={{ zIndex }} data-medialightbox>
             <button
                 type="button"
                 className="absolute inset-0 bg-background/90 backdrop-blur-md"

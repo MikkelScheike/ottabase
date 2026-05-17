@@ -22,6 +22,7 @@ export function MediaImmersiveLightbox({
     isOpen,
     canGoPrevious = true,
     canGoNext = true,
+    zIndex = 100,
     onClose,
     onPrevious,
     onNext,
@@ -178,7 +179,9 @@ export function MediaImmersiveLightbox({
 
     return createPortal(
         <div
-            className="pointer-events-auto fixed inset-0 z-[100] overflow-hidden bg-black"
+            className="pointer-events-auto fixed inset-0 overflow-hidden bg-black"
+            style={{ zIndex }}
+            data-medialightbox
             onPointerMove={resetHideTimer}
             onClick={resetHideTimer}
             onTouchStart={handleTouchStart}
