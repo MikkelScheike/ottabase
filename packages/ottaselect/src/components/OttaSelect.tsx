@@ -11,6 +11,8 @@ export interface OttaSelectItem extends Record<string, any> {
 // Input can be any object with id and name/label/title
 export type OttaSelectInputItem = Record<string, any>;
 
+export type OttaSelectSize = 'xs' | 'sm' | 'md' | 'lg';
+
 // Custom renderer props passed to renderItem
 export interface ItemRendererProps {
     item: OttaSelectItem;
@@ -21,6 +23,7 @@ export interface ItemRendererProps {
 export interface OttaSelectProps {
     // Mode configuration
     mode?: 'single' | 'multiple';
+    size?: OttaSelectSize;
 
     // Value management - always returns with normalized id and name
     value?: OttaSelectItem | OttaSelectItem[] | null;
@@ -87,6 +90,107 @@ export interface OttaSelectProps {
     showChips?: boolean;
 }
 
+const OTTA_SELECT_SIZE_CLASSES: Record<OttaSelectSize, string> = {
+    xs: [
+        '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*4)]',
+        '[--otta-select-trigger-padding-x:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-trigger-padding-y:calc(var(--spacing-element,0.5rem)*0.625)]',
+        '[--otta-select-font-size:calc(var(--spacing-element,0.5rem)*1.5)]',
+        '[--otta-select-chip-font-size:calc(var(--spacing-element,0.5rem)*1.375)]',
+        '[--otta-select-icon-size:calc(var(--spacing-element,0.5rem)*1.5)]',
+        // Scale factors keep radius proportional to --radius; avoids negative values on tight themes
+        '[--otta-select-radius:calc(var(--radius,0.75rem)*0.5)]',
+        '[--otta-select-chip-radius:calc(var(--radius,0.75rem)*0.34)]',
+        '[--otta-select-dropdown-offset:calc(var(--spacing-element,0.5rem)*0.625)]',
+        '[--otta-select-section-padding-x:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-section-padding-y:calc(var(--spacing-element,0.5rem)*0.875)]',
+        '[--otta-select-item-padding-x:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-item-padding-y:calc(var(--spacing-element,0.5rem)*0.75)]',
+        '[--otta-select-search-icon-left:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-search-padding-left:calc(var(--spacing-element,0.5rem)*3.5)]',
+        '[--otta-select-search-padding-right:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-search-padding-y:calc(var(--spacing-element,0.5rem)*0.625)]',
+        '[--otta-select-chip-padding-x:calc(var(--spacing-element,0.5rem)*0.875)]',
+        '[--otta-select-chip-padding-y:calc(var(--spacing-element,0.5rem)*0.25)]',
+        '[--otta-select-chip-gap:calc(var(--spacing-element,0.5rem)*0.375)]',
+        '[--otta-select-icon-button-padding:calc(var(--spacing-element,0.5rem)*0.375)]',
+        '[--otta-select-dropdown-empty-py:calc(var(--spacing-element,0.5rem)*3.5)]',
+    ].join(' '),
+    sm: [
+        '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*4.5)]',
+        '[--otta-select-trigger-padding-x:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-trigger-padding-y:calc(var(--spacing-element,0.5rem)*0.75)]',
+        '[--otta-select-font-size:calc(var(--spacing-element,0.5rem)*1.625)]',
+        '[--otta-select-chip-font-size:calc(var(--spacing-element,0.5rem)*1.5)]',
+        '[--otta-select-icon-size:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-radius:calc(var(--radius,0.75rem)*0.67)]',
+        '[--otta-select-chip-radius:calc(var(--radius,0.75rem)*0.5)]',
+        '[--otta-select-dropdown-offset:calc(var(--spacing-element,0.5rem)*0.75)]',
+        '[--otta-select-section-padding-x:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-section-padding-y:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-item-padding-x:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-item-padding-y:calc(var(--spacing-element,0.5rem)*0.875)]',
+        '[--otta-select-search-icon-left:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-search-padding-left:calc(var(--spacing-element,0.5rem)*4)]',
+        '[--otta-select-search-padding-right:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-search-padding-y:calc(var(--spacing-element,0.5rem)*0.75)]',
+        '[--otta-select-chip-padding-x:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-chip-padding-y:calc(var(--spacing-element,0.5rem)*0.25)]',
+        '[--otta-select-chip-gap:calc(var(--spacing-element,0.5rem)*0.5)]',
+        '[--otta-select-icon-button-padding:calc(var(--spacing-element,0.5rem)*0.5)]',
+        '[--otta-select-dropdown-empty-py:calc(var(--spacing-element,0.5rem)*4)]',
+    ].join(' '),
+    md: [
+        '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*5.25)]',
+        '[--otta-select-trigger-padding-x:calc(var(--spacing-element,0.5rem)*1.5)]',
+        '[--otta-select-trigger-padding-y:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-font-size:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-chip-font-size:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-icon-size:calc(var(--spacing-element,0.5rem)*2)]',
+        // md is the theme baseline — trigger matches --radius exactly
+        '[--otta-select-radius:var(--radius,0.75rem)]',
+        '[--otta-select-chip-radius:calc(var(--radius,0.75rem)*0.67)]',
+        '[--otta-select-dropdown-offset:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-section-padding-x:calc(var(--spacing-element,0.5rem)*1.5)]',
+        '[--otta-select-section-padding-y:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-item-padding-x:calc(var(--spacing-element,0.5rem)*1.5)]',
+        '[--otta-select-item-padding-y:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-search-icon-left:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-search-padding-left:calc(var(--spacing-element,0.5rem)*4)]',
+        '[--otta-select-search-padding-right:calc(var(--spacing-element,0.5rem)*1.5)]',
+        '[--otta-select-search-padding-y:calc(var(--spacing-element,0.5rem)*0.75)]',
+        '[--otta-select-chip-padding-x:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-chip-padding-y:calc(var(--spacing-element,0.5rem)*0.25)]',
+        '[--otta-select-chip-gap:calc(var(--spacing-element,0.5rem)*0.5)]',
+        '[--otta-select-icon-button-padding:calc(var(--spacing-element,0.5rem)*0.5)]',
+        '[--otta-select-dropdown-empty-py:calc(var(--spacing-element,0.5rem)*4)]',
+    ].join(' '),
+    lg: [
+        '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*6)]',
+        '[--otta-select-trigger-padding-x:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-trigger-padding-y:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-font-size:calc(var(--spacing-element,0.5rem)*1.875)]',
+        '[--otta-select-chip-font-size:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-icon-size:calc(var(--spacing-element,0.5rem)*2.25)]',
+        '[--otta-select-radius:calc(var(--radius,0.75rem)*1.17)]',
+        '[--otta-select-chip-radius:calc(var(--radius,0.75rem)*0.83)]',
+        '[--otta-select-dropdown-offset:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-section-padding-x:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-section-padding-y:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-item-padding-x:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-item-padding-y:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-search-icon-left:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-search-padding-left:calc(var(--spacing-element,0.5rem)*4.5)]',
+        '[--otta-select-search-padding-right:calc(var(--spacing-element,0.5rem)*1.75)]',
+        '[--otta-select-search-padding-y:calc(var(--spacing-element,0.5rem)*1)]',
+        '[--otta-select-chip-padding-x:calc(var(--spacing-element,0.5rem)*1.25)]',
+        '[--otta-select-chip-padding-y:calc(var(--spacing-element,0.5rem)*0.375)]',
+        '[--otta-select-chip-gap:calc(var(--spacing-element,0.5rem)*0.5)]',
+        '[--otta-select-icon-button-padding:calc(var(--spacing-element,0.5rem)*0.625)]',
+        '[--otta-select-dropdown-empty-py:calc(var(--spacing-element,0.5rem)*5)]',
+    ].join(' '),
+};
+
 // Helper function to normalize input items to standard format
 const normalizeItem = (item: OttaSelectInputItem): OttaSelectItem => {
     // Extract id - must exist
@@ -118,15 +222,16 @@ const Chip = ({
     return (
         <span
             className={clsx(
-                'inline-flex items-center gap-1 px-2 py-0.5 text-sm',
+                'inline-flex items-center gap-[var(--otta-select-chip-gap)] px-[var(--otta-select-chip-padding-x)] py-[var(--otta-select-chip-padding-y)] text-[length:var(--otta-select-chip-font-size)]',
                 'bg-primary/10 text-primary',
-                'rounded-md whitespace-nowrap',
+                'rounded-[var(--otta-select-chip-radius)] whitespace-nowrap',
             )}
         >
             {renderChip ? renderChip(item) : item.name}
             {onRemove && !disabled && (
                 <span
                     role="button"
+                    aria-label={`Remove ${item.name}`}
                     tabIndex={0}
                     onClick={(e) => onRemove(e, item)}
                     onKeyDown={(e) => {
@@ -135,9 +240,9 @@ const Chip = ({
                             onRemove(e as any, item);
                         }
                     }}
-                    className="ml-0.5 hover:bg-primary/20 rounded-full p-0.5 transition-colors duration-fast ease-theme cursor-pointer"
+                    className="ml-[calc(var(--otta-select-chip-gap)/2)] hover:bg-primary/20 rounded-[var(--otta-select-chip-radius)] p-[var(--otta-select-chip-padding-y)] transition-colors duration-fast ease-theme cursor-pointer"
                 >
-                    <X className="w-3 h-3" />
+                    <X className="h-[var(--otta-select-icon-size)] w-[var(--otta-select-icon-size)]" />
                 </span>
             )}
         </span>
@@ -146,6 +251,7 @@ const Chip = ({
 
 export function OttaSelect({
     mode = 'single',
+    size = 'md',
     value = null,
     onChange,
     items = [],
@@ -438,7 +544,9 @@ export function OttaSelect({
 
             let usedWidth = 0;
             let count = 0;
-            const gap = 4; // gap between chips
+            const inheritedStyles = getComputedStyle(chipsContainerRef.current);
+            const parsedGap = parseFloat(inheritedStyles.getPropertyValue('--otta-select-chip-gap'));
+            const gap = Number.isFinite(parsedGap) ? parsedGap : 4;
 
             // Measure each chip
             const measureContainer = measureRef.current;
@@ -447,7 +555,12 @@ export function OttaSelect({
             for (const item of selectedItems) {
                 // Create a temporary chip to measure
                 const chipEl = document.createElement('span');
-                chipEl.className = 'inline-flex items-center gap-1 px-2 py-0.5 text-sm rounded-md whitespace-nowrap';
+                chipEl.className = 'inline-flex items-center whitespace-nowrap';
+                chipEl.style.gap = inheritedStyles.getPropertyValue('--otta-select-chip-gap');
+                chipEl.style.paddingInline = inheritedStyles.getPropertyValue('--otta-select-chip-padding-x');
+                chipEl.style.paddingBlock = inheritedStyles.getPropertyValue('--otta-select-chip-padding-y');
+                chipEl.style.fontSize = inheritedStyles.getPropertyValue('--otta-select-chip-font-size');
+                chipEl.style.borderRadius = inheritedStyles.getPropertyValue('--otta-select-chip-radius');
                 chipEl.textContent = item.name;
                 measureContainer.appendChild(chipEl);
 
@@ -499,7 +612,10 @@ export function OttaSelect({
             const hiddenCount = selectedItems.length - visibleItems.length;
 
             return (
-                <div ref={chipsContainerRef} className="flex items-center gap-1 flex-1 overflow-hidden">
+                <div
+                    ref={chipsContainerRef}
+                    className="flex items-center gap-[var(--otta-select-chip-gap)] flex-1 overflow-hidden"
+                >
                     {visibleItems.map((item, index) => (
                         <Chip
                             key={item.id || `chip-${index}`}
@@ -510,7 +626,9 @@ export function OttaSelect({
                         />
                     ))}
                     {hiddenCount > 0 && (
-                        <span className="text-xs text-muted-foreground whitespace-nowrap">+{hiddenCount} more</span>
+                        <span className="text-[length:var(--otta-select-chip-font-size)] text-muted-foreground whitespace-nowrap">
+                            +{hiddenCount} more
+                        </span>
                     )}
                 </div>
             );
@@ -544,15 +662,21 @@ export function OttaSelect({
     }, []);
 
     const itemRenderer = renderItem || defaultRenderItem;
+    const sizeClasses = OTTA_SELECT_SIZE_CLASSES[size];
 
     return (
         <div
             ref={containerRef}
-            className={clsx('relative w-full', disabled && 'opacity-50 cursor-not-allowed', className)}
+            data-size={size}
+            className={clsx('relative w-full', sizeClasses, disabled && 'opacity-50 cursor-not-allowed', className)}
             onKeyDown={handleKeyDown}
         >
             {/* Hidden measure container */}
-            <div ref={measureRef} className="absolute -left-[9999px] flex items-center gap-1" aria-hidden="true" />
+            <div
+                ref={measureRef}
+                className="absolute -left-[9999px] flex items-center gap-[var(--otta-select-chip-gap)]"
+                aria-hidden="true"
+            />
 
             {/* Trigger Button */}
             <button
@@ -560,25 +684,25 @@ export function OttaSelect({
                 onClick={() => !disabled && setIsOpen(!isOpen)}
                 disabled={disabled}
                 className={clsx(
-                    'w-full px-3 py-2 text-left min-h-[42px]',
+                    'w-full px-[var(--otta-select-trigger-padding-x)] py-[var(--otta-select-trigger-padding-y)] text-left min-h-[var(--otta-select-trigger-min-height)]',
                     'bg-background',
                     'border border-input',
                     'text-foreground',
-                    'rounded-lg',
+                    'rounded-[var(--otta-select-radius)]',
                     'hover:border-ring/50',
                     'focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent',
                     'transition-colors duration-fast ease-theme',
-                    'flex items-center justify-between gap-2',
+                    'flex items-center justify-between gap-[var(--otta-select-chip-gap)] text-[length:var(--otta-select-font-size)]',
                     disabled && 'cursor-not-allowed',
                 )}
             >
                 <span className={clsx('flex-1', mode === 'single' && 'truncate')}>{displayContent}</span>
 
-                <div className="flex items-center gap-1 flex-shrink-0">
+                <div className="flex items-center gap-[var(--otta-select-chip-gap)] flex-shrink-0">
                     {clearable && hasValue && !disabled && (
                         <span
                             onClick={handleClear}
-                            className="p-1 hover:bg-accent rounded transition-colors duration-fast ease-theme cursor-pointer"
+                            className="p-[var(--otta-select-icon-button-padding)] hover:bg-accent rounded-[var(--otta-select-chip-radius)] transition-colors duration-fast ease-theme cursor-pointer"
                             role="button"
                             aria-label="Clear selection"
                             tabIndex={0}
@@ -589,13 +713,13 @@ export function OttaSelect({
                                 }
                             }}
                         >
-                            <X className="w-4 h-4 text-muted-foreground" />
+                            <X className="h-[var(--otta-select-icon-size)] w-[var(--otta-select-icon-size)] text-muted-foreground" />
                         </span>
                     )}
 
                     <ChevronDown
                         className={clsx(
-                            'w-4 h-4 text-muted-foreground transition-transform duration-normal ease-theme',
+                            'h-[var(--otta-select-icon-size)] w-[var(--otta-select-icon-size)] text-muted-foreground transition-transform duration-normal ease-theme',
                             isOpen && 'transform rotate-180',
                         )}
                     />
@@ -607,22 +731,26 @@ export function OttaSelect({
                 <div
                     ref={dropdownRef}
                     className={clsx(
-                        'absolute z-50 w-full mt-2',
+                        'absolute z-50 w-full mt-[var(--otta-select-dropdown-offset)]',
                         'bg-popover',
                         'border border-border',
-                        'rounded-lg shadow-lg',
+                        'rounded-[var(--otta-select-radius)] shadow-lg',
                         'max-h-80 overflow-hidden flex flex-col',
                         dropdownClassName,
                     )}
                 >
                     {/* Header */}
-                    {header && <div className="px-3 py-2 border-b border-border">{header}</div>}
+                    {header && (
+                        <div className="px-[var(--otta-select-section-padding-x)] py-[var(--otta-select-section-padding-y)] border-b border-border">
+                            {header}
+                        </div>
+                    )}
 
                     {/* Search Input */}
                     {searchable && (
-                        <div className="px-3 py-2 border-b border-border">
+                        <div className="px-[var(--otta-select-section-padding-x)] py-[var(--otta-select-section-padding-y)] border-b border-border">
                             <div className="relative">
-                                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Search className="absolute left-[var(--otta-select-search-icon-left)] top-1/2 transform -translate-y-1/2 h-[var(--otta-select-icon-size)] w-[var(--otta-select-icon-size)] text-muted-foreground" />
                                 <input
                                     ref={searchInputRef}
                                     type="text"
@@ -630,7 +758,7 @@ export function OttaSelect({
                                     onChange={(e) => setSearchQuery(e.target.value)}
                                     placeholder={searchPlaceholder}
                                     className={clsx(
-                                        'w-full pl-8 pr-3 py-1.5 text-sm rounded',
+                                        'w-full pl-[var(--otta-select-search-padding-left)] pr-[var(--otta-select-search-padding-right)] py-[var(--otta-select-search-padding-y)] text-[length:var(--otta-select-font-size)] rounded-[var(--otta-select-chip-radius)]',
                                         'bg-background',
                                         'border border-input',
                                         'text-foreground',
@@ -645,14 +773,18 @@ export function OttaSelect({
                     {/* Items List */}
                     <div className="overflow-y-auto flex-1">
                         {isLoading ? (
-                            <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                                <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
+                            <div className="px-[var(--otta-select-section-padding-x)] py-[var(--otta-select-dropdown-empty-py)] text-center text-[length:var(--otta-select-font-size)] text-muted-foreground">
+                                <Loader2 className="h-[calc(var(--otta-select-icon-size)*1.25)] w-[calc(var(--otta-select-icon-size)*1.25)] animate-spin mx-auto mb-2" />
                                 {loadingMessage}
                             </div>
                         ) : error ? (
-                            <div className="px-3 py-8 text-center text-sm text-destructive">{error}</div>
+                            <div className="px-[var(--otta-select-section-padding-x)] py-[var(--otta-select-dropdown-empty-py)] text-center text-[length:var(--otta-select-font-size)] text-destructive">
+                                {error}
+                            </div>
                         ) : filteredItems.length === 0 ? (
-                            <div className="px-3 py-8 text-center text-sm text-muted-foreground">{emptyMessage}</div>
+                            <div className="px-[var(--otta-select-section-padding-x)] py-[var(--otta-select-dropdown-empty-py)] text-center text-[length:var(--otta-select-font-size)] text-muted-foreground">
+                                {emptyMessage}
+                            </div>
                         ) : (
                             <div className="py-1">
                                 {filteredItems.map((item, index) => {
@@ -666,10 +798,10 @@ export function OttaSelect({
                                             data-index={index}
                                             onClick={() => handleSelect(item)}
                                             className={clsx(
-                                                'w-full px-3 py-2 text-left text-sm',
+                                                'w-full px-[var(--otta-select-item-padding-x)] py-[var(--otta-select-item-padding-y)] text-left text-[length:var(--otta-select-font-size)]',
                                                 'text-popover-foreground',
                                                 'hover:bg-accent hover:text-accent-foreground transition-colors duration-fast ease-theme',
-                                                'flex items-center justify-between gap-2',
+                                                'flex items-center justify-between gap-[var(--otta-select-chip-gap)]',
                                                 focused && 'bg-accent text-accent-foreground',
                                                 selected && 'bg-accent/50 hover:bg-accent',
                                             )}
@@ -679,7 +811,9 @@ export function OttaSelect({
                                                 isSelected: selected,
                                                 isFocused: focused,
                                             })}
-                                            {selected && <Check className="w-4 h-4 text-primary flex-shrink-0" />}
+                                            {selected && (
+                                                <Check className="h-[var(--otta-select-icon-size)] w-[var(--otta-select-icon-size)] text-primary flex-shrink-0" />
+                                            )}
                                         </button>
                                     );
                                 })}
@@ -688,7 +822,11 @@ export function OttaSelect({
                     </div>
 
                     {/* Footer */}
-                    {footer && <div className="px-3 py-2 border-t border-border">{footer}</div>}
+                    {footer && (
+                        <div className="px-[var(--otta-select-section-padding-x)] py-[var(--otta-select-section-padding-y)] border-t border-border">
+                            {footer}
+                        </div>
+                    )}
                 </div>
             )}
         </div>

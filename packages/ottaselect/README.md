@@ -10,6 +10,7 @@ applications with dynamic data sources and CrudHub integration.
 - **Single and Multi-select modes** - Choose between selecting one item or multiple items
 - **Custom Renderers** - Customize how items and selected values are displayed (flags, avatars, badges)
 - **Chip Display** - Multi-select shows chips with overflow: "Apple, Banana +2 more"
+- **Size Variants** - `xs`, `sm`, `md`, and `lg`, driven by Ottabase theme vars like `--spacing-element` and `--radius`
 - **Pagination Support** - Selected items persist even when not in current API response
 - **Real-time search** - Debounced search with client-side or server-side filtering
 - **CrudHub Integration** - Built-in async collection fetching support
@@ -38,9 +39,32 @@ function MyComponent() {
     const [value, setValue] = useState<OttaSelectItem | null>(null);
 
     return (
-        <OttaSelect mode="single" items={products} value={value} onChange={setValue} placeholder="Select a product" />
+        <OttaSelect
+            mode="single"
+            size="md"
+            items={products}
+            value={value}
+            onChange={setValue}
+            placeholder="Select a product"
+        />
     );
 }
+```
+
+## Sizing
+
+`OttaSelect` supports four sizes: `xs`, `sm`, `md`, and `lg`.
+
+- `xs` is useful for compact toolbars and dense filter rows.
+- `md` is the default and matches the existing control size.
+- The sizing system is driven by Ottabase theme vars such as `--spacing-element` and `--radius`, so controls scale with
+  the active brand/theme.
+
+```tsx
+<OttaSelect size="xs" items={items} placeholder="Ultra compact" />
+<OttaSelect size="sm" items={items} placeholder="Compact" />
+<OttaSelect size="md" items={items} placeholder="Default" />
+<OttaSelect size="lg" items={items} placeholder="Comfortable" />
 ```
 
 ## Custom Renderers
@@ -209,6 +233,7 @@ interface OttaSelectProps {
     searchPlaceholder?: string; // Default: 'Search...'
 
     // UI
+    size?: 'xs' | 'sm' | 'md' | 'lg'; // Default: 'md'
     placeholder?: string; // Default: 'Select an option'
     disabled?: boolean; // Default: false
     clearable?: boolean; // Default: true

@@ -2,7 +2,7 @@
  * OttaSelect Demo Page
  * Demonstrates @ottabase/ottaselect component
  */
-import { OttaSelect, type ItemRendererProps, type OttaSelectItem } from '@ottabase/ottaselect';
+import { OttaSelect, type ItemRendererProps, type OttaSelectItem, type OttaSelectSize } from '@ottabase/ottaselect';
 import { Badge, Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@ottabase/ui-shadcn';
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
@@ -145,6 +145,8 @@ const users = [
     },
 ];
 
+const selectSizes: OttaSelectSize[] = ['xs', 'sm', 'md', 'lg'];
+
 // Simulated paginated API - returns only first 3 items
 const simulatePaginatedAPI = async (search: string): Promise<typeof countries> => {
     await new Promise((resolve) => setTimeout(resolve, 300)); // Simulate network delay
@@ -153,6 +155,8 @@ const simulatePaginatedAPI = async (search: string): Promise<typeof countries> =
 };
 
 export function OttaSelectDemoPage() {
+    const [demoSize, setDemoSize] = useState<OttaSelectSize>('md');
+
     // Single select states
     const [singleFruit, setSingleFruit] = useState<OttaSelectItem | null>(null);
     const [singleCountry, setSingleCountry] = useState<OttaSelectItem | null>(null);
@@ -213,6 +217,22 @@ export function OttaSelectDemoPage() {
                     A flexible select component with custom rendering, pagination support, and standardized output
                     format.
                 </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                    <span className="text-sm text-muted-foreground">Demo size:</span>
+                    {selectSizes.map((size) => (
+                        <Button
+                            key={size}
+                            type="button"
+                            size="sm"
+                            variant={demoSize === size ? 'default' : 'outline'}
+                            className="min-w-10 uppercase"
+                            onClick={() => setDemoSize(size)}
+                        >
+                            {size}
+                        </Button>
+                    ))}
+                    <span className="text-xs text-muted-foreground">Applies to all OttaSelect examples below.</span>
+                </div>
             </div>
 
             {/* Basic Usage */}
@@ -229,6 +249,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Single Select:</label>
                         <OttaSelect
                             mode="single"
+                            size={demoSize}
                             items={fruitsAndVegetables}
                             value={singleFruit}
                             onChange={(value) => setSingleFruit(value as OttaSelectItem | null)}
@@ -246,6 +267,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Multi Select:</label>
                         <OttaSelect
                             mode="multiple"
+                            size={demoSize}
                             items={fruitsAndVegetables}
                             value={multiFruits}
                             onChange={(value) => setMultiFruits(value as OttaSelectItem[] | null)}
@@ -275,6 +297,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Countries with flags:</label>
                         <OttaSelect
                             mode="single"
+                            size={demoSize}
                             items={countries}
                             value={singleCountry}
                             onChange={(value) => setSingleCountry(value as OttaSelectItem | null)}
@@ -299,6 +322,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Fruits with emoji and category:</label>
                         <OttaSelect
                             mode="single"
+                            size={demoSize}
                             items={fruitsAndVegetables}
                             value={singleFruit}
                             onChange={(value) => setSingleFruit(value as OttaSelectItem | null)}
@@ -318,6 +342,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Users with avatar, email, and role:</label>
                         <OttaSelect
                             mode="single"
+                            size={demoSize}
                             items={users}
                             value={singleUser}
                             onChange={(value) => setSingleUser(value as OttaSelectItem | null)}
@@ -346,6 +371,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Select multiple countries:</label>
                         <OttaSelect
                             mode="multiple"
+                            size={demoSize}
                             items={countries}
                             value={multiCountries}
                             onChange={(value) => setMultiCountries(value as OttaSelectItem[] | null)}
@@ -370,6 +396,7 @@ export function OttaSelectDemoPage() {
                         <label className="text-sm font-medium">Select multiple fruits:</label>
                         <OttaSelect
                             mode="multiple"
+                            size={demoSize}
                             items={fruitsAndVegetables}
                             value={multiFruits}
                             onChange={(value) => setMultiFruits(value as OttaSelectItem[] | null)}
@@ -415,6 +442,7 @@ export function OttaSelectDemoPage() {
                         </div>
                         <OttaSelect
                             mode="multiple"
+                            size={demoSize}
                             fetchCollection={simulatePaginatedAPI}
                             value={paginatedSelection}
                             onChange={(value) => setPaginatedSelection(value as OttaSelectItem[] | null)}
@@ -446,6 +474,15 @@ export function OttaSelectDemoPage() {
                 </CardHeader>
                 <CardContent>
                     <ul className="space-y-2 text-sm">
+                        <li className="flex items-start gap-2">
+                            <span className="text-green-500">✓</span>
+                            <span>
+                                <strong>Size Variants:</strong> Toggle <code className="bg-muted px-1 rounded">xs</code>
+                                , <code className="bg-muted px-1 rounded">sm</code>,{' '}
+                                <code className="bg-muted px-1 rounded">md</code>, and{' '}
+                                <code className="bg-muted px-1 rounded">lg</code> using the demo switcher
+                            </span>
+                        </li>
                         <li className="flex items-start gap-2">
                             <span className="text-green-500">✓</span>
                             <span>

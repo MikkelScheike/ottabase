@@ -131,6 +131,72 @@ export const SingleSelectBasic: Story = {
     },
 };
 
+export const SizeVariants: Story = {
+    name: 'Size Variants',
+    render: () => {
+        const [xsValue, setXsValue] = useState<OttaSelectItem | null>(null);
+        const [smValue, setSmValue] = useState<OttaSelectItem | null>(null);
+        const [mdValue, setMdValue] = useState<OttaSelectItem | null>(null);
+        const [lgValue, setLgValue] = useState<OttaSelectItem | null>(null);
+
+        return (
+            <div className="grid gap-4">
+                <div>
+                    <div className="mb-1.5 text-xs font-semibold">Extra small</div>
+                    <OttaSelect
+                        mode="single"
+                        size="xs"
+                        items={sampleItemsWithName}
+                        value={xsValue}
+                        onChange={setXsValue}
+                        placeholder="Extra small select"
+                    />
+                </div>
+                <div>
+                    <div className="mb-1.5 text-xs font-semibold">Small</div>
+                    <OttaSelect
+                        mode="single"
+                        size="sm"
+                        items={sampleItemsWithName}
+                        value={smValue}
+                        onChange={setSmValue}
+                        placeholder="Small select"
+                    />
+                </div>
+                <div>
+                    <div className="mb-1.5 text-xs font-semibold">Medium</div>
+                    <OttaSelect
+                        mode="single"
+                        size="md"
+                        items={sampleItemsWithName}
+                        value={mdValue}
+                        onChange={setMdValue}
+                        placeholder="Medium select"
+                    />
+                </div>
+                <div>
+                    <div className="mb-1.5 text-xs font-semibold">Large</div>
+                    <OttaSelect
+                        mode="single"
+                        size="lg"
+                        items={sampleItemsWithName}
+                        value={lgValue}
+                        onChange={setLgValue}
+                        placeholder="Large select"
+                    />
+                </div>
+            </div>
+        );
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'OttaSelect supports `xs`, `sm`, `md`, and `lg` sizes. `md` matches the existing default size.',
+            },
+        },
+    },
+};
+
 export const FlexibleInputWithLabel: Story = {
     name: 'Flexible Input - Using "label"',
     render: () => {

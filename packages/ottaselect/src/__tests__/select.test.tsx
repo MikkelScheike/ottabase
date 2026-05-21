@@ -33,6 +33,11 @@ describe('OttaSelect Component', () => {
         { value: '2', label: 'Option 2' },
         { value: '3', label: 'Option 3' },
     ];
+    const realItems = [
+        { id: '1', name: 'Alpha' },
+        { id: '2', name: 'Beta' },
+        { id: '3', name: 'Gamma' },
+    ];
 
     describe('Basic Functionality', () => {
         it('should render select component', () => {
@@ -103,6 +108,47 @@ describe('OttaSelect Component', () => {
         it('should support ARIA attributes', () => {
             const { container } = render(<MockSelect options={options} />);
             expect(container.querySelector('select')).toBeTruthy();
+        });
+    });
+
+    describe('Size variants', () => {
+        it('uses md sizing by default', () => {
+            const { container } = render(<ottaSelect.OttaSelect items={realItems} placeholder="Pick an item" />);
+            const root = container.firstElementChild as HTMLElement;
+
+            expect(root).toHaveAttribute('data-size', 'md');
+            expect(root.className).toContain(
+                '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*5.25)]',
+            );
+            expect(screen.getByRole('button', { name: 'Pick an item' })).toBeTruthy();
+        });
+
+        it('supports xs, sm, and lg sizing variants', () => {
+            const { container, rerender } = render(
+                <ottaSelect.OttaSelect items={realItems} placeholder="Pick an item" size="xs" />,
+            );
+            let root = container.firstElementChild as HTMLElement;
+
+            expect(root).toHaveAttribute('data-size', 'xs');
+            expect(root.className).toContain(
+                '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*4)]',
+            );
+
+            rerender(<ottaSelect.OttaSelect items={realItems} placeholder="Pick an item" size="sm" />);
+            root = container.firstElementChild as HTMLElement;
+
+            expect(root).toHaveAttribute('data-size', 'sm');
+            expect(root.className).toContain(
+                '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*4.5)]',
+            );
+
+            rerender(<ottaSelect.OttaSelect items={realItems} placeholder="Pick an item" size="lg" />);
+            root = container.firstElementChild as HTMLElement;
+
+            expect(root).toHaveAttribute('data-size', 'lg');
+            expect(root.className).toContain(
+                '[--otta-select-trigger-min-height:calc(var(--spacing-element,0.5rem)*6)]',
+            );
         });
     });
 });
