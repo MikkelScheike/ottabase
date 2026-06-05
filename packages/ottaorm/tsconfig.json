@@ -11,5 +11,8 @@
         "types": ["@cloudflare/workers-types"]
     },
     "include": ["src/**/*"],
-    "exclude": ["dist", "node_modules", "**/*.test.*", "**/*.spec.*"]
+    // auto-generator.ts and seed/** are Node-only CLI tooling (fs/child_process/process), not part
+    // of the edge-bundled library and not imported by it. They're excluded from the edge type-check,
+    // which deliberately ships only @cloudflare/workers-types.
+    "exclude": ["dist", "node_modules", "**/*.test.*", "**/*.spec.*", "src/seed/**", "src/migrations/auto-generator.ts"]
 }
