@@ -94,6 +94,7 @@ export async function autoInit(config: AutoInitConfig): Promise<{
     details: {
         tablesCreated: string[];
         columnsAdded: string[];
+        indexesEnsured: string[];
         customMigrationsRun: string[];
         customMigrationsSkipped: string[];
         tablesDetected: string[];
@@ -128,6 +129,7 @@ export async function autoInit(config: AutoInitConfig): Promise<{
             details: {
                 tablesCreated: [],
                 columnsAdded: [],
+                indexesEnsured: [],
                 customMigrationsRun: [],
                 customMigrationsSkipped: [],
                 tablesDetected: [],
@@ -158,6 +160,7 @@ export async function autoInit(config: AutoInitConfig): Promise<{
         console.log(`  Tables created: ${result.details.tablesCreated.length}`);
         console.log(`  Tables skipped (already exist): ${result.details.tablesSkipped.length}`);
         console.log(`  Columns added: ${result.details.columnsAdded.length}`);
+        console.log(`  Indexes ensured: ${result.details.indexesEnsured.length}`);
         console.log(`  Custom migrations run: ${result.details.customMigrationsRun.length}`);
         console.log(`  Custom migrations skipped: ${result.details.customMigrationsSkipped.length}`);
 

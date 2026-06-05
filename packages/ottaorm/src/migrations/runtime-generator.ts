@@ -113,7 +113,56 @@ function generateCreateTableSQL(table: SQLiteTable, overrideName?: string): stri
         return def;
     });
 
-    return `CREATE TABLE IF NOT EXISTS ${quoteIdentifier(tableName)} (\n  ${columnDefs.join(',\n  ')}\n)`;
+    // Composite primary keys — primaryKey({ columns: [...] }) lives in config.primaryKeys,
+    // NOT on individual columns (col.primary). Without emitting these, composite-key tables
+    // (e.g. organization_members, user_roles, verification_tokens) are created with NO primary
+    // key and therefore NO uniqueness guarantee — silently allowing duplicate rows.
+    const tableConstraints: string[] = [];
+    for (const pk of (config.primaryKeys ?? []) as Array<{ columns?: Array<{ name: string }> }>) {
+        const cols = (pk.columns ?? []).map((c) => quoteIdentifier(c.name));
+        if (cols.length > 0) tableConstraints.push(`PRIMARY KEY (${cols.join(', ')})`);
+    }
+
+    // Table-level UNIQUE constraints — unique().on(colA, colB)
+    for (const uc of (config.uniqueConstraints ?? []) as Array<{ columns?: Array<{ name: string }> }>) {
+        const cols = (uc.columns ?? []).map((c) => quoteIdentifier(c.name));
+        if (cols.length > 0) tableConstraints.push(`UNIQUE (${cols.join(', ')})`);
+    }
+
+    const allDefs = [...columnDefs, ...tableConstraints];
+
+    return `CREATE TABLE IF NOT EXISTS ${quoteIdentifier(tableName)} (\n  ${allDefs.join(',\n  ')}\n)`;
+}
+
+/**
+ * Generate CREATE INDEX statements for a table's declared indexes (index()/uniqueIndex()).
+ * Uses IF NOT EXISTS so it is idempotent and also backfills indexes onto existing tables.
+ * Composite UNIQUE indexes (e.g. posts(organization_id, app_id, slug)) are emitted here —
+ * the in-table generator above only covers PRIMARY KEY and UNIQUE constraints.
+ */
+function generateIndexStatements(table: SQLiteTable, tableNameOverride?: string): Array<{ name: string; sql: string }> {
+    const config = getTableConfig(table);
+    const tableName = tableNameOverride ?? config.name;
+    const indexes = Object.values((config.indexes ?? {}) as Record<string, any>);
+    const statements: Array<{ name: string; sql: string }> = [];
+
+    for (const idx of indexes) {
+        const cfg = idx?.config ?? idx;
+        const name: string | undefined = cfg?.name;
+        const cols = (cfg?.columns ?? [])
+            .map((c: any) => c?.name)
+            .filter((n: unknown): n is string => typeof n === 'string');
+        if (!name || cols.length === 0) continue;
+        const unique = cfg?.unique ? 'UNIQUE ' : '';
+        statements.push({
+            name,
+            sql: `CREATE ${unique}INDEX IF NOT EXISTS ${quoteIdentifier(name)} ON ${quoteIdentifier(tableName)} (${cols
+                .map(quoteIdentifier)
+                .join(', ')})`,
+        });
+    }
+
+    return statements;
 }
 
 /**
@@ -220,6 +269,7 @@ function generateAddColumnSQL(tableName: string, table: SQLiteTable, existingCol
 export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
     tablesCreated: string[];
     columnsAdded: string[];
+    indexesEnsured: string[];
     customMigrationsRun: string[];
     customMigrationsSkipped: string[];
     tablesSkipped: string[];
@@ -230,6 +280,7 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
     const result = {
         tablesCreated: [] as string[],
         columnsAdded: [] as string[],
+        indexesEnsured: [] as string[],
         customMigrationsRun: [] as string[],
         customMigrationsSkipped: [] as string[],
         tablesSkipped: [] as string[],
@@ -417,6 +468,27 @@ export async function autoMigrate(config: RuntimeMigrationConfig): Promise<{
             }
         }
 
+        // Ensure declared indexes exist for all desired tables. Idempotent (IF NOT EXISTS),
+        // so it also backfills indexes onto pre-existing tables and recreates them after a
+        // destructive table rebuild (which drops the old table's indexes along with it).
+        for (const table of Object.values(tables)) {
+            const tableName = getTableConfig(table).name;
+            for (const { name, sql } of generateIndexStatements(table)) {
+                if (verbose) {
+                    console.log(`\n🔎 Ensuring index ${name} on ${tableName}`);
+                    console.log(sql);
+                }
+                try {
+                    await driver.executeRaw(sql);
+                    result.indexesEnsured.push(`${tableName}.${name}`);
+                } catch (error: any) {
+                    const errorMsg = `Failed to ensure index ${name} on ${tableName}: ${error.message}`;
+                    result.errors.push(errorMsg);
+                    console.error(`❌ ${errorMsg}`);
+                }
+            }
+        }
+
         // Run custom migrations
         if (customMigrations.length > 0) {
             // Ensure migration tracking table exists
@@ -493,6 +565,7 @@ export async function runAutoMigrations(
     details: {
         tablesCreated: string[];
         columnsAdded: string[];
+        indexesEnsured: string[];
         customMigrationsRun: string[];
         customMigrationsSkipped: string[];
         tablesSkipped: string[];
