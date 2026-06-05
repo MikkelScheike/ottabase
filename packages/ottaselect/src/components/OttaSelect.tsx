@@ -545,7 +545,12 @@ export function OttaSelect({
             let usedWidth = 0;
             let count = 0;
             const inheritedStyles = getComputedStyle(chipsContainerRef.current);
-            const parsedGap = parseFloat(inheritedStyles.getPropertyValue('--otta-select-chip-gap'));
+            // The chips container applies `gap: var(--otta-select-chip-gap)`, so the browser
+            // resolves it to pixels in `columnGap`. Read that rather than the raw
+            // `--otta-select-chip-gap` custom property, whose value is an unresolved `calc(...)`
+            // string (parseFloat -> NaN, which is why this previously always fell back to 4). This
+            // keeps the between-chip spacing in sync with the active size/spacing tokens.
+            const parsedGap = parseFloat(inheritedStyles.columnGap);
             const gap = Number.isFinite(parsedGap) ? parsedGap : 4;
 
             // Measure each chip
