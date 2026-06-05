@@ -82,27 +82,33 @@ pnpm --filter @ottabase/ottaorm seed:rbac
 
 Creates default system roles: `owner`, `admin`, `member`
 
-### 3. Enable Tenant Isolation in Worker
+### 3. Enable Row-Level Security in Worker
+
+Isolation is enforced automatically by the RLS engine. Call `initRLS()` once at startup, then route CRUD through
+`rlsMiddleware` with an explicit `getContext` that derives the `SecurityContext` from a **verified session/JWT** — never
+from raw client headers.
 
 ```typescript
 // apps/your-worker/src/index.ts
-import { tenantAwareCrudMiddleware } from '@ottabase/ottaorm';
+import { initRLS, rlsMiddleware } from '@ottabase/ottaorm';
+
+initRLS(); // Register all pre-configured model policies once
 
 export default {
     async fetch(request: Request, env: Env): Promise<Response> {
         const url = new URL(request.url);
 
-        // Tenant-aware CRUD endpoints
+        // RLS-enforced CRUD endpoints
         if (url.pathname.startsWith('/api/ottaorm/')) {
-            return tenantAwareCrudMiddleware({
-                request,
-                url,
-                getUser: async () => {
-                    const session = await getSession(request, env);
-                    return session?.user || null;
-                },
-                env,
-                allowNullTenant: true, // Single-founder mode
+            return rlsMiddleware(request, env, async (req) => {
+                const session = await getSession(req, env); // your verified auth
+                return {
+                    userId: session?.user?.id,
+                    organizationId: session?.user?.organizationId ?? null, // null = single-founder mode
+                    appId: 'web',
+                    roles: session?.user?.roles,
+                    permissions: session?.user?.permissions,
+                };
             });
         }
 
@@ -110,6 +116,10 @@ export default {
     },
 };
 ```
+
+> Already parsed the request elsewhere? Call `executeSecureCrudRequest(crudRequest, context)` directly instead of
+> `rlsMiddleware`. (The older `tenantAwareCrudMiddleware` has been removed — it only scoped a hardcoded model list and
+> was fail-open for everything else; RLS is fail-closed and covers every registered model.)
 
 **What this does:**
 
@@ -316,16 +326,17 @@ await cache.invalidateOrganization(org.id);
 
 ### Automatic Tenant Isolation
 
-The `tenantAwareCrudMiddleware` prevents cross-tenant data leaks:
+`rlsMiddleware` / `executeSecureCrudRequest` prevent cross-tenant data leaks. RLS is **fail-closed**: a model with no
+policy is denied, and if a policy's filter field isn't a real column on the model the request is rejected outright
+(rather than silently running an unscoped query).
 
 ```typescript
-// ❌ User tries to access another org's data
-GET /api/ottaorm/organization_members/member-123
-Headers: X-Org-Id: org-acme
+// ❌ Caller in org-acme tries to read another org's record
+GET / api / ottaorm / organization_members / member - 123; // member-123 belongs to org-beta
 
-// member-123 belongs to org-beta
-// ✅ Server returns 403 Forbidden
-// ✅ Logs security violation
+// ✅ Not visible under the caller's RLS filter → 404 Not Found
+// ❌ Cross-tenant WRITE (body sets a different organizationId) → 403 Forbidden
+// ✅ Either way, a security violation is logged to audit_logs
 ```
 
 ### Scoped Models
@@ -1020,7 +1031,7 @@ registerPolicy({
 
 ### Worker Integration
 
-Replace manual tenant-aware CRUD with automatic RLS:
+Enforce tenant/user/app isolation automatically with RLS:
 
 ```typescript
 // apps/your-worker/src/index.ts
@@ -1184,7 +1195,7 @@ import {
 ```typescript
 import { Organization, OrganizationMember, User, Role, Permission, UserRole, AuditLog } from '@ottabase/ottaorm/models';
 
-import { tenantAwareCrudMiddleware, handleTenantAwareCrud } from '@ottabase/ottaorm';
+import { rlsMiddleware, executeSecureCrudRequest, initRLS, registerPolicy, RLSPolicies } from '@ottabase/ottaorm';
 ```
 
 ---
@@ -1271,7 +1282,7 @@ const exportData = auditTrail.map((log) => ({
 
 - [ ] Run database migrations
 - [ ] Seed system roles
-- [ ] Enable `tenantAwareCrudMiddleware` in worker
+- [ ] Enable `rlsMiddleware` in worker (with an explicit, trusted `getContext`)
 - [ ] Configure KV namespace for caching
 - [ ] Set up organization extraction (header/subdomain)
 - [ ] Test cross-tenant access prevention

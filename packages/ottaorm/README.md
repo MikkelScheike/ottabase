@@ -629,9 +629,12 @@ curl -X POST https://your-app.com/api/ottaorm/init \
 
 **What happens automatically:**
 
-- ✅ Creates tables that don't exist
+- ✅ Creates tables that don't exist — including **composite primary keys** (`primaryKey({ columns })`) and table-level
+  `UNIQUE` constraints
 - ✅ Adds new columns to existing tables
-- ✅ Runs custom migrations (seeds, indexes)
+- ✅ Creates declared **indexes** (`index()` / `uniqueIndex()`, including composite unique indexes). Idempotent
+  (`IF NOT EXISTS`), so it also **backfills** missing indexes onto existing tables
+- ✅ Runs custom migrations (seeds, data backfills)
 - ✅ Tracks all migrations
 
 ### Adding a New Field
@@ -677,13 +680,17 @@ export const appMigrations: Migration[] = [
 
 ### Limitations
 
-SQLite's `ALTER TABLE` has restrictions. The automated system **cannot**:
+SQLite's `ALTER TABLE` can only add columns. So a **non-destructive** run (the default) **cannot**:
 
-- ❌ **Change column types** - Use custom migration to recreate table
-- ❌ **Rename columns** - Use custom migration to recreate table
-- ❌ **Drop columns** - Use custom migration to recreate table
-- ❌ **Modify constraints** - Use custom migration to recreate table
-- ⚠️ **Add NOT NULL columns** - Must have `DEFAULT` value
+- ❌ **Change column types** — requires a table rebuild
+- ❌ **Rename columns** — requires a table rebuild
+- ❌ **Drop columns** — requires a table rebuild
+- ⚠️ **Add NOT NULL columns** — must have a `DEFAULT` value
+
+For type changes, renames, and drops, run with `allowDestructive: true` (plus `renameMap` for renames). The generator
+rebuilds the table (create new → copy intersecting columns → drop old → rename), **preserving primary keys, unique
+constraints, and indexes**. Destructive rebuilds are **off by default** — enable them deliberately (ideally gated behind
+your `MIGRATION_SECRET`). For anything complex, prefer a custom migration.
 
 **Example:**
 
@@ -717,6 +724,10 @@ const todo = await Todo.find('todo-id');
 console.log(typeof todo.get('completed')); // "boolean"
 console.log(todo.get('createdAt')); // Date object
 ```
+
+Casting is symmetric: `json` / `array` casts are also **serialized on write**, so an object/array round-trips through a
+plain `TEXT` column without manual `JSON.stringify`. If a column uses Drizzle's `mode: 'json'`, serialization is left to
+Drizzle (no double-encoding). `number` casts use `parseFloat`, so decimals are preserved.
 
 ## Field Metadata
 
@@ -881,6 +892,15 @@ For complete RBAC integration with these models, see the [@ottabase/rbac](../rba
 OttaORM includes a built-in RLS engine that enforces data isolation at the query level. Policies are defined per-model
 and applied automatically by the secure CRUD handler.
 
+**Fail-closed by design:**
+
+- **No policy → no access.** A model without a registered policy throws, rather than returning unscoped rows.
+- **Unknown filter column → no access.** If a policy's filter field isn't a real column on the model, the secure CRUD
+  layer throws instead of silently dropping the filter (which would otherwise leak across tenants). Keep policy `field`
+  / `contextFields` / `enforceOnWrite` names in sync with your table columns.
+- **Caller `where` can't widen scope.** The RLS filter is merged last, so a client can't override a security field.
+- **Read-before-write.** Update/delete first verify the record is visible under the caller's RLS filter.
+
 ### Policy Levels
 
 | Level    | Description                              | Filter field     |
@@ -971,6 +991,19 @@ interface SecurityContext {
 }
 ```
 
+> **⚠️ Build the context from a trusted source.** Derive `SecurityContext` from a **verified session or JWT** — never
+> from raw client input. `rlsMiddleware` therefore **requires** an explicit `getContext(request, env)` resolver:
+>
+> ```typescript
+> return rlsMiddleware(request, env, async (req) => {
+>     const session = await getVerifiedSession(req); // your auth
+>     return { userId: session.userId, organizationId: session.orgId, appId: 'web', roles: session.roles };
+> });
+> ```
+>
+> A header-based helper, `extractSecurityContext(request)`, exists for gateways that set/strip trusted headers
+> (`x-user-id`, `x-org-id`, …). **It is spoofable if exposed to clients directly** — only use it behind a trusted proxy.
+
 ### Permission Wildcards
 
 When a policy uses `requiredPermissions` (e.g. `['brand:edit']`), the RLS engine supports wildcard matching:
@@ -989,13 +1022,14 @@ Admins with `*:*` or `brand:*` will pass policies requiring `brand:edit`. Same s
 
 ### Audit Integration
 
-RLS violations are automatically logged to the `audit_logs` table via the `AuditLog` model. Use `getRecentViolations()`
-to query stored violations for monitoring dashboards:
+RLS violations are persisted to the `audit_logs` table via the `AuditLog` model. Logging happens at the secure-CRUD
+boundary (awaited as part of the request), so it is reliable on edge runtimes. `getRecentViolations(n)` returns the
+**most recent `n`** violations, ordered and limited at the database layer (it does not load the whole table):
 
 ```typescript
 import { getRecentViolations } from '@ottabase/ottaorm';
 
-const violations = await getRecentViolations(50);
+const violations = await getRecentViolations(50); // newest 50, ordered by createdAt desc
 ```
 
 ## Architecture
