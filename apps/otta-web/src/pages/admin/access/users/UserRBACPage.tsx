@@ -61,7 +61,20 @@ interface UserOrganization {
     organizationId: string;
     organizationName: string;
     role: MemberRole;
-    joinedAt: string;
+    joinedAt: string | number | null;
+}
+
+/**
+ * Membership timestamps come from BaseModel.toJson(), which serializes Date fields to epoch-ms
+ * NUMBERS — so `joinedAt` arrives as a number (or, from some callers, a numeric string).
+ * `new Date('1780639598433')` parses a digit-string as a *date string* → "Invalid Date", so
+ * coerce all-digit values to a number before constructing the Date.
+ */
+function formatJoinedDate(value: string | number | null | undefined): string {
+    if (value === null || value === undefined || value === '') return '-';
+    const ms = typeof value === 'number' ? value : /^-?\d+$/.test(value.trim()) ? Number(value) : Date.parse(value);
+    const date = new Date(ms);
+    return Number.isNaN(date.getTime()) ? '-' : date.toLocaleDateString();
 }
 
 export function UserRBACPage() {
@@ -102,7 +115,9 @@ export function UserRBACPage() {
             organizationId: m.organizationId,
             organizationName: org?.name || m.organizationId,
             role: m.role,
-            joinedAt: typeof m.joinedAt === 'string' ? m.joinedAt : String(m.joinedAt ?? ''),
+            // Keep the raw value (toJson() gives epoch-ms numbers) — do NOT stringify it, or
+            // `new Date('<digits>')` below would yield "Invalid Date".
+            joinedAt: m.joinedAt ?? null,
         };
     });
 
@@ -386,9 +401,7 @@ export function UserRBACPage() {
                                             </Select>
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
-                                            {membership.joinedAt
-                                                ? new Date(membership.joinedAt).toLocaleDateString()
-                                                : '-'}
+                                            {formatJoinedDate(membership.joinedAt)}
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Button
