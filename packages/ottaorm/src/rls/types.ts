@@ -78,6 +78,15 @@ export interface ModelRLSConfig {
     contextFields?: Array<'organizationId' | 'appId' | 'userId'>;
 
     /**
+     * Explicit data-field → SecurityContext-key mappings enforced on writes.
+     * Injected on create when missing, and validated (must equal the context value) always.
+     * Use for custom policies whose read filter field differs from the data field —
+     * e.g. organizations are filtered by ownerId, so `{ ownerId: 'userId' }` pins the owner
+     * on create and blocks a client from forging someone else's ownership.
+     */
+    enforceOnWrite?: Partial<Record<string, 'userId' | 'organizationId' | 'appId'>>;
+
+    /**
      * Soft delete field (if any)
      */
     softDeleteField?: string;
@@ -151,25 +160,33 @@ export const RLSPolicies = {
     }),
 
     /**
-     * Owner-only: User must own the record
+     * Owner-only: User must own the record.
+     * Fails closed (denies) when there is no authenticated user.
      */
     OwnerOnly: (ownerField = 'userId'): RLSPolicy => ({
         level: 'custom',
-        filter: (context) => ({
-            [ownerField]: context.userId,
-        }),
+        filter: (context) => (context.userId ? { [ownerField]: context.userId } : null),
     }),
 
     /**
-     * Hierarchical: Tenant + User scoped
+     * Hierarchical: Tenant + User scoped.
+     * Fails closed (denies) when the user is missing, or when the tenant is missing and
+     * `allowNullTenant` is false — rather than emitting an `undefined` filter value.
      */
     Hierarchical: (allowNullTenant = false): RLSPolicy => ({
         level: 'custom',
         allowNullTenant,
-        filter: (context) => ({
-            organizationId: context.organizationId,
-            userId: context.userId,
-            ...(context.appId ? { appId: context.appId } : {}),
-        }),
+        filter: (context) => {
+            if (!context.userId) return null; // user scope is required
+            if (!allowNullTenant && (context.organizationId === undefined || context.organizationId === null)) {
+                return null; // tenant required unless single-founder mode
+            }
+            const filter: Record<string, any> = {
+                organizationId: context.organizationId ?? null,
+                userId: context.userId,
+            };
+            if (context.appId) filter.appId = context.appId;
+            return filter;
+        },
     }),
 };

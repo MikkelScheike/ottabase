@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from 'vitest';
+import { describe, expect, it, afterEach } from 'vitest';
 import { MODEL_POLICIES, registerAllPolicies, getRegisteredModels } from '../registry';
 import { globalRLS } from '../engine';
 import type { SecurityContext } from '../types';

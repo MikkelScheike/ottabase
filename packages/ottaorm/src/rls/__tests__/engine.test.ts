@@ -352,3 +352,78 @@ describe('RLS Engine', () => {
         });
     });
 });
+
+describe('org membership enforcement', () => {
+    let engine: RLSEngine;
+
+    beforeEach(() => {
+        engine = new RLSEngine();
+        engine.register({ model: 'posts', policy: RLSPolicies.TenantScoped(false) });
+    });
+    afterEach(() => engine.clear());
+
+    it('denies read when the active org is not in memberOrganizationIds', () => {
+        const ctx: SecurityContext = {
+            userId: 'u1',
+            organizationId: 'org-x',
+            memberOrganizationIds: ['org-1', 'org-2'],
+        };
+        expect(() => engine.getReadFilter('posts', ctx)).toThrow(RLSError);
+        expect(() => engine.getReadFilter('posts', ctx)).toThrow(/not one of the user's organizations/);
+    });
+
+    it('allows read when the active org IS in memberOrganizationIds', () => {
+        const ctx: SecurityContext = {
+            userId: 'u1',
+            organizationId: 'org-1',
+            memberOrganizationIds: ['org-1', 'org-2'],
+        };
+        expect(engine.getReadFilter('posts', ctx)).toEqual({ organizationId: 'org-1' });
+    });
+
+    it('does not enforce when memberOrganizationIds is absent (opt-in by data)', () => {
+        const ctx: SecurityContext = { userId: 'u1', organizationId: 'org-x' };
+        expect(engine.getReadFilter('posts', ctx)).toEqual({ organizationId: 'org-x' });
+    });
+
+    it('denies read when memberOrganizationIds is empty (user belongs to no orgs)', () => {
+        // Empty array is a resolved "zero memberships" — it must fail closed, NOT be treated
+        // like an absent list. Otherwise a freshly-registered / invited-only / suspended user
+        // could read any org by supplying its id via X-Org-Id / subdomain / query.
+        const ctx: SecurityContext = { userId: 'u1', organizationId: 'org-x', memberOrganizationIds: [] };
+        expect(() => engine.getReadFilter('posts', ctx)).toThrow(RLSError);
+        expect(() => engine.getReadFilter('posts', ctx)).toThrow(/not one of the user's organizations/);
+    });
+
+    it('blocks a create scoped to an org when the user has no memberships (empty list)', () => {
+        const ctx: SecurityContext = { organizationId: 'org-x', memberOrganizationIds: [] };
+        const data = { organizationId: 'org-x', title: 'Hi' };
+        expect(() => engine.validateWrite('posts', ctx, data, 'create')).toThrow(/not one of the user's organizations/);
+    });
+
+    it('still lets a super-admin (*:*) act across tenants even with empty memberships', () => {
+        const ctx: SecurityContext = {
+            userId: 'u1',
+            organizationId: 'org-x',
+            memberOrganizationIds: [],
+            permissions: ['*:*'],
+        };
+        expect(engine.getReadFilter('posts', ctx)).toEqual({ organizationId: 'org-x' });
+    });
+
+    it('lets a platform super-admin (*:*) act across tenants', () => {
+        const ctx: SecurityContext = {
+            userId: 'u1',
+            organizationId: 'org-x',
+            memberOrganizationIds: ['org-1'],
+            permissions: ['*:*'],
+        };
+        expect(engine.getReadFilter('posts', ctx)).toEqual({ organizationId: 'org-x' });
+    });
+
+    it('blocks a create scoped to a non-member org (even when it matches context)', () => {
+        const ctx: SecurityContext = { organizationId: 'org-x', memberOrganizationIds: ['org-1'] };
+        const data = { organizationId: 'org-x', title: 'Hi' };
+        expect(() => engine.validateWrite('posts', ctx, data, 'create')).toThrow(/not one of the user's organizations/);
+    });
+});

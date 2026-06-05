@@ -38,6 +38,10 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
                 return { ownerId: context.userId };
             },
         },
+        // Pin ownership on create and block forging someone else's ownerId. The read filter
+        // uses ownerId/memberOrganizationIds, so without this a client could create an org
+        // owned by another user.
+        enforceOnWrite: { ownerId: 'userId' },
         auditEnabled: true,
     },
 

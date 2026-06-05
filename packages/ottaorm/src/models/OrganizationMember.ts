@@ -418,6 +418,31 @@ export class OrganizationMember extends BaseModel {
     }
 
     /**
+     * All organization IDs a user can access: active memberships + organizations they own.
+     * This is the authoritative "accessible orgs" set — use it to validate a user's active
+     * org and to populate `SecurityContext.memberOrganizationIds`.
+     */
+    static async organizationIdsForUser(userId: string): Promise<string[]> {
+        if (!userId) return [];
+        const ids = new Set<string>();
+
+        const memberships = await this.where({ userId, status: 'active' });
+        for (const m of memberships) {
+            const orgId = m.get('organizationId') as string | undefined;
+            if (orgId) ids.add(orgId);
+        }
+
+        const { Organization } = await import('./Organization');
+        const owned = await Organization.where({ ownerId: userId });
+        for (const o of owned) {
+            const id = o.get('id') as string | undefined;
+            if (id) ids.add(id);
+        }
+
+        return Array.from(ids);
+    }
+
+    /**
      * Check if user has specific role in organization
      */
     static async hasRole(userId: string, organizationId: string, role: 'owner' | 'admin' | 'member'): Promise<boolean> {

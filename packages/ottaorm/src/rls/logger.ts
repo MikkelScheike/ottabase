@@ -91,12 +91,17 @@ async function storeAuditLog(violation: RLSViolation): Promise<void> {
  * Queries the audit_logs table for entries with resourceType 'rls_security'.
  */
 export async function getRecentViolations(limit = 100): Promise<RLSViolation[]> {
-    const logs = await AuditLog.where({
-        resourceType: RLS_RESOURCE_TYPE,
-        action: 'security_violation',
-    });
+    // Order + limit at the DB layer so this returns the genuinely most-recent N rows
+    // and never loads the whole audit_logs table into memory.
+    const logs = await AuditLog.where(
+        {
+            resourceType: RLS_RESOURCE_TYPE,
+            action: 'security_violation',
+        },
+        { orderBy: 'createdAt', orderDirection: 'desc', limit },
+    );
 
-    return logs.slice(0, limit).map((log) => {
+    return logs.map((log) => {
         const metadata = log.getMetadata();
         return {
             type: metadata.violationType || 'unauthorized_access',

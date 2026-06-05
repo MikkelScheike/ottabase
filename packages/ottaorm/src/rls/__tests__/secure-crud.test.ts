@@ -1,5 +1,8 @@
+import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { BaseModel } from '../../base/BaseModel';
 import * as crud from '../../crud';
+import { clearModelRegistry, registerModel } from '../../registry';
 import { globalRLS } from '../engine';
 import { executeSecureCrudRequest, extractSecurityContext, parseSqliteUniqueConstraintForApi } from '../secure-crud';
 import { RLSPolicies } from '../types';
@@ -221,6 +224,26 @@ describe('executeSecureCrudRequest', () => {
         expect(result.status).toBe(400);
     });
 
+    it('Hierarchical: denies with 403 (no 500, no query) when userId is missing from context', async () => {
+        globalRLS.register({
+            model: 'posts',
+            policy: RLSPolicies.Hierarchical(false),
+            contextFields: ['organizationId', 'appId', 'userId'],
+        });
+        const handleCrudSpy = vi.spyOn(crud, 'handleCrud');
+
+        // Logged-out / missing userId — must fail closed, NOT emit eq(user_id, undefined) → 500.
+        const result = await executeSecureCrudRequest(
+            { method: 'GET', model: 'posts' },
+            { organizationId: 'org-1', appId: 'web' },
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.status).toBe(403);
+        expect(result.code).toBe('RLS_ERROR');
+        expect(handleCrudSpy).not.toHaveBeenCalled();
+    });
+
     describe('parseError fail-closed behavior', () => {
         it('returns 400 INVALID_BODY without touching the model layer', async () => {
             const handleCrudSpy = vi.spyOn(crud, 'handleCrud');
@@ -261,5 +284,67 @@ describe('executeSecureCrudRequest', () => {
             expect(result.code).toBe('INVALID_QUERY');
             expect(handleCrudSpy).not.toHaveBeenCalled();
         });
+    });
+});
+
+describe('RLS fails closed on misconfigured policy columns', () => {
+    // notes has NO organizationId column, but the policy below filters by organizationId.
+    const notesTable = sqliteTable('notes', { id: text('id').primaryKey(), body: text('body') });
+    class NoteModel extends BaseModel {
+        static entity = 'notes';
+        static table = notesTable;
+        static primaryKey = 'id';
+    }
+
+    const scopedTable = sqliteTable('scoped', {
+        id: text('id').primaryKey(),
+        organizationId: text('organization_id'),
+    });
+    class ScopedModel extends BaseModel {
+        static entity = 'scoped';
+        static table = scopedTable;
+        static primaryKey = 'id';
+    }
+
+    beforeEach(() => {
+        globalRLS.clear();
+        clearModelRegistry();
+    });
+    afterEach(() => {
+        globalRLS.clear();
+        clearModelRegistry();
+        vi.restoreAllMocks();
+    });
+
+    it('GET returns 403 when the policy field is not a real column (no silent unscoped query)', async () => {
+        registerModel(NoteModel);
+        globalRLS.register({ model: 'notes', policy: RLSPolicies.TenantScoped(false) });
+        const handleCrudSpy = vi.spyOn(crud, 'handleCrud');
+
+        const result = await executeSecureCrudRequest({ method: 'GET', model: 'notes' }, { organizationId: 'org-1' });
+
+        expect(result.success).toBe(false);
+        expect(result.status).toBe(403);
+        expect(result.code).toBe('RLS_ERROR');
+        expect(result.error).toMatch(/not a column|misconfiguration/i);
+        // Critically: it must NOT have reached the model/query layer with a dropped filter.
+        expect(handleCrudSpy).not.toHaveBeenCalled();
+    });
+
+    it('GET proceeds with the scoped filter when the policy field IS a real column', async () => {
+        registerModel(ScopedModel);
+        globalRLS.register({ model: 'scoped', policy: RLSPolicies.TenantScoped(false) });
+        const handleCrudSpy = vi.spyOn(crud, 'handleCrud').mockResolvedValue({
+            success: true,
+            data: { data: [], pagination: { total: 0, page: 1, perPage: 15, totalPages: 1, next: null, prev: null } },
+            status: 200,
+        });
+
+        const result = await executeSecureCrudRequest({ method: 'GET', model: 'scoped' }, { organizationId: 'org-1' });
+
+        expect(result.success).toBe(true);
+        expect(handleCrudSpy).toHaveBeenCalledWith(
+            expect.objectContaining({ query: { where: { organizationId: 'org-1' } } }),
+        );
     });
 });

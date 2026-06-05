@@ -4,7 +4,6 @@
  * Automatically enforces security policies at the database level
  */
 
-import { logSecurityViolation } from './logger';
 import type { ModelRLSConfig, RLSPolicy, RLSViolation, SecurityContext } from './types';
 
 /**
@@ -31,6 +30,22 @@ export class RLSEngine {
      * Apply RLS filters for READ operations
      */
     applyReadFilter(model: string, context: SecurityContext, existingWhere?: Record<string, any>): Record<string, any> {
+        // Merge with existing where clause. The RLS filter is spread LAST so callers
+        // can never widen scope by passing their own value for a security field.
+        return {
+            ...existingWhere,
+            ...this.getReadFilter(model, context),
+        };
+    }
+
+    /**
+     * Compute the pure RLS read filter for a model — without any caller-supplied
+     * `where` merged in. Runs role/permission checks. Exposed so the secure CRUD
+     * layer can validate the filter's columns against the model BEFORE running a
+     * query, and fail closed if a security column is missing (rather than silently
+     * dropping the filter and returning unscoped rows).
+     */
+    getReadFilter(model: string, context: SecurityContext): Record<string, any> {
         const config = this.policies.get(model);
         if (!config) {
             // No policy = no access (secure by default)
@@ -47,13 +62,12 @@ export class RLSEngine {
         this.checkAccess(model, context, policy);
 
         // Generate filter based on policy level
-        const rlsFilter = this.generateFilter(policy, context, model);
+        const filter = this.generateFilter(policy, context, model);
 
-        // Merge with existing where clause
-        return {
-            ...existingWhere,
-            ...rlsFilter,
-        };
+        // Defense-in-depth: a user can only read within organizations they belong to.
+        this.enforceOrgMembership(filter?.organizationId, context, model);
+
+        return filter;
     }
 
     /**
@@ -226,6 +240,33 @@ export class RLSEngine {
     }
 
     /**
+     * Defense-in-depth tenant check. When the caller supplies the set of organizations the
+     * user actually belongs to (`context.memberOrganizationIds`), refuse any operation scoped
+     * to an organization outside that set — closing the "trust the X-Org-Id header" gap.
+     *
+     * Opt-in by data, and the empty list is meaningful:
+     *  - `undefined` → caller didn't resolve membership → no-op (backward compatible).
+     *  - `[]`        → caller resolved it and the user belongs to ZERO orgs → fail closed; no
+     *                  organization claim can ever be satisfied by an empty set.
+     * A null/undefined org (system or single-founder rows) is not a tenant claim and is skipped.
+     * Platform super-admins (the `*:*` permission) may act across tenants.
+     */
+    private enforceOrgMembership(orgId: unknown, context: SecurityContext, model: string): void {
+        if (orgId === null || orgId === undefined) return;
+        const memberships = context.memberOrganizationIds;
+        // Only `undefined` is "membership unknown". An empty array is a real answer ("no orgs"),
+        // so it must fall through to the membership check below, which then always fails closed.
+        if (!Array.isArray(memberships)) return;
+        if (context.permissions?.includes('*:*')) return;
+        if (!memberships.includes(orgId as string)) {
+            throw new RLSError(
+                `Cross-tenant access blocked: organization "${orgId}" is not one of the user's organizations`,
+                { type: 'cross_tenant_read', model, context },
+            );
+        }
+    }
+
+    /**
      * Validate data integrity (prevent cross-tenant writes).
      * Note: For UPDATE/DELETE, secure-crud pre-verifies access via applyReadFilter before
      * calling this—so records you cannot read cannot be updated or deleted.
@@ -358,6 +399,36 @@ export class RLSEngine {
                 );
             }
         }
+
+        // Enforce explicit data-field → context mappings. Needed for custom policies whose
+        // read filter field differs from the data field — e.g. organizations are filtered by
+        // ownerId, so { ownerId: 'userId' } pins the owner on create and blocks forging it.
+        const enforceOnWrite = config.enforceOnWrite ?? {};
+        for (const [dataField, contextKey] of Object.entries(enforceOnWrite)) {
+            if (!contextKey) continue;
+            const contextValue = (context as Record<string, unknown>)[contextKey];
+
+            // Inject on create if missing
+            if (operation === 'create' && data[dataField] === undefined && contextValue !== undefined) {
+                data[dataField] = contextValue;
+            }
+
+            // Validate if provided
+            if (data[dataField] !== undefined && data[dataField] !== contextValue) {
+                throw new RLSError(
+                    `Write ownership check failed: data.${dataField}=${data[dataField]} != context.${contextKey}=${contextValue}`,
+                    {
+                        type: 'unauthorized_access',
+                        model,
+                        context,
+                        attemptedAccess: { operation, data },
+                    },
+                );
+            }
+        }
+
+        // Defense-in-depth: block writes scoped to an organization the user isn't a member of.
+        this.enforceOrgMembership(data.organizationId, context, model);
     }
 
     /**
@@ -394,10 +465,10 @@ export class RLSError extends Error {
                 timestamp: Date.now(),
             };
 
-            // Log security violation (async, cannot await in constructor)
-            logSecurityViolation(this.violation).catch(() => {
-                // Errors already logged inside logSecurityViolation
-            });
+            // NOTE: persistence is intentionally NOT done here. Firing an un-awaited async
+            // write from a constructor is unreliable on edge runtimes (the isolate can be torn
+            // down before it completes) and risks double-logging. The secure CRUD boundary
+            // awaits `logSecurityViolation(error.violation)` when it catches an RLSError.
         }
     }
 }

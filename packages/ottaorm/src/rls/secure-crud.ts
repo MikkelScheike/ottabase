@@ -5,7 +5,9 @@
  */
 
 import { handleCrud, type CrudRequest, type CrudResponse } from '../crud';
+import { getModel } from '../registry';
 import { globalRLS, RLSError } from './engine';
+import { logSecurityViolation } from './logger';
 import type { SecurityContext } from './types';
 
 /** DB column names SQLite lists in composite UNIQUE errors (snake_case). */
@@ -54,9 +56,10 @@ export interface SecureCrudOptions {
 }
 
 /**
- * Secure CRUD with automatic RLS enforcement
+ * Secure CRUD with automatic, fail-closed RLS enforcement.
  *
- * This replaces the manual tenantAwareCrudMiddleware with automatic RLS
+ * Parses the request, derives the RLS filter from the registered policy + SecurityContext,
+ * and enforces it on every read/write (verifying access before update/delete).
  */
 export async function secureCrud(options: SecureCrudOptions): Promise<Response> {
     const { request, url, context } = options;
@@ -252,6 +255,13 @@ export async function secureCrud(options: SecureCrudOptions): Promise<Response> 
         });
     } catch (error) {
         if (error instanceof RLSError) {
+            if (error.violation) {
+                try {
+                    await logSecurityViolation(error.violation);
+                } catch {
+                    // Audit logging must never mask the original 403.
+                }
+            }
             return new Response(
                 JSON.stringify({
                     error: 'Access denied',
@@ -312,6 +322,15 @@ export async function executeSecureCrudRequest(
         });
     } catch (error) {
         if (error instanceof RLSError) {
+            // Persist the violation at the request boundary (awaited), where it ties into the
+            // response lifecycle — instead of an unreliable fire-and-forget from the constructor.
+            if (error.violation) {
+                try {
+                    await logSecurityViolation(error.violation);
+                } catch {
+                    // Audit logging must never mask the original 403.
+                }
+            }
             return {
                 success: false,
                 error: error.message,
@@ -380,6 +399,40 @@ export async function executeSecureCrudRequest(
 }
 
 /**
+ * Fail closed if any RLS-managed field is not a real column on the registered model.
+ * `buildWhereConditions` silently drops unknown columns, so an RLS filter referencing a
+ * mistyped/missing column would otherwise evaporate and return UNSCOPED rows. When the model
+ * isn't registered we skip (handleCrud returns MODEL_NOT_FOUND) — so this is also a no-op in
+ * tests that register only a policy without a model.
+ */
+function assertSecurityColumns(model: string, fields: string[], context: SecurityContext): void {
+    if (fields.length === 0) return;
+    const Model = getModel(model) as { hasColumn?: (f: string) => boolean } | undefined;
+    if (!Model || typeof Model.hasColumn !== 'function') return;
+    for (const field of fields) {
+        if (field !== undefined && !Model.hasColumn(field)) {
+            throw new RLSError(
+                `RLS misconfiguration: policy for "${model}" references field "${field}", which is not a column on the model. Refusing to run an unscoped query.`,
+                { type: 'unauthorized_access', model, context },
+            );
+        }
+    }
+}
+
+/**
+ * Fields the RLS policy injects/enforces on writes — these must be allowed past the
+ * writable-field check even if the model marks them non-editable.
+ */
+function securityWriteFields(model: string): string[] {
+    const policyConfig = globalRLS.getPolicy(model);
+    const fields = new Set<string>();
+    if (policyConfig?.policy?.field) fields.add(policyConfig.policy.field);
+    if (policyConfig?.contextFields) for (const f of policyConfig.contextFields) fields.add(f);
+    if (policyConfig?.enforceOnWrite) for (const f of Object.keys(policyConfig.enforceOnWrite)) fields.add(f);
+    return Array.from(fields);
+}
+
+/**
  * Execute secure CRUD operation with RLS
  */
 async function executeSecureCrud(params: {
@@ -394,32 +447,32 @@ async function executeSecureCrud(params: {
 
     // READ operations
     if (method === 'GET') {
-        try {
-            // Apply RLS filter
-            let rlsWhere = globalRLS.applyReadFilter(model, context, query?.where);
+        // Pure RLS filter (also runs role/permission checks). Validate its columns before
+        // merging so a misconfigured policy fails closed instead of returning unscoped rows.
+        const rlsFilter = globalRLS.getReadFilter(model, context);
+        assertSecurityColumns(model, Object.keys(rlsFilter), context);
 
-            // Slug uniqueness must match DB scope (organization + app), not "only my rows".
-            // Posts use Hierarchical RLS (organizationId + userId + appId); strip userId for /unique only.
-            if (id === 'unique' && model === 'posts') {
-                const { userId: _omitUserId, ...orgAndApp } = rlsWhere as Record<string, unknown>;
-                rlsWhere = orgAndApp as Record<string, any>;
-            }
+        // Merge over caller-supplied where; RLS keys win (spread last) so scope can't be widened.
+        let rlsWhere: Record<string, any> = { ...(query?.where ?? {}), ...rlsFilter };
 
-            const crudRequest: CrudRequest = {
-                method: 'GET',
-                model,
-                id,
-                query: {
-                    ...query,
-                    where: rlsWhere,
-                },
-            };
-
-            return handleCrud(crudRequest);
-        } catch (rlsError) {
-            // Re-throw RLS errors so they're caught by outer try-catch
-            throw rlsError;
+        // Slug uniqueness must match DB scope (organization + app), not "only my rows".
+        // Posts use Hierarchical RLS (organizationId + userId + appId); strip userId for /unique only.
+        if (id === 'unique' && model === 'posts') {
+            const { userId: _omitUserId, ...orgAndApp } = rlsWhere;
+            rlsWhere = orgAndApp;
         }
+
+        const crudRequest: CrudRequest = {
+            method: 'GET',
+            model,
+            id,
+            query: {
+                ...query,
+                where: rlsWhere,
+            },
+        };
+
+        return handleCrud(crudRequest);
     }
 
     // CREATE operations
@@ -428,21 +481,18 @@ async function executeSecureCrud(params: {
             return { success: false, error: 'Missing request body', status: 400 };
         }
 
-        // Validate write and inject security context
+        // Validate write and inject security context (mutates body to inject tenant/owner ids)
         globalRLS.validateWrite(model, context, body, 'create');
 
-        const policyConfig = globalRLS.getPolicy(model);
-        const extraWritable = new Set<string>();
-        if (policyConfig?.policy?.field) extraWritable.add(policyConfig.policy.field);
-        if (policyConfig?.contextFields) {
-            for (const field of policyConfig.contextFields) extraWritable.add(field);
-        }
+        // Fail closed: a security field that isn't a real column can't be enforced by the DB.
+        const writableSecurityFields = securityWriteFields(model);
+        assertSecurityColumns(model, writableSecurityFields, context);
 
         const crudRequest: CrudRequest = {
             method: 'POST',
             model,
             body,
-            allowedWritableFields: extraWritable.size > 0 ? Array.from(extraWritable) : undefined,
+            allowedWritableFields: writableSecurityFields.length > 0 ? writableSecurityFields : undefined,
         };
 
         return handleCrud(crudRequest);
@@ -458,16 +508,16 @@ async function executeSecureCrud(params: {
             return { success: false, error: 'Missing request body', status: 400 };
         }
 
-        // First, verify the record exists and user has access
-        const rlsWhere = globalRLS.applyReadFilter(model, context);
-        const verifyRequest: CrudRequest = {
+        // First, verify the record exists and the caller has access to it (read-before-write).
+        const rlsFilter = globalRLS.getReadFilter(model, context);
+        assertSecurityColumns(model, Object.keys(rlsFilter), context);
+
+        const verifyResult = await handleCrud({
             method: 'GET',
             model,
             id,
-            query: { where: rlsWhere },
-        };
-
-        const verifyResult = await handleCrud(verifyRequest);
+            query: { where: rlsFilter },
+        });
         if (!verifyResult.success || !verifyResult.data) {
             return {
                 success: false,
@@ -479,19 +529,15 @@ async function executeSecureCrud(params: {
         // Validate write
         globalRLS.validateWrite(model, context, body, 'update');
 
-        const policyConfig = globalRLS.getPolicy(model);
-        const extraWritable = new Set<string>();
-        if (policyConfig?.policy?.field) extraWritable.add(policyConfig.policy.field);
-        if (policyConfig?.contextFields) {
-            for (const field of policyConfig.contextFields) extraWritable.add(field);
-        }
+        const writableSecurityFields = securityWriteFields(model);
+        assertSecurityColumns(model, writableSecurityFields, context);
 
         const crudRequest: CrudRequest = {
             method: method === 'PUT' ? 'PUT' : 'PATCH',
             model,
             id,
             body,
-            allowedWritableFields: extraWritable.size > 0 ? Array.from(extraWritable) : undefined,
+            allowedWritableFields: writableSecurityFields.length > 0 ? writableSecurityFields : undefined,
         };
 
         return handleCrud(crudRequest);
@@ -503,16 +549,16 @@ async function executeSecureCrud(params: {
             return { success: false, error: 'Missing record ID', status: 400 };
         }
 
-        // Verify access first
-        const rlsWhere = globalRLS.applyReadFilter(model, context);
-        const verifyRequest: CrudRequest = {
+        // Verify access first (read-before-write): you can't delete what you can't read.
+        const rlsFilter = globalRLS.getReadFilter(model, context);
+        assertSecurityColumns(model, Object.keys(rlsFilter), context);
+
+        const verifyResult = await handleCrud({
             method: 'GET',
             model,
             id,
-            query: { where: rlsWhere },
-        };
-
-        const verifyResult = await handleCrud(verifyRequest);
+            query: { where: rlsFilter },
+        });
         if (!verifyResult.success || !verifyResult.data) {
             return {
                 success: false,
@@ -537,9 +583,15 @@ async function executeSecureCrud(params: {
 }
 
 /**
- * Extract security context from request
+ * Build a SecurityContext from request headers (x-user-id, x-org-id, x-app-id,
+ * x-user-roles, x-user-permissions).
+ *
+ * ⚠️ SECURITY — TRUSTED INPUT ONLY. These headers are trivially spoofable by any client.
+ * Only use this when a trusted upstream (an authenticating gateway/proxy) sets these headers
+ * and strips any client-supplied copies. In application code, derive the context from a
+ * verified session or JWT and pass it to executeSecureCrudRequest / rlsMiddleware instead.
  */
-export function extractSecurityContext(request: Request, env?: any): SecurityContext {
+export function extractSecurityContext(request: Request): SecurityContext {
     // Extract from headers
     const userId = request.headers.get('x-user-id') || undefined;
     const organizationId = request.headers.get('x-org-id') || undefined;
@@ -572,13 +624,19 @@ export function extractSecurityContext(request: Request, env?: any): SecurityCon
 export async function rlsMiddleware(
     request: Request,
     env: any,
-    getContext?: (request: Request, env: any) => Promise<SecurityContext> | SecurityContext,
+    getContext: (request: Request, env: any) => Promise<SecurityContext> | SecurityContext,
 ): Promise<Response> {
+    if (typeof getContext !== 'function') {
+        // No safe default: deriving context from raw headers would be spoofable. Callers MUST
+        // pass an explicit resolver that reads from a verified session/JWT.
+        throw new Error(
+            'rlsMiddleware requires an explicit getContext(request, env) that derives the SecurityContext ' +
+                'from a TRUSTED source (verified session/JWT). Do not trust client-supplied headers.',
+        );
+    }
+
     const url = new URL(request.url);
+    const context = await getContext(request, env);
 
-    // Extract security context
-    const context = getContext ? await getContext(request, env) : extractSecurityContext(request, env);
-
-    // Execute secure CRUD
     return secureCrud({ request, url, context, env });
 }

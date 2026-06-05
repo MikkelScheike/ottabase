@@ -66,6 +66,25 @@ describe('RLSPolicies', () => {
             userId: 'u1',
         });
     });
+
+    it('OwnerOnly denies (returns null) when there is no user', () => {
+        expect(RLSPolicies.OwnerOnly().filter!({})).toBeNull();
+    });
+
+    it('Hierarchical denies (returns null) when there is no user', () => {
+        expect(RLSPolicies.Hierarchical(false).filter!({ organizationId: 'org-1' })).toBeNull();
+    });
+
+    it('Hierarchical denies when tenant missing and allowNullTenant is false', () => {
+        expect(RLSPolicies.Hierarchical(false).filter!({ userId: 'u1' })).toBeNull();
+    });
+
+    it('Hierarchical(true) allows a null tenant (organizationId → null, not undefined)', () => {
+        expect(RLSPolicies.Hierarchical(true).filter!({ userId: 'u1' })).toEqual({
+            organizationId: null,
+            userId: 'u1',
+        });
+    });
 });
 
 describe('SecurityContext', () => {
