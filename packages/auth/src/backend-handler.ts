@@ -174,6 +174,12 @@ export interface CreateAuthConfigOptions extends CredentialsAuthorizeOptions {
      * (e.g., RBAC) without overriding the core signOut event.
      */
     onSignOut?: (userId: string) => Promise<void> | void;
+
+    /**
+     * Called when a user signs in, after the first-user bootstrap. Use this for post-sign-in side
+     * effects such as activating pending email invites. Receives the user's id and email.
+     */
+    onSignIn?: (params: { userId: string; email?: string | null }) => Promise<void> | void;
 }
 
 /**
@@ -327,6 +333,12 @@ export function createAuthConfig(env: AuthEnv, options?: CreateAuthConfigOptions
                     }
 
                     await bootstrapFirstUser(env, user as any);
+
+                    try {
+                        await options?.onSignIn?.({ userId: String(user.id), email: user.email ?? null });
+                    } catch (error) {
+                        console.warn('onSignIn hook failed:', error);
+                    }
 
                     return true;
                 },

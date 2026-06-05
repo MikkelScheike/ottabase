@@ -1,7 +1,8 @@
 import { CreateAuthConfigOptions } from '@ottabase/auth/backend';
 import { invalidateCacheByPrefix } from '@ottabase/cf/kv-cache';
-import { SecurityContext } from '@ottabase/ottaorm';
-import { Account, OrganizationMember, VerificationToken } from '@ottabase/ottaorm/models';
+import { createD1Driver } from '@ottabase/db/drizzle-d1';
+import { registerConnection, SecurityContext } from '@ottabase/ottaorm';
+import { Account, OrganizationMember, UserGroup, UserGroupMember, VerificationToken } from '@ottabase/ottaorm/models';
 import { getOttabaseConfig } from '../../ottabase/config.loader';
 import type { CloudflareEnv } from '../cloudflare-env';
 import { resolveAppMailer } from './email-provider';
@@ -72,6 +73,21 @@ export function getAuthOptions(env: CloudflareEnv): CreateAuthConfigOptions {
     options.onSignOut = async (_userId: string) => {
         if (!env.OBCF_KV) return;
         await invalidateCacheByPrefix(env.OBCF_KV, 'rbac:');
+    };
+
+    // On sign-in, activate any pending email invites (org + group) for this user so an invitee who
+    // signs up is immediately a member. No-op until email invites exist.
+    options.onSignIn = async ({ userId, email }) => {
+        if (!env.OBCF_D1 || !email) return;
+        try {
+            registerConnection('default', createD1Driver(env.OBCF_D1));
+            await Promise.all([
+                OrganizationMember.activatePendingInvites(userId, email),
+                UserGroupMember.activatePendingInvites(userId, email),
+            ]);
+        } catch (error) {
+            console.warn('Failed to activate pending invites on sign-in:', error);
+        }
     };
 
     return options;
@@ -150,6 +166,18 @@ export async function getSecurityContext(
         organizationId = null;
     }
 
+    // Group IDs the user can access (active memberships + groups they created). Powers the
+    // membership-scoped RLS for user_groups / user_group_members, resolved against the final
+    // organizationId so it is scoped to the active org.
+    let memberGroupIds: string[] | undefined;
+    if (userId) {
+        try {
+            memberGroupIds = await UserGroup.groupIdsForUser(userId, organizationId ?? undefined);
+        } catch {
+            // Tables may not exist yet (before migrations) — leave undefined (RLS treats as unknown).
+        }
+    }
+
     return {
         userId,
         organizationId,
@@ -157,6 +185,7 @@ export async function getSecurityContext(
         roles,
         permissions,
         memberOrganizationIds,
+        memberGroupIds,
     };
 }
 
