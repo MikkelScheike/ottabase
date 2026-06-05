@@ -285,52 +285,35 @@ export class AuditLog extends BaseModel {
      * Get audit logs by user
      */
     static async getByUser(userId: string, limit?: number) {
-        const results = await this.where({ userId });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where({ userId }, { orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
      * Get audit logs by resource
      */
     static async getByResource(resourceType: string, resourceId: string, limit?: number) {
-        const results = await this.where({ resourceType, resourceId });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where({ resourceType, resourceId }, { orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
      * Get audit logs by action
      */
     static async getByAction(action: string, limit?: number) {
-        const results = await this.where({ action });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where({ action }, { orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
      * Get recent audit logs
      */
     static async getRecent(limit: number = 100) {
-        const logs = await this.all();
-        return logs.slice(0, limit);
+        return this.all({ orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
      * Get failed actions
      */
     static async getFailures(limit?: number) {
-        const results = await this.where({ status: 'failure' });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where({ status: 'failure' }, { orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
@@ -351,22 +334,14 @@ export class AuditLog extends BaseModel {
      * Get audit logs by organization (multi-tenant)
      */
     static async getByOrganization(organizationId: string, limit?: number) {
-        const results = await this.where({ organizationId });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where({ organizationId }, { orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
      * Get audit logs by user in organization (multi-tenant)
      */
     static async getByUserInOrganization(userId: string, organizationId: string, limit?: number) {
-        const results = await this.where({ userId, organizationId });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where({ userId, organizationId }, { orderBy: 'createdAt', orderDirection: 'desc', limit });
     }
 
     /**
@@ -378,10 +353,9 @@ export class AuditLog extends BaseModel {
         organizationId: string,
         limit?: number,
     ) {
-        const results = await this.where({ resourceType, resourceId, organizationId });
-        if (limit) {
-            return results.slice(0, limit);
-        }
-        return results;
+        return this.where(
+            { resourceType, resourceId, organizationId },
+            { orderBy: 'createdAt', orderDirection: 'desc', limit },
+        );
     }
 }

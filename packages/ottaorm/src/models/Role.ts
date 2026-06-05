@@ -190,8 +190,11 @@ export class Role extends BaseModel {
 
         if (userIds.length === 0) return [];
 
-        // Get users
-        return User.whereIn('id', userIds);
+        // Get users (wire through ordering options; whereIn doesn't support column selection)
+        return User.whereIn('id', userIds, {
+            orderBy: options?.orderBy,
+            orderDirection: options?.orderDirection,
+        });
     }
 
     /**

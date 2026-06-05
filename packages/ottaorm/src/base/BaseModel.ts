@@ -108,6 +108,19 @@ export class BaseModel extends AbstractBaseModel {
     }
 
     /**
+     * Whether a column exists on this model's table, addressed by its model
+     * property name (e.g. "organizationId", not the DB column "organization_id").
+     *
+     * The RLS layer uses this to FAIL CLOSED: `buildWhereConditions` silently
+     * drops `where` keys that aren't real columns, so an RLS filter referencing a
+     * mistyped/missing column would otherwise evaporate and run an unfiltered query.
+     */
+    static hasColumn(field: string): boolean {
+        const table = this.table as any;
+        return !!table && !!table[field];
+    }
+
+    /**
      * Get database driver for this model's connection
      * Uses the connection specified in static connection property
      */
@@ -452,7 +465,10 @@ export class BaseModel extends AbstractBaseModel {
             const column = (table as any)[key];
             if (!column) continue;
 
-            if (value === null) {
+            if (value === null || value === undefined) {
+                // Treat undefined like null → `IS NULL`. Never emit `eq(col, undefined)`, which
+                // the D1 driver cannot bind (throws → 500). `IS NULL` is restrictive, so a missing
+                // value can only narrow results — it can never widen scope or leak rows.
                 conditions.push(isNull(column));
                 continue;
             }
@@ -501,6 +517,7 @@ export class BaseModel extends AbstractBaseModel {
      */
     protected static prepareForDatabase(data: Record<string, any>): Record<string, any> {
         const prepared = { ...data };
+        const table = this.table as any;
 
         if (this.casts) {
             for (const [key, castType] of Object.entries(this.casts)) {
@@ -526,6 +543,20 @@ export class BaseModel extends AbstractBaseModel {
                         // Already a timestamp, leave as-is
                         continue;
                     }
+                    continue;
+                }
+
+                // For json/array casts, serialize objects/arrays to a JSON string so the value
+                // round-trips through a plain TEXT column (read side parses it back via casts).
+                // Drizzle `mode: 'json'` columns (dataType === 'json') serialize themselves —
+                // skip those to avoid double-encoding.
+                if (castType === 'json' || castType === 'array') {
+                    const column = table?.[key];
+                    const isJsonModeColumn = column?.dataType === 'json';
+                    if (!isJsonModeColumn && typeof value !== 'string') {
+                        prepared[key] = JSON.stringify(value);
+                    }
+                    continue;
                 }
             }
         }
@@ -847,7 +878,7 @@ export class BaseModel extends AbstractBaseModel {
             this.count(where, driver, includeTrashed),
         ]);
 
-        const totalPages = Math.ceil(total / perPage);
+        const totalPages = Math.max(1, Math.ceil(total / perPage));
 
         return {
             data,
@@ -1238,9 +1269,10 @@ export class BaseModel extends AbstractBaseModel {
         const driver = options?.driver || relatedModel.getDriver();
         const db = driver.getDb();
 
-        // Infer keys from model names if not provided
-        const foreignKey = options?.foreignKey || `${ModelClass.entity.toLowerCase()}Id`;
-        const otherKey = options?.otherKey || `${relatedModel.entity.toLowerCase()}Id`;
+        // Infer keys from model names if not provided. Entities are typically plural
+        // (e.g. "posts"), so singularize before appending "Id" → "postId" (not "postsId").
+        const foreignKey = options?.foreignKey || `${singularizeEntity(ModelClass.entity)}Id`;
+        const otherKey = options?.otherKey || `${singularizeEntity(relatedModel.entity)}Id`;
         const relatedKey = options?.relatedKey || relatedModel.primaryKey;
 
         // Get IDs from pivot table
@@ -1368,4 +1400,15 @@ export class BaseModel extends AbstractBaseModel {
 
         return results.length > 0 ? results[0] : null;
     }
+}
+
+/**
+ * Best-effort singularization of an entity name for inferring pivot/foreign keys.
+ * Handles the common English plural cases; pass explicit keys for anything irregular.
+ */
+function singularizeEntity(entity: string): string {
+    if (entity.endsWith('ies')) return entity.slice(0, -3) + 'y';
+    if (entity.endsWith('ses') || entity.endsWith('xes') || entity.endsWith('zes')) return entity.slice(0, -2);
+    if (entity.endsWith('s') && !entity.endsWith('ss')) return entity.slice(0, -1);
+    return entity;
 }

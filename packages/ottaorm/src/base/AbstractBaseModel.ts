@@ -445,10 +445,11 @@ export abstract class AbstractBaseModel {
 
         try {
             switch (castType) {
-                case 'number':
                 case 'integer':
-                    return parseInt(value);
+                    return parseInt(value, 10);
+                case 'number':
                 case 'float':
+                    // parseFloat (not parseInt) so decimal values survive the round-trip.
                     return parseFloat(value);
                 case 'string':
                     return String(value);
@@ -473,7 +474,20 @@ export abstract class AbstractBaseModel {
                     return typeof value === 'string' ? JSON.parse(value) : value;
                 case 'array':
                     if (Array.isArray(value)) return value;
-                    if (typeof value === 'string') return value.split(/\s*,\s*/);
+                    if (typeof value === 'string') {
+                        const trimmed = value.trim();
+                        if (trimmed === '') return [];
+                        // Prefer JSON (matches how arrays are serialized on write); fall back to CSV.
+                        if (trimmed.startsWith('[')) {
+                            try {
+                                const parsed = JSON.parse(trimmed);
+                                if (Array.isArray(parsed)) return parsed;
+                            } catch {
+                                // not valid JSON — treat as CSV below
+                            }
+                        }
+                        return trimmed.split(/\s*,\s*/);
+                    }
                     return [value];
                 default:
                     return value;

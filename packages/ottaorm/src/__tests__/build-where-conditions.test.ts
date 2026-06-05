@@ -88,4 +88,11 @@ describe('buildWhereConditions', () => {
         const conditions = TestableModel.testBuildWhere({ nonExistent: 'value' });
         expect(conditions).toHaveLength(0);
     });
+
+    it('should treat undefined like null → IS NULL (never eq(col, undefined), which crashes D1)', () => {
+        const actual = TestableModel.testBuildWhere({ name: undefined });
+        const expected = [isNull(testTable.name)];
+        expect(actual).toHaveLength(1);
+        expect(conditionSql(actual)).toBe(conditionSql(expected));
+    });
 });
