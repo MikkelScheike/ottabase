@@ -1,6 +1,7 @@
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { OrganizationSwitcher } from '@/components/OrganizationSwitcher';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { api } from '@/lib/api';
 import { useSession } from '@/lib/auth';
 import { i18nConfig } from '@/ottabase/config/i18n.config';
 import { organizationIdAtom } from '@/ottabase/state/appState';
@@ -12,8 +13,13 @@ function useOrganizationSelection() {
     const setOrganizationId = useSetAtom(organizationIdAtom);
 
     const setOrganization = (orgId: string) => {
+        // Apply locally for instant UI feedback...
         setCurrentOrgId(orgId);
         setOrganizationId(orgId);
+        // ...and persist server-side (membership-validated) so the choice survives across
+        // sessions and devices. Fire-and-forget: the local selection already applies, and the
+        // api client surfaces any error toast.
+        void api('/api/users/me', { method: 'PATCH', body: { activeOrganizationId: orgId } }).catch(() => {});
     };
 
     return { currentOrgId, setOrganization };

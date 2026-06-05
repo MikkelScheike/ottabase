@@ -4,7 +4,7 @@ import { userKey } from '@ottabase/cf/cache-keys';
 import { createD1Driver } from '@ottabase/db/drizzle-d1';
 import { sendTemplatedEmail } from '@ottabase/email';
 import { registerConnection } from '@ottabase/ottaorm';
-import { User, VerificationToken } from '@ottabase/ottaorm/models';
+import { OrganizationMember, User, VerificationToken } from '@ottabase/ottaorm/models';
 import { errorResponse } from '@ottabase/utils/http-errors';
 import { jsonResponse } from '@ottabase/utils/http-response';
 import { isEmail } from '@ottabase/utils/string';
@@ -467,7 +467,12 @@ export async function handleUserProfile(context: AuthRouteContext): Promise<Resp
     }
 
     if (request.method === 'PATCH') {
-        const body = await readJson<{ name?: string; image?: string | null; timezone?: string | null }>(request);
+        const body = await readJson<{
+            name?: string;
+            image?: string | null;
+            timezone?: string | null;
+            activeOrganizationId?: string | null;
+        }>(request);
 
         const updates: Record<string, any> = {};
         const fieldErrors: Record<string, string[]> = {};
@@ -497,6 +502,24 @@ export async function handleUserProfile(context: AuthRouteContext): Promise<Resp
         if (body.timezone !== undefined) {
             const timezone = typeof body.timezone === 'string' ? body.timezone.trim() : null;
             updates.timezone = timezone || null;
+        }
+
+        // Persist the user's active organization (cross-device). Membership is validated
+        // server-side so a client can only point at an org it actually belongs to.
+        if (body.activeOrganizationId !== undefined) {
+            const requested = body.activeOrganizationId;
+            if (requested === null || requested === '') {
+                updates.activeOrganizationId = null;
+            } else if (typeof requested === 'string') {
+                const accessible = await OrganizationMember.organizationIdsForUser(userId);
+                if (!accessible.includes(requested)) {
+                    fieldErrors.activeOrganizationId = ['You are not a member of that organization'];
+                } else {
+                    updates.activeOrganizationId = requested;
+                }
+            } else {
+                fieldErrors.activeOrganizationId = ['Invalid organization id'];
+            }
         }
 
         if (Object.keys(fieldErrors).length > 0) {

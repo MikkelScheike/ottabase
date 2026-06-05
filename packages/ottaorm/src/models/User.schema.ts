@@ -22,6 +22,9 @@ export const usersTable = sqliteTable('users', {
     referredById: text('referred_by_id'),
     // App identifier for multi-app database sharing (nullable, opt-in)
     appId: text('app_id'),
+    // The user's currently-selected organization (persisted across sessions/devices).
+    // This is a pointer only — membership is always re-validated server-side before use.
+    activeOrganizationId: text('active_organization_id'),
     createdAt: integer('created_at')
         .$defaultFn(() => Date.now())
         .notNull(),

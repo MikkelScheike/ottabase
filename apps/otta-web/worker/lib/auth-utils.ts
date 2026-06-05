@@ -1,7 +1,7 @@
 import { CreateAuthConfigOptions } from '@ottabase/auth/backend';
 import { invalidateCacheByPrefix } from '@ottabase/cf/kv-cache';
 import { SecurityContext } from '@ottabase/ottaorm';
-import { Account, Organization, OrganizationMember, VerificationToken } from '@ottabase/ottaorm/models';
+import { Account, OrganizationMember, VerificationToken } from '@ottabase/ottaorm/models';
 import { getOttabaseConfig } from '../../ottabase/config.loader';
 import type { CloudflareEnv } from '../cloudflare-env';
 import { resolveAppMailer } from './email-provider';
@@ -120,32 +120,34 @@ export async function getSecurityContext(
     const roles = session?.user?.roles as string[] | undefined;
     const permissions = session?.user?.permissions as string[] | undefined;
 
-    // Collect all organization IDs the user can access (owned + member)
+    // Collect all organization IDs the user can access (owned + active member).
+    // Always keep the resolved list — INCLUDING when it is empty. An empty array is a positive
+    // "this user belongs to zero organizations", which must fail closed below (and in the RLS
+    // engine). Collapsing it to `undefined` would be read as "membership unknown" and skip
+    // enforcement — letting a user with no memberships keep a caller-supplied org id.
     let memberOrganizationIds: string[] | undefined;
     if (userId) {
         try {
-            const orgIds = new Set<string>();
-
-            // Orgs where user is an active member
-            const memberships = await OrganizationMember.where({ userId, status: 'active' });
-            for (const m of memberships) {
-                const oid = m.get('organizationId') as string | undefined;
-                if (oid) orgIds.add(oid);
-            }
-
-            // Orgs owned by the user
-            const owned = await Organization.where({ ownerId: userId });
-            for (const o of owned) {
-                const oid = o.get('id') as string | undefined;
-                if (oid) orgIds.add(oid);
-            }
-
-            if (orgIds.size > 0) {
-                memberOrganizationIds = Array.from(orgIds);
-            }
+            memberOrganizationIds = await OrganizationMember.organizationIdsForUser(userId);
         } catch {
-            // If tables don't exist yet (e.g. before migrations), silently skip
+            // If tables don't exist yet (e.g. before migrations), leave undefined so membership
+            // is treated as unknown (no-op) rather than "no orgs" (deny everything).
         }
+    }
+
+    // Defense-in-depth: never honor an active org the user isn't actually a member of.
+    // The active org arrives via session/header/subdomain/query and is otherwise unverified,
+    // so this is what prevents an X-Org-Id (or stale session) value from granting cross-tenant
+    // access. (The ottaorm RLS engine also enforces this when memberOrganizationIds is passed.)
+    // `Array.isArray` (not a truthiness check) so a resolved-but-empty list still drops the org:
+    // a user with no memberships can never validate any active org.
+    if (
+        userId &&
+        organizationId &&
+        Array.isArray(memberOrganizationIds) &&
+        !memberOrganizationIds.includes(organizationId)
+    ) {
+        organizationId = null;
     }
 
     return {

@@ -42,7 +42,10 @@ export function useSession(options?: UseSessionOptions) {
         setGlobalIsAuthenticated(sessionData.isAuthenticated);
         setAppId(APP_ID);
 
-        const sessionOrgId = (sessionData.user as any)?.organizationId ?? null;
+        // Prefer the server-persisted active org (survives across devices), then the session's
+        // organizationId, then the locally-remembered value.
+        const sessionOrgId =
+            (sessionData.user as any)?.activeOrganizationId ?? (sessionData.user as any)?.organizationId ?? null;
         const storedOrgId = getStoredOrganizationId();
         const effectiveOrgId = sessionOrgId ?? (sessionData.isAuthenticated ? storedOrgId : null);
 
