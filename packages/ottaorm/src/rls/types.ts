@@ -14,6 +14,12 @@ export interface SecurityContext {
     permissions?: string[];
     /** Organization IDs where the user is an active member (populated upstream). */
     memberOrganizationIds?: string[];
+    /**
+     * User-group IDs the user can access (active memberships + groups they created). Populated
+     * upstream via `UserGroup.groupIdsForUser` and used by the membership-scoped `user_groups` /
+     * `user_group_members` RLS policies.
+     */
+    memberGroupIds?: string[];
 }
 
 export interface RLSPolicy {

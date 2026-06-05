@@ -853,6 +853,119 @@ await OrganizationMember.update(membership.id, { role: 'admin' });
 
 **Available Roles:** `owner`, `admin`, `member` **Available Statuses:** `active`, `invited`, `suspended`
 
+**Email-first invites.** A member is either a real user (`userId`) or a pending invite by email (`invitedEmail`, with
+`userId` null) — the same membership shape as `user_group_members`. Invites start `invited`; activate them when the
+person signs up:
+
+```typescript
+// Invite by email (no account yet) — joinedAt is stamped on activation, not now
+await OrganizationMember.addMember({
+    organizationId: org.id,
+    invitedEmail: 'teammate@example.com',
+    role: 'member',
+    status: 'invited',
+    invitedBy: 'user-123',
+});
+
+// On sign-up / sign-in, claim any pending invites matching this email
+await OrganizationMember.activatePendingInvites(user.id, user.email);
+
+// Accessible org ids for the security context (active memberships + owned orgs)
+const orgIds = await OrganizationMember.organizationIdsForUser(user.id);
+```
+
+### UserGroup Model (generic groups)
+
+`UserGroup` is a **reusable membership primitive**: a named group of users _within_ an organization (optionally scoped
+to one app). Instead of every feature re-implementing "members with roles and invites", an app entity attaches to a
+group via a `user_group_id` FK and inherits the whole member / role / invite machinery.
+
+```typescript
+// Your app entity owns one group for its membership:
+import { userGroupsTable } from '@ottabase/ottaorm';
+
+export const expenseGroupsTable = sqliteTable('expense_groups', {
+    id: text('id')
+        .primaryKey()
+        .$defaultFn(() => crypto.randomUUID()),
+    name: text('name').notNull(),
+    userGroupId: text('user_group_id')
+        .notNull()
+        .references(() => userGroupsTable.id, { onDelete: 'cascade' }),
+    // ...feature-specific columns
+});
+```
+
+**Roles** are free-form (apps choose the vocabulary; defaults to `member` — e.g. `manager`/`member` or
+`owner`/`admin`/`member`). **Statuses** match `OrganizationMember`: `invited` → `active` → `suspended`. A member is
+either an existing user (`userId`) **or** an email invite (`invitedEmail`, with `userId` null until they sign up).
+
+```typescript
+import { UserGroup, UserGroupMember } from '@ottabase/ottaorm';
+
+// Create a group (org-scoped, optional app scope)
+const group = await UserGroup.create({
+    name: 'Trip to Japan',
+    slug: 'trip-to-japan',
+    organizationId: org.id,
+    appId: 'tuskly',
+    createdBy: userId,
+});
+
+// Add an existing user as an active member
+await UserGroupMember.addMember({
+    groupId: group.id,
+    organizationId: org.id,
+    userId: 'user-456',
+    role: 'manager',
+    status: 'active',
+});
+
+// Invite someone by email (no account yet) — joinedAt is stamped on activation, not now
+await UserGroupMember.addMember({
+    groupId: group.id,
+    organizationId: org.id,
+    invitedEmail: 'friend@example.com',
+    role: 'member',
+    status: 'invited',
+    invitedBy: userId,
+});
+
+// Role / membership checks (active members only)
+await UserGroupMember.isMember(group.id, 'user-456'); // true
+await UserGroupMember.hasRole(group.id, 'user-456', 'manager'); // true
+
+// Members of a group (with basic user info), and all groups in an org
+await UserGroupMember.getGroupMembers(group.id);
+await UserGroup.forOrganization(org.id, { appId: 'tuskly' });
+```
+
+**Activate email invites on sign-in.** When an invited user signs up, flip their pending invites to active and link the
+account — call this from your auth flow (the org-level equivalent lives on `OrganizationMember`):
+
+```typescript
+// worker/lib/auth-utils.ts (on sign-in / sign-up)
+await UserGroupMember.activatePendingInvites(user.id, user.email);
+```
+
+**Membership-scoped RLS.** Unlike org-wide tenant models, `user_groups` and `user_group_members` are filtered to the
+groups a user actually belongs to. The policy reads `SecurityContext.memberGroupIds`, so resolve it where you build the
+context (alongside `memberOrganizationIds`):
+
+```typescript
+const context: SecurityContext = {
+    userId,
+    organizationId,
+    memberOrganizationIds: await OrganizationMember.organizationIdsForUser(userId),
+    // active memberships + groups the user created
+    memberGroupIds: await UserGroup.groupIdsForUser(userId, organizationId),
+};
+```
+
+With `memberGroupIds` set, secure CRUD returns only the caller's groups (and only members of those groups). If it is
+absent the policy falls back to groups the user **created**, so a creator never loses access. On writes the policy
+enforces org isolation only — _who_ may add or remove members (group-admin authorization) is the app's call.
+
 ### Multi-Tenant Setup
 
 ```typescript

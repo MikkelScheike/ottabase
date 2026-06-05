@@ -2,7 +2,7 @@
 // @ottabase/ottaorm - OrganizationMember model
 // ============================================================
 
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, isNull, or, sql } from 'drizzle-orm';
 import { BaseModel, type ModelFields, type PackageType } from '../base/BaseModel';
 import { organizationsTable } from './Organization.schema';
 import {
@@ -19,7 +19,7 @@ import { usersTable } from './User.schema';
 export class OrganizationMember extends BaseModel {
     static entity = 'organization_members';
     static table = organizationMembersTable;
-    static primaryKey = 'userId'; // Composite key, but we'll use userId as primary
+    static primaryKey = 'id';
     static connection = 'default';
     static packageName = '@ottabase/ottaorm';
     static packageType: PackageType = 'core';
@@ -34,15 +34,38 @@ export class OrganizationMember extends BaseModel {
         joinedAt: 'date' as const,
         invitedAt: 'date' as const,
         metadata: 'json' as const,
+        createdAt: 'date' as const,
+        updatedAt: 'date' as const,
     };
 
     protected static fields: ModelFields = {
-        userId: {
-            type: 'string',
+        id: {
+            type: 'id',
             primaryKey: true,
             editable: false,
             uiConfig: {
+                label: 'ID',
+            },
+            tableConfig: {
+                visible: true,
+            },
+        },
+        userId: {
+            type: 'string',
+            editable: true,
+            uiConfig: {
                 label: 'User ID',
+            },
+            tableConfig: {
+                visible: true,
+            },
+        },
+        invitedEmail: {
+            type: 'string',
+            editable: true,
+            searchable: true,
+            uiConfig: {
+                label: 'Invited Email',
             },
             tableConfig: {
                 visible: true,
@@ -157,11 +180,67 @@ export class OrganizationMember extends BaseModel {
             .insert(organizationMembersTable)
             .values({
                 ...data,
-                joinedAt: data.joinedAt || Date.now(),
+                invitedAt: data.invitedAt ?? Date.now(),
+                // Stamp joinedAt only when the row starts active; invites get it on activation.
+                joinedAt: (data.status ?? 'active') === 'active' ? (data.joinedAt ?? Date.now()) : data.joinedAt,
             })
             .returning();
 
         return member;
+    }
+
+    /**
+     * Find an existing membership row for a user OR a pending email invite in an organization.
+     * Use before adding to avoid duplicate invites/memberships.
+     */
+    static async findExistingInvite(params: {
+        organizationId: string;
+        userId?: string | null;
+        invitedEmail?: string | null;
+    }): Promise<OrganizationMemberType | undefined> {
+        const db = this.getDriver().getDb();
+        const identities = [];
+        if (params.userId) identities.push(eq(organizationMembersTable.userId, params.userId));
+        if (params.invitedEmail) identities.push(eq(organizationMembersTable.invitedEmail, params.invitedEmail));
+        if (identities.length === 0) return undefined;
+
+        const [member] = await db
+            .select()
+            .from(organizationMembersTable)
+            .where(and(eq(organizationMembersTable.organizationId, params.organizationId), or(...identities)!))
+            .limit(1);
+        return member;
+    }
+
+    /**
+     * Activate a user's pending email invites: when a user signs up / signs in, flip their
+     * `invited` org rows (matched by email and not yet linked to a user) to `active`, link the
+     * userId, and stamp `joinedAt`. Returns the number activated. Call from your auth flow — the
+     * group-level equivalent lives on `UserGroupMember`.
+     */
+    static async activatePendingInvites(userId: string, email: string): Promise<number> {
+        if (!userId || !email) return 0;
+        const normalizedEmail = email.trim().toLowerCase();
+        const db = this.getDriver().getDb();
+        const now = Date.now();
+        const rows = await db
+            .update(organizationMembersTable)
+            .set({
+                status: 'active',
+                userId,
+                joinedAt: sql`COALESCE(${organizationMembersTable.joinedAt}, ${now})`,
+                updatedAt: now,
+            })
+            .where(
+                and(
+                    // Case-insensitive: invited emails may be stored with mixed case.
+                    sql`lower(${organizationMembersTable.invitedEmail}) = ${normalizedEmail}`,
+                    eq(organizationMembersTable.status, 'invited'),
+                    isNull(organizationMembersTable.userId),
+                ),
+            )
+            .returning({ id: organizationMembersTable.id });
+        return rows.length;
     }
 
     /**
@@ -267,7 +346,9 @@ export class OrganizationMember extends BaseModel {
 
         let query = db
             .select({
+                id: organizationMembersTable.id,
                 userId: organizationMembersTable.userId,
+                invitedEmail: organizationMembersTable.invitedEmail,
                 organizationId: organizationMembersTable.organizationId,
                 role: organizationMembersTable.role,
                 status: organizationMembersTable.status,
@@ -275,6 +356,8 @@ export class OrganizationMember extends BaseModel {
                 invitedAt: organizationMembersTable.invitedAt,
                 joinedAt: organizationMembersTable.joinedAt,
                 metadata: organizationMembersTable.metadata,
+                createdAt: organizationMembersTable.createdAt,
+                updatedAt: organizationMembersTable.updatedAt,
                 user: {
                     id: usersTable.id,
                     name: usersTable.name,
@@ -375,7 +458,9 @@ export class OrganizationMember extends BaseModel {
 
         return db
             .select({
+                id: organizationMembersTable.id,
                 userId: organizationMembersTable.userId,
+                invitedEmail: organizationMembersTable.invitedEmail,
                 organizationId: organizationMembersTable.organizationId,
                 role: organizationMembersTable.role,
                 status: organizationMembersTable.status,
@@ -383,6 +468,8 @@ export class OrganizationMember extends BaseModel {
                 invitedAt: organizationMembersTable.invitedAt,
                 joinedAt: organizationMembersTable.joinedAt,
                 metadata: organizationMembersTable.metadata,
+                createdAt: organizationMembersTable.createdAt,
+                updatedAt: organizationMembersTable.updatedAt,
                 organization: {
                     id: organizationsTable.id,
                     name: organizationsTable.name,

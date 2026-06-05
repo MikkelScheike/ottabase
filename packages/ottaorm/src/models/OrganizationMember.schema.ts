@@ -2,34 +2,50 @@
 // @ottabase/ottaorm - OrganizationMember junction table schema
 // ============================================================
 
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import { organizationsTable } from './Organization.schema';
 import { usersTable } from './User.schema';
 
 /**
- * OrganizationMember junction table
- * Links users to organizations with membership role
+ * OrganizationMember junction table — a user's (or a pending email invite's) membership in an
+ * organization. Shares the membership shape with `user_group_members`: a single `id` primary key,
+ * a `status` lifecycle (`active` / `invited` / `suspended`), and email-first invites (`user_id` is
+ * null for a pending `invited_email` until the invitee signs up and the invite is activated).
  */
 export const organizationMembersTable = sqliteTable(
     'organization_members',
     {
-        userId: text('user_id')
-            .notNull()
-            .references(() => usersTable.id, { onDelete: 'cascade' }),
+        id: text('id')
+            .primaryKey()
+            .$defaultFn(() => crypto.randomUUID()),
         organizationId: text('organization_id')
             .notNull()
             .references(() => organizationsTable.id, { onDelete: 'cascade' }),
+        // Null for a pending email invite until the invitee signs up.
+        userId: text('user_id').references(() => usersTable.id, { onDelete: 'cascade' }),
+        invitedEmail: text('invited_email'),
         role: text('role').notNull().default('member'), // owner, admin, member
         status: text('status').notNull().default('active'), // active, invited, suspended
         invitedBy: text('invited_by'),
         invitedAt: integer('invited_at'),
-        joinedAt: integer('joined_at')
+        // Stamped on activation (when status becomes active), so it is null for pending invites.
+        joinedAt: integer('joined_at'),
+        metadata: text('metadata', { mode: 'json' }).$type<Record<string, any>>(),
+        createdAt: integer('created_at')
             .$defaultFn(() => Date.now())
             .notNull(),
-        metadata: text('metadata', { mode: 'json' }).$type<Record<string, any>>(),
+        updatedAt: integer('updated_at')
+            .$defaultFn(() => Date.now())
+            .$onUpdateFn(() => Date.now())
+            .notNull(),
     },
-    (table) => ({
-        pk: primaryKey({ columns: [table.userId, table.organizationId] }),
+    (t) => ({
+        // One membership per user per org, and one pending invite per email per org. (SQLite treats
+        // the NULL "other identity" column as distinct, so user rows and invite rows never clash.)
+        memberUserUnique: uniqueIndex('organization_members_org_user_unique').on(t.organizationId, t.userId),
+        memberEmailUnique: uniqueIndex('organization_members_org_email_unique').on(t.organizationId, t.invitedEmail),
+        userIdx: index('organization_members_user_idx').on(t.userId),
+        orgIdx: index('organization_members_org_idx').on(t.organizationId),
     }),
 );
 

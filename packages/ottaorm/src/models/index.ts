@@ -34,6 +34,18 @@ export { Permission, permissionsTable, type NewPermissionType, type PermissionTy
 export { Role, rolesTable, type NewRoleType, type RoleType } from './Role';
 export { UserRole, userRolesTable, type NewUserRoleType, type UserRoleType } from './UserRole';
 
+// User groups (generic membership primitive — tenant + app scoped, membership-scoped RLS)
+export {
+    UserGroup,
+    UserGroupMember,
+    userGroupMembersTable,
+    userGroupsTable,
+    type NewUserGroupMemberType,
+    type NewUserGroupType,
+    type UserGroupMemberType,
+    type UserGroupType,
+} from './UserGroup';
+
 // Audit logging (with tenant + app scoping)
 export { AuditLog, auditLogsTable, type AuditLogType, type NewAuditLogType } from './AuditLog';
 

@@ -89,10 +89,10 @@ export async function createPersonalOrganizationIfMissing(
             .run();
 
         await env.OBCF_D1.prepare(
-            `INSERT INTO organization_members (user_id, organization_id, role, status, joined_at)
-             VALUES (?, ?, 'owner', 'active', ?)`,
+            `INSERT INTO organization_members (id, user_id, organization_id, role, status, joined_at, created_at, updated_at)
+             VALUES (?, ?, ?, 'owner', 'active', ?, ?, ?)`,
         )
-            .bind(userId, organizationId, now)
+            .bind(crypto.randomUUID(), userId, organizationId, now, now, now)
             .run();
 
         return organizationId;

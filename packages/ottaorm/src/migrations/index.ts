@@ -546,23 +546,32 @@ export const coreMigrations: Migration[] = [
             await db.execute(`CREATE INDEX IF NOT EXISTS idx_organizations_plan ON organizations(plan)`);
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS organization_members (
-                    user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    id TEXT PRIMARY KEY,
                     organization_id TEXT NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+                    user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+                    invited_email TEXT,
                     role TEXT NOT NULL DEFAULT 'member',
                     status TEXT NOT NULL DEFAULT 'active',
                     invited_by TEXT,
                     invited_at INTEGER,
-                    joined_at INTEGER NOT NULL,
+                    joined_at INTEGER,
                     metadata TEXT,
-                    PRIMARY KEY (user_id, organization_id)
+                    created_at INTEGER NOT NULL,
+                    updated_at INTEGER NOT NULL
                 )
             `);
-            await db.execute(`CREATE INDEX IF NOT EXISTS idx_org_members_user_id ON organization_members(user_id)`);
             await db.execute(
-                `CREATE INDEX IF NOT EXISTS idx_org_members_organization_id ON organization_members(organization_id)`,
+                `CREATE UNIQUE INDEX IF NOT EXISTS organization_members_org_user_unique ON organization_members(organization_id, user_id)`,
             );
-            await db.execute(`CREATE INDEX IF NOT EXISTS idx_org_members_role ON organization_members(role)`);
-            await db.execute(`CREATE INDEX IF NOT EXISTS idx_org_members_status ON organization_members(status)`);
+            await db.execute(
+                `CREATE UNIQUE INDEX IF NOT EXISTS organization_members_org_email_unique ON organization_members(organization_id, invited_email)`,
+            );
+            await db.execute(
+                `CREATE INDEX IF NOT EXISTS organization_members_user_idx ON organization_members(user_id)`,
+            );
+            await db.execute(
+                `CREATE INDEX IF NOT EXISTS organization_members_org_idx ON organization_members(organization_id)`,
+            );
             await db.execute(`
                 CREATE TABLE IF NOT EXISTS user_roles_new (
                     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,

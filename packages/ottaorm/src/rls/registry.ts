@@ -51,6 +51,46 @@ export const MODEL_POLICIES: ModelRLSConfig[] = [
         auditEnabled: true,
     },
 
+    // User groups: membership-scoped. A user sees the groups they belong to (resolved upstream into
+    // SecurityContext.memberGroupIds), falling back to groups they created when that set isn't
+    // available — mirroring the organizations policy.
+    {
+        model: 'user_groups',
+        policy: {
+            level: 'custom',
+            filter: (context) => {
+                if (!context.userId) return null;
+                if (context.memberGroupIds && context.memberGroupIds.length > 0) {
+                    return { id: context.memberGroupIds };
+                }
+                return { createdBy: context.userId };
+            },
+        },
+        // Pin the creator on create (block forging someone else's createdBy); contextFields keeps it
+        // org-isolated on writes.
+        enforceOnWrite: { createdBy: 'userId' },
+        contextFields: ['organizationId'],
+        auditEnabled: true,
+    },
+
+    // Group membership rows: a user sees members of the groups they belong to, else only their own
+    // rows. Org isolation is enforced on writes; who may add/remove members is the app's call.
+    {
+        model: 'user_group_members',
+        policy: {
+            level: 'custom',
+            filter: (context) => {
+                if (!context.userId) return null;
+                if (context.memberGroupIds && context.memberGroupIds.length > 0) {
+                    return { groupId: context.memberGroupIds };
+                }
+                return { userId: context.userId };
+            },
+        },
+        contextFields: ['organizationId'],
+        auditEnabled: true,
+    },
+
     {
         model: 'roles',
         policy: RLSPolicies.TenantScoped(true), // System roles have null orgId

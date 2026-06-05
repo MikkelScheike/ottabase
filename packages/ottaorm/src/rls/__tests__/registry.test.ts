@@ -24,6 +24,8 @@ describe('RLS Registry', () => {
             expect(modelNames).toContain('users');
             expect(modelNames).toContain('posts');
             expect(modelNames).toContain('audit_logs');
+            expect(modelNames).toContain('user_groups');
+            expect(modelNames).toContain('user_group_members');
         });
     });
 
@@ -60,6 +62,51 @@ describe('RLS Registry', () => {
                 memberOrganizationIds: ['org-only'],
             };
             expect(filter(ctx)).toEqual({ id: ['org-only'] });
+        });
+    });
+
+    describe('user_groups policy filter (membership-scoped)', () => {
+        const config = MODEL_POLICIES.find((p) => p.model === 'user_groups')!;
+        const filter = config.policy.filter!;
+
+        it('denies (null) when there is no user', () => {
+            expect(filter({})).toBeNull();
+        });
+
+        it('scopes to the groups the user belongs to', () => {
+            const ctx: SecurityContext = { userId: 'u1', memberGroupIds: ['g1', 'g2'] };
+            expect(filter(ctx)).toEqual({ id: ['g1', 'g2'] });
+        });
+
+        it('falls back to created groups when memberGroupIds is absent', () => {
+            expect(filter({ userId: 'u1' })).toEqual({ createdBy: 'u1' });
+        });
+
+        it('falls back to created groups when memberGroupIds is empty', () => {
+            expect(filter({ userId: 'u1', memberGroupIds: [] })).toEqual({ createdBy: 'u1' });
+        });
+
+        it('pins the creator and stays org-isolated on writes', () => {
+            expect(config.enforceOnWrite).toEqual({ createdBy: 'userId' });
+            expect(config.contextFields).toEqual(['organizationId']);
+        });
+    });
+
+    describe('user_group_members policy filter (membership-scoped)', () => {
+        const config = MODEL_POLICIES.find((p) => p.model === 'user_group_members')!;
+        const filter = config.policy.filter!;
+
+        it('denies (null) when there is no user', () => {
+            expect(filter({})).toBeNull();
+        });
+
+        it('scopes to members of the groups the user belongs to', () => {
+            const ctx: SecurityContext = { userId: 'u1', memberGroupIds: ['g1'] };
+            expect(filter(ctx)).toEqual({ groupId: ['g1'] });
+        });
+
+        it('falls back to the user own membership rows when memberGroupIds is absent', () => {
+            expect(filter({ userId: 'u1' })).toEqual({ userId: 'u1' });
         });
     });
 
