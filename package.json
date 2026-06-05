@@ -33,6 +33,10 @@
         "apps/*",
         "packages/*"
     ],
+    "ottabase": {
+        "//": "Default app the cf:* scripts target in this multi-app repo (override per-run with --app=<name> or OTTABASE_CF_APP).",
+        "cfApp": "otta-web"
+    },
     "bin": {
         "otta": "packages/cli/bin/otta.mjs"
     },

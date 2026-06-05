@@ -1,5 +1,6 @@
 import checkbox from '@inquirer/checkbox';
 import { execSync } from 'child_process';
+import { escapeRegExp, resolveCfApp, type CfResourceNames } from './cf-app';
 
 const GREEN = '\x1b[32m';
 const YELLOW = '\x1b[33m';
@@ -64,17 +65,21 @@ function isInteractive(): boolean {
     return process.stdin.isTTY === true;
 }
 
-async function selectResources(force: boolean): Promise<ResourceId[]> {
+async function selectResources(force: boolean, res: CfResourceNames): Promise<ResourceId[]> {
     if (force || !isInteractive()) {
         log('Force/non-interactive mode: selecting all resources.', YELLOW);
         return [...RESOURCE_IDS];
     }
 
     const choices = [
-        { name: 'D1 Database (ottabase-db)', value: 'd1' as ResourceId, checked: true },
-        { name: 'KV Namespaces (OBCF_KV + OBCF_KV_PREVIEW)', value: 'kv' as ResourceId, checked: true },
-        { name: 'R2 Buckets (ottabase-bucket + ottabase-bucket-preview)', value: 'r2' as ResourceId, checked: true },
-        { name: 'Queue (ottabase-queue + ottabase-queue-preview)', value: 'queue' as ResourceId, checked: true },
+        { name: `D1 Database (${res.d1.name} + ${res.d1.previewName})`, value: 'd1' as ResourceId, checked: true },
+        {
+            name: `KV namespaces (${res.kv.title} + ${res.kv.previewTitle}; binding stays ${res.kv.binding})`,
+            value: 'kv' as ResourceId,
+            checked: true,
+        },
+        { name: `R2 Buckets (${res.r2.name} + ${res.r2.previewName})`, value: 'r2' as ResourceId, checked: true },
+        { name: `Queue (${res.queue.name} + ${res.queue.previewName})`, value: 'queue' as ResourceId, checked: true },
     ];
 
     const selected = await checkbox({
@@ -105,8 +110,12 @@ async function main() {
     log(`${BOLD}cf:setup - Cloudflare Resource Creation${NC}`);
     log('', NC);
 
+    // Resolve the app + its resource names from wrangler.jsonc (single source of truth).
+    const { appName, packageName, wranglerCmd, resources: res } = resolveCfApp();
+    log(`App: ${appName} (${packageName})`, NC);
+    log('', NC);
+
     // Check wrangler and auth first (fail fast before any prompts)
-    const wranglerCmd = 'pnpm --filter @ottabase/otta-web exec wrangler';
     try {
         runCommand(`${wranglerCmd} --version`);
     } catch (e) {
@@ -124,7 +133,7 @@ async function main() {
     log('', NC);
 
     // Interactive resource selection
-    const resources = await selectResources(force);
+    const resources = await selectResources(force, res);
     log('', NC);
     log(`Creating: ${resources.join(', ')}`, YELLOW);
     log('', NC);
@@ -136,17 +145,17 @@ async function main() {
 
     // 1. D1 Database (Wrangler v4+: d1 create/info --json removed, use d1 list --json or parse create output)
     if (resources.includes('d1')) {
-        log("Setting up D1 Database 'ottabase-db'...", YELLOW);
+        log(`Setting up D1 Database '${res.d1.name}'...`, YELLOW);
         try {
             const d1ListOutput = runCommand(`${wranglerCmd} d1 list --json`, true);
             const existing = d1ListOutput
-                ? extractJson<{ uuid: string; name: string }[]>(d1ListOutput).find((db) => db.name === 'ottabase-db')
+                ? extractJson<{ uuid: string; name: string }[]>(d1ListOutput).find((db) => db.name === res.d1.name)
                 : null;
             if (existing) {
                 d1Id = existing.uuid;
                 log(`Database already exists. ID: ${d1Id}`, GREEN);
             } else {
-                const createOutput = runCommand(`${wranglerCmd} d1 create ottabase-db`);
+                const createOutput = runCommand(`${wranglerCmd} d1 create ${res.d1.name}`);
                 d1Id = parseD1CreateOutput(createOutput);
                 log(`Created D1 Database. ID: ${d1Id}`, GREEN);
             }
@@ -154,20 +163,20 @@ async function main() {
             log(`Error setting up D1 Database: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
 
-        // D1 Preview Database (for PR preview deployments - isolated from production)
-        log("Setting up D1 Preview Database 'ottabase-db-preview'...", YELLOW);
+        // D1 Preview Database (isolated DB for `wrangler dev --remote` / PR preview deployments)
+        log(`Setting up D1 Preview Database '${res.d1.previewName}'...`, YELLOW);
         try {
             const d1ListOutput = runCommand(`${wranglerCmd} d1 list --json`, true);
             const existing = d1ListOutput
                 ? extractJson<{ uuid: string; name: string }[]>(d1ListOutput).find(
-                      (db) => db.name === 'ottabase-db-preview',
+                      (db) => db.name === res.d1.previewName,
                   )
                 : null;
             if (existing) {
                 d1PreviewId = existing.uuid;
                 log(`Preview Database already exists. ID: ${d1PreviewId}`, GREEN);
             } else {
-                const createOutput = runCommand(`${wranglerCmd} d1 create ottabase-db-preview`);
+                const createOutput = runCommand(`${wranglerCmd} d1 create ${res.d1.previewName}`);
                 d1PreviewId = parseD1CreateOutput(createOutput);
                 log(`Created D1 Preview Database. ID: ${d1PreviewId}`, GREEN);
             }
@@ -183,103 +192,110 @@ async function main() {
     };
 
     if (resources.includes('kv')) {
-        log("Setting up KV Namespace 'OBCF_KV'...", YELLOW);
+        log(`Setting up KV namespace '${res.kv.title}' (binding ${res.kv.binding})...`, YELLOW);
         try {
             let kvList = getKvList();
-            let existingKv = kvList.find((ns) => ns.title === 'OBCF_KV');
+            let existingKv = kvList.find((ns) => ns.title === res.kv.title);
             if (existingKv) {
                 kvId = existingKv.id;
-                log(`KV Namespace already exists. ID: ${kvId}`, GREEN);
+                log(`KV namespace already exists. ID: ${kvId}`, GREEN);
             } else {
                 let createErr: unknown;
                 try {
-                    const createOutput = runCommand(`${wranglerCmd} kv namespace create OBCF_KV`);
+                    const createOutput = runCommand(`${wranglerCmd} kv namespace create ${res.kv.title}`);
                     kvId = parseKvCreateOutput(createOutput);
-                    log(`Created KV Namespace. ID: ${kvId}`, GREEN);
+                    log(`Created KV namespace. ID: ${kvId}`, GREEN);
                 } catch (e) {
                     createErr = e;
-                    // Create failed (e.g. already exists) – re-fetch list
+                    // Create failed (e.g. already exists) - re-fetch list
                     kvList = getKvList();
-                    existingKv = kvList.find((ns) => ns.title === 'OBCF_KV');
+                    existingKv = kvList.find((ns) => ns.title === res.kv.title);
                     if (existingKv) {
                         kvId = existingKv.id;
-                        log(`KV Namespace already exists. ID: ${kvId}`, GREEN);
+                        log(`KV namespace already exists. ID: ${kvId}`, GREEN);
                     } else throw createErr;
                 }
             }
         } catch (e) {
-            log(`Error setting up KV Namespace: ${e instanceof Error ? e.message : String(e)}`, RED);
+            log(`Error setting up KV namespace: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
 
-        log("Setting up KV Preview Namespace 'OBCF_KV_PREVIEW'...", YELLOW);
+        log(`Setting up KV preview namespace '${res.kv.previewTitle}'...`, YELLOW);
         try {
             let kvList = getKvList();
-            let existingKvPreview = kvList.find((ns) => ns.title === 'OBCF_KV_preview');
+            let existingKvPreview = kvList.find((ns) => ns.title === res.kv.previewTitle);
             if (existingKvPreview) {
                 kvPreviewId = existingKvPreview.id;
-                log(`KV Preview already exists. ID: ${kvPreviewId}`, GREEN);
+                log(`KV preview namespace already exists. ID: ${kvPreviewId}`, GREEN);
             } else {
                 let createErr: unknown;
                 try {
-                    const createOutput = runCommand(`${wranglerCmd} kv namespace create OBCF_KV --preview`);
+                    const createOutput = runCommand(`${wranglerCmd} kv namespace create ${res.kv.title} --preview`);
                     kvPreviewId = parseKvCreateOutput(createOutput);
-                    log(`Created KV Preview. ID: ${kvPreviewId}`, GREEN);
+                    log(`Created KV preview namespace. ID: ${kvPreviewId}`, GREEN);
                 } catch (e) {
                     createErr = e;
                     kvList = getKvList();
-                    existingKvPreview = kvList.find((ns) => ns.title === 'OBCF_KV_preview');
+                    existingKvPreview = kvList.find((ns) => ns.title === res.kv.previewTitle);
                     if (existingKvPreview) {
                         kvPreviewId = existingKvPreview.id;
-                        log(`KV Preview already exists. ID: ${kvPreviewId}`, GREEN);
+                        log(`KV preview namespace already exists. ID: ${kvPreviewId}`, GREEN);
                     } else throw createErr;
                 }
             }
         } catch (e) {
-            log(`Error setting up KV Preview: ${e instanceof Error ? e.message : String(e)}`, RED);
+            log(`Error setting up KV preview namespace: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
     }
 
     // 3. R2 Buckets (check list first to avoid redundant create)
     if (resources.includes('r2')) {
-        log("Setting up R2 Bucket 'ottabase-bucket'...", YELLOW);
+        // `(?!-)` so the prod bucket check doesn't match the "<name>-preview" entry.
+        const r2Exists = new RegExp(`name:\\s*${escapeRegExp(res.r2.name)}(?!-)`);
+        const r2PreviewExists = new RegExp(`name:\\s*${escapeRegExp(res.r2.previewName)}`);
+
+        log(`Setting up R2 Bucket '${res.r2.name}'...`, YELLOW);
         try {
             const r2List = runCommand(`${wranglerCmd} r2 bucket list`, true);
-            if (r2List && /name:\s*ottabase-bucket(?!-)/.test(r2List)) {
+            if (r2List && r2Exists.test(r2List)) {
                 log('R2 Bucket already exists.', GREEN);
             } else {
-                runCommand(`${wranglerCmd} r2 bucket create ottabase-bucket`);
+                runCommand(`${wranglerCmd} r2 bucket create ${res.r2.name}`);
                 log('R2 Bucket created.', GREEN);
             }
         } catch (e) {
             log(`Error setting up R2 Bucket: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
 
-        log("Setting up R2 Preview Bucket 'ottabase-bucket-preview'...", YELLOW);
+        log(`Setting up R2 preview bucket '${res.r2.previewName}' (for \`wrangler dev --remote\`)...`, YELLOW);
         try {
             const r2List = runCommand(`${wranglerCmd} r2 bucket list`, true);
-            if (r2List && /name:\s*ottabase-bucket-preview/.test(r2List)) {
-                log('R2 Preview Bucket already exists.', GREEN);
+            if (r2List && r2PreviewExists.test(r2List)) {
+                log('R2 preview bucket already exists.', GREEN);
             } else {
-                runCommand(`${wranglerCmd} r2 bucket create ottabase-bucket-preview`);
-                log('R2 Preview Bucket created.', GREEN);
+                runCommand(`${wranglerCmd} r2 bucket create ${res.r2.previewName}`);
+                log('R2 preview bucket created.', GREEN);
             }
         } catch (e) {
-            log(`Error setting up R2 Preview Bucket: ${e instanceof Error ? e.message : String(e)}`, RED);
+            log(`Error setting up R2 preview bucket: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
     }
 
     // 4. Queue (check list first; fallback: create fails with "already taken" = exists)
     if (resources.includes('queue')) {
-        log("Setting up Queue 'ottabase-queue'...", YELLOW);
+        const queueExists = new RegExp(`[|\\u2502]\\s*${escapeRegExp(res.queue.name)}\\s*[|\\u2502]`);
+        const queuePreviewExists = new RegExp(`[|\\u2502]\\s*${escapeRegExp(res.queue.previewName)}\\s*[|\\u2502]`);
+
+        log(`Setting up Queue '${res.queue.name}'...`, YELLOW);
         try {
             const queueList = runCommand(`${wranglerCmd} queues list`, true);
-            const existsInList = queueList && /[|\u2502]\s*ottabase-queue\s*[|\u2502]/.test(queueList);
+            const existsInList = queueList && queueExists.test(queueList);
             if (existsInList) {
                 log('Queue already exists.', GREEN);
             } else {
                 let createErr: unknown;
                 try {
-                    runCommand(`${wranglerCmd} queues create ottabase-queue`);
+                    runCommand(`${wranglerCmd} queues create ${res.queue.name}`);
                     log('Queue created.', GREEN);
                 } catch (e) {
                     createErr = e;
@@ -293,16 +309,16 @@ async function main() {
             log(`Error setting up Queue: ${e instanceof Error ? e.message : String(e)}`, RED);
         }
 
-        log("Setting up Queue 'ottabase-queue-preview' (for PR previews)...", YELLOW);
+        log(`Setting up Queue '${res.queue.previewName}' (for PR previews)...`, YELLOW);
         try {
             const queueList = runCommand(`${wranglerCmd} queues list`, true);
-            const existsPreview = queueList && /[|\u2502]\s*ottabase-queue-preview\s*[|\u2502]/.test(queueList);
+            const existsPreview = queueList && queuePreviewExists.test(queueList);
             if (existsPreview) {
                 log('Preview queue already exists.', GREEN);
             } else {
                 let createErr: unknown;
                 try {
-                    runCommand(`${wranglerCmd} queues create ottabase-queue-preview`);
+                    runCommand(`${wranglerCmd} queues create ${res.queue.previewName}`);
                     log('Preview queue created.', GREEN);
                 } catch (e) {
                     createErr = e;
@@ -324,17 +340,17 @@ async function main() {
     log('  - For /analytics page, set `CLOUDFLARE_ACCOUNT_ID` (vars) and', NC);
     log('    `CLOUDFLARE_ANALYTICS_API_TOKEN` (secret) with `Account Analytics` Read permission.', NC);
 
-    // Output resource IDs for GitHub Secrets (IMPORTANT: `wrangler.jsonc` is a template – do not modify; add to GitHub Settings → Secrets)
+    // Output resource IDs for GitHub Secrets (secret names come from wrangler.jsonc env.* placeholders)
     log('', NC);
     log('Setup Complete!', GREEN);
     log('', NC);
     log('Production (GitHub Secrets for main deploy):', YELLOW);
-    if (d1Id) log(`  D1_DATABASE_ID=${d1Id}`);
-    if (kvId) log(`  KV_NAMESPACE_ID=${kvId}`);
+    if (d1Id) log(`  ${res.secrets.d1Id}=${d1Id}`);
+    if (kvId) log(`  ${res.secrets.kvId}=${kvId}`);
     log('', NC);
     log('Preview (GitHub Secrets for PR preview deploy):', YELLOW);
-    if (d1PreviewId) log(`  D1_PREVIEW_DATABASE_ID=${d1PreviewId}`);
-    if (kvPreviewId) log(`  KV_PREVIEW_NAMESPACE_ID=${kvPreviewId}`);
+    if (d1PreviewId) log(`  ${res.secrets.d1PreviewId}=${d1PreviewId}`);
+    if (kvPreviewId) log(`  ${res.secrets.kvPreviewId}=${kvPreviewId}`);
 
     // Regenerate cloudflare-env.d.ts so TypeScript types reflect the new/updated bindings
     log('', NC);
@@ -344,7 +360,7 @@ async function main() {
         log('cloudflare-env.d.ts updated.', GREEN);
     } catch (e) {
         log(`Warning: could not generate cloudflare-env.d.ts: ${e instanceof Error ? e.message : String(e)}`, YELLOW);
-        log('Run manually: cd apps/otta-web && npx wrangler types', YELLOW);
+        log(`Run manually: cd apps/${appName} && npx wrangler types`, YELLOW);
     }
 }
 

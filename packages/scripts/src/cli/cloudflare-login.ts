@@ -1,7 +1,9 @@
 import { execSync } from 'child_process';
+import { resolveCfApp } from './cf-app';
 
 const GREEN = '\x1b[32m';
 const YELLOW = '\x1b[33m';
+const RED = '\x1b[31m';
 const NC = '\x1b[0m';
 
 function log(msg: string, color: string = NC) {
@@ -17,19 +19,26 @@ function runCommand(command: string, ignoreError = false): string {
     }
 }
 
-/** Same auth check logic as cf:setup – wrangler whoami, empty or "not authenticated" = not logged in. */
+/** Same auth check logic as cf:setup - wrangler whoami, empty or "not authenticated" = not logged in. */
 function isAuthenticated(wranglerCmd: string): boolean {
     const whoamiResult = runCommand(`${wranglerCmd} whoami`, true);
     return !!(whoamiResult && !whoamiResult.includes('not authenticated'));
 }
 
 function main() {
-    const wranglerCmd = 'pnpm --filter @ottabase/otta-web exec wrangler';
+    let wranglerCmd: string;
+    try {
+        wranglerCmd = resolveCfApp().wranglerCmd;
+    } catch (e) {
+        log(`Error: ${e instanceof Error ? e.message : String(e)}`, RED);
+        process.exit(1);
+        return;
+    }
 
     try {
         runCommand(`${wranglerCmd} --version`);
     } catch (e) {
-        log('Error: wrangler is not installed. Run "pnpm install" first.', '\x1b[31m');
+        log('Error: wrangler is not installed. Run "pnpm install" first.', RED);
         process.exit(1);
     }
 

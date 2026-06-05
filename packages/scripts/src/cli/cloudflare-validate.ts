@@ -1,7 +1,7 @@
 import { execSync } from 'child_process';
 import fs from 'fs';
-import path from 'path';
 import readline from 'readline';
+import { resolveCfApp } from './cf-app';
 
 const GREEN = '\x1b[32m';
 const YELLOW = '\x1b[33m';
@@ -37,6 +37,12 @@ async function main() {
     log('', NC);
     log(`${BOLD}cf:validate - Cloudflare Configuration Check${NC}`);
     log('', NC);
+
+    // Resolve the app + its resource names from wrangler.jsonc (single source of truth).
+    const { appName, packageName, wranglerCmd, wranglerPath, resources } = resolveCfApp();
+    const { d1, kv, r2, queue } = resources;
+
+    log(`App: ${appName} (${packageName})`, NC);
     log('This will verify:', YELLOW);
     log('  • Cloudflare authentication');
     log('  • wrangler.jsonc (no placeholders)');
@@ -61,15 +67,12 @@ async function main() {
     let hasErrors = false;
     let hasWarnings = false;
 
-    const wranglerPath = path.join(process.cwd(), 'apps', 'otta-web', 'wrangler.jsonc');
-
     if (!fs.existsSync(wranglerPath)) {
         log(`Error: ${wranglerPath} not found.`, RED);
         process.exit(1);
     }
 
     const wranglerContent = fs.readFileSync(wranglerPath, 'utf8');
-    const wranglerCmd = 'pnpm --filter @ottabase/otta-web exec wrangler';
 
     // Check wrangler login
     log('Checking Cloudflare authentication...', YELLOW);
@@ -81,7 +84,7 @@ async function main() {
         log(`✓ Authenticated as: ${whoamiResult.split('\n')[0]}`, GREEN);
     }
 
-    // Check for top-level placeholders (these are expected in the template but indicate local dev isn't configured)
+    // Check for top-level placeholders (expected in the template; local dev uses simulators)
     log('', NC);
     log('Checking wrangler.jsonc configuration...', YELLOW);
     const hasPlaceholderD1 = wranglerContent.includes('YOUR_D1_DATABASE_ID');
@@ -98,49 +101,49 @@ async function main() {
         log('✓ wrangler.jsonc is configured', GREEN);
     }
 
-    // Verify D1
+    // Verify resources (names come from wrangler.jsonc)
     log('', NC);
     log('Checking Cloudflare resources...', YELLOW);
     const d1List = runCommand(`${wranglerCmd} d1 list --json`);
-    if (d1List.includes('ottabase-db')) {
-        log('✓ D1 Database: ottabase-db', GREEN);
+    if (d1List.includes(d1.name)) {
+        log(`✓ D1 Database: ${d1.name}`, GREEN);
     } else {
-        log('✗ D1 Database: ottabase-db not found', RED);
+        log(`✗ D1 Database: ${d1.name} not found`, RED);
         hasErrors = true;
     }
 
-    // Verify KV
+    // KV namespace title in Cloudflare; the worker binding in the app stays ${kv.binding}.
     const kvList = runCommand(`${wranglerCmd} kv namespace list`);
-    if (kvList.includes('OBCF_KV')) {
-        log('✓ KV Namespace: OBCF_KV', GREEN);
+    if (kvList.includes(kv.title)) {
+        log(`✓ KV namespace: ${kv.title} (→ ${kv.binding} binding)`, GREEN);
     } else {
-        log('✗ KV Namespace: OBCF_KV not found', RED);
+        log(`✗ KV namespace: ${kv.title} not found`, RED);
         hasErrors = true;
     }
 
     // Verify R2
     const r2List = runCommand(`${wranglerCmd} r2 bucket list --json`);
-    if (r2List.includes('ottabase-bucket')) {
-        log('✓ R2 Bucket: ottabase-bucket', GREEN);
+    if (r2List.includes(r2.name)) {
+        log(`✓ R2 Bucket: ${r2.name}`, GREEN);
     } else {
-        log('✗ R2 Bucket: ottabase-bucket not found', RED);
+        log(`✗ R2 Bucket: ${r2.name} not found`, RED);
         hasErrors = true;
     }
 
-    // Verify R2 Preview
-    if (r2List.includes('ottabase-bucket-preview')) {
-        log('✓ R2 Preview Bucket: ottabase-bucket-preview', GREEN);
+    // Verify R2 preview bucket (optional; for `wrangler dev --remote`)
+    if (r2List.includes(r2.previewName)) {
+        log(`✓ R2 preview bucket: ${r2.previewName}`, GREEN);
     } else {
-        log('⚠ R2 Preview Bucket: ottabase-bucket-preview not found (optional)', YELLOW);
+        log(`⚠ R2 preview bucket: ${r2.previewName} not found (optional)`, YELLOW);
         hasWarnings = true;
     }
 
     // Verify Queue
     const queueList = runCommand(`${wranglerCmd} queues list --json`);
-    if (queueList.includes('ottabase-queue')) {
-        log('✓ Queue: ottabase-queue', GREEN);
+    if (queueList.includes(queue.name)) {
+        log(`✓ Queue: ${queue.name}`, GREEN);
     } else {
-        log('✗ Queue: ottabase-queue not found', RED);
+        log(`✗ Queue: ${queue.name} not found`, RED);
         hasErrors = true;
     }
 
